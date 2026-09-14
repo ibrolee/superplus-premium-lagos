@@ -82,7 +82,7 @@ export const membershipPlans: MembershipPlan[] = [
     registration: 7000,
     benefits: ["30-day access", "All gym equipment", "Group classes"],
     checkoutUrl:
-      "https://members.superplusfitness.com/pricing-plans/plan-customization?planId=c1eaf695-49d0-482d-8fcc-ddec40830ccc&checkoutFlowId=77d29695-f6f4-427d-b6ee-0687784a95b4&pricingVariantId=c1eaf695-49d0-482d-b6ee-0687784a95b4",
+      "https://members.superplusfitness.com/pricing-plans/plan-customization?planId=c1eaf695-49d0-482d-8fcc-ddec40830ccc&checkoutFlowId=77d29695-f6f4-427d-b6ee-0687784a95b4&pricingVariantId=c1eaf695-49d0-482d-8fcc-ddec40830ccc",
   },
   {
     id: "quarterly",
@@ -194,57 +194,72 @@ export type RecoveryService = {
   name: string;
   description: string;
   price: number | null;
-  image: string;
+  duration?: string;
+  image?: string;
 };
 
 export const recoveryServices: RecoveryService[] = [
   {
-    id: "massage",
-    name: "Full Body Massage",
-    description:
-      "Hands-on treatment designed to release tension, restore movement and help the body reset.",
-    price: null,
-    image: recoveryImage,
+    id: "vip-chair",
+    name: "VIP Chair",
+    description: "A dedicated relaxation and wellness session.",
+    price: 7000,
+    duration: "1 hour",
   },
   {
-    id: "spa-machines",
-    name: "Spa Machines",
-    description:
-      "Modern wellness equipment that complements your training and recovery routine.",
-    price: null,
-    image: recoveryImage,
+    id: "ultra-slim-machine",
+    name: "Ultra Slim Machine",
+    description: "A focused wellness session using our Ultra Slim machine.",
+    price: 5000,
+    duration: "30 mins",
+  },
+  {
+    id: "blood-circulation-machine",
+    name: "Blood Circulation Machine",
+    description: "A wellness session using our blood circulation machine.",
+    price: 5000,
+    duration: "30 mins",
   },
   {
     id: "foot-massager",
     name: "Foot Massager",
-    description:
-      "Targeted foot recovery after long days, hard sessions and everyday movement.",
-    price: null,
-    image: recoveryImage,
+    description: "A dedicated foot relaxation and recovery session.",
+    price: 5000,
+    duration: "30 mins",
   },
   {
-    id: "slimming",
-    name: "Slimming Machine",
-    description:
-      "A guided wellness service delivered by our trained team in a calm setting.",
-    price: null,
-    image: recoveryImage,
+    id: "pulse-massager",
+    name: "Pulse Massager",
+    description: "A focused massage session using our pulse massager.",
+    price: 7000,
+    duration: "30 mins",
   },
   {
-    id: "circulation",
-    name: "Vibrating Circulation Machine",
-    description:
-      "Low-impact stimulation to support circulation and post-training recovery.",
-    price: null,
-    image: recoveryImage,
+    id: "detox-machine",
+    name: "Detox Machine",
+    description: "A wellness session using our detox machine.",
+    price: 7000,
+    duration: "30 mins",
   },
   {
-    id: "quantum",
+    id: "full-body-massage",
+    name: "Full Body Massage",
+    description: "A full-body massage session.",
+    price: 15000,
+    duration: "30 mins",
+  },
+  {
+    id: "quantum-therapy",
     name: "Quantum Therapy",
-    description:
-      "A specialist wellness session available as part of our broader recovery offering.",
-    price: null,
-    image: recoveryImage,
+    description: "A dedicated quantum therapy session.",
+    price: 7000,
+    duration: "30 mins",
+  },
+  {
+    id: "pedicure",
+    name: "Pedicure",
+    description: "Professional pedicure service.",
+    price: 10000,
   },
 ];
 
