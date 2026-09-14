@@ -10,7 +10,7 @@ import {
   UserRound,
   XCircle,
 } from "lucide-react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { Html5Qrcode } from "html5-qrcode";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -18,9 +18,7 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/reception-checkin")({
   head: () => ({
     meta: [
-      {
-        title: "Reception Check-In — Super Plus Fitness",
-      },
+      { title: "Reception Check-In — Super Plus Fitness" },
       {
         name: "description",
         content: "Staff-only member QR check-in and check-out.",
@@ -31,7 +29,7 @@ export const Route = createFileRoute("/reception-checkin")({
 });
 
 type ScanResult = {
-  type: "in" | "out";
+  type: "in" | "out" | "denied";
   memberName: string;
   planName: string;
   message: string;
@@ -40,17 +38,19 @@ type ScanResult = {
 function ReceptionCheckInPage() {
   const navigate = useNavigate();
 
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const processingRef = useRef(false);
 
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [staffName, setStaffName] = useState("");
-  const [scannerStarted, setScannerStarted] = useState(false);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loggingIn, setLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState("");
+
+  const [scannerStarted, setScannerStarted] = useState(false);
+  const [startingScanner, setStartingScanner] = useState(false);
 
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
@@ -108,15 +108,15 @@ function ReceptionCheckInPage() {
 
     const cleanEmail = email.trim().toLowerCase();
 
-    const { data, error: loginError } =
+    const { data, error: authError } =
       await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
 
-    if (loginError || !data.user) {
+    if (authError || !data.user) {
       setLoginError(
-        loginError?.message ||
+        authError?.message ||
           "Unable to sign in. Please check your email and password.",
       );
       setLoggingIn(false);
@@ -146,208 +146,274 @@ function ReceptionCheckInPage() {
     setLoggingIn(false);
   }
 
-  async function handleLogout() {
+  async function stopScanner() {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.clear();
+        await scannerRef.current.stop();
       } catch {
         // Scanner may already be stopped.
+      }
+
+      try {
+        scannerRef.current.clear();
+      } catch {
+        // Scanner may already be cleared.
       }
 
       scannerRef.current = null;
     }
 
+    setScannerStarted(false);
+  }
+
+  async function handleLogout() {
+    await stopScanner();
     await supabase.auth.signOut();
 
-    setScannerStarted(false);
     setResult(null);
     setError("");
     setStaffName("");
   }
 
-  function startScanner() {
-    if (scannerStarted) return;
+  async function processQrCode(decodedText: string) {
+    if (processingRef.current) return;
 
-    const scanner = new Html5QrcodeScanner(
-      "reception-qr-reader",
-      {
-        fps: 10,
-        qrbox: {
-          width: 250,
-          height: 250,
-        },
-        rememberLastUsedCamera: true,
-      },
-      false,
-    );
+    processingRef.current = true;
+    setError("");
+    setResult(null);
 
-    scannerRef.current = scanner;
+    try {
+      const qrToken = decodedText.trim();
 
-    async function handleScan(decodedText: string) {
-      if (processingRef.current) return;
+      const { data: member, error: memberError } = await supabase
+        .from("members")
+        .select("id, full_name, email, qr_token")
+        .eq("qr_token", qrToken)
+        .maybeSingle();
 
-      processingRef.current = true;
-      setError("");
-      setResult(null);
+      if (memberError) {
+        throw new Error(memberError.message);
+      }
 
-      try {
-        const qrToken = decodedText.trim();
+      if (!member) {
+        throw new Error(
+          "This QR code is not registered to a Super Plus Fitness member.",
+        );
+      }
 
-        const { data: member, error: memberError } = await supabase
-          .from("members")
-          .select("id, full_name, email, qr_token")
-          .eq("qr_token", qrToken)
+      const { data: membership, error: membershipError } =
+        await supabase
+          .from("memberships")
+          .select("*")
+          .eq("member_id", member.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
 
-        if (memberError) {
-          throw new Error(memberError.message);
+      if (membershipError) {
+        throw new Error(membershipError.message);
+      }
+
+      const expiryDate =
+        membership?.end_date ||
+        membership?.expiry_date ||
+        membership?.expires_at ||
+        membership?.expiration_date ||
+        null;
+
+      const membershipActive =
+        membership?.status === "active" ||
+        membership?.is_active === true ||
+        (expiryDate ? new Date(expiryDate) >= new Date() : false);
+
+      const planName =
+        membership?.plan_name ||
+        membership?.name ||
+        membership?.plan ||
+        "Membership";
+
+      if (!membershipActive) {
+        setResult({
+          type: "denied",
+          memberName: member.full_name || "Member",
+          planName,
+          message:
+            "Membership is inactive or expired. Access should not be granted.",
+        });
+
+        return;
+      }
+
+      const { data: openAttendance, error: attendanceError } =
+        await supabase
+          .from("attendance")
+          .select("id, checked_in_at, checked_out_at")
+          .eq("member_id", member.id)
+          .is("checked_out_at", null)
+          .order("checked_in_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+      if (attendanceError) {
+        throw new Error(attendanceError.message);
+      }
+
+      if (openAttendance) {
+        const { error: checkoutError } = await supabase
+          .from("attendance")
+          .update({
+            checked_out_at: new Date().toISOString(),
+          })
+          .eq("id", openAttendance.id);
+
+        if (checkoutError) {
+          throw new Error(checkoutError.message);
         }
 
-        if (!member) {
+        setResult({
+          type: "out",
+          memberName: member.full_name || "Member",
+          planName,
+          message: "Check-out recorded successfully.",
+        });
+      } else {
+        const {
+          data: { user: currentUser },
+        } = await supabase.auth.getUser();
+
+        if (!currentUser) {
           throw new Error(
-            "This QR code is not registered to a Super Plus Fitness member.",
+            "Your staff session has expired. Please log in again.",
           );
         }
 
-        const { data: membership, error: membershipError } =
-          await supabase
-            .from("memberships")
-            .select("*")
-            .eq("member_id", member.id)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (membershipError) {
-          throw new Error(membershipError.message);
-        }
-
-        const expiryDate =
-          membership?.end_date ||
-          membership?.expiry_date ||
-          membership?.expires_at ||
-          membership?.expiration_date ||
-          null;
-
-        const membershipActive =
-          membership?.status === "active" ||
-          membership?.is_active === true ||
-          (expiryDate ? new Date(expiryDate) >= new Date() : false);
-
-        const planName =
-          membership?.plan_name ||
-          membership?.name ||
-          membership?.plan ||
-          "Membership";
-
-        if (!membershipActive) {
-          setResult({
-            type: "in",
-            memberName: member.full_name || "Member",
-            planName,
-            message:
-              "Membership is inactive or expired. Access should not be granted.",
+        const { error: checkinError } = await supabase
+          .from("attendance")
+          .insert({
+            member_id: member.id,
+            checked_in_at: new Date().toISOString(),
+            checked_by: currentUser.id,
           });
 
-          return;
+        if (checkinError) {
+          throw new Error(checkinError.message);
         }
 
-        const { data: openAttendance, error: attendanceError } =
-          await supabase
-            .from("attendance")
-            .select("id, checked_in_at, checked_out_at")
-            .eq("member_id", member.id)
-            .is("checked_out_at", null)
-            .order("checked_in_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-        if (attendanceError) {
-          throw new Error(attendanceError.message);
-        }
-
-        if (openAttendance) {
-          const { error: checkoutError } = await supabase
-            .from("attendance")
-            .update({
-              checked_out_at: new Date().toISOString(),
-            })
-            .eq("id", openAttendance.id);
-
-          if (checkoutError) {
-            throw new Error(checkoutError.message);
-          }
-
-          setResult({
-            type: "out",
-            memberName: member.full_name || "Member",
-            planName,
-            message: "Check-out recorded successfully.",
-          });
-        } else {
-          const {
-            data: { user: currentUser },
-          } = await supabase.auth.getUser();
-
-          if (!currentUser) {
-            throw new Error(
-              "Your staff session has expired. Please log in again.",
-            );
-          }
-
-          const { error: checkinError } = await supabase
-            .from("attendance")
-            .insert({
-              member_id: member.id,
-              checked_in_at: new Date().toISOString(),
-              checked_by: currentUser.id,
-            });
-
-          if (checkinError) {
-            throw new Error(checkinError.message);
-          }
-
-          setResult({
-            type: "in",
-            memberName: member.full_name || "Member",
-            planName,
-            message: "Check-in recorded successfully.",
-          });
-        }
-      } catch (scanError) {
-        console.error("QR scan error:", scanError);
-
-        setError(
-          scanError instanceof Error
-            ? scanError.message
-            : "Unable to process this QR code.",
-        );
-      } finally {
-        setTimeout(() => {
-          processingRef.current = false;
-        }, 2000);
+        setResult({
+          type: "in",
+          memberName: member.full_name || "Member",
+          planName,
+          message: "Check-in recorded successfully.",
+        });
       }
+    } catch (scanError) {
+      console.error("QR scan error:", scanError);
+
+      setError(
+        scanError instanceof Error
+          ? scanError.message
+          : "Unable to process this QR code.",
+      );
+    } finally {
+      setTimeout(() => {
+        processingRef.current = false;
+      }, 2000);
     }
+  }
 
-    scanner.render(
-      (decodedText) => {
-        handleScan(decodedText);
-      },
-      () => {
-        // Normal camera scanning failures are ignored.
-      },
-    );
+  async function startScanner() {
+    if (startingScanner || scannerStarted) return;
 
-    setScannerStarted(true);
+    setStartingScanner(true);
+    setError("");
+    setResult(null);
+
+    try {
+      if (!window.isSecureContext) {
+        throw new Error(
+          "Camera access requires a secure HTTPS connection.",
+        );
+      }
+
+      const scanner = new Html5Qrcode("reception-qr-reader");
+
+      scannerRef.current = scanner;
+
+      const cameras = await Html5Qrcode.getCameras();
+
+      if (!cameras || cameras.length === 0) {
+        throw new Error(
+          "No camera was found on this device.",
+        );
+      }
+
+      const preferredCamera =
+        cameras.find((camera) =>
+          /back|rear|environment/i.test(camera.label),
+        ) || cameras[0];
+
+      await scanner.start(
+        preferredCamera.id,
+        {
+          fps: 10,
+          qrbox: {
+            width: 250,
+            height: 250,
+          },
+          aspectRatio: 1,
+        },
+        (decodedText) => {
+          processQrCode(decodedText);
+        },
+        () => {
+          // Normal QR scanning misses are ignored.
+        },
+      );
+
+      setScannerStarted(true);
+    } catch (scannerError) {
+      console.error("Camera start error:", scannerError);
+
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+        } catch {
+          // Ignore cleanup errors.
+        }
+
+        try {
+          scannerRef.current.clear();
+        } catch {
+          // Ignore cleanup errors.
+        }
+
+        scannerRef.current = null;
+      }
+
+      setError(
+        scannerError instanceof Error
+          ? scannerError.message
+          : "Unable to start the camera. Please allow camera access and try again.",
+      );
+
+      setScannerStarted(false);
+    } finally {
+      setStartingScanner(false);
+    }
   }
 
   useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current
-          .clear()
-          .catch(() => {
-            // Scanner may already be stopped.
+          .stop()
+          .catch(() => {})
+          .finally(() => {
+            try {
+              scannerRef.current?.clear();
+            } catch {
+              // Ignore cleanup errors.
+            }
           });
       }
     };
@@ -506,12 +572,23 @@ function ReceptionCheckInPage() {
 
             {!scannerStarted ? (
               <Button
+                type="button"
                 size="lg"
                 className="w-full"
                 onClick={startScanner}
+                disabled={startingScanner}
               >
-                Start Camera Scanner
-                <QrCode />
+                {startingScanner ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Starting Camera...
+                  </>
+                ) : (
+                  <>
+                    Start Camera Scanner
+                    <QrCode />
+                  </>
+                )}
               </Button>
             ) : (
               <>
@@ -520,8 +597,17 @@ function ReceptionCheckInPage() {
                   className="overflow-hidden border border-border bg-white"
                 />
 
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 w-full"
+                  onClick={stopScanner}
+                >
+                  Stop Camera
+                </Button>
+
                 <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
-                  Camera scanner ready
+                  Camera scanner ready — point it at a member QR code
                 </p>
               </>
             )}
@@ -534,7 +620,7 @@ function ReceptionCheckInPage() {
 
                 <div>
                   <h2 className="font-bold uppercase text-destructive">
-                    Scan Problem
+                    Camera / Scan Problem
                   </h2>
 
                   <p className="mt-2 text-sm leading-6 text-destructive">
@@ -548,14 +634,18 @@ function ReceptionCheckInPage() {
           {result && (
             <section
               className={`mt-6 border p-7 shadow-sm ${
-                result.type === "in"
-                  ? "border-green-600/30 bg-green-600/10"
-                  : "border-primary/30 bg-primary/10"
+                result.type === "denied"
+                  ? "border-destructive/30 bg-destructive/10"
+                  : result.type === "in"
+                    ? "border-green-600/30 bg-green-600/10"
+                    : "border-primary/30 bg-primary/10"
               }`}
             >
               <div className="flex items-start gap-4">
                 <div className="flex size-12 shrink-0 items-center justify-center bg-background">
-                  {result.type === "in" ? (
+                  {result.type === "denied" ? (
+                    <XCircle className="size-6 text-destructive" />
+                  ) : result.type === "in" ? (
                     <LogIn className="size-6 text-green-700" />
                   ) : (
                     <LogOut className="size-6 text-primary" />
@@ -564,7 +654,7 @@ function ReceptionCheckInPage() {
 
                 <div className="min-w-0">
                   <p className="text-xs font-extrabold uppercase tracking-[0.15em]">
-                    {result.message.includes("Access should")
+                    {result.type === "denied"
                       ? "Access Denied"
                       : result.type === "in"
                         ? "Checked In"
@@ -580,7 +670,7 @@ function ReceptionCheckInPage() {
                   </p>
 
                   <div className="mt-4 flex items-center gap-2 text-sm">
-                    {result.message.includes("Access should") ? (
+                    {result.type === "denied" ? (
                       <XCircle className="size-4 text-destructive" />
                     ) : (
                       <CheckCircle2 className="size-4" />
