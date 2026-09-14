@@ -619,6 +619,38 @@ export function LocationSection() {
 }
 
 export function FinalCTA() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
+  if (pathname !== "/") {
+    return null;
+  }
+
+  return (
+    <section className="border-t bg-primary py-10">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 text-center lg:flex-row lg:px-8 lg:text-left">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
+            Ready to get started?
+          </h2>
+
+          <p className="mt-2 max-w-2xl text-primary-foreground/80">
+            Join Super Plus Fitness & Spa and take the next
+            step toward a stronger, healthier you.
+          </p>
+        </div>
+
+        <Button asChild variant="dark" size="lg">
+          <Link to="/join">
+            Join now
+            <ArrowRight />
+          </Link>
+        </Button>
+      </div>
+    </section>
+  );
+}
   return (
     <section className="bg-primary py-16 text-primary-foreground">
       <div className="section-shell flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
