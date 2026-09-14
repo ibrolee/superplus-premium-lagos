@@ -343,7 +343,7 @@ export function MembershipCard({
         className="mt-auto"
       >
         <a
-          href="https://members.superplusfitness.com/pricing-plans/list"
+          href={plan.checkoutUrl}
           rel="noopener noreferrer"
         >
           Choose plan <ArrowRight />
