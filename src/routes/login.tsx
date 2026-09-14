@@ -24,78 +24,32 @@ function LoginRoute() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
-    async function handleAuthCallback() {
-      setLoading(true);
-      setError("");
+    async function checkSession() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      try {
-        const url = new URL(window.location.href);
-        const code = url.searchParams.get("code");
+      if (!active) return;
 
-        /*
-         * Supabase may return a PKCE authorization code after
-         * the user clicks the magic link.
-         */
-        if (code) {
-          const { error: exchangeError } =
-            await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            if (active) {
-              setError(
-                "This login link is invalid or has already been used. Please request a new login link.",
-              );
-              setLoading(false);
-            }
-            return;
-          }
-
-          if (active) {
-            setLoading(false);
-            navigate({ to: "/member", replace: true });
-          }
-
-          return;
-        }
-
-        /*
-         * Check whether Supabase already restored the session.
-         * This also handles other supported Supabase auth flows.
-         */
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!active) return;
-
-        if (session) {
-          setLoading(false);
-          navigate({ to: "/member", replace: true });
-          return;
-        }
-
-        setLoading(false);
-      } catch (callbackError) {
-        console.error("Authentication callback error:", callbackError);
-
-        if (active) {
-          setError(
-            "We couldn't complete your login. Please request a new login link.",
-          );
-          setLoading(false);
-        }
+      if (session) {
+        navigate({ to: "/member", replace: true });
+        return;
       }
+
+      setLoading(false);
     }
 
-    handleAuthCallback();
+    checkSession();
 
     const {
       data: { subscription },
@@ -113,7 +67,7 @@ function LoginRoute() {
     };
   }, [navigate]);
 
-  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSendCode(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const cleanEmail = email.trim().toLowerCase();
@@ -125,13 +79,9 @@ function LoginRoute() {
 
     setSending(true);
     setError("");
-    setSent(false);
 
     const { error: authError } = await supabase.auth.signInWithOtp({
       email: cleanEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
-      },
     });
 
     setSending(false);
@@ -141,7 +91,47 @@ function LoginRoute() {
       return;
     }
 
-    setSent(true);
+    setEmail(cleanEmail);
+    setToken("");
+    setStep("code");
+  }
+
+  async function handleVerifyCode(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanToken = token.replace(/\D/g, "");
+
+    if (cleanToken.length !== 8) {
+      setError("Please enter the 8-digit code from your email.");
+      return;
+    }
+
+    setVerifying(true);
+    setError("");
+
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: "email",
+    });
+
+    setVerifying(false);
+
+    if (verifyError) {
+      setError(
+        "That code is invalid or has expired. Please request a new code.",
+      );
+      return;
+    }
+
+    navigate({ to: "/member", replace: true });
+  }
+
+  async function handleBack() {
+    setStep("email");
+    setToken("");
+    setError("");
   }
 
   if (loading) {
@@ -150,7 +140,7 @@ function LoginRoute() {
         <div className="section-shell flex min-h-[50vh] items-center justify-center">
           <div className="flex items-center gap-3 text-sm font-bold uppercase">
             <Loader2 className="size-5 animate-spin" />
-            Signing you in...
+            Loading...
           </div>
         </div>
       </main>
@@ -170,47 +160,20 @@ function LoginRoute() {
               Member Login
             </h1>
 
-            <p className="mt-5 text-sm leading-6 text-muted-foreground">
-              Enter the email address registered with your Super Plus Fitness
-              membership. We'll send you a secure login link.
-            </p>
+            {step === "email" ? (
+              <p className="mt-5 text-sm leading-6 text-muted-foreground">
+                Enter the email address registered with your Super Plus Fitness
+                membership. We'll send you a secure login code.
+              </p>
+            ) : (
+              <p className="mt-5 text-sm leading-6 text-muted-foreground">
+                Enter the 8-digit code we sent to your email address.
+              </p>
+            )}
           </div>
 
-          {sent ? (
-            <div className="border border-border bg-muted p-6">
-              <CheckCircle2 className="size-10 text-primary" />
-
-              <h2 className="mt-5 font-display text-2xl font-bold uppercase">
-                Check your email
-              </h2>
-
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                We sent a secure login link to:
-              </p>
-
-              <p className="mt-2 break-all font-bold">
-                {email.trim().toLowerCase()}
-              </p>
-
-              <p className="mt-5 text-xs leading-5 text-muted-foreground">
-                Open the new link in your email to continue to your member
-                account.
-              </p>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="mt-6 w-full"
-                onClick={() => {
-                  setSent(false);
-                  setError("");
-                }}
-              >
-                Use a different email
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleLogin} className="grid gap-5">
+          {step === "email" ? (
+            <form onSubmit={handleSendCode} className="grid gap-5">
               <label className="grid gap-2 text-sm font-bold">
                 Email address
 
@@ -244,20 +207,97 @@ function LoginRoute() {
                 {sending ? (
                   <>
                     <Loader2 className="animate-spin" />
-                    Sending login link...
+                    Sending code...
                   </>
                 ) : (
                   <>
-                    Send login link
+                    Send login code
                     <ArrowRight />
                   </>
                 )}
               </Button>
 
               <p className="text-center text-xs leading-5 text-muted-foreground">
-                No password required. Your login link is secure and expires
-                automatically.
+                No password required. We'll email you a secure one-time code.
               </p>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyCode} className="grid gap-5">
+              <div className="border border-border bg-muted p-5">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="size-5 text-primary" />
+
+                  <div>
+                    <p className="text-xs font-extrabold uppercase">
+                      Code sent to
+                    </p>
+
+                    <p className="mt-1 break-all text-sm font-bold">
+                      {email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <label className="grid gap-2 text-sm font-bold">
+                8-digit login code
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={8}
+                  value={token}
+                  onChange={(event) =>
+                    setToken(event.target.value.replace(/\D/g, ""))
+                  }
+                  placeholder="00000000"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  required
+                  disabled={verifying}
+                  className="h-14 rounded-md border border-input bg-background px-4 text-center text-2xl font-bold tracking-[0.35em] outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                />
+              </label>
+
+              {error && (
+                <div
+                  role="alert"
+                  className="border border-destructive/30 bg-destructive/10 p-4 text-sm leading-6 text-destructive"
+                >
+                  {error}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={verifying}
+              >
+                {verifying ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    Sign in
+                    <ArrowRight />
+                  </>
+                )}
+              </Button>
+
+              <div className="grid gap-3">
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  disabled={verifying}
+                  className="text-sm font-bold uppercase text-muted-foreground hover:text-foreground disabled:opacity-50"
+                >
+                  Use a different email
+                </button>
+              </div>
             </form>
           )}
 
