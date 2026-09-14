@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   Clock3,
+  Loader2,
   LogIn,
   LogOut,
   QrCode,
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/reception-checkin")({
       },
       {
         name: "description",
-        content: "Scan member QR codes to record gym attendance.",
+        content: "Staff-only member QR check-in and check-out.",
       },
     ],
   }),
@@ -37,14 +38,136 @@ type ScanResult = {
 };
 
 function ReceptionCheckInPage() {
+  const navigate = useNavigate();
+
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const processingRef = useRef(false);
 
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [staffName, setStaffName] = useState("");
+  const [scannerStarted, setScannerStarted] = useState(false);
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
+    async function checkStaffAccess() {
+      setCheckingAccess(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!active) return;
+
+      if (!session) {
+        setCheckingAccess(false);
+        return;
+      }
+
+      const { data: staff, error: staffError } = await supabase
+        .from("staff_users")
+        .select("full_name, role, active")
+        .eq("auth_user_id", session.user.id)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (staffError || !staff) {
+        await supabase.auth.signOut();
+        setCheckingAccess(false);
+        return;
+      }
+
+      setStaffName(staff.full_name || "Reception");
+      setCheckingAccess(false);
+    }
+
+    checkStaffAccess();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function handleStaffLogin(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    setLoggingIn(true);
+    setLoginError("");
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    const { data, error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+    if (loginError || !data.user) {
+      setLoginError(
+        loginError?.message ||
+          "Unable to sign in. Please check your email and password.",
+      );
+      setLoggingIn(false);
+      return;
+    }
+
+    const { data: staff, error: staffError } = await supabase
+      .from("staff_users")
+      .select("full_name, role, active")
+      .eq("auth_user_id", data.user.id)
+      .eq("active", true)
+      .maybeSingle();
+
+    if (staffError || !staff) {
+      await supabase.auth.signOut();
+
+      setLoginError(
+        "This account is not authorized to access the reception scanner.",
+      );
+
+      setLoggingIn(false);
+      return;
+    }
+
+    setStaffName(staff.full_name || "Reception");
+    setPassword("");
+    setLoggingIn(false);
+  }
+
+  async function handleLogout() {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.clear();
+      } catch {
+        // Scanner may already be stopped.
+      }
+
+      scannerRef.current = null;
+    }
+
+    await supabase.auth.signOut();
+
+    setScannerStarted(false);
+    setResult(null);
+    setError("");
+    setStaffName("");
+  }
+
+  function startScanner() {
+    if (scannerStarted) return;
+
     const scanner = new Html5QrcodeScanner(
       "reception-qr-reader",
       {
@@ -86,13 +209,14 @@ function ReceptionCheckInPage() {
           );
         }
 
-        const { data: membership, error: membershipError } = await supabase
-          .from("memberships")
-          .select("*")
-          .eq("member_id", member.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: membership, error: membershipError } =
+          await supabase
+            .from("memberships")
+            .select("*")
+            .eq("member_id", member.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
         if (membershipError) {
           throw new Error(membershipError.message);
@@ -162,17 +286,21 @@ function ReceptionCheckInPage() {
           });
         } else {
           const {
-            data: {
-              user: currentUser,
-            },
+            data: { user: currentUser },
           } = await supabase.auth.getUser();
+
+          if (!currentUser) {
+            throw new Error(
+              "Your staff session has expired. Please log in again.",
+            );
+          }
 
           const { error: checkinError } = await supabase
             .from("attendance")
             .insert({
               member_id: member.id,
               checked_in_at: new Date().toISOString(),
-              checked_by: currentUser?.id ?? null,
+              checked_by: currentUser.id,
             });
 
           if (checkinError) {
@@ -206,12 +334,14 @@ function ReceptionCheckInPage() {
         handleScan(decodedText);
       },
       () => {
-        // Ignore normal camera scanning failures.
+        // Normal camera scanning failures are ignored.
       },
     );
 
-    setReady(true);
+    setScannerStarted(true);
+  }
 
+  useEffect(() => {
     return () => {
       if (scannerRef.current) {
         scannerRef.current
@@ -223,23 +353,138 @@ function ReceptionCheckInPage() {
     };
   }, []);
 
+  if (checkingAccess) {
+    return (
+      <main className="min-h-[75vh] bg-muted py-20">
+        <div className="section-shell flex min-h-[50vh] items-center justify-center">
+          <div className="flex items-center gap-3 text-sm font-bold uppercase">
+            <Loader2 className="size-5 animate-spin" />
+            Checking staff access...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!staffName) {
+    return (
+      <main className="min-h-[75vh] bg-muted py-16 sm:py-24">
+        <div className="section-shell flex min-h-[60vh] items-center justify-center">
+          <div className="w-full max-w-md border border-border bg-background p-7 shadow-sm sm:p-10">
+            <div className="mx-auto flex size-12 items-center justify-center bg-primary text-primary-foreground">
+              <QrCode className="size-6" />
+            </div>
+
+            <p className="mt-6 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+              Super Plus Fitness
+            </p>
+
+            <h1 className="display-title mt-3 text-center text-4xl sm:text-5xl">
+              Reception Login
+            </h1>
+
+            <p className="mt-4 text-center text-sm leading-6 text-muted-foreground">
+              Staff login is required to access the member QR scanner.
+            </p>
+
+            <form
+              onSubmit={handleStaffLogin}
+              className="mt-8 grid gap-5"
+            >
+              <label className="grid gap-2 text-sm font-bold">
+                Staff email
+
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="spfitnessandspa@gmail.com"
+                  autoComplete="email"
+                  required
+                  disabled={loggingIn}
+                  className="h-13 rounded-md border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold">
+                Password
+
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                  disabled={loggingIn}
+                  className="h-13 rounded-md border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                />
+              </label>
+
+              {loginError && (
+                <div
+                  role="alert"
+                  className="border border-destructive/30 bg-destructive/10 p-4 text-sm leading-6 text-destructive"
+                >
+                  {loginError}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={loggingIn}
+              >
+                {loggingIn ? (
+                  <>
+                    <Loader2 className="animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    Access Scanner
+                    <LogIn />
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
+              This area is restricted to authorized Super Plus Fitness staff.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
       <div className="section-shell">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-8 text-center">
-            <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-              Super Plus Fitness
-            </p>
+          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                Super Plus Fitness
+              </p>
 
-            <h1 className="display-title text-4xl sm:text-6xl">
-              Reception Scanner
-            </h1>
+              <h1 className="display-title text-4xl sm:text-6xl">
+                Reception Scanner
+              </h1>
 
-            <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-              Scan a member's QR code to automatically record their gym entry
-              or exit.
-            </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Logged in as <strong>{staffName}</strong>
+              </p>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="w-full sm:w-auto"
+            >
+              Log Out
+            </Button>
           </div>
 
           <section className="border border-border bg-background p-5 shadow-sm sm:p-8">
@@ -259,15 +504,26 @@ function ReceptionCheckInPage() {
               </div>
             </div>
 
-            <div
-              id="reception-qr-reader"
-              className="overflow-hidden border border-border bg-white"
-            />
+            {!scannerStarted ? (
+              <Button
+                size="lg"
+                className="w-full"
+                onClick={startScanner}
+              >
+                Start Camera Scanner
+                <QrCode />
+              </Button>
+            ) : (
+              <>
+                <div
+                  id="reception-qr-reader"
+                  className="overflow-hidden border border-border bg-white"
+                />
 
-            {ready && (
-              <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
-                Camera scanner ready
-              </p>
+                <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
+                  Camera scanner ready
+                </p>
+              </>
             )}
           </section>
 
@@ -308,7 +564,11 @@ function ReceptionCheckInPage() {
 
                 <div className="min-w-0">
                   <p className="text-xs font-extrabold uppercase tracking-[0.15em]">
-                    {result.type === "in" ? "Checked In" : "Checked Out"}
+                    {result.message.includes("Access should")
+                      ? "Access Denied"
+                      : result.type === "in"
+                        ? "Checked In"
+                        : "Checked Out"}
                   </p>
 
                   <h2 className="mt-2 font-display text-3xl font-bold uppercase">
@@ -320,7 +580,12 @@ function ReceptionCheckInPage() {
                   </p>
 
                   <div className="mt-4 flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="size-4" />
+                    {result.message.includes("Access should") ? (
+                      <XCircle className="size-4 text-destructive" />
+                    ) : (
+                      <CheckCircle2 className="size-4" />
+                    )}
+
                     {result.message}
                   </div>
                 </div>
@@ -331,9 +596,11 @@ function ReceptionCheckInPage() {
           <section className="mt-6 grid gap-4 sm:grid-cols-3">
             <div className="border border-border bg-background p-5 text-center">
               <LogIn className="mx-auto size-5 text-primary" />
+
               <p className="mt-3 text-xs font-extrabold uppercase">
                 First Scan
               </p>
+
               <p className="mt-1 text-xs text-muted-foreground">
                 Checks member in
               </p>
@@ -341,9 +608,11 @@ function ReceptionCheckInPage() {
 
             <div className="border border-border bg-background p-5 text-center">
               <LogOut className="mx-auto size-5 text-primary" />
+
               <p className="mt-3 text-xs font-extrabold uppercase">
                 Next Scan
               </p>
+
               <p className="mt-1 text-xs text-muted-foreground">
                 Checks member out
               </p>
@@ -351,9 +620,11 @@ function ReceptionCheckInPage() {
 
             <div className="border border-border bg-background p-5 text-center">
               <Clock3 className="mx-auto size-5 text-primary" />
+
               <p className="mt-3 text-xs font-extrabold uppercase">
                 Automatic
               </p>
+
               <p className="mt-1 text-xs text-muted-foreground">
                 Attendance is recorded
               </p>
