@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
+  BarChart3,
   CheckCircle2,
   Clock3,
   Loader2,
@@ -321,12 +322,6 @@ function ReceptionCheckInPage() {
     }
   }
 
-  /*
-   * IMPORTANT:
-   * We only change the state here.
-   * The scanner itself starts inside the useEffect below,
-   * after the scanner HTML element has actually been rendered.
-   */
   function startScanner() {
     if (startingScanner || scannerStarted) return;
 
@@ -336,9 +331,6 @@ function ReceptionCheckInPage() {
     setScannerStarted(true);
   }
 
-  /*
-   * Start the actual camera AFTER the scanner element exists in the DOM.
-   */
   useEffect(() => {
     if (!scannerStarted) return;
 
@@ -386,15 +378,11 @@ function ReceptionCheckInPage() {
         if (cancelled) {
           try {
             await scanner.stop();
-          } catch {
-            // Ignore cleanup errors.
-          }
+          } catch {}
 
           try {
             scanner.clear();
-          } catch {
-            // Ignore cleanup errors.
-          }
+          } catch {}
 
           return;
         }
@@ -406,15 +394,11 @@ function ReceptionCheckInPage() {
         if (scannerRef.current) {
           try {
             await scannerRef.current.stop();
-          } catch {
-            // Ignore cleanup errors.
-          }
+          } catch {}
 
           try {
             scannerRef.current.clear();
-          } catch {
-            // Ignore cleanup errors.
-          }
+          } catch {}
 
           scannerRef.current = null;
         }
@@ -452,9 +436,7 @@ function ReceptionCheckInPage() {
           .finally(() => {
             try {
               scannerRef.current?.clear();
-            } catch {
-              // Ignore cleanup errors.
-            }
+            } catch {}
           });
       }
     };
@@ -585,13 +567,28 @@ function ReceptionCheckInPage() {
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="w-full sm:w-auto"
-            >
-              Log Out
-            </Button>
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+              <Link
+                to="/reception-dashboard"
+                className="w-full sm:w-auto"
+              >
+                <Button
+                  variant="outline"
+                  className="w-full"
+                >
+                  <BarChart3 />
+                  Dashboard
+                </Button>
+              </Link>
+
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="w-full sm:w-auto"
+              >
+                Log Out
+              </Button>
+            </div>
           </div>
 
           <section className="border border-border bg-background p-5 shadow-sm sm:p-8">
