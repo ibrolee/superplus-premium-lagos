@@ -2,13 +2,11 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
   Check,
-  ChevronRight,
   Clock3,
   Instagram,
   Mail,
   MapPin,
   Menu,
-  MessageCircle,
   Phone,
   ScanLine,
   X,
@@ -344,6 +342,7 @@ export function MembershipCard({
   );
 }
 
+/* SPA & RECOVERY SERVICE CARD */
 export function ServiceCard({
   service,
 }: {
@@ -385,50 +384,6 @@ export function ServiceCard({
         <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
           <span className="text-xs font-bold uppercase text-muted-foreground">
             Available at Super Plus Fitness
-          </span>
-
-          <Button asChild variant="ghost" size="icon">
-            <Link
-              to="/contact"
-              aria-label={`Enquire about ${service.name}`}
-            >
-              <ArrowRight />
-            </Link>
-          </Button>
-        </div>
-      </div>
-    </article>
-  );
-}
-  service,
-}: {
-  service: RecoveryService;
-}) {
-  return (
-    <article className="group border border-border bg-card">
-      <div className="aspect-[4/3] overflow-hidden">
-        <img
-          src={service.image}
-          alt={`${service.name} at Super Plus Fitness & Spa`}
-          loading="lazy"
-          width={1536}
-          height={1024}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-        />
-      </div>
-
-      <div className="p-5">
-        <h3 className="font-display text-2xl font-bold uppercase">
-          {service.name}
-        </h3>
-
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {service.description}
-        </p>
-
-        <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
-          <span className="text-sm font-bold text-primary">
-            Price coming soon
           </span>
 
           <Button asChild variant="ghost" size="icon">
