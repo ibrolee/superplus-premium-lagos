@@ -77,12 +77,9 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Button asChild size="lg" className="hidden sm:inline-flex">
-            <a
-              href="https://members.superplusfitness.com/pricing-plans/list"
-              rel="noopener noreferrer"
-            >
+            <Link to="/join">
               Join now <ArrowRight />
-            </a>
+            </Link>
           </Button>
 
           <MobileNavbar />
@@ -170,13 +167,12 @@ export function MobileNavbar() {
             </Link>
 
             <Button asChild size="lg">
-              <a
-                href="https://members.superplusfitness.com/pricing-plans/list"
-                rel="noopener noreferrer"
+              <Link
+                to="/join"
                 onClick={() => setOpen(false)}
               >
                 Join now
-              </a>
+              </Link>
             </Button>
           </div>
         </div>
@@ -331,12 +327,9 @@ export function MembershipCard({
         size="lg"
         className="mt-auto"
       >
-        <a
-          href={plan.checkoutUrl}
-          rel="noopener noreferrer"
-        >
+        <Link to={`/join?plan=${plan.id}`}>
           Choose plan <ArrowRight />
-        </a>
+        </Link>
       </Button>
     </article>
   );
@@ -628,30 +621,6 @@ export function FinalCTA() {
   }
 
   return (
-    <section className="border-t bg-primary py-10">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-6 text-center lg:flex-row lg:px-8 lg:text-left">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
-            Ready to get started?
-          </h2>
-
-          <p className="mt-2 max-w-2xl text-primary-foreground/80">
-            Join Super Plus Fitness & Spa and take the next
-            step toward a stronger, healthier you.
-          </p>
-        </div>
-
-        <Button asChild variant="dark" size="lg">
-          <Link to="/join">
-            Join now
-            <ArrowRight />
-          </Link>
-        </Button>
-      </div>
-    </section>
-  );
-}
-  return (
     <section className="bg-primary py-16 text-primary-foreground">
       <div className="section-shell flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
         <h2 className="display-title max-w-3xl text-6xl sm:text-8xl">
@@ -660,12 +629,9 @@ export function FinalCTA() {
 
         <div className="flex shrink-0 flex-wrap gap-3">
           <Button asChild variant="dark" size="lg">
-            <a
-              href="https://members.superplusfitness.com/pricing-plans/list"
-              rel="noopener noreferrer"
-            >
+            <Link to="/join">
               Join now
-            </a>
+            </Link>
           </Button>
 
           <Button asChild variant="inverse" size="lg">
