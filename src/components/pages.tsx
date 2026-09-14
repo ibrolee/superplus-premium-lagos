@@ -53,6 +53,7 @@ export function HomePage() {
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-secondary/55" />
+
         <div className="relative section-shell flex min-h-[calc(100svh-4.5rem)] flex-col justify-end pb-12 pt-28 sm:pb-16">
           <div className="mb-5 flex gap-5 text-[10px] font-bold uppercase text-secondary-foreground/75">
             <span>Shomolu, Lagos</span>
@@ -72,12 +73,9 @@ export function HomePage() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <a
-                href="https://members.superplusfitness.com/pricing-plans/list"
-                rel="noopener noreferrer"
-              >
+              <Link to="/join">
                 Join now <ArrowRight />
-              </a>
+              </Link>
             </Button>
 
             <Button asChild size="lg" variant="inverse">
@@ -645,7 +643,6 @@ export function HmoPage() {
         image={images.facilities}
       />
 
-      {/* PARTNERS */}
       <section className="py-20 sm:py-28">
         <div className="section-shell">
           <SectionHeader
