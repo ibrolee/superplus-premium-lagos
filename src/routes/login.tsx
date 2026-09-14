@@ -13,8 +13,7 @@ export const Route = createFileRoute("/login")({
       },
       {
         name: "description",
-        content:
-          "Access your Super Plus Fitness member account.",
+        content: "Access your Super Plus Fitness member account.",
       },
     ],
   }),
@@ -25,26 +24,86 @@ function LoginRoute() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
+    async function handleAuthCallback() {
+      setLoading(true);
+      setError("");
 
-      if (data.session) {
-        navigate({ to: "/member" });
+      try {
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+
+        /*
+         * Supabase may return a PKCE authorization code after
+         * the user clicks the magic link.
+         */
+        if (code) {
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
+
+          if (exchangeError) {
+            if (active) {
+              setError(
+                "This login link is invalid or has already been used. Please request a new login link.",
+              );
+              setLoading(false);
+            }
+            return;
+          }
+
+          if (active) {
+            setLoading(false);
+            navigate({ to: "/member", replace: true });
+          }
+
+          return;
+        }
+
+        /*
+         * Check whether Supabase already restored the session.
+         * This also handles other supported Supabase auth flows.
+         */
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!active) return;
+
+        if (session) {
+          setLoading(false);
+          navigate({ to: "/member", replace: true });
+          return;
+        }
+
+        setLoading(false);
+      } catch (callbackError) {
+        console.error("Authentication callback error:", callbackError);
+
+        if (active) {
+          setError(
+            "We couldn't complete your login. Please request a new login link.",
+          );
+          setLoading(false);
+        }
       }
-    });
+    }
+
+    handleAuthCallback();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+
       if (session) {
-        navigate({ to: "/member" });
+        navigate({ to: "/member", replace: true });
       }
     });
 
@@ -64,18 +123,18 @@ function LoginRoute() {
       return;
     }
 
-    setLoading(true);
+    setSending(true);
     setError("");
     setSent(false);
 
     const { error: authError } = await supabase.auth.signInWithOtp({
       email: cleanEmail,
       options: {
-        emailRedirectTo: `${window.location.origin}/member`,
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     });
 
-    setLoading(false);
+    setSending(false);
 
     if (authError) {
       setError(authError.message);
@@ -83,6 +142,19 @@ function LoginRoute() {
     }
 
     setSent(true);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-[75vh] bg-muted py-20">
+        <div className="section-shell flex min-h-[50vh] items-center justify-center">
+          <div className="flex items-center gap-3 text-sm font-bold uppercase">
+            <Loader2 className="size-5 animate-spin" />
+            Signing you in...
+          </div>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -99,8 +171,8 @@ function LoginRoute() {
             </h1>
 
             <p className="mt-5 text-sm leading-6 text-muted-foreground">
-              Enter the email address registered with your Super Plus
-              Fitness membership. We'll send you a secure login link.
+              Enter the email address registered with your Super Plus Fitness
+              membership. We'll send you a secure login link.
             </p>
           </div>
 
@@ -121,7 +193,7 @@ function LoginRoute() {
               </p>
 
               <p className="mt-5 text-xs leading-5 text-muted-foreground">
-                Open the link in your email to continue to your member
+                Open the new link in your email to continue to your member
                 account.
               </p>
 
@@ -149,7 +221,7 @@ function LoginRoute() {
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
-                  disabled={loading}
+                  disabled={sending}
                   className="h-13 rounded-md border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
                 />
               </label>
@@ -167,23 +239,24 @@ function LoginRoute() {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={loading}
+                disabled={sending}
               >
-                {loading ? (
+                {sending ? (
                   <>
                     <Loader2 className="animate-spin" />
                     Sending login link...
                   </>
                 ) : (
                   <>
-                    Send login link <ArrowRight />
+                    Send login link
+                    <ArrowRight />
                   </>
                 )}
               </Button>
 
               <p className="text-center text-xs leading-5 text-muted-foreground">
-                No password required. Your login link is secure and
-                expires automatically.
+                No password required. Your login link is secure and expires
+                automatically.
               </p>
             </form>
           )}
