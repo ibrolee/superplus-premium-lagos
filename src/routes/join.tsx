@@ -1,6 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { membershipPlans, formatNaira } from "@/lib/site-data";
 
@@ -16,13 +21,6 @@ function JoinPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  /*
-   * Read ?plan=... from the URL.
-   *
-   * This allows buttons such as:
-   * /join?plan=monthly
-   * to automatically select the correct plan.
-   */
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const planFromUrl = params.get("plan");
@@ -62,10 +60,7 @@ function JoinPage() {
       return;
     }
 
-    if (
-      !trimmedEmail ||
-      !trimmedEmail.includes("@")
-    ) {
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
       setError("Please enter a valid email address.");
       return;
     }
@@ -117,9 +112,6 @@ function JoinPage() {
         );
       }
 
-      /*
-       * Send the customer directly to Paystack.
-       */
       window.location.href = data.authorization_url;
     } catch (err) {
       console.error(
@@ -139,7 +131,6 @@ function JoinPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
       <section className="border-b bg-card">
         <div className="mx-auto max-w-7xl px-6 py-5 lg:px-8">
           <Link
@@ -152,7 +143,6 @@ function JoinPage() {
         </div>
       </section>
 
-      {/* Main */}
       <section className="px-6 py-10 sm:py-14 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-2xl text-center">
@@ -171,7 +161,6 @@ function JoinPage() {
           </div>
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_420px] lg:items-start">
-            {/* Plans */}
             <div>
               <div className="mb-4">
                 <h2 className="text-xl font-semibold">
@@ -258,7 +247,6 @@ function JoinPage() {
               </div>
             </div>
 
-            {/* Checkout */}
             <div className="lg:sticky lg:top-6">
               <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-7">
                 <div>
@@ -398,4 +386,25 @@ function JoinPage() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Connecting to Paystack...
                       </>
-                    ) :
+                    ) : (
+                      <>
+                        Continue to Payment
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-xs leading-5 text-muted-foreground">
+                    Your payment is processed securely by
+                    Paystack. You will be redirected to
+                    Paystack to complete your payment.
+                  </p>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
