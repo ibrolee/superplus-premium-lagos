@@ -10,10 +10,12 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
+  CreditCard,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { membershipPlans, formatNaira } from "@/lib/site-data";
 
 export const Route = createFileRoute("/member")({
   head: () => ({
@@ -85,6 +87,10 @@ function MemberDashboard() {
   const [member, setMember] = useState<any>(null);
   const [membership, setMembership] = useState<any>(null);
   const [error, setError] = useState("");
+  const [showPlans, setShowPlans] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -104,11 +110,12 @@ function MemberDashboard() {
         return;
       }
 
-      const { data: memberData, error: memberError } = await supabase
-        .from("members")
-        .select("*")
-        .eq("auth_user_id", session.user.id)
-        .maybeSingle();
+      const { data: memberData, error: memberError } =
+        await supabase
+          .from("members")
+          .select("*")
+          .eq("auth_user_id", session.user.id)
+          .maybeSingle();
 
       if (!active) return;
 
@@ -146,7 +153,9 @@ function MemberDashboard() {
       const validMembership =
         membershipData?.find((item) =>
           isMembershipValidToday(item),
-        ) || membershipData?.[0] || null;
+        ) ||
+        membershipData?.[0] ||
+        null;
 
       setMembership(validMembership);
       setLoading(false);
@@ -171,6 +180,72 @@ function MemberDashboard() {
   async function handleLogout() {
     await supabase.auth.signOut();
     navigate({ to: "/login" });
+  }
+
+  async function handlePayment() {
+    if (!selectedPlan) {
+      setPaymentError("Please select a membership plan.");
+      return;
+    }
+
+    setPaymentLoading(true);
+    setPaymentError("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        navigate({ to: "/login" });
+        return;
+      }
+
+      const { data, error: functionError } =
+        await supabase.functions.invoke(
+          "initialize-payment",
+          {
+            body: {
+              planId: selectedPlan,
+            },
+          },
+        );
+
+      if (functionError) {
+        console.error(
+          "Payment initialization error:",
+          functionError,
+        );
+
+        throw new Error(
+          functionError.message ||
+            "Unable to start payment.",
+        );
+      }
+
+      if (!data?.authorization_url) {
+        throw new Error(
+          data?.error ||
+            "Unable to create Paystack payment.",
+        );
+      }
+
+      window.location.href =
+        data.authorization_url;
+    } catch (paymentException) {
+      console.error(
+        "Payment error:",
+        paymentException,
+      );
+
+      setPaymentError(
+        paymentException instanceof Error
+          ? paymentException.message
+          : "Unable to start payment. Please try again.",
+      );
+
+      setPaymentLoading(false);
+    }
   }
 
   if (loading) {
@@ -206,7 +281,10 @@ function MemberDashboard() {
                 <Button>Back to Login</Button>
               </Link>
 
-              <Button variant="outline" onClick={handleLogout}>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+              >
                 Log Out
               </Button>
             </div>
@@ -240,7 +318,8 @@ function MemberDashboard() {
     membership?.expiration_date ||
     null;
 
-  const isActive = isMembershipValidToday(membership);
+  const isActive =
+    isMembershipValidToday(membership);
 
   function formatDate(value: string | null) {
     if (!value) return "Not available";
@@ -249,32 +328,52 @@ function MemberDashboard() {
 
     if (!dateOnly) return "Not available";
 
-    const [year, month, day] = dateOnly.split("-").map(Number);
+    const [year, month, day] =
+      dateOnly.split("-").map(Number);
 
-    const date = new Date(year, month - 1, day);
+    const date = new Date(
+      year,
+      month - 1,
+      day,
+    );
 
-    if (Number.isNaN(date.getTime())) return "Not available";
+    if (Number.isNaN(date.getTime())) {
+      return "Not available";
+    }
 
-    return date.toLocaleDateString("en-NG", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
+    return date.toLocaleDateString(
+      "en-NG",
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      },
+    );
   }
 
-  function calculateDaysRemaining(value: string | null) {
+  function calculateDaysRemaining(
+    value: string | null,
+  ) {
     if (!value) return null;
 
-    const dateOnly = getDateOnly(value);
+    const dateOnly =
+      getDateOnly(value);
 
     if (!dateOnly) return null;
 
-    const [year, month, day] = dateOnly.split("-").map(Number);
+    const [year, month, day] =
+      dateOnly.split("-").map(Number);
 
-    const expiry = new Date(year, month - 1, day);
-    const todayParts = getLocalDateString()
-      .split("-")
-      .map(Number);
+    const expiry = new Date(
+      year,
+      month - 1,
+      day,
+    );
+
+    const todayParts =
+      getLocalDateString()
+        .split("-")
+        .map(Number);
 
     const today = new Date(
       todayParts[0],
@@ -283,11 +382,15 @@ function MemberDashboard() {
     );
 
     const difference =
-      expiry.getTime() - today.getTime();
+      expiry.getTime() -
+      today.getTime();
 
     return Math.max(
       0,
-      Math.ceil(difference / (1000 * 60 * 60 * 24)),
+      Math.ceil(
+        difference /
+          (1000 * 60 * 60 * 24),
+      ),
     );
   }
 
@@ -305,12 +408,14 @@ function MemberDashboard() {
             </p>
 
             <h1 className="display-title text-5xl sm:text-6xl">
-              Welcome, {fullName.split(" ")[0]}
+              Welcome,{" "}
+              {fullName.split(" ")[0]}
             </h1>
 
             <p className="mt-4 max-w-xl text-sm leading-6 text-muted-foreground">
-              Manage your membership and access your gym QR code from your
-              member account.
+              Manage your membership and
+              access your gym QR code from
+              your member account.
             </p>
           </div>
 
@@ -351,7 +456,9 @@ function MemberDashboard() {
                   <AlertCircle className="size-4" />
                 )}
 
-                {isActive ? "Active" : "Expired"}
+                {isActive
+                  ? "Active"
+                  : "Expired"}
               </div>
             </div>
 
@@ -391,11 +498,15 @@ function MemberDashboard() {
                 </div>
 
                 <p className="mt-3 font-bold">
-                  {isActive && daysRemaining !== null
-                    ? daysRemaining === 0
+                  {isActive &&
+                  daysRemaining !==
+                    null
+                    ? daysRemaining ===
+                      0
                       ? "Expires today"
                       : `${daysRemaining} ${
-                          daysRemaining === 1
+                          daysRemaining ===
+                          1
                             ? "day"
                             : "days"
                         }`
@@ -405,22 +516,148 @@ function MemberDashboard() {
             </div>
 
             <div className="mt-6">
-              <Link
-                to="/pricing"
-                className="block"
+              <Button
+                variant={
+                  isActive
+                    ? "outline"
+                    : "default"
+                }
+                size="lg"
+                className="w-full"
+                onClick={() => {
+                  setShowPlans(
+                    (current) =>
+                      !current,
+                  );
+                  setPaymentError("");
+                }}
               >
-                <Button
-                  variant={isActive ? "outline" : "default"}
-                  size="lg"
-                  className="w-full"
-                >
-                  <RefreshCw />
-                  {isActive
+                <RefreshCw />
+                {showPlans
+                  ? "Close Plans"
+                  : isActive
                     ? "Renew / Extend Membership"
                     : "Renew Membership"}
-                </Button>
-              </Link>
+              </Button>
             </div>
+
+            {showPlans && (
+              <div className="mt-6 border-t border-border pt-6">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
+                    Choose Your Plan
+                  </p>
+
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Select a plan below. Payment
+                    is processed securely by
+                    Paystack.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  {membershipPlans.map(
+                    (plan) => {
+                      const isSelected =
+                        selectedPlan ===
+                        plan.id;
+
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() =>
+                            setSelectedPlan(
+                              plan.id,
+                            )
+                          }
+                          className={`w-full border p-4 text-left transition ${
+                            isSelected
+                              ? "border-primary bg-primary/5"
+                              : "border-border bg-background hover:border-primary/50"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-display text-lg font-bold uppercase">
+                                {plan.name}
+                              </p>
+
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {plan.duration}
+                              </p>
+                            </div>
+
+                            <p className="shrink-0 font-display text-lg font-bold">
+                              {formatNaira(
+                                plan.price,
+                              )}
+                            </p>
+                          </div>
+
+                          {isSelected && (
+                            <div className="mt-3 flex items-center gap-2 text-xs font-extrabold uppercase text-primary">
+                              <CheckCircle2 className="size-4" />
+                              Selected
+                            </div>
+                          )}
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+
+                {selectedPlan && (
+                  <div className="mt-5 border border-border bg-muted p-4">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="size-5 text-primary" />
+
+                      <div>
+                        <p className="text-xs font-extrabold uppercase">
+                          Payment
+                        </p>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          You will be redirected
+                          to Paystack to complete
+                          your payment.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {paymentError && (
+                  <div className="mt-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
+                    {paymentError}
+                  </div>
+                )}
+
+                <Button
+                  size="lg"
+                  className="mt-5 w-full"
+                  disabled={
+                    !selectedPlan ||
+                    paymentLoading
+                  }
+                  onClick={
+                    handlePayment
+                  }
+                >
+                  {paymentLoading ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Preparing Payment...
+                    </>
+                  ) : (
+                    <>
+                      Continue to Paystack
+                      <CreditCard />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </section>
 
           {/* QR */}
@@ -434,12 +671,19 @@ function MemberDashboard() {
             </h2>
 
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              Your unique member QR code is used to check in and out of the
+              Your unique member QR code is
+              used to check in and out of the
               gym.
             </p>
 
-            <Link to="/my-qr" className="mt-7 block">
-              <Button size="lg" className="w-full">
+            <Link
+              to="/my-qr"
+              className="mt-7 block"
+            >
+              <Button
+                size="lg"
+                className="w-full"
+              >
                 Open My QR Code
                 <QrCode />
               </Button>
@@ -462,7 +706,9 @@ function MemberDashboard() {
               <p className="text-xs font-extrabold uppercase text-muted-foreground">
                 Full Name
               </p>
-              <p className="mt-2 font-bold">{fullName}</p>
+              <p className="mt-2 font-bold">
+                {fullName}
+              </p>
             </div>
 
             <div>
@@ -470,7 +716,8 @@ function MemberDashboard() {
                 Email
               </p>
               <p className="mt-2 break-all font-bold">
-                {member?.email || "Not available"}
+                {member?.email ||
+                  "Not available"}
               </p>
             </div>
 
@@ -479,7 +726,8 @@ function MemberDashboard() {
                 Phone
               </p>
               <p className="mt-2 font-bold">
-                {member?.phone || "Not available"}
+                {member?.phone ||
+                  "Not available"}
               </p>
             </div>
           </div>
@@ -487,8 +735,10 @@ function MemberDashboard() {
 
         <div className="mt-8 border border-border bg-background p-6 text-center">
           <p className="text-xs leading-5 text-muted-foreground">
-            Need help with your membership? Visit Super Plus Fitness & Spa at
-            No. 105 Apata Street, Shomolu, Lagos, or contact us on
+            Need help with your membership?
+            Visit Super Plus Fitness & Spa at
+            No. 105 Apata Street, Shomolu,
+            Lagos, or contact us on
             07054263170.
           </p>
         </div>
