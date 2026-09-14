@@ -72,9 +72,12 @@ export function HomePage() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
-              <Link to="/membership">
+              <a
+                href="https://members.superplusfitness.com/pricing-plans/list"
+                rel="noopener noreferrer"
+              >
                 Join now <ArrowRight />
-              </Link>
+              </a>
             </Button>
 
             <Button asChild size="lg" variant="inverse">
