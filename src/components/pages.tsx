@@ -830,7 +830,7 @@ export function MemberPage() {
   );
 }
 
-/* UPDATED MY QR CODE */
+/* MY QR CODE */
 export function MyQrPage() {
   return (
     <UtilityPage
@@ -855,102 +855,27 @@ export function MyQrPage() {
   );
 }
 
+/* RECEPTION CHECK-IN */
 export function ReceptionPage() {
-  const [state, setState] = useState<
-    "empty" | "active" | "expired" | "invalid"
-  >("empty");
-
   return (
     <UtilityPage
       title="Reception check-in"
       copy="Scan a member QR code to verify access."
     >
-      <IntegrationNotice>
-        Scanner hardware and member verification require the existing check-in
-        system connection.
-      </IntegrationNotice>
+      <div className="grid gap-4">
+        <Button asChild size="lg">
+          <a
+            href="https://members.superplusfitness.com/reception-check-in"
+            rel="noopener noreferrer"
+          >
+            Open reception check-in <ScanLine />
+          </a>
+        </Button>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="grid min-h-96 place-items-center border-2 border-dashed border-border bg-muted text-center">
-          <div>
-            <ScanLine className="mx-auto size-20 text-primary" />
-
-            <h2 className="mt-5 font-display text-4xl font-bold uppercase">
-              Scan member QR code
-            </h2>
-
-            <p className="mt-2 text-sm text-muted-foreground">
-              Scanner connection pending
-            </p>
-          </div>
-        </div>
-
-        <div className="border border-border p-6">
-          <p className="text-xs font-bold uppercase text-muted-foreground">
-            Preview states
-          </p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {(["empty", "active", "expired", "invalid"] as const).map(
-              (item) => (
-                <Button
-                  key={item}
-                  variant={state === item ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setState(item)}
-                >
-                  {item}
-                </Button>
-              ),
-            )}
-          </div>
-
-          {state === "empty" ? (
-            <p className="mt-16 text-center text-muted-foreground">
-              Member information appears after a successful scan.
-            </p>
-          ) : (
-            <div className="mt-10">
-              <span
-                className={`inline-block px-3 py-1 text-xs font-bold uppercase ${
-                  state === "active"
-                    ? "bg-green-100 text-green-800"
-                    : state === "expired"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-red-100 text-red-800"
-                }`}
-              >
-                {state}
-              </span>
-
-              <dl className="mt-7 space-y-5 text-sm">
-                <div>
-                  <dt className="text-muted-foreground">Member name</dt>
-                  <dd className="font-bold">Sample display</dd>
-                </div>
-
-                <div>
-                  <dt className="text-muted-foreground">
-                    Membership type
-                  </dt>
-                  <dd className="font-bold">Connected system data</dd>
-                </div>
-
-                <div>
-                  <dt className="text-muted-foreground">Expiry date</dt>
-                  <dd className="font-bold">—</dd>
-                </div>
-
-                <div>
-                  <dt className="text-muted-foreground">
-                    Check-in status
-                  </dt>
-                  <dd className="font-bold">Preview only</dd>
-                </div>
-              </dl>
-            </div>
-          )}
-        </div>
+        <p className="text-sm text-muted-foreground">
+          Reception staff can use the existing Super Plus Fitness check-in
+          system.
+        </p>
       </div>
     </UtilityPage>
   );
