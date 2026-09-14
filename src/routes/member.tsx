@@ -9,6 +9,7 @@ import {
   UserRound,
   Loader2,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,53 @@ export const Route = createFileRoute("/member")({
   }),
   component: MemberDashboard,
 });
+
+function getLocalDateString() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getDateOnly(value: unknown) {
+  if (!value) return null;
+
+  const stringValue = String(value).trim();
+
+  if (!stringValue) return null;
+
+  return stringValue.slice(0, 10);
+}
+
+function isMembershipValidToday(membership: any) {
+  if (!membership) return false;
+
+  const startDate = getDateOnly(
+    membership?.start_date ||
+      membership?.starts_at ||
+      membership?.started_at ||
+      null,
+  );
+
+  const endDate = getDateOnly(
+    membership?.end_date ||
+      membership?.expiry_date ||
+      membership?.expires_at ||
+      membership?.expiration_date ||
+      null,
+  );
+
+  if (!startDate || !endDate) {
+    return false;
+  }
+
+  const today = getLocalDateString();
+
+  return startDate <= today && today <= endDate;
+}
 
 function MemberDashboard() {
   const navigate = useNavigate();
@@ -80,18 +128,28 @@ function MemberDashboard() {
 
       setMember(memberData);
 
-      const { data: membershipData } = await supabase
-        .from("memberships")
-        .select("*")
-        .eq("member_id", memberData.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: membershipData, error: membershipError } =
+        await supabase
+          .from("memberships")
+          .select("*")
+          .eq("member_id", memberData.id)
+          .order("created_at", { ascending: false });
 
-      if (active) {
-        setMembership(membershipData ?? null);
+      if (!active) return;
+
+      if (membershipError) {
+        setError(membershipError.message);
         setLoading(false);
+        return;
       }
+
+      const validMembership =
+        membershipData?.find((item) =>
+          isMembershipValidToday(item),
+        ) || membershipData?.[0] || null;
+
+      setMembership(validMembership);
+      setLoading(false);
     }
 
     loadMember();
@@ -182,15 +240,18 @@ function MemberDashboard() {
     membership?.expiration_date ||
     null;
 
-  const isActive =
-    membership?.status === "active" ||
-    membership?.is_active === true ||
-    (expiryDate ? new Date(expiryDate) >= new Date() : false);
+  const isActive = isMembershipValidToday(membership);
 
   function formatDate(value: string | null) {
     if (!value) return "Not available";
 
-    const date = new Date(value);
+    const dateOnly = getDateOnly(value);
+
+    if (!dateOnly) return "Not available";
+
+    const [year, month, day] = dateOnly.split("-").map(Number);
+
+    const date = new Date(year, month - 1, day);
 
     if (Number.isNaN(date.getTime())) return "Not available";
 
@@ -200,6 +261,39 @@ function MemberDashboard() {
       year: "numeric",
     });
   }
+
+  function calculateDaysRemaining(value: string | null) {
+    if (!value) return null;
+
+    const dateOnly = getDateOnly(value);
+
+    if (!dateOnly) return null;
+
+    const [year, month, day] = dateOnly.split("-").map(Number);
+
+    const expiry = new Date(year, month - 1, day);
+    const todayParts = getLocalDateString()
+      .split("-")
+      .map(Number);
+
+    const today = new Date(
+      todayParts[0],
+      todayParts[1] - 1,
+      todayParts[2],
+    );
+
+    const difference =
+      expiry.getTime() - today.getTime();
+
+    return Math.max(
+      0,
+      Math.ceil(difference / (1000 * 60 * 60 * 24)),
+    );
+  }
+
+  const daysRemaining = isActive
+    ? calculateDaysRemaining(expiryDate)
+    : 0;
 
   return (
     <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
@@ -251,12 +345,17 @@ function MemberDashboard() {
                     : "border-destructive/30 bg-destructive/10 text-destructive"
                 }`}
               >
-                <CheckCircle2 className="size-4" />
-                {isActive ? "Active" : "Inactive"}
+                {isActive ? (
+                  <CheckCircle2 className="size-4" />
+                ) : (
+                  <AlertCircle className="size-4" />
+                )}
+
+                {isActive ? "Active" : "Expired"}
               </div>
             </div>
 
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <div className="border border-border p-5">
                 <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
                   <CalendarDays className="size-4" />
@@ -278,6 +377,49 @@ function MemberDashboard() {
                   {formatDate(expiryDate)}
                 </p>
               </div>
+
+              <div
+                className={`border p-5 ${
+                  isActive
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-destructive/30 bg-destructive/5"
+                }`}
+              >
+                <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground">
+                  <Clock3 className="size-4" />
+                  Time Remaining
+                </div>
+
+                <p className="mt-3 font-bold">
+                  {isActive && daysRemaining !== null
+                    ? daysRemaining === 0
+                      ? "Expires today"
+                      : `${daysRemaining} ${
+                          daysRemaining === 1
+                            ? "day"
+                            : "days"
+                        }`
+                    : "Membership expired"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <Link
+                to="/pricing"
+                className="block"
+              >
+                <Button
+                  variant={isActive ? "outline" : "default"}
+                  size="lg"
+                  className="w-full"
+                >
+                  <RefreshCw />
+                  {isActive
+                    ? "Renew / Extend Membership"
+                    : "Renew Membership"}
+                </Button>
+              </Link>
             </div>
           </section>
 
