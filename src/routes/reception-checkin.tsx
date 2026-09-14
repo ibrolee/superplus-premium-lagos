@@ -36,6 +36,65 @@ type ScanResult = {
   message: string;
 };
 
+function getLocalDateString() {
+  const now = new Date();
+
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getDateOnly(value: unknown) {
+  if (!value) return null;
+
+  const stringValue = String(value).trim();
+
+  if (!stringValue) return null;
+
+  // PostgreSQL date/timestamp values begin with YYYY-MM-DD.
+  return stringValue.slice(0, 10);
+}
+
+function getMembershipPlanName(membership: any) {
+  return (
+    membership?.plan_name ||
+    membership?.name ||
+    membership?.plan ||
+    "Membership"
+  );
+}
+
+function isMembershipValidToday(membership: any) {
+  if (!membership) return false;
+
+  const startDate = getDateOnly(
+    membership?.start_date ||
+      membership?.starts_at ||
+      membership?.start_at ||
+      null,
+  );
+
+  const endDate = getDateOnly(
+    membership?.end_date ||
+      membership?.expiry_date ||
+      membership?.expires_at ||
+      membership?.expiration_date ||
+      null,
+  );
+
+  if (!startDate || !endDate) {
+    return false;
+  }
+
+  const today = getLocalDateString();
+
+  // Inclusive date range:
+  // start_date <= today <= end_date
+  return startDate <= today && today <= endDate;
+}
+
 function ReceptionCheckInPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const processingRef = useRef(false);
@@ -202,38 +261,33 @@ function ReceptionCheckInPage() {
         );
       }
 
-      const { data: membership, error: membershipError } =
+      /*
+       * Get the member's memberships.
+       *
+       * We intentionally do NOT rely on the status field here.
+       * Access is determined by the actual membership dates.
+       */
+      const { data: memberships, error: membershipError } =
         await supabase
           .from("memberships")
           .select("*")
           .eq("member_id", member.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .order("created_at", { ascending: false });
 
       if (membershipError) {
         throw new Error(membershipError.message);
       }
 
-      const expiryDate =
-        membership?.end_date ||
-        membership?.expiry_date ||
-        membership?.expires_at ||
-        membership?.expiration_date ||
-        null;
+      const validMembership =
+        memberships?.find((membership) =>
+          isMembershipValidToday(membership),
+        ) || null;
 
-      const membershipActive =
-        membership?.status === "active" ||
-        membership?.is_active === true ||
-        (expiryDate ? new Date(expiryDate) >= new Date() : false);
+      const planName = getMembershipPlanName(
+        validMembership || memberships?.[0],
+      );
 
-      const planName =
-        membership?.plan_name ||
-        membership?.name ||
-        membership?.plan ||
-        "Membership";
-
-      if (!membershipActive) {
+      if (!validMembership) {
         setResult({
           type: "denied",
           memberName: member.full_name || "Member",
