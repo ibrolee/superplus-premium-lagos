@@ -58,21 +58,25 @@ export function HomePage() {
             <span>Shomolu, Lagos</span>
             <span>Fitness • Spa • Recovery</span>
           </div>
+
           <h1 className="display-title max-w-5xl text-7xl sm:text-9xl lg:text-[9rem]">
             Build stronger.
             <br />
             <span className="text-primary">Live better.</span>
           </h1>
+
           <p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/80 sm:text-lg">
             Modern fitness, personal training, spa and recovery — all under
             one roof in Shomolu, Lagos.
           </p>
+
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link to="/membership">
                 Join now <ArrowRight />
               </Link>
             </Button>
+
             <Button asChild size="lg" variant="inverse">
               <Link to="/membership">Explore membership</Link>
             </Button>
@@ -87,6 +91,7 @@ export function HomePage() {
             title="More than a gym."
             copy="Super Plus Fitness brings training, modern equipment, personal coaching, spa and recovery services together in one complete fitness and wellness destination."
           />
+
           <div className="mt-12 grid gap-px bg-border md:grid-cols-3">
             {[
               {
@@ -110,9 +115,11 @@ export function HomePage() {
                 className="bg-background p-7 sm:p-9"
               >
                 <item.icon className="size-8 text-primary" />
+
                 <h3 className="mt-16 font-display text-4xl font-bold uppercase">
                   {item.title}
                 </h3>
+
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {item.text}
                 </p>
@@ -136,12 +143,14 @@ export function HomePage() {
               }
               inverse
             />
+
             <Button asChild variant="inverse" size="lg">
               <Link to="/facilities">
                 View facilities <ArrowRight />
               </Link>
             </Button>
           </div>
+
           <div className="mt-12">
             <FacilityGrid limit={6} />
           </div>
@@ -156,10 +165,12 @@ export function HomePage() {
               title="Find your plan."
               copy="Flexible gym, long-term and premium options built around how you train."
             />
+
             <Button asChild variant="outline" size="lg">
               <Link to="/membership">View all memberships</Link>
             </Button>
           </div>
+
           <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {preview.map(
               (plan) =>
@@ -197,11 +208,13 @@ export function HomePage() {
             }
             copy="A dedicated recovery experience that works alongside your training — because progress happens between sessions too."
           />
+
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {recoveryServices.slice(0, 3).map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
           </div>
+
           <Button asChild size="lg" className="mt-8">
             <Link to="/spa-recovery">Explore spa & recovery</Link>
           </Button>
@@ -220,6 +233,7 @@ export function HomePage() {
               </>
             }
           />
+
           <div className="mt-12 grid gap-4 md:grid-cols-3">
             {testimonials.map((item, index) => (
               <blockquote
@@ -229,12 +243,14 @@ export function HomePage() {
                 <p className="font-display text-2xl font-semibold leading-tight">
                   “{item.quote}”
                 </p>
+
                 <footer className="mt-10 text-sm">
                   <strong>{item.name}</strong>
                   <span className="block text-muted-foreground">
                     {item.detail}
                   </span>
                 </footer>
+
                 <span className="mt-8 block text-xs font-bold text-primary">
                   0{index + 1}
                 </span>
@@ -258,6 +274,7 @@ export function HomePage() {
             copy="Super Plus Fitness works with HMOs and organizations to provide accessible fitness and wellness services for their members and teams."
             inverse
           />
+
           <Button
             asChild
             size="lg"
@@ -301,6 +318,7 @@ function Split({
         height={1024}
         className="h-full min-h-[28rem] w-full object-cover"
       />
+
       <div className="flex items-center px-6 py-16 sm:px-12 lg:px-16">
         <div>
           <SectionHeader
@@ -309,6 +327,7 @@ function Split({
             copy={copy}
             inverse
           />
+
           <Button asChild size="lg" className="mt-8">
             <Link to={to}>
               {button} <ArrowRight />
@@ -322,6 +341,7 @@ function Split({
 
 export function MembershipPage() {
   const [filter, setFilter] = useState("All");
+
   const filters = [
     "All",
     "Gym",
@@ -466,6 +486,7 @@ export function FacilitiesPage() {
             title="Everything in its place."
             copy="Every image can be updated centrally as the facility evolves, without changing this editorial layout."
           />
+
           <div className="mt-12">
             <FacilityGrid />
           </div>
@@ -615,6 +636,7 @@ export function HmoPage() {
                   className="border border-border bg-background p-5"
                 >
                   <Icon className="text-primary" />
+
                   <p className="mt-8 font-bold">
                     {
                       [
@@ -658,6 +680,7 @@ export function ContactPage() {
             title="We’re here to help."
             copy="For the fastest response, call or message us on WhatsApp during opening hours."
           />
+
           <ContactForm />
         </div>
       </section>
@@ -688,6 +711,7 @@ function InfoBand({
               <span className="font-display text-4xl font-bold text-primary">
                 0{index + 1}
               </span>
+
               <strong className="uppercase">{item}</strong>
             </div>
           ))}
@@ -715,6 +739,7 @@ function Process({
               <span className="font-display text-5xl font-bold text-primary">
                 0{index + 1}
               </span>
+
               <h3 className="mt-12 font-display text-2xl font-bold uppercase">
                 {item}
               </h3>
@@ -726,7 +751,7 @@ function Process({
   );
 }
 
-/* UPDATED MEMBER LOGIN */
+/* MEMBER LOGIN */
 export function LoginPage() {
   return (
     <UtilityPage
@@ -765,6 +790,7 @@ export function MemberPage() {
           <span className="text-xs font-bold uppercase text-muted-foreground">
             Membership status
           </span>
+
           <p className="mt-2 font-display text-3xl font-bold uppercase">
             Awaiting connection
           </p>
@@ -774,6 +800,7 @@ export function MemberPage() {
           <span className="text-xs font-bold uppercase text-muted-foreground">
             Expiry date
           </span>
+
           <p className="mt-2 font-display text-3xl font-bold uppercase">
             —
           </p>
@@ -803,16 +830,26 @@ export function MemberPage() {
   );
 }
 
+/* UPDATED MY QR CODE */
 export function MyQrPage() {
   return (
     <UtilityPage
       title="My QR code"
-      copy="Present this screen at reception for a fast check-in."
+      copy="Access your personal membership QR code for fast check-in at reception."
     >
-      <IntegrationNotice />
+      <div className="grid gap-4">
+        <Button asChild size="lg">
+          <a
+            href="https://members.superplusfitness.com/membership-qr-code"
+            rel="noopener noreferrer"
+          >
+            Open my QR code <ScanLine />
+          </a>
+        </Button>
 
-      <div className="mt-6">
-        <QRPreview large />
+        <p className="text-sm text-muted-foreground">
+          You may be asked to log in before your personal QR code is displayed.
+        </p>
       </div>
     </UtilityPage>
   );
