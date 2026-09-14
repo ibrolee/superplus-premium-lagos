@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { membershipPlans, formatNaira } from "@/lib/site-data";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/join")({
   component: JoinPage,
@@ -73,39 +74,32 @@ function JoinPage() {
     setLoading(true);
 
     try {
-      const supabaseUrl =
-        import.meta.env.VITE_SUPABASE_URL;
+      const { data, error: functionError } =
+        await supabase.functions.invoke(
+          "initialize-public-payment",
+          {
+            body: {
+              planId: selectedPlan.id,
+              fullName: trimmedName,
+              email: trimmedEmail,
+              phone: trimmedPhone,
+            },
+          },
+        );
 
-      const supabaseAnonKey =
-        import.meta.env.VITE_SUPABASE_ANON_KEY;
+      if (functionError) {
+        console.error(
+          "Public payment function error:",
+          functionError,
+        );
 
-      if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error(
-          "Payment system configuration is missing.",
+          functionError.message ||
+            "Unable to start payment. Please try again.",
         );
       }
 
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/initialize-public-payment`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-          },
-          body: JSON.stringify({
-            planId: selectedPlan.id,
-            fullName: trimmedName,
-            email: trimmedEmail,
-            phone: trimmedPhone,
-          }),
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data?.authorization_url) {
+      if (!data?.authorization_url) {
         throw new Error(
           data?.error ||
             "Unable to start payment. Please try again.",
