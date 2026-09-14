@@ -88,9 +88,12 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <Button asChild size="lg" className="hidden sm:inline-flex">
-            <Link to="/membership">
+            <a
+              href="https://members.superplusfitness.com/pricing-plans/list"
+              rel="noopener noreferrer"
+            >
               Join now <ArrowRight />
-            </Link>
+            </a>
           </Button>
 
           <MobileNavbar />
@@ -178,12 +181,13 @@ export function MobileNavbar() {
             </Link>
 
             <Button asChild size="lg">
-              <Link
-                to="/membership"
+              <a
+                href="https://members.superplusfitness.com/pricing-plans/list"
+                rel="noopener noreferrer"
                 onClick={() => setOpen(false)}
               >
                 Join now
-              </Link>
+              </a>
             </Button>
           </div>
         </div>
@@ -623,7 +627,12 @@ export function FinalCTA() {
 
         <div className="flex shrink-0 flex-wrap gap-3">
           <Button asChild variant="dark" size="lg">
-            <Link to="/membership">Join now</Link>
+            <a
+              href="https://members.superplusfitness.com/pricing-plans/list"
+              rel="noopener noreferrer"
+            >
+              Join now
+            </a>
           </Button>
 
           <Button asChild variant="inverse" size="lg">
