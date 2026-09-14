@@ -1,6 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, QrCode, UserRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  Download,
+  Loader2,
+  QrCode,
+  UserRound,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
@@ -23,10 +29,12 @@ export const Route = createFileRoute("/my-qr")({
 
 function MyQrPage() {
   const navigate = useNavigate();
+  const qrRef = useRef<HTMLDivElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
   const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -86,6 +94,99 @@ function MyQrPage() {
       active = false;
     };
   }, [navigate]);
+
+  async function downloadQrCode() {
+    if (!qrRef.current || !member?.qr_token) return;
+
+    setDownloading(true);
+
+    try {
+      const svg = qrRef.current.querySelector("svg");
+
+      if (!svg) {
+        throw new Error("QR code could not be prepared.");
+      }
+
+      const serializer = new XMLSerializer();
+      const svgString = serializer.serializeToString(svg);
+
+      const svgBlob = new Blob([svgString], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+
+      const url = URL.createObjectURL(svgBlob);
+      const image = new Image();
+
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const padding = 80;
+        const size = 900;
+
+        canvas.width = size + padding * 2;
+        canvas.height = size + padding * 2 + 100;
+
+        const context = canvas.getContext("2d");
+
+        if (!context) {
+          URL.revokeObjectURL(url);
+          setDownloading(false);
+          return;
+        }
+
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        context.drawImage(
+          image,
+          padding,
+          padding,
+          size,
+          size,
+        );
+
+        context.fillStyle = "#000000";
+        context.font = "bold 32px Arial";
+        context.textAlign = "center";
+        context.fillText(
+          member.full_name || "Super Plus Fitness Member",
+          canvas.width / 2,
+          size + padding + 65,
+        );
+
+        canvas.toBlob((blob) => {
+          URL.revokeObjectURL(url);
+
+          if (!blob) {
+            setDownloading(false);
+            return;
+          }
+
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+
+          link.href = downloadUrl;
+          link.download = "super-plus-fitness-qr-code.png";
+
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+
+          URL.revokeObjectURL(downloadUrl);
+          setDownloading(false);
+        }, "image/png");
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        setDownloading(false);
+      };
+
+      image.src = url;
+    } catch (downloadError) {
+      console.error("QR download error:", downloadError);
+      setDownloading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -156,7 +257,10 @@ function MyQrPage() {
               gym.
             </p>
 
-            <div className="mx-auto mt-8 flex w-fit items-center justify-center border border-border bg-white p-5">
+            <div
+              ref={qrRef}
+              className="mx-auto mt-8 flex w-fit items-center justify-center border border-border bg-white p-5"
+            >
               <QRCodeSVG
                 value={member.qr_token}
                 size={260}
@@ -164,6 +268,26 @@ function MyQrPage() {
                 includeMargin
               />
             </div>
+
+            <Button
+              type="button"
+              size="lg"
+              className="mt-6 w-full"
+              onClick={downloadQrCode}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <>
+                  <Loader2 className="animate-spin" />
+                  Preparing QR Code...
+                </>
+              ) : (
+                <>
+                  <Download />
+                  Download QR Code
+                </>
+              )}
+            </Button>
 
             <div className="mt-7 border border-border bg-muted p-5">
               <div className="flex items-center justify-center gap-2">
@@ -181,8 +305,9 @@ function MyQrPage() {
 
             <div className="mt-7 border border-primary/20 bg-primary/5 p-4">
               <p className="text-xs leading-5 text-muted-foreground">
-                Keep this QR code on your phone. Reception will scan it to
-                record your gym entry and exit.
+                Download this QR code and save it to your phone. You can then
+                show the saved image to reception whenever you visit the gym.
+                You do not need to log in again just to access your QR code.
               </p>
             </div>
           </section>
