@@ -161,7 +161,9 @@ function ReceptionCheckInPage() {
       scannerRef.current = null;
     }
 
+    processingRef.current = false;
     setScannerStarted(false);
+    setStartingScanner(false);
   }
 
   async function handleLogout() {
@@ -319,77 +321,127 @@ function ReceptionCheckInPage() {
     }
   }
 
-  async function startScanner() {
+  /*
+   * IMPORTANT:
+   * We only change the state here.
+   * The scanner itself starts inside the useEffect below,
+   * after the scanner HTML element has actually been rendered.
+   */
+  function startScanner() {
     if (startingScanner || scannerStarted) return;
 
-    setStartingScanner(true);
     setError("");
     setResult(null);
-
-    try {
-      if (!window.isSecureContext) {
-        throw new Error(
-          "Camera access requires a secure HTTPS connection.",
-        );
-      }
-
-      const scanner = new Html5Qrcode("reception-qr-reader");
-
-      scannerRef.current = scanner;
-
-      await scanner.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: {
-            width: 250,
-            height: 250,
-          },
-          aspectRatio: 1,
-        },
-        (decodedText) => {
-          processQrCode(decodedText);
-        },
-        () => {
-          // Normal QR scanning misses are ignored.
-        },
-      );
-
-      setScannerStarted(true);
-    } catch (scannerError) {
-      console.error("Camera start error:", scannerError);
-
-      if (scannerRef.current) {
-        try {
-          await scannerRef.current.stop();
-        } catch {
-          // Ignore cleanup errors.
-        }
-
-        try {
-          scannerRef.current.clear();
-        } catch {
-          // Ignore cleanup errors.
-        }
-
-        scannerRef.current = null;
-      }
-
-      const message =
-        scannerError instanceof Error
-          ? scannerError.message
-          : String(scannerError);
-
-      setError(
-        message ||
-          "Unable to start the camera. Please allow camera access and try again.",
-      );
-
-      setScannerStarted(false);
-    } finally {
-      setStartingScanner(false);
-    }
+    setStartingScanner(true);
+    setScannerStarted(true);
   }
+
+  /*
+   * Start the actual camera AFTER the scanner element exists in the DOM.
+   */
+  useEffect(() => {
+    if (!scannerStarted) return;
+
+    let cancelled = false;
+
+    async function initializeScanner() {
+      try {
+        if (!window.isSecureContext) {
+          throw new Error(
+            "Camera access requires a secure HTTPS connection.",
+          );
+        }
+
+        const scannerElement =
+          document.getElementById("reception-qr-reader");
+
+        if (!scannerElement) {
+          throw new Error(
+            "Scanner area could not be loaded. Please refresh the page and try again.",
+          );
+        }
+
+        const scanner = new Html5Qrcode("reception-qr-reader");
+
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: {
+              width: 250,
+              height: 250,
+            },
+            aspectRatio: 1,
+          },
+          (decodedText) => {
+            processQrCode(decodedText);
+          },
+          () => {
+            // Normal QR scanning misses are ignored.
+          },
+        );
+
+        if (cancelled) {
+          try {
+            await scanner.stop();
+          } catch {
+            // Ignore cleanup errors.
+          }
+
+          try {
+            scanner.clear();
+          } catch {
+            // Ignore cleanup errors.
+          }
+
+          return;
+        }
+
+        setStartingScanner(false);
+      } catch (scannerError) {
+        console.error("Camera start error:", scannerError);
+
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+          } catch {
+            // Ignore cleanup errors.
+          }
+
+          try {
+            scannerRef.current.clear();
+          } catch {
+            // Ignore cleanup errors.
+          }
+
+          scannerRef.current = null;
+        }
+
+        if (!cancelled) {
+          const message =
+            scannerError instanceof Error
+              ? scannerError.message
+              : String(scannerError);
+
+          setError(
+            message ||
+              "Unable to start the camera. Please allow camera access and try again.",
+          );
+
+          setScannerStarted(false);
+          setStartingScanner(false);
+        }
+      }
+    }
+
+    initializeScanner();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scannerStarted]);
 
   useEffect(() => {
     return () => {
@@ -559,7 +611,7 @@ function ReceptionCheckInPage() {
               </div>
             </div>
 
-            {!scannerStarted ? (
+            {!scannerStarted && (
               <Button
                 type="button"
                 size="lg"
@@ -579,25 +631,38 @@ function ReceptionCheckInPage() {
                   </>
                 )}
               </Button>
-            ) : (
+            )}
+
+            {scannerStarted && (
               <>
                 <div
                   id="reception-qr-reader"
                   className="overflow-hidden border border-border bg-white"
                 />
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-4 w-full"
-                  onClick={stopScanner}
-                >
-                  Stop Camera
-                </Button>
+                {startingScanner && (
+                  <div className="flex items-center justify-center gap-3 py-8 text-sm font-bold uppercase">
+                    <Loader2 className="size-5 animate-spin" />
+                    Starting Camera...
+                  </div>
+                )}
 
-                <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
-                  Camera scanner ready — point it at a member QR code
-                </p>
+                {!startingScanner && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="mt-4 w-full"
+                    onClick={stopScanner}
+                  >
+                    Stop Camera
+                  </Button>
+                )}
+
+                {!startingScanner && (
+                  <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
+                    Camera scanner ready — point it at a member QR code
+                  </p>
+                )}
               </>
             )}
           </section>
