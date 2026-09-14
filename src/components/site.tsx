@@ -351,6 +351,61 @@ export function ServiceCard({
 }) {
   return (
     <article className="group border border-border bg-card">
+      <div className="p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-5">
+          <div>
+            <p className="text-xs font-extrabold uppercase text-primary">
+              Spa & Recovery
+            </p>
+
+            <h3 className="mt-3 font-display text-2xl font-bold uppercase sm:text-3xl">
+              {service.name}
+            </h3>
+          </div>
+
+          <div className="shrink-0 text-right">
+            <span className="font-display text-2xl font-bold text-primary sm:text-3xl">
+              {service.price !== null
+                ? formatNaira(service.price)
+                : "Price coming soon"}
+            </span>
+
+            {service.duration && (
+              <p className="mt-1 text-xs font-bold uppercase text-muted-foreground">
+                {service.duration}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
+          {service.description}
+        </p>
+
+        <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+          <span className="text-xs font-bold uppercase text-muted-foreground">
+            Available at Super Plus Fitness
+          </span>
+
+          <Button asChild variant="ghost" size="icon">
+            <Link
+              to="/contact"
+              aria-label={`Enquire about ${service.name}`}
+            >
+              <ArrowRight />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
+  service,
+}: {
+  service: RecoveryService;
+}) {
+  return (
+    <article className="group border border-border bg-card">
       <div className="aspect-[4/3] overflow-hidden">
         <img
           src={service.image}
