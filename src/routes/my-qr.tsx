@@ -48,7 +48,7 @@ function MyQrPage() {
 
       const { data, error: memberError } = await supabase
         .from("members")
-        .select("full_name, first_name, last_name, email, qr_token")
+        .select("full_name, email, qr_token")
         .eq("auth_user_id", session.user.id)
         .maybeSingle();
 
@@ -126,11 +126,6 @@ function MyQrPage() {
     );
   }
 
-  const fullName =
-    member?.full_name ||
-    `${member?.first_name ?? ""} ${member?.last_name ?? ""}`.trim() ||
-    "Member";
-
   return (
     <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
       <div className="section-shell">
@@ -175,7 +170,7 @@ function MyQrPage() {
                 <UserRound className="size-4 text-primary" />
 
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
-                  {fullName}
+                  {member.full_name || "Member"}
                 </p>
               </div>
 
