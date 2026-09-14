@@ -41,13 +41,13 @@ export function Logo({ inverse = false }: { inverse?: boolean }) {
       className="flex items-center"
       aria-label="Super Plus Fitness home"
     >
-      <img
-        src="/super-plus-logo.svg"
-        alt="Super Plus Fitness"
-        className={`h-14 w-auto object-contain ${
-          inverse ? "brightness-110" : ""
-        }`}
-      />
+      <span className="flex h-14 w-[150px] items-center justify-center overflow-hidden bg-secondary px-2">
+        <img
+          src="/super-plus-logo.svg"
+          alt="Super Plus Fitness"
+          className="h-12 w-auto object-contain"
+        />
+      </span>
     </Link>
   );
 }
