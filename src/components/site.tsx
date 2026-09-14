@@ -4,7 +4,6 @@ import {
   Check,
   ChevronRight,
   Clock3,
-  Dumbbell,
   Instagram,
   Mail,
   MapPin,
@@ -39,34 +38,16 @@ export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
     <Link
       to="/"
-      className="flex items-center gap-3"
+      className="flex items-center"
       aria-label="Super Plus Fitness home"
     >
-      <span
-        className={`grid size-10 shrink-0 place-items-center overflow-hidden ${
-          inverse ? "bg-background" : "bg-secondary"
+      <img
+        src="/super-plus-logo.svg"
+        alt="Super Plus Fitness"
+        className={`h-14 w-auto object-contain ${
+          inverse ? "brightness-110" : ""
         }`}
-      >
-        <img
-          src="/super-plus-logo.svg"
-          alt="Super Plus Fitness"
-          className="h-10 w-auto max-w-none object-contain"
-        />
-      </span>
-
-      <span className="leading-none">
-        <strong
-          className={`block font-display text-xl uppercase ${
-            inverse ? "text-primary-foreground" : "text-foreground"
-          }`}
-        >
-          Super Plus
-        </strong>
-
-        <span className="text-[9px] font-bold uppercase text-primary">
-          Fitness • Spa • Recovery
-        </span>
-      </span>
+      />
     </Link>
   );
 }
