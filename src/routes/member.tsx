@@ -53,6 +53,18 @@ function getDateOnly(value: unknown) {
   return stringValue.slice(0, 10);
 }
 
+function addDays(dateString: string, days: number) {
+  const date = new Date(`${dateString}T12:00:00`);
+
+  date.setDate(date.getDate() + days);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function isMembershipValidToday(membership: any) {
   if (!membership) return false;
 
@@ -78,6 +90,109 @@ function isMembershipValidToday(membership: any) {
   const today = getLocalDateString();
 
   return startDate <= today && today <= endDate;
+}
+
+/**
+ * Combines memberships that run continuously.
+ *
+ * Example:
+ * Membership 1: Sep 13 → Sep 15
+ * Membership 2: Sep 16 → Sep 16
+ *
+ * Dashboard displays:
+ * Sep 13 → Sep 16
+ *
+ * The individual records remain untouched in Supabase.
+ */
+function getContinuousMembership(memberships: any[]) {
+  if (!memberships || memberships.length === 0) {
+    return null;
+  }
+
+  const today = getLocalDateString();
+
+  const normalized = memberships
+    .map((membership) => ({
+      ...membership,
+      normalizedStart: getDateOnly(membership?.start_date),
+      normalizedEnd: getDateOnly(membership?.end_date),
+    }))
+    .filter(
+      (membership) =>
+        membership.normalizedStart &&
+        membership.normalizedEnd,
+    )
+    .sort((a, b) =>
+      a.normalizedStart.localeCompare(b.normalizedStart),
+    );
+
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  // Find the membership that is active today.
+  let currentIndex = normalized.findIndex(
+    (membership) =>
+      membership.normalizedStart <= today &&
+      today <= membership.normalizedEnd,
+  );
+
+  // If there is no membership active today,
+  // show the most recently created membership.
+  if (currentIndex === -1) {
+    return (
+      [...normalized].sort((a, b) =>
+        String(b.created_at || "").localeCompare(
+          String(a.created_at || ""),
+        ),
+      )[0] || null
+    );
+  }
+
+  const currentMembership = normalized[currentIndex];
+
+  let combinedStart = currentMembership.normalizedStart;
+  let combinedEnd = currentMembership.normalizedEnd;
+
+  // Look forward and combine memberships that start
+  // on the day immediately after the current period ends,
+  // or overlap it.
+  for (
+    let index = currentIndex + 1;
+    index < normalized.length;
+    index++
+  ) {
+    const nextMembership = normalized[index];
+
+    const nextStart = nextMembership.normalizedStart;
+    const nextEnd = nextMembership.normalizedEnd;
+
+    if (!nextStart || !nextEnd) {
+      continue;
+    }
+
+    const dayAfterCurrentEnd = addDays(combinedEnd, 1);
+
+    // If the next membership starts on or before the day
+    // immediately after the current membership ends,
+    // it is continuous.
+    if (nextStart <= dayAfterCurrentEnd) {
+      if (nextEnd > combinedEnd) {
+        combinedEnd = nextEnd;
+      }
+
+      continue;
+    }
+
+    // There is a gap, so stop combining.
+    break;
+  }
+
+  return {
+    ...currentMembership,
+    start_date: combinedStart,
+    end_date: combinedEnd,
+  };
 }
 
 function MemberDashboard() {
@@ -150,14 +265,12 @@ function MemberDashboard() {
         return;
       }
 
-      const validMembership =
-        membershipData?.find((item) =>
-          isMembershipValidToday(item),
-        ) ||
-        membershipData?.[0] ||
-        null;
+      const continuousMembership =
+        getContinuousMembership(
+          membershipData || [],
+        );
 
-      setMembership(validMembership);
+      setMembership(continuousMembership);
       setLoading(false);
     }
 
@@ -706,6 +819,7 @@ function MemberDashboard() {
               <p className="text-xs font-extrabold uppercase text-muted-foreground">
                 Full Name
               </p>
+
               <p className="mt-2 font-bold">
                 {fullName}
               </p>
@@ -715,6 +829,7 @@ function MemberDashboard() {
               <p className="text-xs font-extrabold uppercase text-muted-foreground">
                 Email
               </p>
+
               <p className="mt-2 break-all font-bold">
                 {member?.email ||
                   "Not available"}
@@ -725,6 +840,7 @@ function MemberDashboard() {
               <p className="text-xs font-extrabold uppercase text-muted-foreground">
                 Phone
               </p>
+
               <p className="mt-2 font-bold">
                 {member?.phone ||
                   "Not available"}
