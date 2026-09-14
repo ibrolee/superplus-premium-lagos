@@ -689,12 +689,14 @@ export function Footer() {
               <p>{contact.address}</p>
 
               <a
-                href="#"
-                aria-label="Instagram"
-                className="mt-4 inline-flex"
-              >
-                <Instagram />
-              </a>
+  href="https://www.instagram.com/superplusfitnessandspa/"
+  target="_blank"
+  rel="noreferrer"
+  aria-label="Instagram"
+  className="mt-4 inline-flex"
+>
+  <Instagram />
+</a>
             </div>
           </div>
         </div>
