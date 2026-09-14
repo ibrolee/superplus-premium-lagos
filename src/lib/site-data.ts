@@ -82,7 +82,7 @@ export const membershipPlans: MembershipPlan[] = [
     registration: 7000,
     benefits: ["30-day access", "All gym equipment", "Group classes"],
     checkoutUrl:
-      "https://members.superplusfitness.com/pricing-plans/plan-customization?planId=c1eaf695-49d0-482d-8fcc-ddec40830ccc&checkoutFlowId=77d29695-f6f4-427d-b6ee-0687784a95b4&pricingVariantId=c1eaf695-49d0-482d-8fcc-ddec40830ccc",
+      "https://members.superplusfitness.com/pricing-plans/plan-customization?planId=c1eaf695-49d0-482d-8fcc-ddec40830ccc&checkoutFlowId=77d29695-f6f4-427d-b6ee-0687784a95b4&pricingVariantId=c1eaf695-49d0-482d-b6ee-0687784a95b4",
   },
   {
     id: "quarterly",
@@ -251,39 +251,33 @@ export const recoveryServices: RecoveryService[] = [
 export const facilities = [
   {
     name: "Strength Training",
-    image: facilitiesImage,
+    image: "/strength-training.png",
     description:
       "Free weights, racks and machines for focused strength work.",
   },
   {
     name: "Cardio",
-    image: heroImage,
+    image: "/cardio.png",
     description:
       "Modern cardio equipment for every pace and fitness level.",
   },
   {
     name: "Functional Training",
-    image: trainingImage,
+    image: "/functional-training.png",
     description:
       "Open training space for movement, conditioning and performance.",
   },
   {
     name: "Group Classes",
-    image: trainingImage,
+    image: "/group-classes.png",
     description:
       "Coach-led sessions built around energy, community and progress.",
   },
   {
     name: "Modern Equipment",
-    image: facilitiesImage,
+    image: "/modern-equipment.png",
     description:
       "A considered mix of equipment for complete workouts.",
-  },
-  {
-    name: "Spa & Recovery",
-    image: recoveryImage,
-    description:
-      "Dedicated services to recover, reset and recharge.",
   },
 ];
 
