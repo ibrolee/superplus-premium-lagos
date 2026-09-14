@@ -688,15 +688,35 @@ export function Footer() {
 
               <p>{contact.address}</p>
 
-              <a
-  href="https://www.instagram.com/superplusfitnessandspa/"
-  target="_blank"
-  rel="noreferrer"
-  aria-label="Instagram"
-  className="mt-4 inline-flex"
->
-  <Instagram />
-</a>
+              <div className="mt-4 flex items-center gap-4">
+                <a
+                  href="https://www.instagram.com/superplusfitnessandspa/"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Instagram"
+                  className="inline-flex hover:text-primary"
+                >
+                  <Instagram />
+                </a>
+
+                <a
+                  href="https://www.tiktok.com/@superplusfitness"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="TikTok"
+                  className="inline-flex hover:text-primary"
+                >
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-3.77A4.83 4.83 0 0 1 15.75 2h-3.1v13.67a2.72 2.72 0 1 1-1.92-2.61V9.9a5.83 5.83 0 1 0 5.09 5.77V8.72a7.9 7.9 0 0 0 4.62 1.48V7.11a4.85 4.85 0 0 1-.85-.42Z" />
+                  </svg>
+                </a>
+              </div>
             </div>
           </div>
         </div>
