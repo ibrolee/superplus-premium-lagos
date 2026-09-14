@@ -1,42 +1,954 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Building2, Check, Dumbbell, HeartPulse, ScanLine, Sparkles, Target, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Building2,
+  Check,
+  Dumbbell,
+  HeartPulse,
+  ScanLine,
+  Sparkles,
+  Target,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { ContactForm, FacilityGrid, FinalCTA, IntegrationNotice, LocationSection, MembershipCard, PageHero, QRPreview, SectionHeader, ServiceCard } from "@/components/site";
-import { facilities, images, membershipPlans, recoveryServices, testimonials } from "@/lib/site-data";
+import {
+  ContactForm,
+  FacilityGrid,
+  FinalCTA,
+  IntegrationNotice,
+  LocationSection,
+  MembershipCard,
+  PageHero,
+  QRPreview,
+  SectionHeader,
+  ServiceCard,
+} from "@/components/site";
+import {
+  facilities,
+  images,
+  membershipPlans,
+  recoveryServices,
+  testimonials,
+} from "@/lib/site-data";
 
 export function HomePage() {
-  const preview = [membershipPlans[2], membershipPlans[3], membershipPlans[6], membershipPlans[9]];
-  return <main><section className="relative min-h-[calc(100svh-4.5rem)] overflow-hidden bg-secondary text-secondary-foreground"><img src={images.hero} alt="Members strength training at Super Plus Fitness in Lagos" width={1536} height={1024} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover" /><div className="absolute inset-0 bg-secondary/55" /><div className="relative section-shell flex min-h-[calc(100svh-4.5rem)] flex-col justify-end pb-12 pt-28 sm:pb-16"><div className="mb-5 flex gap-5 text-[10px] font-bold uppercase text-secondary-foreground/75"><span>Shomolu, Lagos</span><span>Fitness • Spa • Recovery</span></div><h1 className="display-title max-w-5xl text-7xl sm:text-9xl lg:text-[9rem]">Build stronger.<br /><span className="text-primary">Live better.</span></h1><p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/80 sm:text-lg">Modern fitness, personal training, spa and recovery — all under one roof in Shomolu, Lagos.</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild size="lg"><Link to="/membership">Join now <ArrowRight /></Link></Button><Button asChild size="lg" variant="inverse"><Link to="/membership">Explore membership</Link></Button></div></div></section><section className="py-20 sm:py-28"><div className="section-shell"><SectionHeader eyebrow="The complete experience" title="More than a gym." copy="Super Plus Fitness brings training, modern equipment, personal coaching, spa and recovery services together in one complete fitness and wellness destination." /><div className="mt-12 grid gap-px bg-border md:grid-cols-3">{[{ title: "Fitness", icon: Dumbbell, text: "Modern equipment and spaces designed for strength, cardio and everyday fitness." }, { title: "Training", icon: Target, text: "Personal and group training designed around your goals." }, { title: "Recovery", icon: HeartPulse, text: "Massage, spa and therapy services to help you recover and recharge." }].map((item) => <article key={item.title} className="bg-background p-7 sm:p-9"><item.icon className="size-8 text-primary" /><h3 className="mt-16 font-display text-4xl font-bold uppercase">{item.title}</h3><p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p></article>)}</div></div></section><section className="bg-secondary py-20 text-secondary-foreground sm:py-28"><div className="section-shell"><div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between"><SectionHeader eyebrow="Facilities" title={<>Your space to<br />get stronger.</>} inverse /><Button asChild variant="inverse" size="lg"><Link to="/facilities">View facilities <ArrowRight /></Link></Button></div><div className="mt-12"><FacilityGrid limit={6} /></div></div></section><section className="py-20 sm:py-28"><div className="section-shell"><div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between"><SectionHeader eyebrow="Membership" title="Find your plan." copy="Flexible gym, long-term and premium options built around how you train." /><Button asChild variant="outline" size="lg"><Link to="/membership">View all memberships</Link></Button></div><div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{preview.map((plan) => plan && <MembershipCard key={plan.id} plan={plan} />)}</div></div></section><Split image={images.training} eyebrow="Personal training" title={<>Don’t just work out.<br />Train with purpose.</>} copy="Work with a personal coach for structured training, focused guidance and the accountability to keep moving forward." to="/personal-training" button="Start personal training" /><section className="bg-muted py-20 sm:py-28"><div className="section-shell"><SectionHeader eyebrow="Spa & recovery" title={<>Recover.<br />Reset. Recharge.</>} copy="A dedicated recovery experience that works alongside your training — because progress happens between sessions too." /><div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{recoveryServices.slice(0, 3).map((service) => <ServiceCard key={service.id} service={service} />)}</div><Button asChild size="lg" className="mt-8"><Link to="/spa-recovery">Explore spa & recovery</Link></Button></div></section><section className="py-20 sm:py-28"><div className="section-shell"><SectionHeader eyebrow="Member stories" title={<>Real people.<br />Real progress.</>} /><div className="mt-12 grid gap-4 md:grid-cols-3">{testimonials.map((item, index) => <blockquote key={item.name} className="border-t-4 border-primary bg-card p-7 shadow-sm"><p className="font-display text-2xl font-semibold leading-tight">“{item.quote}”</p><footer className="mt-10 text-sm"><strong>{item.name}</strong><span className="block text-muted-foreground">{item.detail}</span></footer><span className="mt-8 block text-xs font-bold text-primary">0{index + 1}</span></blockquote>)}</div></div></section><section className="bg-secondary py-20 text-secondary-foreground"><div className="section-shell grid gap-10 lg:grid-cols-[1fr_0.7fr] lg:items-end"><SectionHeader eyebrow="HMO & corporate" title={<>Fitness benefits<br />for your members.</>} copy="Super Plus Fitness works with HMOs and organizations to provide accessible fitness and wellness services for their members and teams." inverse /><Button asChild size="lg" className="lg:justify-self-end"><Link to="/hmo">HMO & corporate partnerships <ArrowRight /></Link></Button></div></section><LocationSection /><FinalCTA /></main>;
+  const preview = [
+    membershipPlans[2],
+    membershipPlans[3],
+    membershipPlans[6],
+    membershipPlans[9],
+  ];
+
+  return (
+    <main>
+      <section className="relative min-h-[calc(100svh-4.5rem)] overflow-hidden bg-secondary text-secondary-foreground">
+        <img
+          src={images.hero}
+          alt="Members strength training at Super Plus Fitness in Lagos"
+          width={1536}
+          height={1024}
+          fetchPriority="high"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-secondary/55" />
+        <div className="relative section-shell flex min-h-[calc(100svh-4.5rem)] flex-col justify-end pb-12 pt-28 sm:pb-16">
+          <div className="mb-5 flex gap-5 text-[10px] font-bold uppercase text-secondary-foreground/75">
+            <span>Shomolu, Lagos</span>
+            <span>Fitness • Spa • Recovery</span>
+          </div>
+          <h1 className="display-title max-w-5xl text-7xl sm:text-9xl lg:text-[9rem]">
+            Build stronger.
+            <br />
+            <span className="text-primary">Live better.</span>
+          </h1>
+          <p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/80 sm:text-lg">
+            Modern fitness, personal training, spa and recovery — all under
+            one roof in Shomolu, Lagos.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link to="/membership">
+                Join now <ArrowRight />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="inverse">
+              <Link to="/membership">Explore membership</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="The complete experience"
+            title="More than a gym."
+            copy="Super Plus Fitness brings training, modern equipment, personal coaching, spa and recovery services together in one complete fitness and wellness destination."
+          />
+          <div className="mt-12 grid gap-px bg-border md:grid-cols-3">
+            {[
+              {
+                title: "Fitness",
+                icon: Dumbbell,
+                text: "Modern equipment and spaces designed for strength, cardio and everyday fitness.",
+              },
+              {
+                title: "Training",
+                icon: Target,
+                text: "Personal and group training designed around your goals.",
+              },
+              {
+                title: "Recovery",
+                icon: HeartPulse,
+                text: "Massage, spa and therapy services to help you recover and recharge.",
+              },
+            ].map((item) => (
+              <article
+                key={item.title}
+                className="bg-background p-7 sm:p-9"
+              >
+                <item.icon className="size-8 text-primary" />
+                <h3 className="mt-16 font-display text-4xl font-bold uppercase">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {item.text}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-secondary py-20 text-secondary-foreground sm:py-28">
+        <div className="section-shell">
+          <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeader
+              eyebrow="Facilities"
+              title={
+                <>
+                  Your space to
+                  <br />
+                  get stronger.
+                </>
+              }
+              inverse
+            />
+            <Button asChild variant="inverse" size="lg">
+              <Link to="/facilities">
+                View facilities <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+          <div className="mt-12">
+            <FacilityGrid limit={6} />
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          <div className="flex flex-col gap-7 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeader
+              eyebrow="Membership"
+              title="Find your plan."
+              copy="Flexible gym, long-term and premium options built around how you train."
+            />
+            <Button asChild variant="outline" size="lg">
+              <Link to="/membership">View all memberships</Link>
+            </Button>
+          </div>
+          <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {preview.map(
+              (plan) =>
+                plan && <MembershipCard key={plan.id} plan={plan} />,
+            )}
+          </div>
+        </div>
+      </section>
+
+      <Split
+        image={images.training}
+        eyebrow="Personal training"
+        title={
+          <>
+            Don’t just work out.
+            <br />
+            Train with purpose.
+          </>
+        }
+        copy="Work with a personal coach for structured training, focused guidance and the accountability to keep moving forward."
+        to="/personal-training"
+        button="Start personal training"
+      />
+
+      <section className="bg-muted py-20 sm:py-28">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="Spa & recovery"
+            title={
+              <>
+                Recover.
+                <br />
+                Reset. Recharge.
+              </>
+            }
+            copy="A dedicated recovery experience that works alongside your training — because progress happens between sessions too."
+          />
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {recoveryServices.slice(0, 3).map((service) => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+          <Button asChild size="lg" className="mt-8">
+            <Link to="/spa-recovery">Explore spa & recovery</Link>
+          </Button>
+        </div>
+      </section>
+
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="Member stories"
+            title={
+              <>
+                Real people.
+                <br />
+                Real progress.
+              </>
+            }
+          />
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
+            {testimonials.map((item, index) => (
+              <blockquote
+                key={item.name}
+                className="border-t-4 border-primary bg-card p-7 shadow-sm"
+              >
+                <p className="font-display text-2xl font-semibold leading-tight">
+                  “{item.quote}”
+                </p>
+                <footer className="mt-10 text-sm">
+                  <strong>{item.name}</strong>
+                  <span className="block text-muted-foreground">
+                    {item.detail}
+                  </span>
+                </footer>
+                <span className="mt-8 block text-xs font-bold text-primary">
+                  0{index + 1}
+                </span>
+              </blockquote>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-secondary py-20 text-secondary-foreground">
+        <div className="section-shell grid gap-10 lg:grid-cols-[1fr_0.7fr] lg:items-end">
+          <SectionHeader
+            eyebrow="HMO & corporate"
+            title={
+              <>
+                Fitness benefits
+                <br />
+                for your members.
+              </>
+            }
+            copy="Super Plus Fitness works with HMOs and organizations to provide accessible fitness and wellness services for their members and teams."
+            inverse
+          />
+          <Button
+            asChild
+            size="lg"
+            className="lg:justify-self-end"
+          >
+            <Link to="/hmo">
+              HMO & corporate partnerships <ArrowRight />
+            </Link>
+          </Button>
+        </div>
+      </section>
+
+      <LocationSection />
+      <FinalCTA />
+    </main>
+  );
 }
 
-function Split({ image, eyebrow, title, copy, to, button }: { image: string; eyebrow: string; title: React.ReactNode; copy: string; to: "/personal-training" | "/facilities"; button: string }) { return <section className="grid bg-secondary text-secondary-foreground lg:grid-cols-2"><img src={image} alt="Personal training at Super Plus Fitness" loading="lazy" width={1536} height={1024} className="h-full min-h-[28rem] w-full object-cover" /><div className="flex items-center px-6 py-16 sm:px-12 lg:px-16"><div><SectionHeader eyebrow={eyebrow} title={title} copy={copy} inverse /><Button asChild size="lg" className="mt-8"><Link to={to}>{button} <ArrowRight /></Link></Button></div></div></section>; }
+function Split({
+  image,
+  eyebrow,
+  title,
+  copy,
+  to,
+  button,
+}: {
+  image: string;
+  eyebrow: string;
+  title: React.ReactNode;
+  copy: string;
+  to: "/personal-training" | "/facilities";
+  button: string;
+}) {
+  return (
+    <section className="grid bg-secondary text-secondary-foreground lg:grid-cols-2">
+      <img
+        src={image}
+        alt="Personal training at Super Plus Fitness"
+        loading="lazy"
+        width={1536}
+        height={1024}
+        className="h-full min-h-[28rem] w-full object-cover"
+      />
+      <div className="flex items-center px-6 py-16 sm:px-12 lg:px-16">
+        <div>
+          <SectionHeader
+            eyebrow={eyebrow}
+            title={title}
+            copy={copy}
+            inverse
+          />
+          <Button asChild size="lg" className="mt-8">
+            <Link to={to}>
+              {button} <ArrowRight />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
-export function MembershipPage() { const [filter, setFilter] = useState("All"); const filters = ["All", "Gym", "VIP", "Family", "Training", "Spa & Recovery"]; const plans = filter === "All" ? membershipPlans : membershipPlans.filter((plan) => plan.category === filter); return <main><PageHero eyebrow="Flexible access" title="Membership plans" copy="Choose the membership that fits your goals." image={images.facilities} /><section className="py-16 sm:py-24"><div className="section-shell"><div className="flex gap-2 overflow-x-auto pb-4" role="tablist" aria-label="Membership categories">{filters.map((item) => <Button key={item} variant={filter === item ? "default" : "outline"} onClick={() => setFilter(item)} role="tab" aria-selected={filter === item}>{item}</Button>)}</div>{filter === "Spa & Recovery" ? <div className="mt-10"><IntegrationNotice>Current spa and recovery prices are being confirmed. Contact our team for today’s rates.</IntegrationNotice><div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{recoveryServices.map((service) => <ServiceCard key={service.id} service={service} />)}</div></div> : <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{plans.map((plan) => <MembershipCard key={plan.id} plan={plan} />)}</div>}</div></section><FinalCTA /></main>; }
+export function MembershipPage() {
+  const [filter, setFilter] = useState("All");
+  const filters = [
+    "All",
+    "Gym",
+    "VIP",
+    "Family",
+    "Training",
+    "Spa & Recovery",
+  ];
 
-export function PersonalTrainingPage() { return <main><PageHero eyebrow="Personal coaching" title="Train with purpose." copy="Structured coaching, focused attention and a training plan that meets you where you are." image={images.training} /><InfoBand title="Why personal training" copy="A coach turns effort into a plan. We help you train with safer form, the right progression and accountability that lasts." items={["Goal-led programming", "Technique and form", "Consistent accountability"]} /><Process title="How it works" items={["Talk goals", "Assess movement", "Build your plan", "Train and progress"]} /><Split image={images.hero} eyebrow="What you get" title={<>Coaching built<br />around you.</>} copy="Your membership includes gym access, group classes and focused sessions with a personal coach." to="/personal-training" button="Start personal training" /><InfoBand title="Training experience" copy="Serious coaching without intimidation. Every session is clear, supportive and designed to move you forward." items={["Strength", "Conditioning", "Everyday fitness"]} /><FinalCTA /></main>; }
+  const plans =
+    filter === "All"
+      ? membershipPlans
+      : membershipPlans.filter((plan) => plan.category === filter);
 
-export function FacilitiesPage() { return <main><PageHero eyebrow="Inside Super Plus" title="Built for your work." copy="Strength, cardio, movement, coaching and recovery spaces designed as one complete experience." image={images.facilities} /><section className="py-16 sm:py-24"><div className="section-shell"><SectionHeader eyebrow="Explore the floor" title="Everything in its place." copy="Every image can be updated centrally as the facility evolves, without changing this editorial layout." /><div className="mt-12"><FacilityGrid /></div></div></section><FinalCTA /></main>; }
+  return (
+    <main>
+      <PageHero
+        eyebrow="Flexible access"
+        title="Membership plans"
+        copy="Choose the membership that fits your goals."
+        image={images.facilities}
+      />
 
-export function SpaRecoveryPage() { return <main><PageHero eyebrow="Wellness at Super Plus" title="Recover better." copy="Premium spa, therapy and recovery services in the same place you train." image={images.recovery} /><section className="py-16 sm:py-24"><div className="section-shell"><SectionHeader eyebrow="Services" title="Restore your edge." copy="Build recovery into your routine with targeted services delivered in a calm, professional environment." /><div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">{recoveryServices.map((service) => <ServiceCard key={service.id} service={service} />)}</div></div></section><FinalCTA /></main>; }
+      <section className="py-16 sm:py-24">
+        <div className="section-shell">
+          <div
+            className="flex gap-2 overflow-x-auto pb-4"
+            role="tablist"
+            aria-label="Membership categories"
+          >
+            {filters.map((item) => (
+              <Button
+                key={item}
+                variant={filter === item ? "default" : "outline"}
+                onClick={() => setFilter(item)}
+                role="tab"
+                aria-selected={filter === item}
+              >
+                {item}
+              </Button>
+            ))}
+          </div>
 
-export function AboutPage() { return <main><PageHero eyebrow="Our story" title="One complete experience." copy="Fitness, coaching and recovery brought together for the way Lagos lives and trains." image={images.hero} /><InfoBand title="Who we are" copy="Super Plus Fitness is a modern fitness and wellness destination in Shomolu — built for people who want strong training, expert support and better recovery under one roof." items={["Local and welcoming", "Modern and professional", "Focused on real progress"]} /><Split image={images.facilities} eyebrow="Our philosophy" title={<>Strong body.<br />Better life.</>} copy="We believe fitness should fit real life. That means an environment where beginners feel welcome, experienced members stay challenged and every person can train with purpose." to="/facilities" button="Explore facilities" /><Process title="The Super Plus experience" items={["Arrive", "Train", "Recover", "Return stronger"]} /><InfoBand title="Why members choose us" copy="A complete mix of equipment, coaching, classes, spa and therapy services — backed by a team that knows your progress matters." items={["Complete facilities", "Personal support", "Recovery included"]} /><FinalCTA /></main>; }
+          {filter === "Spa & Recovery" ? (
+            <div className="mt-10">
+              <IntegrationNotice>
+                Current spa and recovery prices are being confirmed. Contact
+                our team for today’s rates.
+              </IntegrationNotice>
 
-export function HmoPage() { return <main><PageHero eyebrow="HMO & corporate partnerships" title={<>A better fitness benefit<br />for your members.</>} copy="Give your members and teams access to modern fitness, coaching, spa and recovery in Shomolu, Lagos." image={images.facilities} /><InfoBand title="Why partner with Super Plus" copy="A local, complete wellness partner makes fitness benefits easier to access and more valuable to the people you serve." items={["One complete facility", "Flexible partnership structure", "Professional member experience"]} /><Process title="How partnership works" items={["Tell us your needs", "Design access", "Onboard members", "Support participation"]} /><section className="bg-muted py-20"><div className="section-shell grid gap-12 lg:grid-cols-2"><div><SectionHeader eyebrow="Become a partner" title="Start the conversation." copy="Tell us about your organization and the wellness benefit you want to create." /><div className="mt-10 grid gap-4 sm:grid-cols-2">{[Dumbbell, Users, HeartPulse, Building2].map((Icon, i) => <div key={i} className="border border-border bg-background p-5"><Icon className="text-primary" /><p className="mt-8 font-bold">{["Gym access", "Group sessions", "Recovery services", "Corporate wellness"][i]}</p></div>)}</div></div><div className="bg-background p-6 sm:p-8"><ContactForm partnership /></div></div></section></main>; }
+              <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {recoveryServices.map((service) => (
+                  <ServiceCard key={service.id} service={service} />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {plans.map((plan) => (
+                <MembershipCard key={plan.id} plan={plan} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-export function ContactPage() { return <main><PageHero eyebrow="Visit or enquire" title="Let’s get you started." copy="Talk to the Super Plus team about membership, training, recovery or partnerships." image={images.hero} /><LocationSection /><section className="py-20"><div className="section-shell grid gap-12 lg:grid-cols-[0.8fr_1.2fr]"><SectionHeader eyebrow="Send a message" title="We’re here to help." copy="For the fastest response, call or message us on WhatsApp during opening hours." /><ContactForm /></div></section></main>; }
+      <FinalCTA />
+    </main>
+  );
+}
 
-function InfoBand({ title, copy, items }: { title: string; copy: string; items: string[] }) { return <section className="py-20 sm:py-28"><div className="section-shell grid gap-12 lg:grid-cols-2"><SectionHeader eyebrow="Super Plus" title={title} copy={copy} /><div className="grid gap-px bg-border sm:grid-cols-3 lg:grid-cols-1">{items.map((item, index) => <div key={item} className="flex items-center gap-5 bg-background p-6"><span className="font-display text-4xl font-bold text-primary">0{index + 1}</span><strong className="uppercase">{item}</strong></div>)}</div></div></section>; }
+export function PersonalTrainingPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="Personal coaching"
+        title="Train with purpose."
+        copy="Structured coaching, focused attention and a training plan that meets you where you are."
+        image={images.training}
+      />
 
-function Process({ title, items }: { title: string; items: string[] }) { return <section className="bg-muted py-20"><div className="section-shell"><SectionHeader eyebrow="The process" title={title} /><div className="mt-12 grid gap-px bg-border md:grid-cols-4">{items.map((item, index) => <div key={item} className="bg-muted p-6"><span className="font-display text-5xl font-bold text-primary">0{index + 1}</span><h3 className="mt-12 font-display text-2xl font-bold uppercase">{item}</h3></div>)}</div></div></section>; }
+      <InfoBand
+        title="Why personal training"
+        copy="A coach turns effort into a plan. We help you train with safer form, the right progression and accountability that lasts."
+        items={[
+          "Goal-led programming",
+          "Technique and form",
+          "Consistent accountability",
+        ]}
+      />
 
-export function LoginPage() { return <UtilityPage title="Member login" copy="Access your membership account and QR code once the existing member platform is connected."><form className="grid gap-4" onSubmit={(e) => e.preventDefault()}><label className="grid gap-2 text-sm font-bold">Email or member ID<input disabled className="h-12 border border-input bg-muted px-3" /></label><label className="grid gap-2 text-sm font-bold">Password<input disabled type="password" className="h-12 border border-input bg-muted px-3" /></label><Button disabled size="lg">Login connection pending</Button></form></UtilityPage>; }
+      <Process
+        title="How it works"
+        items={[
+          "Talk goals",
+          "Assess movement",
+          "Build your plan",
+          "Train and progress",
+        ]}
+      />
 
-export function MemberPage() { return <UtilityPage title="Welcome, member" copy="Your membership essentials will be immediately accessible here after login."><IntegrationNotice /><div className="mt-6 grid gap-4 sm:grid-cols-2"><div className="bg-muted p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Membership status</span><p className="mt-2 font-display text-3xl font-bold uppercase">Awaiting connection</p></div><div className="bg-muted p-5"><span className="text-xs font-bold uppercase text-muted-foreground">Expiry date</span><p className="mt-2 font-display text-3xl font-bold uppercase">—</p></div></div><div className="mt-6 grid gap-5 sm:grid-cols-[0.7fr_1fr]"><QRPreview /><div className="flex flex-col justify-center"><h2 className="font-display text-4xl font-bold uppercase">Your QR, ready when you are.</h2><p className="mt-3 text-sm text-muted-foreground">Open your full-screen member code before you reach reception.</p><Button asChild size="lg" className="mt-6"><Link to="/my-qr">Show QR code <ScanLine /></Link></Button></div></div></UtilityPage>; }
+      <Split
+        image={images.hero}
+        eyebrow="What you get"
+        title={
+          <>
+            Coaching built
+            <br />
+            around you.
+          </>
+        }
+        copy="Your membership includes gym access, group classes and focused sessions with a personal coach."
+        to="/personal-training"
+        button="Start personal training"
+      />
 
-export function MyQrPage() { return <UtilityPage title="My QR code" copy="Present this screen at reception for a fast check-in."><IntegrationNotice /><div className="mt-6"><QRPreview large /></div></UtilityPage>; }
+      <InfoBand
+        title="Training experience"
+        copy="Serious coaching without intimidation. Every session is clear, supportive and designed to move you forward."
+        items={["Strength", "Conditioning", "Everyday fitness"]}
+      />
 
-export function ReceptionPage() { const [state, setState] = useState<"empty" | "active" | "expired" | "invalid">("empty"); return <UtilityPage title="Reception check-in" copy="Scan a member QR code to verify access."><IntegrationNotice>Scanner hardware and member verification require the existing check-in system connection.</IntegrationNotice><div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"><div className="grid min-h-96 place-items-center border-2 border-dashed border-border bg-muted text-center"><div><ScanLine className="mx-auto size-20 text-primary" /><h2 className="mt-5 font-display text-4xl font-bold uppercase">Scan member QR code</h2><p className="mt-2 text-sm text-muted-foreground">Scanner connection pending</p></div></div><div className="border border-border p-6"><p className="text-xs font-bold uppercase text-muted-foreground">Preview states</p><div className="mt-4 flex flex-wrap gap-2">{(["empty", "active", "expired", "invalid"] as const).map((item) => <Button key={item} variant={state === item ? "default" : "outline"} size="sm" onClick={() => setState(item)}>{item}</Button>)}</div>{state === "empty" ? <p className="mt-16 text-center text-muted-foreground">Member information appears after a successful scan.</p> : <div className="mt-10"><span className={`inline-block px-3 py-1 text-xs font-bold uppercase ${state === "active" ? "bg-green-100 text-green-800" : state === "expired" ? "bg-amber-100 text-amber-800" : "bg-red-100 text-red-800"}`}>{state}</span><dl className="mt-7 space-y-5 text-sm"><div><dt className="text-muted-foreground">Member name</dt><dd className="font-bold">Sample display</dd></div><div><dt className="text-muted-foreground">Membership type</dt><dd className="font-bold">Connected system data</dd></div><div><dt className="text-muted-foreground">Expiry date</dt><dd className="font-bold">—</dd></div><div><dt className="text-muted-foreground">Check-in status</dt><dd className="font-bold">Preview only</dd></div></dl></div>}</div></div></UtilityPage>; }
+      <FinalCTA />
+    </main>
+  );
+}
 
-function UtilityPage({ title, copy, children }: { title: string; copy: string; children: React.ReactNode }) { return <main className="min-h-[75vh] bg-secondary py-12 text-secondary-foreground sm:py-20"><div className="section-shell"><div className="mx-auto max-w-4xl"><p className="text-xs font-bold uppercase text-primary">Super Plus member services</p><h1 className="display-title mt-4 text-6xl sm:text-8xl">{title}</h1><p className="mt-5 max-w-xl text-secondary-foreground/70">{copy}</p><div className="mt-10 bg-background p-5 text-foreground sm:p-8">{children}</div></div></div></main>; }
+export function FacilitiesPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="Inside Super Plus"
+        title="Built for your work."
+        copy="Strength, cardio, movement, coaching and recovery spaces designed as one complete experience."
+        image={images.facilities}
+      />
+
+      <section className="py-16 sm:py-24">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="Explore the floor"
+            title="Everything in its place."
+            copy="Every image can be updated centrally as the facility evolves, without changing this editorial layout."
+          />
+          <div className="mt-12">
+            <FacilityGrid />
+          </div>
+        </div>
+      </section>
+
+      <FinalCTA />
+    </main>
+  );
+}
+
+export function SpaRecoveryPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="Wellness at Super Plus"
+        title="Recover better."
+        copy="Premium spa, therapy and recovery services in the same place you train."
+        image={images.recovery}
+      />
+
+      <section className="py-16 sm:py-24">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="Services"
+            title="Restore your edge."
+            copy="Build recovery into your routine with targeted services delivered in a calm, professional environment."
+          />
+
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {recoveryServices.map((service) => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <FinalCTA />
+    </main>
+  );
+}
+
+export function AboutPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="Our story"
+        title="One complete experience."
+        copy="Fitness, coaching and recovery brought together for the way Lagos lives and trains."
+        image={images.hero}
+      />
+
+      <InfoBand
+        title="Who we are"
+        copy="Super Plus Fitness is a modern fitness and wellness destination in Shomolu — built for people who want strong training, expert support and better recovery under one roof."
+        items={[
+          "Local and welcoming",
+          "Modern and professional",
+          "Focused on real progress",
+        ]}
+      />
+
+      <Split
+        image={images.facilities}
+        eyebrow="Our philosophy"
+        title={
+          <>
+            Strong body.
+            <br />
+            Better life.
+          </>
+        }
+        copy="We believe fitness should fit real life. That means an environment where beginners feel welcome, experienced members stay challenged and every person can train with purpose."
+        to="/facilities"
+        button="Explore facilities"
+      />
+
+      <Process
+        title="The Super Plus experience"
+        items={["Arrive", "Train", "Recover", "Return stronger"]}
+      />
+
+      <InfoBand
+        title="Why members choose us"
+        copy="A complete mix of equipment, coaching, classes, spa and therapy services — backed by a team that knows your progress matters."
+        items={[
+          "Complete facilities",
+          "Personal support",
+          "Recovery included",
+        ]}
+      />
+
+      <FinalCTA />
+    </main>
+  );
+}
+
+export function HmoPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="HMO & corporate partnerships"
+        title={
+          <>
+            A better fitness benefit
+            <br />
+            for your members.
+          </>
+        }
+        copy="Give your members and teams access to modern fitness, coaching, spa and recovery in Shomolu, Lagos."
+        image={images.facilities}
+      />
+
+      <InfoBand
+        title="Why partner with Super Plus"
+        copy="A local, complete wellness partner makes fitness benefits easier to access and more valuable to the people you serve."
+        items={[
+          "One complete facility",
+          "Flexible partnership structure",
+          "Professional member experience",
+        ]}
+      />
+
+      <Process
+        title="How partnership works"
+        items={[
+          "Tell us your needs",
+          "Design access",
+          "Onboard members",
+          "Support participation",
+        ]}
+      />
+
+      <section className="bg-muted py-20">
+        <div className="section-shell grid gap-12 lg:grid-cols-2">
+          <div>
+            <SectionHeader
+              eyebrow="Become a partner"
+              title="Start the conversation."
+              copy="Tell us about your organization and the wellness benefit you want to create."
+            />
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              {[Dumbbell, Users, HeartPulse, Building2].map((Icon, i) => (
+                <div
+                  key={i}
+                  className="border border-border bg-background p-5"
+                >
+                  <Icon className="text-primary" />
+                  <p className="mt-8 font-bold">
+                    {
+                      [
+                        "Gym access",
+                        "Group sessions",
+                        "Recovery services",
+                        "Corporate wellness",
+                      ][i]
+                    }
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-background p-6 sm:p-8">
+            <ContactForm partnership />
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export function ContactPage() {
+  return (
+    <main>
+      <PageHero
+        eyebrow="Visit or enquire"
+        title="Let’s get you started."
+        copy="Talk to the Super Plus team about membership, training, recovery or partnerships."
+        image={images.hero}
+      />
+
+      <LocationSection />
+
+      <section className="py-20">
+        <div className="section-shell grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+          <SectionHeader
+            eyebrow="Send a message"
+            title="We’re here to help."
+            copy="For the fastest response, call or message us on WhatsApp during opening hours."
+          />
+          <ContactForm />
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function InfoBand({
+  title,
+  copy,
+  items,
+}: {
+  title: string;
+  copy: string;
+  items: string[];
+}) {
+  return (
+    <section className="py-20 sm:py-28">
+      <div className="section-shell grid gap-12 lg:grid-cols-2">
+        <SectionHeader eyebrow="Super Plus" title={title} copy={copy} />
+
+        <div className="grid gap-px bg-border sm:grid-cols-3 lg:grid-cols-1">
+          {items.map((item, index) => (
+            <div
+              key={item}
+              className="flex items-center gap-5 bg-background p-6"
+            >
+              <span className="font-display text-4xl font-bold text-primary">
+                0{index + 1}
+              </span>
+              <strong className="uppercase">{item}</strong>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Process({
+  title,
+  items,
+}: {
+  title: string;
+  items: string[];
+}) {
+  return (
+    <section className="bg-muted py-20">
+      <div className="section-shell">
+        <SectionHeader eyebrow="The process" title={title} />
+
+        <div className="mt-12 grid gap-px bg-border md:grid-cols-4">
+          {items.map((item, index) => (
+            <div key={item} className="bg-muted p-6">
+              <span className="font-display text-5xl font-bold text-primary">
+                0{index + 1}
+              </span>
+              <h3 className="mt-12 font-display text-2xl font-bold uppercase">
+                {item}
+              </h3>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* UPDATED MEMBER LOGIN */
+export function LoginPage() {
+  return (
+    <UtilityPage
+      title="Member login"
+      copy="Access your Super Plus Fitness membership account."
+    >
+      <div className="grid gap-4">
+        <Button asChild size="lg">
+          <a
+            href="https://members.superplusfitness.com"
+            rel="noopener noreferrer"
+          >
+            Continue to member login
+          </a>
+        </Button>
+
+        <p className="text-sm text-muted-foreground">
+          You will be securely redirected to the Super Plus Fitness member
+          system.
+        </p>
+      </div>
+    </UtilityPage>
+  );
+}
+
+export function MemberPage() {
+  return (
+    <UtilityPage
+      title="Welcome, member"
+      copy="Your membership essentials will be immediately accessible here after login."
+    >
+      <IntegrationNotice />
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        <div className="bg-muted p-5">
+          <span className="text-xs font-bold uppercase text-muted-foreground">
+            Membership status
+          </span>
+          <p className="mt-2 font-display text-3xl font-bold uppercase">
+            Awaiting connection
+          </p>
+        </div>
+
+        <div className="bg-muted p-5">
+          <span className="text-xs font-bold uppercase text-muted-foreground">
+            Expiry date
+          </span>
+          <p className="mt-2 font-display text-3xl font-bold uppercase">
+            —
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-5 sm:grid-cols-[0.7fr_1fr]">
+        <QRPreview />
+
+        <div className="flex flex-col justify-center">
+          <h2 className="font-display text-4xl font-bold uppercase">
+            Your QR, ready when you are.
+          </h2>
+
+          <p className="mt-3 text-sm text-muted-foreground">
+            Open your full-screen member code before you reach reception.
+          </p>
+
+          <Button asChild size="lg" className="mt-6">
+            <Link to="/my-qr">
+              Show QR code <ScanLine />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    </UtilityPage>
+  );
+}
+
+export function MyQrPage() {
+  return (
+    <UtilityPage
+      title="My QR code"
+      copy="Present this screen at reception for a fast check-in."
+    >
+      <IntegrationNotice />
+
+      <div className="mt-6">
+        <QRPreview large />
+      </div>
+    </UtilityPage>
+  );
+}
+
+export function ReceptionPage() {
+  const [state, setState] = useState<
+    "empty" | "active" | "expired" | "invalid"
+  >("empty");
+
+  return (
+    <UtilityPage
+      title="Reception check-in"
+      copy="Scan a member QR code to verify access."
+    >
+      <IntegrationNotice>
+        Scanner hardware and member verification require the existing check-in
+        system connection.
+      </IntegrationNotice>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="grid min-h-96 place-items-center border-2 border-dashed border-border bg-muted text-center">
+          <div>
+            <ScanLine className="mx-auto size-20 text-primary" />
+
+            <h2 className="mt-5 font-display text-4xl font-bold uppercase">
+              Scan member QR code
+            </h2>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              Scanner connection pending
+            </p>
+          </div>
+        </div>
+
+        <div className="border border-border p-6">
+          <p className="text-xs font-bold uppercase text-muted-foreground">
+            Preview states
+          </p>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {(["empty", "active", "expired", "invalid"] as const).map(
+              (item) => (
+                <Button
+                  key={item}
+                  variant={state === item ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setState(item)}
+                >
+                  {item}
+                </Button>
+              ),
+            )}
+          </div>
+
+          {state === "empty" ? (
+            <p className="mt-16 text-center text-muted-foreground">
+              Member information appears after a successful scan.
+            </p>
+          ) : (
+            <div className="mt-10">
+              <span
+                className={`inline-block px-3 py-1 text-xs font-bold uppercase ${
+                  state === "active"
+                    ? "bg-green-100 text-green-800"
+                    : state === "expired"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-red-100 text-red-800"
+                }`}
+              >
+                {state}
+              </span>
+
+              <dl className="mt-7 space-y-5 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Member name</dt>
+                  <dd className="font-bold">Sample display</dd>
+                </div>
+
+                <div>
+                  <dt className="text-muted-foreground">
+                    Membership type
+                  </dt>
+                  <dd className="font-bold">Connected system data</dd>
+                </div>
+
+                <div>
+                  <dt className="text-muted-foreground">Expiry date</dt>
+                  <dd className="font-bold">—</dd>
+                </div>
+
+                <div>
+                  <dt className="text-muted-foreground">
+                    Check-in status
+                  </dt>
+                  <dd className="font-bold">Preview only</dd>
+                </div>
+              </dl>
+            </div>
+          )}
+        </div>
+      </div>
+    </UtilityPage>
+  );
+}
+
+function UtilityPage({
+  title,
+  copy,
+  children,
+}: {
+  title: string;
+  copy: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="min-h-[75vh] bg-secondary py-12 text-secondary-foreground sm:py-20">
+      <div className="section-shell">
+        <div className="mx-auto max-w-4xl">
+          <p className="text-xs font-bold uppercase text-primary">
+            Super Plus member services
+          </p>
+
+          <h1 className="display-title mt-4 text-6xl sm:text-8xl">
+            {title}
+          </h1>
+
+          <p className="mt-5 max-w-xl text-secondary-foreground/70">
+            {copy}
+          </p>
+
+          <div className="mt-10 bg-background p-5 text-foreground sm:p-8">
+            {children}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
