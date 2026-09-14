@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
@@ -36,8 +36,6 @@ type ScanResult = {
 };
 
 function ReceptionCheckInPage() {
-  const navigate = useNavigate();
-
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const processingRef = useRef(false);
 
@@ -339,21 +337,8 @@ function ReceptionCheckInPage() {
 
       scannerRef.current = scanner;
 
-      const cameras = await Html5Qrcode.getCameras();
-
-      if (!cameras || cameras.length === 0) {
-        throw new Error(
-          "No camera was found on this device.",
-        );
-      }
-
-      const preferredCamera =
-        cameras.find((camera) =>
-          /back|rear|environment/i.test(camera.label),
-        ) || cameras[0];
-
       await scanner.start(
-        preferredCamera.id,
+        { facingMode: "environment" },
         {
           fps: 10,
           qrbox: {
@@ -390,10 +375,14 @@ function ReceptionCheckInPage() {
         scannerRef.current = null;
       }
 
-      setError(
+      const message =
         scannerError instanceof Error
           ? scannerError.message
-          : "Unable to start the camera. Please allow camera access and try again.",
+          : String(scannerError);
+
+      setError(
+        message ||
+          "Unable to start the camera. Please allow camera access and try again.",
       );
 
       setScannerStarted(false);
