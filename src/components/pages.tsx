@@ -588,6 +588,48 @@ export function AboutPage() {
 }
 
 export function HmoPage() {
+  const directPartners = [
+    {
+      name: "PayGYM",
+      logo: "/paygym-logo.PNG",
+    },
+    {
+      name: "Bardge",
+      logo: "/bardge-logo.JPG",
+    },
+    {
+      name: "Reliance HMO",
+      logo: "/reliance-hmo-logo.JPG",
+    },
+    {
+      name: "Noor HMO",
+      logo: "/noor-hmo-logo.JPG",
+    },
+  ];
+
+  const bardgeNetworks = [
+    {
+      name: "Hygeia",
+      logo: "/hygeia-logo.JPG",
+    },
+    {
+      name: "NEM Health HMO",
+      logo: "/nem-health-logo.JPG",
+    },
+    {
+      name: "Bastion HMO",
+      logo: "/bastion-hmo-logo.PNG",
+    },
+    {
+      name: "Clearline HMO",
+      logo: "/clearline-hmo-logo.JPG",
+    },
+    {
+      name: "AXA Mansard",
+      logo: "/axa-mansard-logo.PNG",
+    },
+  ];
+
   return (
     <main>
       <PageHero
@@ -602,6 +644,60 @@ export function HmoPage() {
         copy="Give your members and teams access to modern fitness, coaching, spa and recovery in Shomolu, Lagos."
         image={images.facilities}
       />
+
+      {/* PARTNERS */}
+      <section className="py-20 sm:py-28">
+        <div className="section-shell">
+          <SectionHeader
+            eyebrow="Our healthcare network"
+            title={
+              <>
+                Fitness benefits
+                <br />
+                through trusted partners.
+              </>
+            }
+            copy="Super Plus Fitness works with wellness platforms and healthcare networks to make fitness and wellbeing benefits more accessible to members."
+          />
+
+          <div className="mt-12">
+            <p className="mb-5 text-xs font-extrabold uppercase text-primary">
+              Direct partners
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {directPartners.map((partner) => (
+                <HmoPartnerLogo
+                  key={partner.name}
+                  name={partner.name}
+                  logo={partner.logo}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-14">
+            <p className="mb-2 text-xs font-extrabold uppercase text-primary">
+              Available through Bardge
+            </p>
+
+            <p className="mb-5 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Our Bardge partnership also gives members access to participating
+              HMO networks.
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+              {bardgeNetworks.map((partner) => (
+                <HmoPartnerLogo
+                  key={partner.name}
+                  name={partner.name}
+                  logo={partner.logo}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       <InfoBand
         title="Why partner with Super Plus"
@@ -661,6 +757,31 @@ export function HmoPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function HmoPartnerLogo({
+  name,
+  logo,
+}: {
+  name: string;
+  logo: string;
+}) {
+  return (
+    <div className="flex min-h-[150px] flex-col items-center justify-center border border-border bg-background p-6 transition-transform hover:-translate-y-1">
+      <div className="flex h-20 w-full items-center justify-center">
+        <img
+          src={logo}
+          alt={`${name} logo`}
+          loading="lazy"
+          className="max-h-20 max-w-[85%] object-contain"
+        />
+      </div>
+
+      <p className="mt-5 text-center text-xs font-extrabold uppercase tracking-wide">
+        {name}
+      </p>
+    </div>
   );
 }
 
