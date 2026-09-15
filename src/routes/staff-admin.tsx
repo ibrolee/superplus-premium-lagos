@@ -858,59 +858,174 @@ function StaffAdminPage() {
   }
 
   async function loadRevenue() {
-    setRevenueLoading(true);
+  setRevenueLoading(true);
 
-    const { data, error: revenueError } = await supabase
-      .from("payments")
-      .select(
-        `
-        id,
-        member_id,
-        membership_id,
-        amount,
-        currency,
-        status,
-        payment_method,
-        provider,
-        paystack_reference,
-        paid_at,
-        created_at,
-        metadata,
-        member:members (
+  try {
+    // Step 1: Load successful payment records directly.
+    // We deliberately do NOT use nested Supabase relations here because
+    // RLS/relationship permissions can cause valid payment rows to be
+    // omitted from the result.
+    const { data: paymentData, error: paymentError } =
+      await supabase
+        .from("payments")
+        .select(
+          `
           id,
-          full_name,
-          email,
-          phone
-        ),
-        membership:memberships (
-          id,
-          plan_name
+          member_id,
+          membership_id,
+          amount,
+          currency,
+          status,
+          payment_method,
+          provider,
+          paystack_reference,
+          paid_at,
+          created_at,
+          metadata
+        `,
         )
-      `,
-      )
-      .eq("status", "success")
-      .order("paid_at", { ascending: false })
-      .limit(2000);
+        .eq("status", "success")
+        .order("paid_at", {
+          ascending: false,
+          nullsFirst: false,
+        })
+        .limit(2000);
 
-    if (revenueError) {
-      setError(revenueError.message);
-      setRevenueLoading(false);
+    if (paymentError) {
+      setError(paymentError.message);
+      setRevenuePayments([]);
       return;
     }
 
-    const normalized = (data || []).map((payment: any) => ({
-      ...payment,
-      member: Array.isArray(payment.member)
-        ? payment.member[0] || null
-        : payment.member || null,
-      membership: Array.isArray(payment.membership)
-        ? payment.membership[0] || null
-        : payment.membership || null,
-    })) as RevenuePaymentRow[];
+    const payments = (paymentData || []) as RevenuePayment[];
+
+    if (payments.length === 0) {
+      setRevenuePayments([]);
+      return;
+    }
+
+    // Step 2: Collect the member IDs and membership IDs that
+    // actually exist on the payment records.
+    const memberIds = Array.from(
+      new Set(
+        payments
+          .map((payment) => payment.member_id)
+          .filter(
+            (id): id is string =>
+              typeof id === "string" && id.length > 0,
+          ),
+      ),
+    );
+
+    const membershipIds = Array.from(
+      new Set(
+        payments
+          .map((payment) => payment.membership_id)
+          .filter(
+            (id): id is string =>
+              typeof id === "string" && id.length > 0,
+          ),
+      ),
+    );
+
+    // Step 3: Load member information separately.
+    // A missing member record must NEVER prevent the payment
+    // itself from appearing in the revenue report.
+    let members: RevenueMember[] = [];
+
+    if (memberIds.length > 0) {
+      const { data: memberData, error: memberError } =
+        await supabase
+          .from("members")
+          .select(
+            `
+            id,
+            full_name,
+            email,
+            phone
+          `,
+          )
+          .in("id", memberIds);
+
+      if (memberError) {
+        console.warn(
+          "Could not load member details for revenue report:",
+          memberError.message,
+        );
+      } else {
+        members = (memberData || []) as RevenueMember[];
+      }
+    }
+
+    // Step 4: Load membership information separately.
+    let memberships: RevenueMembership[] = [];
+
+    if (membershipIds.length > 0) {
+      const { data: membershipData, error: membershipError } =
+        await supabase
+          .from("memberships")
+          .select(
+            `
+            id,
+            plan_name
+          `,
+          )
+          .in("id", membershipIds);
+
+      if (membershipError) {
+        console.warn(
+          "Could not load membership details for revenue report:",
+          membershipError.message,
+        );
+      } else {
+        memberships = (membershipData ||
+          []) as RevenueMembership[];
+      }
+    }
+
+    // Step 5: Create lookup maps for fast matching.
+    const memberMap = new Map(
+      members.map((member) => [member.id, member]),
+    );
+
+    const membershipMap = new Map(
+      memberships.map((membership) => [
+        membership.id,
+        membership,
+      ]),
+    );
+
+    // Step 6: Combine the payment rows with their optional
+    // member and membership information.
+    //
+    // IMPORTANT:
+    // Every successful payment is kept even if its member or
+    // membership relationship cannot be loaded.
+    const normalized: RevenuePaymentRow[] = payments.map(
+      (payment) => ({
+        ...payment,
+        member: payment.member_id
+          ? memberMap.get(payment.member_id) || null
+          : null,
+        membership: payment.membership_id
+          ? membershipMap.get(payment.membership_id) || null
+          : null,
+      }),
+    );
 
     setRevenuePayments(normalized);
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "Unable to load revenue records.",
+    );
+
+    setRevenuePayments([]);
+  } finally {
     setRevenueLoading(false);
   }
+}
 
   async function loadStaff() {
     setLoading(true);
