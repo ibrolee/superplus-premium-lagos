@@ -208,6 +208,44 @@ function formatDuration(
   return `${remainingMinutes}m`;
 }
 
+/* WhatsApp birthday message */
+function createWhatsAppBirthdayUrl(
+  member: Member,
+) {
+  if (!member.phone) return null;
+
+  const phone = member.phone.replace(/\D/g, "");
+
+  if (!phone) return null;
+
+  let whatsappNumber = phone;
+
+  if (phone.startsWith("0")) {
+    whatsappNumber = `234${phone.slice(1)}`;
+  } else if (phone.startsWith("234")) {
+    whatsappNumber = phone;
+  }
+
+  const firstName =
+    member.full_name?.trim().split(/\s+/)[0] ||
+    "Member";
+
+  const message =
+    `🎉🎂 HAPPY BIRTHDAY, ${firstName}! 🎂🎉\n\n` +
+    `Today is a special day, and everyone at Super Plus Fitness & Spa wants to take a moment to celebrate YOU. ❤️\n\n` +
+    `We are truly grateful to have you as part of the Super Plus family. Your commitment, energy and presence mean so much to us, and we hope this new chapter of your life brings you greater happiness, good health, peace, success and many beautiful memories. 🙏✨\n\n` +
+    `May this new year of your life be filled with strength to overcome every challenge, courage to chase your goals, and countless reasons to smile. May you continue to grow, thrive and become the very best version of yourself. 💪🏽❤️\n\n` +
+    `From all of us at Super Plus Fitness & Spa, we wish you a truly amazing birthday and a wonderful year ahead. 🥳🎈\n\n` +
+    `Keep shining, keep growing and keep staying strong! 💪🔥\n\n` +
+    `Enjoy your special day! 🎂🎉\n\n` +
+    `With love from your Super Plus family ❤️\n` +
+    `— Super Plus Fitness & Spa`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    message,
+  )}`;
+}
+
 function ExpandableSummary({
   eyebrow,
   title,
@@ -258,8 +296,11 @@ function ExpandableSummary({
 }
 
 function ReceptionDashboardPage() {
-  const [checkingAccess, setCheckingAccess] = useState(true);
-  const [staffName, setStaffName] = useState("");
+  const [checkingAccess, setCheckingAccess] =
+    useState(true);
+
+  const [staffName, setStaffName] =
+    useState("");
 
   const [members, setMembers] = useState<
     MemberWithMembership[]
@@ -274,22 +315,31 @@ function ReceptionDashboardPage() {
   const [loadingAttendance, setLoadingAttendance] =
     useState(false);
 
-  const [loadError, setLoadError] = useState("");
+  const [loadError, setLoadError] =
+    useState("");
 
-  const [loggingOut, setLoggingOut] = useState(false);
+  const [loggingOut, setLoggingOut] =
+    useState(false);
 
-  const [memberSearch, setMemberSearch] = useState("");
+  const [memberSearch, setMemberSearch] =
+    useState("");
 
-  const today = useMemo(() => getTodayParts(), []);
-
-  const currentMonthName = getMonthName(today.month);
-
-  const todayDateString = getLocalDateString();
-
-  const sevenDaysFromToday = addDaysToDateString(
-    todayDateString,
-    7,
+  const today = useMemo(
+    () => getTodayParts(),
+    [],
   );
+
+  const currentMonthName =
+    getMonthName(today.month);
+
+  const todayDateString =
+    getLocalDateString();
+
+  const sevenDaysFromToday =
+    addDaysToDateString(
+      todayDateString,
+      7,
+    );
 
   useEffect(() => {
     let active = true;
@@ -308,13 +358,18 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { data: staff, error: staffError } =
-        await supabase
-          .from("staff_users")
-          .select("full_name, role, active")
-          .eq("auth_user_id", session.user.id)
-          .eq("active", true)
-          .maybeSingle();
+      const {
+        data: staff,
+        error: staffError,
+      } = await supabase
+        .from("staff_users")
+        .select("full_name, role, active")
+        .eq(
+          "auth_user_id",
+          session.user.id,
+        )
+        .eq("active", true)
+        .maybeSingle();
 
       if (!active) return;
 
@@ -324,7 +379,10 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      setStaffName(staff.full_name || "Reception");
+      setStaffName(
+        staff.full_name || "Reception",
+      );
+
       setCheckingAccess(false);
     }
 
@@ -348,13 +406,18 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { data: staff, error: staffError } =
-        await supabase
-          .from("staff_users")
-          .select("full_name, role, active")
-          .eq("auth_user_id", session.user.id)
-          .eq("active", true)
-          .maybeSingle();
+      const {
+        data: staff,
+        error: staffError,
+      } = await supabase
+        .from("staff_users")
+        .select("full_name, role, active")
+        .eq(
+          "auth_user_id",
+          session.user.id,
+        )
+        .eq("active", true)
+        .maybeSingle();
 
       if (staffError || !staff) {
         await supabase.auth.signOut();
@@ -362,7 +425,8 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { start, end } = getLocalDayRange();
+      const { start, end } =
+        getLocalDayRange();
 
       const {
         data: attendanceData,
@@ -381,31 +445,45 @@ function ReceptionDashboardPage() {
             )
           `,
         )
-        .gte("checked_in_at", start)
-        .lt("checked_in_at", end)
+        .gte(
+          "checked_in_at",
+          start,
+        )
+        .lt(
+          "checked_in_at",
+          end,
+        )
         .order("checked_in_at", {
           ascending: false,
         });
 
       if (attendanceError) {
-        throw new Error(attendanceError.message);
+        throw new Error(
+          attendanceError.message,
+        );
       }
 
       const records: AttendanceWithMember[] =
-        (attendanceData || []).map((record: any) => ({
-          id: record.id,
-          member_id: record.member_id,
-          checked_in_at: record.checked_in_at,
-          checked_out_at: record.checked_out_at,
-          member: record.members
-            ? {
-                full_name:
-                  record.members.full_name || null,
-                phone:
-                  record.members.phone || null,
-              }
-            : null,
-        }));
+        (attendanceData || []).map(
+          (record: any) => ({
+            id: record.id,
+            member_id: record.member_id,
+            checked_in_at:
+              record.checked_in_at,
+            checked_out_at:
+              record.checked_out_at,
+            member: record.members
+              ? {
+                  full_name:
+                    record.members
+                      .full_name || null,
+                  phone:
+                    record.members.phone ||
+                    null,
+                }
+              : null,
+          }),
+        );
 
       setTodayAttendance(records);
     } catch (error) {
@@ -438,13 +516,18 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { data: staff, error: staffError } =
-        await supabase
-          .from("staff_users")
-          .select("full_name, role, active")
-          .eq("auth_user_id", session.user.id)
-          .eq("active", true)
-          .maybeSingle();
+      const {
+        data: staff,
+        error: staffError,
+      } = await supabase
+        .from("staff_users")
+        .select("full_name, role, active")
+        .eq(
+          "auth_user_id",
+          session.user.id,
+        )
+        .eq("active", true)
+        .maybeSingle();
 
       if (staffError || !staff) {
         await supabase.auth.signOut();
@@ -452,14 +535,10 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      setStaffName(staff.full_name || "Reception");
+      setStaffName(
+        staff.full_name || "Reception",
+      );
 
-      /*
-       * Load ALL members.
-       *
-       * This is intentional. Birthday information is optional,
-       * but reception search must be able to find every member.
-       */
       const {
         data: memberData,
         error: membersError,
@@ -473,20 +552,23 @@ function ReceptionDashboardPage() {
         });
 
       if (membersError) {
-        throw new Error(membersError.message);
+        throw new Error(
+          membersError.message,
+        );
       }
 
-      const memberRows = (memberData ||
-        []) as Member[];
+      const memberRows =
+        (memberData || []) as Member[];
 
       if (memberRows.length === 0) {
         setMembers([]);
         return;
       }
 
-      const memberIds = memberRows.map(
-        (member) => member.id,
-      );
+      const memberIds =
+        memberRows.map(
+          (member) => member.id,
+        );
 
       const {
         data: membershipData,
@@ -496,17 +578,23 @@ function ReceptionDashboardPage() {
         .select(
           "id, member_id, plan_name, start_date, end_date, status",
         )
-        .in("member_id", memberIds)
+        .in(
+          "member_id",
+          memberIds,
+        )
         .order("end_date", {
           ascending: false,
         });
 
       if (membershipError) {
-        throw new Error(membershipError.message);
+        throw new Error(
+          membershipError.message,
+        );
       }
 
       const membershipRows =
-        (membershipData || []) as Membership[];
+        (membershipData ||
+          []) as Membership[];
 
       const latestMembershipByMember =
         new Map<string, Membership>();
@@ -528,8 +616,9 @@ function ReceptionDashboardPage() {
         memberRows.map((member) => ({
           ...member,
           membership:
-            latestMembershipByMember.get(member.id) ||
-            null,
+            latestMembershipByMember.get(
+              member.id,
+            ) || null,
         }));
 
       setMembers(combined);
@@ -559,10 +648,16 @@ function ReceptionDashboardPage() {
   }
 
   useEffect(() => {
-    if (!checkingAccess && staffName) {
+    if (
+      !checkingAccess &&
+      staffName
+    ) {
       refreshDashboard();
     }
-  }, [checkingAccess, staffName]);
+  }, [
+    checkingAccess,
+    staffName,
+  ]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -576,79 +671,118 @@ function ReceptionDashboardPage() {
     setLoggingOut(false);
   }
 
-  const birthdaysToday = members.filter(
-    (member) =>
-      member.birth_day === today.day &&
-      member.birth_month === today.month,
-  );
-
-  const birthdaysThisMonth = members
-    .filter(
+  const birthdaysToday =
+    members.filter(
       (member) =>
-        member.birth_month === today.month,
-    )
-    .sort((a, b) => {
-      const dayA = a.birth_day || 0;
-      const dayB = b.birth_day || 0;
+        member.birth_day ===
+          today.day &&
+        member.birth_month ===
+          today.month,
+    );
 
-      return dayA - dayB;
-    });
+  const birthdaysThisMonth =
+    members
+      .filter(
+        (member) =>
+          member.birth_month ===
+          today.month,
+      )
+      .sort((a, b) => {
+        const dayA =
+          a.birth_day || 0;
 
-  const currentlyInside = todayAttendance.filter(
-    (attendance) =>
-      !attendance.checked_out_at,
-  );
+        const dayB =
+          b.birth_day || 0;
 
-  const uniqueVisitorsToday = new Set(
-    todayAttendance.map(
-      (attendance) => attendance.member_id,
-    ),
-  ).size;
+        return dayA - dayB;
+      });
 
-  const expiringSoon = members
-    .filter((member) => {
-      const endDate = getDateOnly(
-        member.membership?.end_date,
-      );
+  const currentlyInside =
+    todayAttendance.filter(
+      (attendance) =>
+        !attendance.checked_out_at,
+    );
 
-      if (!endDate) return false;
+  const uniqueVisitorsToday =
+    new Set(
+      todayAttendance.map(
+        (attendance) =>
+          attendance.member_id,
+      ),
+    ).size;
 
-      return (
-        endDate >= todayDateString &&
-        endDate <= sevenDaysFromToday
-      );
-    })
-    .sort((a, b) => {
-      const dateA =
-        getDateOnly(a.membership?.end_date) || "";
-      const dateB =
-        getDateOnly(b.membership?.end_date) || "";
-
-      return dateA.localeCompare(dateB);
-    });
-
-  const searchTerm = memberSearch.trim().toLowerCase();
-
-  const searchedMembers = searchTerm
-    ? members
-        .filter((member) => {
-          const name =
-            member.full_name?.toLowerCase() || "";
-
-          const phone =
-            member.phone?.toLowerCase() || "";
-
-          const email =
-            member.email?.toLowerCase() || "";
-
-          return (
-            name.includes(searchTerm) ||
-            phone.includes(searchTerm) ||
-            email.includes(searchTerm)
+  const expiringSoon =
+    members
+      .filter((member) => {
+        const endDate =
+          getDateOnly(
+            member.membership
+              ?.end_date,
           );
-        })
-        .slice(0, 20)
-    : [];
+
+        if (!endDate) return false;
+
+        return (
+          endDate >=
+            todayDateString &&
+          endDate <=
+            sevenDaysFromToday
+        );
+      })
+      .sort((a, b) => {
+        const dateA =
+          getDateOnly(
+            a.membership?.end_date,
+          ) || "";
+
+        const dateB =
+          getDateOnly(
+            b.membership?.end_date,
+          ) || "";
+
+        return dateA.localeCompare(
+          dateB,
+        );
+      });
+
+  const searchTerm =
+    memberSearch
+      .trim()
+      .toLowerCase();
+
+  const searchedMembers =
+    searchTerm
+      ? members
+          .filter((member) => {
+            const name =
+              member.full_name
+                ?.toLowerCase() ||
+              "";
+
+            const phone =
+              member.phone
+                ?.toLowerCase() ||
+              "";
+
+            const email =
+              member.email
+                ?.toLowerCase() ||
+              "";
+
+            return (
+              name.includes(
+                searchTerm,
+              ) ||
+              phone.includes(
+                searchTerm,
+              ) ||
+              email.includes(
+                searchTerm,
+              )
+            );
+          })
+          .slice(0, 20)
+      : [];
 
   if (checkingAccess) {
     return (
@@ -689,7 +823,10 @@ function ReceptionDashboardPage() {
               to="/reception-checkin"
               className="mt-8 block"
             >
-              <Button size="lg" className="w-full">
+              <Button
+                size="lg"
+                className="w-full"
+              >
                 <QrCode />
                 Go To Reception Login
               </Button>
@@ -722,7 +859,10 @@ function ReceptionDashboardPage() {
               </h1>
 
               <p className="mt-3 text-sm text-muted-foreground">
-                Welcome, <strong>{staffName}</strong>
+                Welcome,{" "}
+                <strong>
+                  {staffName}
+                </strong>
               </p>
             </div>
 
@@ -739,7 +879,9 @@ function ReceptionDashboardPage() {
 
               <Button
                 variant="outline"
-                onClick={refreshDashboard}
+                onClick={
+                  refreshDashboard
+                }
                 disabled={
                   loadingMembers ||
                   loadingAttendance
@@ -757,7 +899,9 @@ function ReceptionDashboardPage() {
 
               <Button
                 variant="outline"
-                onClick={handleLogout}
+                onClick={
+                  handleLogout
+                }
                 disabled={loggingOut}
                 className="w-full sm:w-auto"
               >
@@ -818,10 +962,15 @@ function ReceptionDashboardPage() {
 
                 <input
                   type="search"
-                  value={memberSearch}
-                  onChange={(event) =>
+                  value={
+                    memberSearch
+                  }
+                  onChange={(
+                    event,
+                  ) =>
                     setMemberSearch(
-                      event.target.value,
+                      event.target
+                        .value,
                     )
                   }
                   placeholder="Search member name, phone or email..."
@@ -831,7 +980,8 @@ function ReceptionDashboardPage() {
 
               {memberSearch.trim() && (
                 <div className="mt-4">
-                  {searchedMembers.length === 0 ? (
+                  {searchedMembers.length ===
+                  0 ? (
                     <div className="border border-border bg-muted p-6 text-center">
                       <XCircle className="mx-auto size-7 text-muted-foreground" />
 
@@ -845,126 +995,139 @@ function ReceptionDashboardPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-border overflow-hidden border border-border">
-                      {searchedMembers.map((member) => {
-                        const active =
-                          isMembershipActive(
-                            member.membership,
-                          );
+                      {searchedMembers.map(
+                        (member) => {
+                          const active =
+                            isMembershipActive(
+                              member.membership,
+                            );
 
-                        const expiry =
-                          getDateOnly(
-                            member.membership?.end_date,
-                          );
+                          const expiry =
+                            getDateOnly(
+                              member
+                                .membership
+                                ?.end_date,
+                            );
 
-                        const inside =
-                          currentlyInside.some(
-                            (attendance) =>
-                              attendance.member_id ===
-                              member.id,
-                          );
+                          const inside =
+                            currentlyInside.some(
+                              (
+                                attendance,
+                              ) =>
+                                attendance.member_id ===
+                                member.id,
+                            );
 
-                        return (
-                          <div
-                            key={member.id}
-                            className="p-5"
-                          >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <h3 className="font-display text-2xl font-bold uppercase">
-                                  {member.full_name ||
-                                    "Member"}
-                                </h3>
+                          return (
+                            <div
+                              key={
+                                member.id
+                              }
+                              className="p-5"
+                            >
+                              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <h3 className="font-display text-2xl font-bold uppercase">
+                                    {member.full_name ||
+                                      "Member"}
+                                  </h3>
 
-                                <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
-                                  {member.phone && (
-                                    <a
-                                      href={`tel:${member.phone}`}
-                                      className="flex items-center gap-2 hover:text-primary"
-                                    >
-                                      <Phone className="size-3.5" />
-                                      {member.phone}
-                                    </a>
-                                  )}
+                                  <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
+                                    {member.phone && (
+                                      <a
+                                        href={`tel:${member.phone}`}
+                                        className="flex items-center gap-2 hover:text-primary"
+                                      >
+                                        <Phone className="size-3.5" />
+                                        {
+                                          member.phone
+                                        }
+                                      </a>
+                                    )}
 
-                                  {member.email && (
-                                    <span className="truncate">
-                                      {member.email}
+                                    {member.email && (
+                                      <span className="truncate">
+                                        {
+                                          member.email
+                                        }
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase ${
+                                      active
+                                        ? "bg-green-600/10 text-green-700"
+                                        : "bg-destructive/10 text-destructive"
+                                    }`}
+                                  >
+                                    {active ? (
+                                      <CheckCircle2 className="size-3" />
+                                    ) : (
+                                      <XCircle className="size-3" />
+                                    )}
+
+                                    {active
+                                      ? "Active"
+                                      : "Expired"}
+                                  </span>
+
+                                  {inside && (
+                                    <span className="inline-flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 text-[10px] font-extrabold uppercase text-primary">
+                                      <LogIn className="size-3" />
+                                      Inside
                                     </span>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex flex-wrap gap-2">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase ${
-                                    active
-                                      ? "bg-green-600/10 text-green-700"
-                                      : "bg-destructive/10 text-destructive"
-                                  }`}
-                                >
-                                  {active ? (
-                                    <CheckCircle2 className="size-3" />
-                                  ) : (
-                                    <XCircle className="size-3" />
-                                  )}
-
-                                  {active
-                                    ? "Active"
-                                    : "Expired"}
-                                </span>
-
-                                {inside && (
-                                  <span className="inline-flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 text-[10px] font-extrabold uppercase text-primary">
-                                    <LogIn className="size-3" />
-                                    Inside
+                              <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                    Membership
                                   </span>
-                                )}
+
+                                  <p className="mt-1 text-sm font-bold">
+                                    {member.membership?.plan_name ||
+                                      "No membership record"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                    Expiry
+                                  </span>
+
+                                  <p className="mt-1 text-sm font-bold">
+                                    {expiry ||
+                                      "Not available"}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                    Birthday
+                                  </span>
+
+                                  <p className="mt-1 text-sm font-bold">
+                                    {formatBirthday(
+                                      member.birth_day,
+                                      member.birth_month,
+                                    )}
+                                  </p>
+                                </div>
                               </div>
                             </div>
-
-                            <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
-                              <div>
-                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                  Membership
-                                </span>
-
-                                <p className="mt-1 text-sm font-bold">
-                                  {member.membership?.plan_name ||
-                                    "No membership record"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                  Expiry
-                                </span>
-
-                                <p className="mt-1 text-sm font-bold">
-                                  {expiry ||
-                                    "Not available"}
-                                </p>
-                              </div>
-
-                              <div>
-                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                  Birthday
-                                </span>
-
-                                <p className="mt-1 text-sm font-bold">
-                                  {formatBirthday(
-                                    member.birth_day,
-                                    member.birth_month,
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        },
+                      )}
                     </div>
                   )}
 
-                  {searchedMembers.length === 20 && (
+                  {searchedMembers.length ===
+                    20 && (
                     <p className="mt-3 text-center text-[10px] font-extrabold uppercase text-muted-foreground">
                       Showing first 20 matches — refine your search
                     </p>
@@ -989,7 +1152,9 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {currentlyInside.length}
+                {
+                  currentlyInside.length
+                }
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1009,12 +1174,18 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {todayAttendance.length}
+                {
+                  todayAttendance.length
+                }
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                {uniqueVisitorsToday} unique member
-                {uniqueVisitorsToday === 1
+                {
+                  uniqueVisitorsToday
+                }{" "}
+                unique member
+                {uniqueVisitorsToday ===
+                1
                   ? ""
                   : "s"}
               </p>
@@ -1032,14 +1203,18 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {birthdaysToday.length}
+                {
+                  birthdaysToday.length
+                }
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
                 Birthday
-                {birthdaysToday.length === 1
+                {birthdaysToday.length ===
+                1
                   ? ""
-                  : "s"} today
+                  : "s"}{" "}
+                today
               </p>
             </div>
 
@@ -1055,7 +1230,9 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {expiringSoon.length}
+                {
+                  expiringSoon.length
+                }
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1071,8 +1248,12 @@ function ReceptionDashboardPage() {
                 eyebrow="Live Attendance"
                 title="Currently Inside"
                 description="Members who have checked in but have not checked out."
-                count={currentlyInside.length}
-                icon={<Users className="size-6" />}
+                count={
+                  currentlyInside.length
+                }
+                icon={
+                  <Users className="size-6" />
+                }
               />
 
               <div className="mt-3">
@@ -1083,7 +1264,8 @@ function ReceptionDashboardPage() {
                       Loading attendance...
                     </div>
                   </div>
-                ) : currentlyInside.length === 0 ? (
+                ) : currentlyInside.length ===
+                  0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <LogIn className="mx-auto size-8 text-muted-foreground" />
 
@@ -1098,60 +1280,79 @@ function ReceptionDashboardPage() {
                 ) : (
                   <div className="overflow-hidden border border-border bg-background shadow-sm">
                     <div className="hidden grid-cols-[1fr_130px_130px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                      <div>Member</div>
-                      <div>Check-In</div>
-                      <div>Duration</div>
+                      <div>
+                        Member
+                      </div>
+
+                      <div>
+                        Check-In
+                      </div>
+
+                      <div>
+                        Duration
+                      </div>
                     </div>
 
                     <div className="divide-y divide-border">
-                      {currentlyInside.map((attendance) => (
-                        <div
-                          key={attendance.id}
-                          className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
-                        >
-                          <div className="min-w-0">
-                            <p className="font-bold uppercase">
-                              {attendance.member?.full_name ||
-                                "Member"}
-                            </p>
+                      {currentlyInside.map(
+                        (
+                          attendance,
+                        ) => (
+                          <div
+                            key={
+                              attendance.id
+                            }
+                            className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
+                          >
+                            <div className="min-w-0">
+                              <p className="font-bold uppercase">
+                                {attendance.member?.full_name ||
+                                  "Member"}
+                              </p>
 
-                            {attendance.member?.phone && (
-                              <a
-                                href={`tel:${attendance.member.phone}`}
-                                className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
-                              >
-                                <Phone className="size-3" />
-                                {attendance.member.phone}
-                              </a>
-                            )}
-                          </div>
-
-                          <div>
-                            <p className="text-sm font-bold">
-                              {formatTime(
-                                attendance.checked_in_at,
+                              {attendance.member
+                                ?.phone && (
+                                <a
+                                  href={`tel:${attendance.member.phone}`}
+                                  className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
+                                >
+                                  <Phone className="size-3" />
+                                  {
+                                    attendance
+                                      .member
+                                      .phone
+                                  }
+                                </a>
                               )}
-                            </p>
+                            </div>
 
-                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                              Checked in
-                            </p>
+                            <div>
+                              <p className="text-sm font-bold">
+                                {formatTime(
+                                  attendance.checked_in_at,
+                                )}
+                              </p>
+
+                              <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                Checked in
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-bold">
+                                {formatDuration(
+                                  attendance.checked_in_at,
+                                  null,
+                                )}
+                              </p>
+
+                              <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                Current visit
+                              </p>
+                            </div>
                           </div>
-
-                          <div>
-                            <p className="text-sm font-bold">
-                              {formatDuration(
-                                attendance.checked_in_at,
-                                null,
-                              )}
-                            </p>
-
-                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                              Current visit
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -1166,12 +1367,17 @@ function ReceptionDashboardPage() {
                 eyebrow="Membership Alerts"
                 title="Expiring Soon"
                 description="Memberships expiring today or within the next 7 days."
-                count={expiringSoon.length}
-                icon={<Clock3 className="size-6" />}
+                count={
+                  expiringSoon.length
+                }
+                icon={
+                  <Clock3 className="size-6" />
+                }
               />
 
               <div className="mt-3">
-                {expiringSoon.length === 0 ? (
+                {expiringSoon.length ===
+                0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <CheckCircle2 className="mx-auto size-8 text-green-700" />
 
@@ -1186,78 +1392,94 @@ function ReceptionDashboardPage() {
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
-                    {expiringSoon.map((member) => {
-                      const days =
-                        getDaysUntilExpiry(
-                          getDateOnly(
-                            member.membership?.end_date,
-                          ),
-                        );
+                    {expiringSoon.map(
+                      (member) => {
+                        const days =
+                          getDaysUntilExpiry(
+                            getDateOnly(
+                              member
+                                .membership
+                                ?.end_date,
+                            ),
+                          );
 
-                      return (
-                        <div
-                          key={member.id}
-                          className="border border-border bg-background p-6 shadow-sm"
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                              <h3 className="font-display text-2xl font-bold uppercase">
-                                {member.full_name ||
-                                  "Member"}
-                              </h3>
+                        return (
+                          <div
+                            key={
+                              member.id
+                            }
+                            className="border border-border bg-background p-6 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <h3 className="font-display text-2xl font-bold uppercase">
+                                  {member.full_name ||
+                                    "Member"}
+                                </h3>
 
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                {member.membership?.plan_name ||
-                                  "Membership"}
-                              </p>
-                            </div>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {member.membership?.plan_name ||
+                                    "Membership"}
+                                </p>
+                              </div>
 
-                            <span
-                              className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
-                                days === 0
-                                  ? "bg-destructive/10 text-destructive"
-                                  : days !== null &&
-                                      days <= 3
-                                    ? "bg-primary/10 text-primary"
-                                    : "bg-muted text-foreground"
-                              }`}
-                            >
-                              {days === 0
-                                ? "Expires today"
-                                : days === 1
-                                  ? "1 day left"
-                                  : `${days} days left`}
-                            </span>
-                          </div>
-
-                          <div className="mt-5 grid gap-3 text-sm">
-                            <div className="flex items-center gap-3">
-                              <Clock3 className="size-4 text-primary" />
-
-                              <span>
-                                Expires{" "}
-                                <strong>
-                                  {getDateOnly(
-                                    member.membership
-                                      ?.end_date,
-                                  )}
-                                </strong>
+                              <span
+                                className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
+                                  days ===
+                                  0
+                                    ? "bg-destructive/10 text-destructive"
+                                    : days !==
+                                          null &&
+                                        days <=
+                                          3
+                                      ? "bg-primary/10 text-primary"
+                                      : "bg-muted text-foreground"
+                                }`}
+                              >
+                                {days ===
+                                0
+                                  ? "Expires today"
+                                  : days ===
+                                      1
+                                    ? "1 day left"
+                                    : `${days} days left`}
                               </span>
                             </div>
 
-                            {member.phone && (
-                              <a
-                                href={`tel:${member.phone}`}
-                                className="flex items-center gap-3 hover:text-primary"
-                              >
-                                <Phone className="size-4 text-primary" />
-                                <span>{member.phone}</span>
-                              </a>
-                            )}
+                            <div className="mt-5 grid gap-3 text-sm">
+                              <div className="flex items-center gap-3">
+                                <Clock3 className="size-4 text-primary" />
+
+                                <span>
+                                  Expires{" "}
+                                  <strong>
+                                    {getDateOnly(
+                                      member
+                                        .membership
+                                        ?.end_date,
+                                    )}
+                                  </strong>
+                                </span>
+                              </div>
+
+                              {member.phone && (
+                                <a
+                                  href={`tel:${member.phone}`}
+                                  className="flex items-center gap-3 hover:text-primary"
+                                >
+                                  <Phone className="size-4 text-primary" />
+                                  <span>
+                                    {
+                                      member.phone
+                                    }
+                                  </span>
+                                </a>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      },
+                    )}
                   </div>
                 )}
               </div>
@@ -1271,8 +1493,12 @@ function ReceptionDashboardPage() {
                 eyebrow="Today"
                 title="Today's Birthdays"
                 description="Members celebrating their birthday today."
-                count={birthdaysToday.length}
-                icon={<Cake className="size-6" />}
+                count={
+                  birthdaysToday.length
+                }
+                icon={
+                  <Cake className="size-6" />
+                }
               />
 
               <div className="mt-3">
@@ -1283,7 +1509,8 @@ function ReceptionDashboardPage() {
                       Loading birthdays...
                     </div>
                   </div>
-                ) : birthdaysToday.length === 0 ? (
+                ) : birthdaysToday.length ===
+                  0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <Cake className="mx-auto size-8 text-muted-foreground" />
 
@@ -1297,37 +1524,252 @@ function ReceptionDashboardPage() {
                   </div>
                 ) : (
                   <div className="grid gap-4 md:grid-cols-2">
-                    {birthdaysToday.map((member) => {
-                      const active =
-                        isMembershipActive(
-                          member.membership,
-                        );
+                    {birthdaysToday.map(
+                      (member) => {
+                        const active =
+                          isMembershipActive(
+                            member.membership,
+                          );
 
-                      return (
-                        <div
-                          key={member.id}
-                          className="border border-primary/30 bg-background p-6 shadow-sm"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="flex size-12 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-                              <Cake className="size-6" />
-                            </div>
+                        const whatsappUrl =
+                          createWhatsAppBirthdayUrl(
+                            member,
+                          );
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                <div>
-                                  <h3 className="font-display text-2xl font-bold uppercase">
-                                    {member.full_name ||
-                                      "Member"}
-                                  </h3>
+                        return (
+                          <div
+                            key={
+                              member.id
+                            }
+                            className="border border-primary/30 bg-background p-6 shadow-sm"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="flex size-12 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+                                <Cake className="size-6" />
+                              </div>
 
-                                  <p className="mt-1 text-sm font-bold text-primary">
-                                    Birthday today 🎉
-                                  </p>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                  <div>
+                                    <h3 className="font-display text-2xl font-bold uppercase">
+                                      {member.full_name ||
+                                        "Member"}
+                                    </h3>
+
+                                    <p className="mt-1 text-sm font-bold text-primary">
+                                      Birthday today 🎉
+                                    </p>
+                                  </div>
+
+                                  <span
+                                    className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
+                                      active
+                                        ? "bg-green-600/10 text-green-700"
+                                        : "bg-destructive/10 text-destructive"
+                                    }`}
+                                  >
+                                    {active ? (
+                                      <CheckCircle2 className="size-3" />
+                                    ) : (
+                                      <XCircle className="size-3" />
+                                    )}
+
+                                    {active
+                                      ? "Active"
+                                      : "Expired"}
+                                  </span>
                                 </div>
 
+                                <div className="mt-5 grid gap-3 text-sm">
+                                  <div className="flex items-center gap-3">
+                                    <Cake className="size-4 shrink-0 text-primary" />
+
+                                    <span>
+                                      {formatBirthday(
+                                        member.birth_day,
+                                        member.birth_month,
+                                      )}
+                                    </span>
+                                  </div>
+
+                                  {member.phone && (
+                                    <a
+                                      href={`tel:${member.phone}`}
+                                      className="flex items-center gap-3 hover:text-primary"
+                                    >
+                                      <Phone className="size-4 shrink-0 text-primary" />
+                                      <span>
+                                        {
+                                          member.phone
+                                        }
+                                      </span>
+                                    </a>
+                                  )}
+
+                                  {member.membership
+                                    ?.plan_name && (
+                                    <div className="flex items-center gap-3">
+                                      <UserRound className="size-4 shrink-0 text-primary" />
+
+                                      <span>
+                                        {
+                                          member
+                                            .membership
+                                            .plan_name
+                                        }
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {whatsappUrl ? (
+                                    <a
+                                      href={
+                                        whatsappUrl
+                                      }
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-green-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white transition-opacity hover:opacity-90"
+                                    >
+                                      <span className="mr-2 text-base">
+                                        💬
+                                      </span>
+
+                                      Send WhatsApp Birthday Message
+                                    </a>
+                                  ) : (
+                                    <div className="mt-2 rounded-md bg-muted px-4 py-3 text-center text-[10px] font-extrabold uppercase text-muted-foreground">
+                                      No phone number — WhatsApp unavailable
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                )}
+              </div>
+            </details>
+          </section>
+
+          {/* BIRTHDAYS THIS MONTH */}
+          <section className="mt-10">
+            <details className="group">
+              <ExpandableSummary
+                eyebrow={
+                  currentMonthName
+                }
+                title="Birthdays This Month"
+                description={`All members celebrating their birthday in ${currentMonthName}, arranged by date.`}
+                count={
+                  birthdaysThisMonth.length
+                }
+                icon={
+                  <Cake className="size-6" />
+                }
+              />
+
+              <div className="mt-3">
+                {loadingMembers ? (
+                  <div className="flex items-center justify-center border border-border bg-background py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Loading birthdays...
+                    </div>
+                  </div>
+                ) : birthdaysThisMonth.length ===
+                  0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <Cake className="mx-auto size-8 text-muted-foreground" />
+
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      No Birthdays This Month
+                    </h3>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No member birthdays have been recorded for{" "}
+                      {
+                        currentMonthName
+                      }.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden border border-border bg-background shadow-sm">
+                    <div className="hidden grid-cols-[90px_1fr_150px_170px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
+                      <div>
+                        Date
+                      </div>
+
+                      <div>
+                        Member
+                      </div>
+
+                      <div>
+                        Membership
+                      </div>
+
+                      <div>
+                        Phone
+                      </div>
+                    </div>
+
+                    <div className="divide-y divide-border">
+                      {birthdaysThisMonth.map(
+                        (member) => {
+                          const active =
+                            isMembershipActive(
+                              member.membership,
+                            );
+
+                          const isToday =
+                            member.birth_day ===
+                            today.day;
+
+                          return (
+                            <div
+                              key={
+                                member.id
+                              }
+                              className={`grid gap-4 px-5 py-5 md:grid-cols-[90px_1fr_150px_170px] md:items-center ${
+                                isToday
+                                  ? "bg-primary/5"
+                                  : "bg-background"
+                              }`}
+                            >
+                              <div>
+                                <div className="font-display text-2xl font-bold">
+                                  {
+                                    member.birth_day
+                                  }
+                                </div>
+
+                                {isToday && (
+                                  <span className="text-[10px] font-extrabold uppercase text-primary">
+                                    Today
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="min-w-0">
+                                <p className="font-bold uppercase">
+                                  {member.full_name ||
+                                    "Member"}
+                                </p>
+
+                                {member.email && (
+                                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                                    {
+                                      member.email
+                                    }
+                                  </p>
+                                )}
+                              </div>
+
+                              <div>
                                 <span
-                                  className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
                                     active
                                       ? "bg-green-600/10 text-green-700"
                                       : "bg-destructive/10 text-destructive"
@@ -1343,192 +1785,43 @@ function ReceptionDashboardPage() {
                                     ? "Active"
                                     : "Expired"}
                                 </span>
-                              </div>
-
-                              <div className="mt-5 grid gap-3 text-sm">
-                                <div className="flex items-center gap-3">
-                                  <Cake className="size-4 shrink-0 text-primary" />
-
-                                  <span>
-                                    {formatBirthday(
-                                      member.birth_day,
-                                      member.birth_month,
-                                    )}
-                                  </span>
-                                </div>
-
-                                {member.phone && (
-                                  <a
-                                    href={`tel:${member.phone}`}
-                                    className="flex items-center gap-3 hover:text-primary"
-                                  >
-                                    <Phone className="size-4 shrink-0 text-primary" />
-                                    <span>
-                                      {member.phone}
-                                    </span>
-                                  </a>
-                                )}
 
                                 {member.membership
                                   ?.plan_name && (
-                                  <div className="flex items-center gap-3">
-                                    <UserRound className="size-4 shrink-0 text-primary" />
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    {
+                                      member
+                                        .membership
+                                        .plan_name
+                                    }
+                                  </p>
+                                )}
+                              </div>
+
+                              <div>
+                                {member.phone ? (
+                                  <a
+                                    href={`tel:${member.phone}`}
+                                    className="flex items-center gap-2 text-sm hover:text-primary"
+                                  >
+                                    <Phone className="size-4 shrink-0 text-primary" />
 
                                     <span>
                                       {
-                                        member.membership
-                                          .plan_name
+                                        member.phone
                                       }
                                     </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </details>
-          </section>
-
-          {/* BIRTHDAYS THIS MONTH */}
-          <section className="mt-10">
-            <details className="group">
-              <ExpandableSummary
-                eyebrow={currentMonthName}
-                title="Birthdays This Month"
-                description={`All members celebrating their birthday in ${currentMonthName}, arranged by date.`}
-                count={birthdaysThisMonth.length}
-                icon={<Cake className="size-6" />}
-              />
-
-              <div className="mt-3">
-                {loadingMembers ? (
-                  <div className="flex items-center justify-center border border-border bg-background py-16">
-                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                      <Loader2 className="size-5 animate-spin" />
-                      Loading birthdays...
-                    </div>
-                  </div>
-                ) : birthdaysThisMonth.length === 0 ? (
-                  <div className="border border-border bg-background p-8 text-center shadow-sm">
-                    <Cake className="mx-auto size-8 text-muted-foreground" />
-
-                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
-                      No Birthdays This Month
-                    </h3>
-
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      No member birthdays have been recorded for{" "}
-                      {currentMonthName}.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="overflow-hidden border border-border bg-background shadow-sm">
-                    <div className="hidden grid-cols-[90px_1fr_150px_170px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                      <div>Date</div>
-                      <div>Member</div>
-                      <div>Membership</div>
-                      <div>Phone</div>
-                    </div>
-
-                    <div className="divide-y divide-border">
-                      {birthdaysThisMonth.map((member) => {
-                        const active =
-                          isMembershipActive(
-                            member.membership,
-                          );
-
-                        const isToday =
-                          member.birth_day === today.day;
-
-                        return (
-                          <div
-                            key={member.id}
-                            className={`grid gap-4 px-5 py-5 md:grid-cols-[90px_1fr_150px_170px] md:items-center ${
-                              isToday
-                                ? "bg-primary/5"
-                                : "bg-background"
-                            }`}
-                          >
-                            <div>
-                              <div className="font-display text-2xl font-bold">
-                                {member.birth_day}
-                              </div>
-
-                              {isToday && (
-                                <span className="text-[10px] font-extrabold uppercase text-primary">
-                                  Today
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="font-bold uppercase">
-                                {member.full_name ||
-                                  "Member"}
-                              </p>
-
-                              {member.email && (
-                                <p className="mt-1 truncate text-xs text-muted-foreground">
-                                  {member.email}
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
-                                  active
-                                    ? "bg-green-600/10 text-green-700"
-                                    : "bg-destructive/10 text-destructive"
-                                }`}
-                              >
-                                {active ? (
-                                  <CheckCircle2 className="size-3" />
+                                  </a>
                                 ) : (
-                                  <XCircle className="size-3" />
-                                )}
-
-                                {active
-                                  ? "Active"
-                                  : "Expired"}
-                              </span>
-
-                              {member.membership
-                                ?.plan_name && (
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                  {
-                                    member.membership
-                                      .plan_name
-                                  }
-                                </p>
-                              )}
-                            </div>
-
-                            <div>
-                              {member.phone ? (
-                                <a
-                                  href={`tel:${member.phone}`}
-                                  className="flex items-center gap-2 text-sm hover:text-primary"
-                                >
-                                  <Phone className="size-4 shrink-0 text-primary" />
-                                  <span>
-                                    {member.phone}
+                                  <span className="text-xs text-muted-foreground">
+                                    No phone number
                                   </span>
-                                </a>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  No phone number
-                                </span>
-                              )}
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        },
+                      )}
                     </div>
                   </div>
                 )}
@@ -1564,7 +1857,9 @@ function ReceptionDashboardPage() {
 
             <button
               type="button"
-              onClick={refreshDashboard}
+              onClick={
+                refreshDashboard
+              }
               className="text-left"
             >
               <div className="h-full border border-border bg-background p-6 shadow-sm transition-colors hover:border-primary">
