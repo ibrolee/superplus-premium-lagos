@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -17,6 +17,7 @@ import {
   Pencil,
   Save,
   X,
+  FileText,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -180,9 +181,7 @@ function statusClass(status: StaffProfile["status"]) {
 function getPaymentPlan(payment: RevenuePaymentRow) {
   const membershipPlan = payment.membership?.plan_name;
 
-  if (membershipPlan) {
-    return membershipPlan;
-  }
+  if (membershipPlan) return membershipPlan;
 
   const metadataPlan = payment.metadata?.plan_name;
 
@@ -213,9 +212,7 @@ function getPaymentDate(payment: RevenuePaymentRow) {
 
 function startOfDay(date: Date) {
   const result = new Date(date);
-
   result.setHours(0, 0, 0, 0);
-
   return result;
 }
 
@@ -223,9 +220,7 @@ function startOfWeek(date: Date) {
   const result = startOfDay(date);
   const day = result.getDay();
   const difference = day === 0 ? -6 : 1 - day;
-
   result.setDate(result.getDate() + difference);
-
   return result;
 }
 
@@ -285,52 +280,53 @@ function RevenueReport({
         return false;
       }
 
-      if (!periodStart) {
-        return true;
-      }
+      if (!periodStart) return true;
 
-      const paymentDate = new Date(getPaymentDate(payment));
-
-      return paymentDate >= periodStart;
+      return new Date(getPaymentDate(payment)) >= periodStart;
     });
   }, [payments, periodStart]);
 
-  const totalRevenue = useMemo(() => {
-    return periodPayments.reduce(
-      (total, payment) => total + Number(payment.amount || 0),
-      0,
-    );
-  }, [periodPayments]);
-
-  const todayRevenue = useMemo(() => {
-    return payments
-      .filter(
-        (payment) =>
-          payment.status.toLowerCase() === "success" &&
-          isSameDay(
-            new Date(getPaymentDate(payment)),
-            now,
-          ),
-      )
-      .reduce(
-        (total, payment) => total + Number(payment.amount || 0),
+  const totalRevenue = useMemo(
+    () =>
+      periodPayments.reduce(
+        (total, payment) =>
+          total + Number(payment.amount || 0),
         0,
-      );
-  }, [payments, now]);
+      ),
+    [periodPayments],
+  );
+
+  const todayRevenue = useMemo(
+    () =>
+      payments
+        .filter(
+          (payment) =>
+            payment.status.toLowerCase() === "success" &&
+            isSameDay(
+              new Date(getPaymentDate(payment)),
+              now,
+            ),
+        )
+        .reduce(
+          (total, payment) =>
+            total + Number(payment.amount || 0),
+          0,
+        ),
+    [payments, now],
+  );
 
   const monthRevenue = useMemo(() => {
     const monthStart = startOfMonth(now);
 
     return payments
-      .filter((payment) => {
-        if (payment.status.toLowerCase() !== "success") {
-          return false;
-        }
-
-        return new Date(getPaymentDate(payment)) >= monthStart;
-      })
+      .filter(
+        (payment) =>
+          payment.status.toLowerCase() === "success" &&
+          new Date(getPaymentDate(payment)) >= monthStart,
+      )
       .reduce(
-        (total, payment) => total + Number(payment.amount || 0),
+        (total, payment) =>
+          total + Number(payment.amount || 0),
         0,
       );
   }, [payments, now]);
@@ -444,9 +440,7 @@ function RevenueReport({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted">
-                  <TrendingUp className="h-5 w-5" />
-                </div>
+                <TrendingUp className="h-5 w-5" />
 
                 <div>
                   <h2 className="font-display text-2xl font-bold uppercase">
@@ -504,12 +498,9 @@ function RevenueReport({
         <div className="p-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="border border-border bg-background p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Revenue
-                </p>
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Revenue
+              </p>
 
               <p className="mt-3 break-words text-3xl font-bold">
                 {formatMoney(totalRevenue)}
@@ -521,12 +512,9 @@ function RevenueReport({
             </div>
 
             <div className="border border-border bg-background p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Today
-                </p>
-                <CalendarDays className="h-5 w-5 text-muted-foreground" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Today
+              </p>
 
               <p className="mt-3 break-words text-3xl font-bold">
                 {formatMoney(todayRevenue)}
@@ -538,12 +526,9 @@ function RevenueReport({
             </div>
 
             <div className="border border-border bg-background p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Payments
-                </p>
-                <CreditCard className="h-5 w-5 text-muted-foreground" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Payments
+              </p>
 
               <p className="mt-3 text-3xl font-bold">
                 {periodPayments.length}
@@ -555,12 +540,9 @@ function RevenueReport({
             </div>
 
             <div className="border border-border bg-background p-5">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Average Payment
-                </p>
-                <Users className="h-5 w-5 text-muted-foreground" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Average Payment
+              </p>
 
               <p className="mt-3 break-words text-3xl font-bold">
                 {formatMoney(averagePayment)}
@@ -574,19 +556,9 @@ function RevenueReport({
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
             <div className="border border-border bg-background p-5">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h3 className="font-display text-xl font-bold uppercase">
-                    Revenue by Plan
-                  </h3>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Based on successful payments
-                  </p>
-                </div>
-
-                <DollarSign className="h-5 w-5 text-muted-foreground" />
-              </div>
+              <h3 className="font-display text-xl font-bold uppercase">
+                Revenue by Plan
+              </h3>
 
               <div className="mt-5">
                 {revenueByPlan.length === 0 ? (
@@ -607,7 +579,7 @@ function RevenueReport({
                           className="border-b border-border pb-3 last:border-0"
                         >
                           <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
+                            <div>
                               <p className="font-semibold">
                                 {item.plan}
                               </p>
@@ -618,7 +590,7 @@ function RevenueReport({
                               </p>
                             </div>
 
-                            <p className="shrink-0 font-bold">
+                            <p className="font-bold">
                               {formatMoney(item.amount)}
                             </p>
                           </div>
@@ -634,10 +606,6 @@ function RevenueReport({
                               }}
                             />
                           </div>
-
-                          <p className="mt-1 text-right text-[10px] text-muted-foreground">
-                            {percentage.toFixed(1)}%
-                          </p>
                         </div>
                       );
                     })}
@@ -646,7 +614,7 @@ function RevenueReport({
               </div>
 
               <div className="mt-6 border-t border-border pt-5">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     This Month
                   </span>
@@ -667,21 +635,18 @@ function RevenueReport({
 
                   <p className="mt-1 text-xs text-muted-foreground">
                     {periodPayments.length} successful payment
-                    {periodPayments.length === 1 ? "" : "s"} in selected
-                    period
+                    {periodPayments.length === 1 ? "" : "s"}
                   </p>
                 </div>
 
-                <div className="w-full sm:w-64">
-                  <input
-                    value={paymentSearch}
-                    onChange={(event) =>
-                      setPaymentSearch(event.target.value)
-                    }
-                    placeholder="Search payments..."
-                    className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
-                  />
-                </div>
+                <input
+                  value={paymentSearch}
+                  onChange={(event) =>
+                    setPaymentSearch(event.target.value)
+                  }
+                  placeholder="Search payments..."
+                  className="h-10 w-full border border-border bg-background px-3 text-sm outline-none sm:w-64"
+                />
               </div>
 
               <div className="mt-5 overflow-x-auto">
@@ -799,7 +764,6 @@ function StaffAdminPage() {
   const [employmentDate, setEmploymentDate] = useState("");
   const [role, setRole] = useState("staff");
 
-  /* PERSONAL INFORMATION EDITING */
   const [editingPersonalInfo, setEditingPersonalInfo] =
     useState(false);
 
@@ -843,7 +807,9 @@ function StaffAdminPage() {
 
     const isAdmin =
       data?.active === true &&
-      ["admin", "owner", "manager"].includes(data.role);
+      ["admin", "owner", "manager"].includes(
+        String(data.role).toLowerCase(),
+      );
 
     if (!isAdmin) {
       setError(
@@ -923,52 +889,26 @@ function StaffAdminPage() {
       let members: RevenueMember[] = [];
 
       if (memberIds.length > 0) {
-        const { data: memberData, error: memberError } =
-          await supabase
-            .from("members")
-            .select(
-              `
-              id,
-              full_name,
-              email,
-              phone
-            `,
-            )
-            .in("id", memberIds);
+        const { data: memberData } = await supabase
+          .from("members")
+          .select(
+            "id, full_name, email, phone",
+          )
+          .in("id", memberIds);
 
-        if (memberError) {
-          console.warn(
-            "Could not load member details for revenue report:",
-            memberError.message,
-          );
-        } else {
-          members = (memberData || []) as RevenueMember[];
-        }
+        members = (memberData || []) as RevenueMember[];
       }
 
       let memberships: RevenueMembership[] = [];
 
       if (membershipIds.length > 0) {
-        const { data: membershipData, error: membershipError } =
-          await supabase
-            .from("memberships")
-            .select(
-              `
-              id,
-              plan_name
-            `,
-            )
-            .in("id", membershipIds);
+        const { data: membershipData } = await supabase
+          .from("memberships")
+          .select("id, plan_name")
+          .in("id", membershipIds);
 
-        if (membershipError) {
-          console.warn(
-            "Could not load membership details for revenue report:",
-            membershipError.message,
-          );
-        } else {
-          memberships = (membershipData ||
-            []) as RevenueMembership[];
-        }
+        memberships =
+          (membershipData || []) as RevenueMembership[];
       }
 
       const memberMap = new Map(
@@ -982,8 +922,8 @@ function StaffAdminPage() {
         ]),
       );
 
-      const normalized: RevenuePaymentRow[] = payments.map(
-        (payment) => ({
+      setRevenuePayments(
+        payments.map((payment) => ({
           ...payment,
           member: payment.member_id
             ? memberMap.get(payment.member_id) || null
@@ -991,17 +931,14 @@ function StaffAdminPage() {
           membership: payment.membership_id
             ? membershipMap.get(payment.membership_id) || null
             : null,
-        }),
+        })),
       );
-
-      setRevenuePayments(normalized);
     } catch (error) {
       setError(
         error instanceof Error
           ? error.message
           : "Unable to load revenue records.",
       );
-
       setRevenuePayments([]);
     } finally {
       setRevenueLoading(false);
@@ -1074,7 +1011,6 @@ function StaffAdminPage() {
     setEmploymentDate(profile.employment_date || "");
     setRole(profile.role || "staff");
 
-    /* Load personal information into editable fields */
     setPersonalFullName(profile.full_name || "");
     setPersonalPhone(profile.phone || "");
     setPersonalBirthDay(
@@ -1088,40 +1024,41 @@ function StaffAdminPage() {
     setEditingPersonalInfo(false);
     setShowSalaryForm(false);
 
-    const [salaryResult, attendanceResult] = await Promise.all([
-      supabase
-        .from("staff_salary_records")
-        .select(
-          `
-          id,
-          staff_profile_id,
-          amount,
-          currency,
-          pay_period_start,
-          pay_period_end,
-          payment_date,
-          status,
-          notes,
-          created_at
-        `,
-        )
-        .eq("staff_profile_id", profile.id)
-        .order("created_at", { ascending: false }),
+    const [salaryResult, attendanceResult] =
+      await Promise.all([
+        supabase
+          .from("staff_salary_records")
+          .select(
+            `
+            id,
+            staff_profile_id,
+            amount,
+            currency,
+            pay_period_start,
+            pay_period_end,
+            payment_date,
+            status,
+            notes,
+            created_at
+          `,
+          )
+          .eq("staff_profile_id", profile.id)
+          .order("created_at", { ascending: false }),
 
-      supabase
-        .from("staff_attendance")
-        .select(
-          `
-          id,
-          checked_in_at,
-          checked_out_at,
-          notes
-        `,
-        )
-        .eq("staff_profile_id", profile.id)
-        .order("checked_in_at", { ascending: false })
-        .limit(50),
-    ]);
+        supabase
+          .from("staff_attendance")
+          .select(
+            `
+            id,
+            checked_in_at,
+            checked_out_at,
+            notes
+          `,
+          )
+          .eq("staff_profile_id", profile.id)
+          .order("checked_in_at", { ascending: false })
+          .limit(50),
+      ]);
 
     if (salaryResult.error) {
       setError(salaryResult.error.message);
@@ -1207,24 +1144,11 @@ function StaffAdminPage() {
       return;
     }
 
-    /*
-     * Keep staff_users.full_name synchronized with the staff profile.
-     * We deliberately do NOT change the auth email here because
-     * changing the profile email without changing the Supabase Auth
-     * email would create a login mismatch.
-     */
-    const { data: existingStaffUser, error: lookupError } =
-      await supabase
-        .from("staff_users")
-        .select("id")
-        .eq("auth_user_id", selectedStaff.auth_user_id)
-        .maybeSingle();
-
-    if (lookupError) {
-      setError(lookupError.message);
-      setSaving(false);
-      return;
-    }
+    const { data: existingStaffUser } = await supabase
+      .from("staff_users")
+      .select("id")
+      .eq("auth_user_id", selectedStaff.auth_user_id)
+      .maybeSingle();
 
     if (existingStaffUser?.id) {
       const { error: updateError } = await supabase
@@ -1260,20 +1184,8 @@ function StaffAdminPage() {
       ),
     );
 
-    setPersonalFullName(cleanName);
-    setPersonalPhone(cleanPhone);
-    setPersonalBirthDay(
-      birthDayValue !== null ? String(birthDayValue) : "",
-    );
-    setPersonalBirthMonth(
-      birthMonthValue !== null ? String(birthMonthValue) : "",
-    );
-    setPersonalAddress(cleanAddress);
-
     setEditingPersonalInfo(false);
-
     setSuccess("Personal information updated successfully.");
-
     setSaving(false);
   }
 
@@ -1305,18 +1217,11 @@ function StaffAdminPage() {
       return;
     }
 
-    const { data: existingStaffUser, error: lookupError } =
-      await supabase
-        .from("staff_users")
-        .select("id")
-        .eq("auth_user_id", selectedStaff.auth_user_id)
-        .maybeSingle();
-
-    if (lookupError) {
-      setError(lookupError.message);
-      setSaving(false);
-      return;
-    }
+    const { data: existingStaffUser } = await supabase
+      .from("staff_users")
+      .select("id")
+      .eq("auth_user_id", selectedStaff.auth_user_id)
+      .maybeSingle();
 
     if (existingStaffUser?.id) {
       const { error: updateError } = await supabase
@@ -1567,13 +1472,27 @@ function StaffAdminPage() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link to="/staff-blog">
+              <Button variant="outline">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  Blog Management
+                </span>
+                <span className="sm:hidden">
+                  Blog
+                </span>
+              </Button>
+            </Link>
+
             <Button
               variant="outline"
               onClick={() => void refreshAll()}
               disabled={loading || saving || revenueLoading}
             >
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">
+                Refresh
+              </span>
             </Button>
 
             <Button
@@ -1582,7 +1501,9 @@ function StaffAdminPage() {
               disabled={saving}
             >
               <LogOut className="h-4 w-4" />
-              Logout
+              <span className="hidden sm:inline">
+                Logout
+              </span>
             </Button>
           </div>
         </div>
@@ -1620,7 +1541,6 @@ function StaffAdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Pending
                 </p>
-
                 <p className="mt-2 text-4xl font-bold">
                   {pendingCount}
                 </p>
@@ -1630,7 +1550,6 @@ function StaffAdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Approved
                 </p>
-
                 <p className="mt-2 text-4xl font-bold">
                   {approvedCount}
                 </p>
@@ -1640,7 +1559,6 @@ function StaffAdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Suspended
                 </p>
-
                 <p className="mt-2 text-4xl font-bold">
                   {suspendedCount}
                 </p>
@@ -1650,7 +1568,6 @@ function StaffAdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Inactive
                 </p>
-
                 <p className="mt-2 text-4xl font-bold">
                   {inactiveCount}
                 </p>
@@ -1838,7 +1755,6 @@ function StaffAdminPage() {
                       )}
                     </div>
 
-                    {/* PERSONAL INFORMATION */}
                     <div className="border border-border bg-card p-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
@@ -1857,15 +1773,12 @@ function StaffAdminPage() {
                             onClick={() => {
                               setError("");
                               setSuccess("");
-
                               setPersonalFullName(
                                 selectedStaff.full_name || "",
                               );
-
                               setPersonalPhone(
                                 selectedStaff.phone || "",
                               );
-
                               setPersonalBirthDay(
                                 selectedStaff.birth_day
                                   ? String(
@@ -1873,7 +1786,6 @@ function StaffAdminPage() {
                                     )
                                   : "",
                               );
-
                               setPersonalBirthMonth(
                                 selectedStaff.birth_month
                                   ? String(
@@ -1881,11 +1793,9 @@ function StaffAdminPage() {
                                     )
                                   : "",
                               );
-
                               setPersonalAddress(
                                 selectedStaff.address || "",
                               );
-
                               setEditingPersonalInfo(true);
                             }}
                             disabled={saving}
@@ -1897,32 +1807,9 @@ function StaffAdminPage() {
                           <div className="flex flex-wrap gap-2">
                             <Button
                               variant="outline"
-                              onClick={() => {
-                                setEditingPersonalInfo(false);
-                                setPersonalFullName(
-                                  selectedStaff.full_name || "",
-                                );
-                                setPersonalPhone(
-                                  selectedStaff.phone || "",
-                                );
-                                setPersonalBirthDay(
-                                  selectedStaff.birth_day
-                                    ? String(
-                                        selectedStaff.birth_day,
-                                      )
-                                    : "",
-                                );
-                                setPersonalBirthMonth(
-                                  selectedStaff.birth_month
-                                    ? String(
-                                        selectedStaff.birth_month,
-                                      )
-                                    : "",
-                                );
-                                setPersonalAddress(
-                                  selectedStaff.address || "",
-                                );
-                              }}
+                              onClick={() =>
+                                setEditingPersonalInfo(false)
+                              }
                               disabled={saving}
                             >
                               <X className="h-4 w-4" />
@@ -1950,7 +1837,6 @@ function StaffAdminPage() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Full Name
                             </p>
-
                             <p className="mt-1 font-medium">
                               {selectedStaff.full_name}
                             </p>
@@ -1960,7 +1846,6 @@ function StaffAdminPage() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Email
                             </p>
-
                             <p className="mt-1 break-all font-medium">
                               {selectedStaff.email || "—"}
                             </p>
@@ -1970,7 +1855,6 @@ function StaffAdminPage() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Phone
                             </p>
-
                             <p className="mt-1 font-medium">
                               {selectedStaff.phone || "—"}
                             </p>
@@ -1980,7 +1864,6 @@ function StaffAdminPage() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Birthday
                             </p>
-
                             <p className="mt-1 font-medium">
                               {selectedStaff.birth_day &&
                               selectedStaff.birth_month
@@ -1993,27 +1876,14 @@ function StaffAdminPage() {
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Address
                             </p>
-
                             <p className="mt-1 font-medium">
                               {selectedStaff.address || "—"}
-                            </p>
-                          </div>
-
-                          <div className="sm:col-span-2 border-t border-border pt-4">
-                            <p className="text-xs text-muted-foreground">
-                              Staff login email
-                            </p>
-
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              The login email is linked to the staff
-                              account and is not changed from this
-                              section.
                             </p>
                           </div>
                         </div>
                       ) : (
                         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                          <label className="block">
+                          <label>
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Full Name
                             </span>
@@ -2025,30 +1895,24 @@ function StaffAdminPage() {
                                   event.target.value,
                                 )
                               }
-                              placeholder="Full name"
-                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
                             />
                           </label>
 
-                          <label className="block">
+                          <label>
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Email
                             </span>
 
                             <input
                               value={selectedStaff.email || ""}
-                              readOnly
                               disabled
-                              className="mt-2 h-11 w-full cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground outline-none"
+                              readOnly
+                              className="mt-2 h-11 w-full cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
                             />
-
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              Login email. Contact system
-                              administration if this needs to change.
-                            </p>
                           </label>
 
-                          <label className="block">
+                          <label>
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Phone
                             </span>
@@ -2061,13 +1925,12 @@ function StaffAdminPage() {
                                   event.target.value,
                                 )
                               }
-                              placeholder="Phone number"
-                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
                             />
                           </label>
 
                           <div className="grid grid-cols-2 gap-3">
-                            <label className="block">
+                            <label>
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Birth Day
                               </span>
@@ -2079,7 +1942,7 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               >
                                 <option value="">
                                   Day
@@ -2099,7 +1962,7 @@ function StaffAdminPage() {
                               </select>
                             </label>
 
-                            <label className="block">
+                            <label>
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Birth Month
                               </span>
@@ -2111,7 +1974,7 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               >
                                 <option value="">
                                   Month
@@ -2142,7 +2005,7 @@ function StaffAdminPage() {
                             </label>
                           </div>
 
-                          <label className="block sm:col-span-2">
+                          <label className="sm:col-span-2">
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Address
                             </span>
@@ -2154,30 +2017,25 @@ function StaffAdminPage() {
                                   event.target.value,
                                 )
                               }
-                              placeholder="Staff residential address"
                               rows={3}
-                              className="mt-2 w-full resize-y border border-border bg-background px-3 py-3 outline-none focus:border-foreground"
+                              className="mt-2 w-full border border-border bg-background px-3 py-3 outline-none"
                             />
                           </label>
                         </div>
                       )}
                     </div>
 
-                    {/* EMPLOYMENT INFORMATION */}
                     <div className="border border-border bg-card p-6">
-                      <div>
-                        <h3 className="font-display text-xl font-bold uppercase">
-                          Employment Information
-                        </h3>
+                      <h3 className="font-display text-xl font-bold uppercase">
+                        Employment Information
+                      </h3>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Assign the staff member's job and access
-                          level.
-                        </p>
-                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Assign the staff member's job and access level.
+                      </p>
 
                       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                        <label className="block">
+                        <label>
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Position
                           </span>
@@ -2187,12 +2045,11 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setPosition(event.target.value)
                             }
-                            placeholder="e.g. Personal Trainer"
-                            className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                            className="mt-2 h-11 w-full border border-border bg-background px-3"
                           />
                         </label>
 
-                        <label className="block">
+                        <label>
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Department
                           </span>
@@ -2202,7 +2059,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setDepartment(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                            className="mt-2 h-11 w-full border border-border bg-background px-3"
                           >
                             <option value="">
                               Select department
@@ -2216,7 +2073,7 @@ function StaffAdminPage() {
                           </select>
                         </label>
 
-                        <label className="block">
+                        <label>
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Employment Type
                           </span>
@@ -2226,7 +2083,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setEmploymentType(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                            className="mt-2 h-11 w-full border border-border bg-background px-3"
                           >
                             {employmentTypes.map((item) => (
                               <option key={item} value={item}>
@@ -2236,7 +2093,7 @@ function StaffAdminPage() {
                           </select>
                         </label>
 
-                        <label className="block">
+                        <label>
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Employment Date
                           </span>
@@ -2247,11 +2104,11 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setEmploymentDate(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                            className="mt-2 h-11 w-full border border-border bg-background px-3"
                           />
                         </label>
 
-                        <label className="block sm:col-span-2">
+                        <label className="sm:col-span-2">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Staff Role / System Access
                           </span>
@@ -2261,7 +2118,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setRole(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                            className="mt-2 h-11 w-full border border-border bg-background px-3"
                           >
                             {roles.map((item) => (
                               <option
@@ -2272,10 +2129,6 @@ function StaffAdminPage() {
                               </option>
                             ))}
                           </select>
-
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Controls the staff member's system access.
-                          </p>
                         </label>
                       </div>
 
@@ -2294,22 +2147,39 @@ function StaffAdminPage() {
                         </Button>
 
                         {selectedStaff.status === "approved" && (
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              void changeStaffStatus(
-                                selectedStaff,
-                                "suspended",
-                              )
-                            }
-                            disabled={saving}
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Suspend Staff
-                          </Button>
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                void changeStaffStatus(
+                                  selectedStaff,
+                                  "suspended",
+                                )
+                              }
+                              disabled={saving}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Suspend Staff
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                void changeStaffStatus(
+                                  selectedStaff,
+                                  "inactive",
+                                )
+                              }
+                              disabled={saving}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Mark Inactive
+                            </Button>
+                          </>
                         )}
 
-                        {selectedStaff.status === "suspended" && (
+                        {(selectedStaff.status === "suspended" ||
+                          selectedStaff.status === "inactive") && (
                           <Button
                             onClick={() =>
                               void changeStaffStatus(
@@ -2323,41 +2193,9 @@ function StaffAdminPage() {
                             Reactivate Staff
                           </Button>
                         )}
-
-                        {selectedStaff.status === "approved" && (
-                          <Button
-                            variant="outline"
-                            onClick={() =>
-                              void changeStaffStatus(
-                                selectedStaff,
-                                "inactive",
-                              )
-                            }
-                            disabled={saving}
-                          >
-                            <XCircle className="h-4 w-4" />
-                            Mark Inactive
-                          </Button>
-                        )}
-
-                        {selectedStaff.status === "inactive" && (
-                          <Button
-                            onClick={() =>
-                              void changeStaffStatus(
-                                selectedStaff,
-                                "approved",
-                              )
-                            }
-                            disabled={saving}
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Reactivate
-                          </Button>
-                        )}
                       </div>
                     </div>
 
-                    {/* SALARY */}
                     <div className="border border-border bg-card p-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -2399,8 +2237,7 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryAmount(event.target.value)
                                 }
-                                placeholder="e.g. 150000"
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               />
                             </label>
 
@@ -2419,16 +2256,14 @@ function StaffAdminPage() {
                                       | "cancelled",
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               >
                                 <option value="pending">
                                   Pending
                                 </option>
-
                                 <option value="paid">
                                   Paid
                                 </option>
-
                                 <option value="cancelled">
                                   Cancelled
                                 </option>
@@ -2446,7 +2281,7 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryStart(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               />
                             </label>
 
@@ -2461,7 +2296,7 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryEnd(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               />
                             </label>
 
@@ -2478,7 +2313,7 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               />
                             </label>
 
@@ -2492,8 +2327,7 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryNotes(event.target.value)
                                 }
-                                placeholder="Optional"
-                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                                className="mt-2 h-11 w-full border border-border bg-background px-3"
                               />
                             </label>
                           </div>
@@ -2524,19 +2358,15 @@ function StaffAdminPage() {
                                 <th className="px-3 py-3">
                                   Amount
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Period
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Payment Date
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Status
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Notes
                                 </th>
@@ -2590,7 +2420,6 @@ function StaffAdminPage() {
                       </div>
                     </div>
 
-                    {/* ATTENDANCE */}
                     <div className="border border-border bg-card p-6">
                       <div>
                         <h3 className="font-display text-xl font-bold uppercase">
@@ -2614,15 +2443,12 @@ function StaffAdminPage() {
                                 <th className="px-3 py-3">
                                   Check-in
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Check-out
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Duration
                                 </th>
-
                                 <th className="px-3 py-3">
                                   Notes
                                 </th>
