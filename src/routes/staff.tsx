@@ -14,6 +14,7 @@ import {
   UserRound,
   Wallet,
   XCircle,
+  KeyRound,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -181,6 +182,10 @@ function StaffPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
+  const [forgotPasswordMode, setForgotPasswordMode] =
+    useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+
   const [showProfile, setShowProfile] = useState(true);
   const [showEmployment, setShowEmployment] = useState(false);
   const [showSalary, setShowSalary] = useState(false);
@@ -321,6 +326,42 @@ function StaffPage() {
     );
 
     setLoading(false);
+  }
+
+  async function sendPasswordReset() {
+    const cleanEmail = resetEmail.trim().toLowerCase();
+
+    if (!cleanEmail) {
+      setError("Enter your staff email address.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    const redirectUrl =
+      `${window.location.origin}/staff-reset-password`;
+
+    const { error: resetError } =
+      await supabase.auth.resetPasswordForEmail(
+        cleanEmail,
+        {
+          redirectTo: redirectUrl,
+        },
+      );
+
+    if (resetError) {
+      setError(resetError.message);
+      setSaving(false);
+      return;
+    }
+
+    setSuccess(
+      "Password reset instructions have been sent to your email. Check your inbox and follow the link to create a new password.",
+    );
+
+    setSaving(false);
   }
 
   async function login() {
@@ -577,6 +618,7 @@ function StaffPage() {
                 type="button"
                 onClick={() => {
                   setLoginMode(true);
+                  setForgotPasswordMode(false);
                   setError("");
                   setSuccess("");
                 }}
@@ -593,6 +635,7 @@ function StaffPage() {
                 type="button"
                 onClick={() => {
                   setLoginMode(false);
+                  setForgotPasswordMode(false);
                   setError("");
                   setSuccess("");
                 }}
@@ -618,100 +661,198 @@ function StaffPage() {
               </div>
             )}
 
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
+            {forgotPasswordMode ? (
+              <>
+                <div className="mt-8 border border-border bg-muted/30 p-5">
+                  <div className="flex gap-3">
+                    <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
 
-                if (loginMode) {
-                  void login();
-                } else {
-                  void register();
-                }
-              }}
-              className="mt-8 grid gap-5"
-            >
-              {!loginMode && (
-                <>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                        Account Recovery
+                      </p>
+
+                      <h2 className="mt-2 font-display text-2xl font-bold uppercase">
+                        Forgot Password?
+                      </h2>
+
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                        Enter the email address you used to create
+                        your staff account. We will send you a secure
+                        link to create a new password.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void sendPasswordReset();
+                  }}
+                  className="mt-8 grid gap-5"
+                >
                   <label className="grid gap-2 text-sm font-bold">
-                    Full Name
+                    Staff Email
 
                     <input
-                      value={fullName}
+                      value={resetEmail}
                       onChange={(event) =>
-                        setFullName(event.target.value)
+                        setResetEmail(event.target.value)
                       }
-                      placeholder="Enter your full name"
+                      type="email"
+                      placeholder="Enter your staff email"
+                      autoComplete="email"
+                      className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </label>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={saving}
+                    className="mt-2"
+                  >
+                    <KeyRound />
+                    {saving
+                      ? "Sending Reset Link..."
+                      : "Send Reset Link"}
+                  </Button>
+                </form>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setForgotPasswordMode(false);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className="mt-5 w-full text-center text-sm font-bold text-muted-foreground underline underline-offset-4"
+                >
+                  ← Back to Staff Login
+                </button>
+              </>
+            ) : (
+              <>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+
+                    if (loginMode) {
+                      void login();
+                    } else {
+                      void register();
+                    }
+                  }}
+                  className="mt-8 grid gap-5"
+                >
+                  {!loginMode && (
+                    <>
+                      <label className="grid gap-2 text-sm font-bold">
+                        Full Name
+
+                        <input
+                          value={fullName}
+                          onChange={(event) =>
+                            setFullName(event.target.value)
+                          }
+                          placeholder="Enter your full name"
+                          autoComplete="name"
+                          className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </label>
+
+                      <label className="grid gap-2 text-sm font-bold">
+                        Phone
+
+                        <input
+                          value={phone}
+                          onChange={(event) =>
+                            setPhone(event.target.value)
+                          }
+                          type="tel"
+                          placeholder="Enter your phone number"
+                          autoComplete="tel"
+                          className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  <label className="grid gap-2 text-sm font-bold">
+                    Email
+
+                    <input
+                      value={email}
+                      onChange={(event) =>
+                        setEmail(event.target.value)
+                      }
+                      type="email"
+                      placeholder="Enter your email"
+                      autoComplete="email"
                       className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                     />
                   </label>
 
                   <label className="grid gap-2 text-sm font-bold">
-                    Phone
+                    Password
 
                     <input
-                      value={phone}
+                      value={password}
                       onChange={(event) =>
-                        setPhone(event.target.value)
+                        setPassword(event.target.value)
                       }
-                      type="tel"
-                      placeholder="Enter your phone number"
+                      type="password"
+                      placeholder={
+                        loginMode
+                          ? "Enter your password"
+                          : "Create a password"
+                      }
+                      autoComplete={
+                        loginMode
+                          ? "current-password"
+                          : "new-password"
+                      }
                       className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                     />
                   </label>
-                </>
-              )}
 
-              <label className="grid gap-2 text-sm font-bold">
-                Email
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={saving}
+                    className="mt-2"
+                  >
+                    {loginMode ? (
+                      <>
+                        <LogIn />
+                        Staff Login
+                      </>
+                    ) : (
+                      <>
+                        <BriefcaseBusiness />
+                        Submit Staff Application
+                      </>
+                    )}
+                  </Button>
+                </form>
 
-                <input
-                  value={email}
-                  onChange={(event) =>
-                    setEmail(event.target.value)
-                  }
-                  type="email"
-                  placeholder="Enter your email"
-                  className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-bold">
-                Password
-
-                <input
-                  value={password}
-                  onChange={(event) =>
-                    setPassword(event.target.value)
-                  }
-                  type="password"
-                  placeholder={
-                    loginMode
-                      ? "Enter your password"
-                      : "Create a password"
-                  }
-                  className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
-                />
-              </label>
-
-              <Button
-                type="submit"
-                size="lg"
-                disabled={saving}
-                className="mt-2"
-              >
-                {loginMode ? (
-                  <>
-                    <LogIn />
-                    Staff Login
-                  </>
-                ) : (
-                  <>
-                    <BriefcaseBusiness />
-                    Submit Staff Application
-                  </>
+                {loginMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordMode(true);
+                      setResetEmail(email);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className="mt-5 w-full text-center text-sm font-bold text-primary underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </button>
                 )}
-              </Button>
-            </form>
+              </>
+            )}
 
             {!loginMode && (
               <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-800">
