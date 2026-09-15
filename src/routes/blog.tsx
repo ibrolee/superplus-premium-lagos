@@ -72,6 +72,10 @@ function getReadingTime(content: string) {
   return Math.max(1, Math.ceil(words / 200));
 }
 
+function articleUrl(slug: string) {
+  return `/blog/article?slug=${encodeURIComponent(slug)}`;
+}
+
 function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,6 +289,7 @@ function BlogPage() {
                 className="overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <div className="aspect-[16/9] animate-pulse bg-muted" />
+
                 <div className="space-y-3 p-6">
                   <div className="h-4 w-24 animate-pulse rounded bg-muted" />
                   <div className="h-6 w-full animate-pulse rounded bg-muted" />
@@ -336,15 +341,15 @@ function BlogPage() {
                     <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
                       Featured
                     </p>
+
                     <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
                       Start here
                     </h2>
                   </div>
                 </div>
 
-                <Link
-                  to="/blog/$slug"
-                  params={{ slug: featuredPost.slug }}
+                <a
+                  href={articleUrl(featuredPost.slug)}
                   className="group block overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                 >
                   <div className="grid lg:grid-cols-2">
@@ -371,7 +376,9 @@ function BlogPage() {
                         <span>
                           {formatDate(featuredPost.published_at)}
                         </span>
+
                         <span>•</span>
+
                         <span>
                           {getReadingTime(featuredPost.content)} min read
                         </span>
@@ -393,7 +400,7 @@ function BlogPage() {
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </section>
             )}
 
@@ -404,6 +411,7 @@ function BlogPage() {
                   <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
                     Latest
                   </p>
+
                   <h2 className="mt-1 text-2xl font-bold sm:text-3xl">
                     Latest from Super Plus
                   </h2>
@@ -425,10 +433,9 @@ function BlogPage() {
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {regularPosts.map((post) => (
-                    <Link
+                    <a
                       key={post.id}
-                      to="/blog/$slug"
-                      params={{ slug: post.slug }}
+                      href={articleUrl(post.slug)}
                       className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       <div className="relative aspect-[16/9] overflow-hidden bg-muted">
@@ -452,7 +459,9 @@ function BlogPage() {
                       <div className="p-6">
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>{formatDate(post.published_at)}</span>
+
                           <span>•</span>
+
                           <span>
                             {getReadingTime(post.content)} min read
                           </span>
@@ -473,7 +482,7 @@ function BlogPage() {
                           <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
                         </div>
                       </div>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               )}
@@ -499,12 +508,12 @@ function BlogPage() {
               consistent training routine.
             </p>
 
-            <Link to="/join" className="mt-7 inline-block">
+            <a href="/join" className="mt-7 inline-block">
               <Button size="lg" className="px-7">
                 Join Super Plus Fitness
                 <ArrowRight />
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
       </section>
