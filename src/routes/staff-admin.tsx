@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Users,
   CalendarDays,
+  ChevronDown,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -415,329 +416,363 @@ function RevenueReport({
   }, [periodPayments, paymentSearch]);
 
   return (
-    <section className="mb-8 border border-border bg-card">
-      <div className="border-b border-border p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-
-              <div>
-                <h2 className="font-display text-2xl font-bold uppercase">
-                  Revenue Report
-                </h2>
-
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Track successful membership payments and revenue.
-                </p>
-              </div>
-            </div>
+    <details className="group mb-8 border border-border bg-card">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 [&::-webkit-details-marker]:hidden sm:p-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted">
+            <TrendingUp className="h-5 w-5" />
           </div>
 
-          <Button
-            variant="outline"
-            onClick={onRefresh}
-            disabled={loading}
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh Revenue
-          </Button>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Admin
+            </p>
+
+            <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+              Revenue Report
+            </h2>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Track successful membership payments and revenue.
+            </p>
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-2">
-          {[
-            ["today", "Today"],
-            ["week", "This Week"],
-            ["month", "This Month"],
-            ["all", "All Time"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() =>
-                setPeriod(
-                  value as
-                    | "today"
-                    | "week"
-                    | "month"
-                    | "all",
-                )
-              }
-              className={`border px-4 py-2 text-xs font-semibold uppercase ${
-                period === value
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border bg-background"
-              }`}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-xs font-semibold uppercase tracking-wider text-muted-foreground sm:inline">
+            Open
+          </span>
+
+          <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
+        </div>
+      </summary>
+
+      <div className="border-t border-border">
+        <div className="border-b border-border p-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+
+                <div>
+                  <h2 className="font-display text-2xl font-bold uppercase">
+                    Revenue Report
+                  </h2>
+
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Track successful membership payments and revenue.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={onRefresh}
+              disabled={loading}
             >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="p-6">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border border-border bg-background p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Revenue
-              </p>
-
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
-            </div>
-
-            <p className="mt-3 break-words text-3xl font-bold">
-              {formatMoney(totalRevenue)}
-            </p>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              Selected period
-            </p>
+              <RefreshCw className="h-4 w-4" />
+              Refresh Revenue
+            </Button>
           </div>
 
-          <div className="border border-border bg-background p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Today
-              </p>
-
-              <CalendarDays className="h-5 w-5 text-muted-foreground" />
-            </div>
-
-            <p className="mt-3 break-words text-3xl font-bold">
-              {formatMoney(todayRevenue)}
-            </p>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              Successful payments today
-            </p>
-          </div>
-
-          <div className="border border-border bg-background p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Payments
-              </p>
-
-              <CreditCard className="h-5 w-5 text-muted-foreground" />
-            </div>
-
-            <p className="mt-3 text-3xl font-bold">
-              {periodPayments.length}
-            </p>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              Successful transactions
-            </p>
-          </div>
-
-          <div className="border border-border bg-background p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                Average Payment
-              </p>
-
-              <Users className="h-5 w-5 text-muted-foreground" />
-            </div>
-
-            <p className="mt-3 break-words text-3xl font-bold">
-              {formatMoney(averagePayment)}
-            </p>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              Average per successful payment
-            </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {[
+              ["today", "Today"],
+              ["week", "This Week"],
+              ["month", "This Month"],
+              ["all", "All Time"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() =>
+                  setPeriod(
+                    value as
+                      | "today"
+                      | "week"
+                      | "month"
+                      | "all",
+                  )
+                }
+                className={`border px-4 py-2 text-xs font-semibold uppercase ${
+                  period === value
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-          <div className="border border-border bg-background p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-display text-xl font-bold uppercase">
-                  Revenue by Plan
-                </h3>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Based on successful payments
+        <div className="p-6">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Revenue
                 </p>
+
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
               </div>
 
-              <DollarSign className="h-5 w-5 text-muted-foreground" />
+              <p className="mt-3 break-words text-3xl font-bold">
+                {formatMoney(totalRevenue)}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected period
+              </p>
             </div>
 
-            <div className="mt-5">
-              {revenueByPlan.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No successful payments in this period.
+            <div className="border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Today
                 </p>
-              ) : (
-                <div className="space-y-3">
-                  {revenueByPlan.map((item) => {
-                    const percentage =
-                      totalRevenue > 0
-                        ? (item.amount / totalRevenue) * 100
-                        : 0;
 
-                    return (
-                      <div
-                        key={item.plan}
-                        className="border-b border-border pb-3 last:border-0"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
-                            <p className="font-semibold">
-                              {item.plan}
-                            </p>
+                <CalendarDays className="h-5 w-5 text-muted-foreground" />
+              </div>
 
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {item.count} payment
-                              {item.count === 1 ? "" : "s"}
+              <p className="mt-3 break-words text-3xl font-bold">
+                {formatMoney(todayRevenue)}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Successful payments today
+              </p>
+            </div>
+
+            <div className="border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Payments
+                </p>
+
+                <CreditCard className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              <p className="mt-3 text-3xl font-bold">
+                {periodPayments.length}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Successful transactions
+              </p>
+            </div>
+
+            <div className="border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Average Payment
+                </p>
+
+                <Users className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              <p className="mt-3 break-words text-3xl font-bold">
+                {formatMoney(averagePayment)}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Average per successful payment
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+            <div className="border border-border bg-background p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="font-display text-xl font-bold uppercase">
+                    Revenue by Plan
+                  </h3>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Based on successful payments
+                  </p>
+                </div>
+
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+              </div>
+
+              <div className="mt-5">
+                {revenueByPlan.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No successful payments in this period.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {revenueByPlan.map((item) => {
+                      const percentage =
+                        totalRevenue > 0
+                          ? (item.amount / totalRevenue) * 100
+                          : 0;
+
+                      return (
+                        <div
+                          key={item.plan}
+                          className="border-b border-border pb-3 last:border-0"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <p className="font-semibold">
+                                {item.plan}
+                              </p>
+
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {item.count} payment
+                                {item.count === 1 ? "" : "s"}
+                              </p>
+                            </div>
+
+                            <p className="shrink-0 font-bold">
+                              {formatMoney(item.amount)}
                             </p>
                           </div>
 
-                          <p className="shrink-0 font-bold">
-                            {formatMoney(item.amount)}
+                          <div className="mt-3 h-2 overflow-hidden bg-muted">
+                            <div
+                              className="h-full bg-foreground"
+                              style={{
+                                width: `${Math.min(
+                                  100,
+                                  Math.max(0, percentage),
+                                )}%`,
+                              }}
+                            />
+                          </div>
+
+                          <p className="mt-1 text-right text-[10px] text-muted-foreground">
+                            {percentage.toFixed(1)}%
                           </p>
                         </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
-                        <div className="mt-3 h-2 overflow-hidden bg-muted">
-                          <div
-                            className="h-full bg-foreground"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                Math.max(0, percentage),
-                              )}%`,
-                            }}
-                          />
-                        </div>
+              <div className="mt-6 border-t border-border pt-5">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    This Month
+                  </span>
 
-                        <p className="mt-1 text-right text-[10px] text-muted-foreground">
-                          {percentage.toFixed(1)}%
-                        </p>
-                      </div>
-                    );
-                  })}
+                  <span className="font-bold">
+                    {formatMoney(monthRevenue)}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div className="mt-6 border-t border-border pt-5">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  This Month
-                </span>
-
-                <span className="font-bold">
-                  {formatMoney(monthRevenue)}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="border border-border bg-background p-5">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="font-display text-xl font-bold uppercase">
-                  Payment Transactions
-                </h3>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {periodPayments.length} successful payment
-                  {periodPayments.length === 1 ? "" : "s"} in selected
-                  period
-                </p>
-              </div>
-
-              <div className="w-full sm:w-64">
-                <input
-                  value={paymentSearch}
-                  onChange={(event) =>
-                    setPaymentSearch(event.target.value)
-                  }
-                  placeholder="Search payments..."
-                  className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
-                />
               </div>
             </div>
 
-            <div className="mt-5 overflow-x-auto">
-              {loading ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  Loading payment records...
-                </p>
-              ) : filteredPayments.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No successful payment records found.
-                </p>
-              ) : (
-                <table className="w-full min-w-[850px] text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                      <th className="px-3 py-3">Member</th>
-                      <th className="px-3 py-3">Plan</th>
-                      <th className="px-3 py-3">Amount</th>
-                      <th className="px-3 py-3">Method</th>
-                      <th className="px-3 py-3">Date</th>
-                      <th className="px-3 py-3">Reference</th>
-                    </tr>
-                  </thead>
+            <div className="border border-border bg-background p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="font-display text-xl font-bold uppercase">
+                    Payment Transactions
+                  </h3>
 
-                  <tbody>
-                    {filteredPayments.map((payment) => (
-                      <tr
-                        key={payment.id}
-                        className="border-b border-border"
-                      >
-                        <td className="px-3 py-4">
-                          <p className="font-semibold">
-                            {getPaymentMemberName(payment)}
-                          </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {periodPayments.length} successful payment
+                    {periodPayments.length === 1 ? "" : "s"} in selected
+                    period
+                  </p>
+                </div>
 
-                          {payment.member?.email && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {payment.member.email}
-                            </p>
-                          )}
-                        </td>
+                <div className="w-full sm:w-64">
+                  <input
+                    value={paymentSearch}
+                    onChange={(event) =>
+                      setPaymentSearch(event.target.value)
+                    }
+                    placeholder="Search payments..."
+                    className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
+                  />
+                </div>
+              </div>
 
-                        <td className="px-3 py-4">
-                          {getPaymentPlan(payment)}
-                        </td>
-
-                        <td className="px-3 py-4 font-bold">
-                          {formatMoney(
-                            Number(payment.amount || 0),
-                            payment.currency || "NGN",
-                          )}
-                        </td>
-
-                        <td className="px-3 py-4 capitalize">
-                          {payment.payment_method || "Paystack"}
-                        </td>
-
-                        <td className="px-3 py-4 whitespace-nowrap">
-                          {formatDateTime(getPaymentDate(payment))}
-                        </td>
-
-                        <td className="px-3 py-4">
-                          <span className="font-mono text-xs">
-                            {payment.paystack_reference || "—"}
-                          </span>
-                        </td>
+              <div className="mt-5 overflow-x-auto">
+                {loading ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    Loading payment records...
+                  </p>
+                ) : filteredPayments.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No successful payment records found.
+                  </p>
+                ) : (
+                  <table className="w-full min-w-[850px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                        <th className="px-3 py-3">Member</th>
+                        <th className="px-3 py-3">Plan</th>
+                        <th className="px-3 py-3">Amount</th>
+                        <th className="px-3 py-3">Method</th>
+                        <th className="px-3 py-3">Date</th>
+                        <th className="px-3 py-3">Reference</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+                    </thead>
+
+                    <tbody>
+                      {filteredPayments.map((payment) => (
+                        <tr
+                          key={payment.id}
+                          className="border-b border-border"
+                        >
+                          <td className="px-3 py-4">
+                            <p className="font-semibold">
+                              {getPaymentMemberName(payment)}
+                            </p>
+
+                            {payment.member?.email && (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {payment.member.email}
+                              </p>
+                            )}
+                          </td>
+
+                          <td className="px-3 py-4">
+                            {getPaymentPlan(payment)}
+                          </td>
+
+                          <td className="px-3 py-4 font-bold">
+                            {formatMoney(
+                              Number(payment.amount || 0),
+                              payment.currency || "NGN",
+                            )}
+                          </td>
+
+                          <td className="px-3 py-4 capitalize">
+                            {payment.payment_method || "Paystack"}
+                          </td>
+
+                          <td className="whitespace-nowrap px-3 py-4">
+                            {formatDateTime(
+                              getPaymentDate(payment),
+                            )}
+                          </td>
+
+                          <td className="px-3 py-4">
+                            <span className="font-mono text-xs">
+                              {payment.paystack_reference || "—"}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -924,6 +959,7 @@ function StaffAdminPage() {
 
   async function refreshAll() {
     setError("");
+
     await Promise.all([
       loadStaff(),
       loadRevenue(),
@@ -1279,12 +1315,11 @@ function StaffAdminPage() {
             </div>
 
             <h1 className="font-display text-3xl font-bold uppercase">
-              Staff Management
+              Admin Staff Portal
             </h1>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              Manage staff applications, employment information,
-              salaries and attendance.
+              Manage staff, salaries, attendance and business administration.
             </p>
           </div>
 
@@ -1323,6 +1358,7 @@ function StaffAdminPage() {
           </div>
         )}
 
+        {/* ADMIN REVENUE REPORT */}
         {!loading && (
           <RevenueReport
             payments={revenuePayments}
@@ -1377,6 +1413,21 @@ function StaffAdminPage() {
                   {inactiveCount}
                 </p>
               </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
+                Staff Management
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl font-bold uppercase">
+                Staff Administration
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                Manage staff applications, employment information,
+                salaries and attendance.
+              </p>
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
