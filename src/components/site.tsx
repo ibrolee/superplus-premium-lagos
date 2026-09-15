@@ -107,28 +107,39 @@ export function MobileNavbar() {
 
       <SheetContent
         side="right"
-        className="w-[88vw] max-w-md bg-secondary p-0 text-secondary-foreground"
+        className="h-[100dvh] w-[82vw] max-w-sm overflow-hidden bg-secondary p-0 text-secondary-foreground"
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
 
-        <div className="flex h-full flex-col px-5 py-4">
-          {/* HEADER */}
-          <div className="mb-4 flex items-center justify-between">
-            <Logo inverse />
+        <div className="flex h-[100dvh] flex-col px-5 py-3">
+          {/* COMPACT HEADER */}
+          <div className="mb-3 flex h-9 shrink-0 items-center justify-between">
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              aria-label="Super Plus Fitness home"
+            >
+              <img
+                src="/header-logo.png"
+                alt="Super Plus Fitness"
+                className="h-9 w-auto object-contain"
+              />
+            </Link>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setOpen(false)}
               aria-label="Close menu"
+              className="size-9"
             >
-              <X />
+              <X className="size-5" />
             </Button>
           </div>
 
           {/* MAIN NAVIGATION */}
           <nav
-            className="flex flex-col"
+            className="flex shrink-0 flex-col"
             aria-label="Mobile navigation"
           >
             {navItems.map((item) => (
@@ -136,7 +147,7 @@ export function MobileNavbar() {
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="border-b border-primary-foreground/15 py-2.5 font-display text-2xl font-bold uppercase leading-tight hover:text-primary"
+                className="border-b border-primary-foreground/15 py-[7px] font-display text-[20px] font-bold uppercase leading-none hover:text-primary"
               >
                 {item.label}
               </Link>
@@ -144,11 +155,11 @@ export function MobileNavbar() {
           </nav>
 
           {/* MEMBER / STAFF LINKS */}
-          <div className="mt-4 grid gap-2">
+          <div className="mt-3 grid shrink-0 gap-1.5">
             <Link
               to="/login"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase leading-5 hover:text-primary"
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
             >
               Member Login
             </Link>
@@ -156,7 +167,7 @@ export function MobileNavbar() {
             <Link
               to="/my-qr"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase leading-5 hover:text-primary"
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
             >
               My QR Code
             </Link>
@@ -164,7 +175,7 @@ export function MobileNavbar() {
             <Link
               to="/reception-dashboard"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase leading-5 hover:text-primary"
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
             >
               Reception Dashboard
             </Link>
@@ -172,7 +183,7 @@ export function MobileNavbar() {
             <Link
               to="/staff"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase leading-5 hover:text-primary"
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
             >
               Staff Portal
             </Link>
@@ -180,12 +191,16 @@ export function MobileNavbar() {
             <Link
               to="/staff-admin"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase leading-5 hover:text-primary"
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
             >
               Staff Management
             </Link>
 
-            <Button asChild size="lg" className="mt-2">
+            <Button
+              asChild
+              size="lg"
+              className="mt-1 h-10"
+            >
               <Link
                 to="/join"
                 onClick={() => setOpen(false)}
@@ -686,7 +701,10 @@ export function Footer() {
             links={[
               { label: "Member Login", to: "/login" },
               { label: "My QR Code", to: "/my-qr" },
-              { label: "Reception Dashboard", to: "/reception-dashboard" },
+              {
+                label: "Reception Dashboard",
+                to: "/reception-dashboard",
+              },
               { label: "Staff Portal", to: "/staff" },
               { label: "Staff Management", to: "/staff-admin" },
             ]}
@@ -790,7 +808,9 @@ export function UtilityBar() {
       <div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase">
         <Link to="/login">Member login</Link>
         <Link to="/my-qr">My QR Code</Link>
-        <Link to="/reception-dashboard">Reception Dashboard</Link>
+        <Link to="/reception-dashboard">
+          Reception Dashboard
+        </Link>
         <Link to="/staff">Staff Portal</Link>
         <Link to="/staff-admin">Staff Management</Link>
       </div>
