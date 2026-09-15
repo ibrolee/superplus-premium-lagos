@@ -14,6 +14,9 @@ import {
   Users,
   CalendarDays,
   ChevronDown,
+  Pencil,
+  Save,
+  X,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -146,16 +149,6 @@ function formatMoney(amount: number, currency = "NGN") {
     currency,
     maximumFractionDigits: 2,
   }).format(amount || 0);
-}
-
-function formatShortDate(value: string | null | undefined) {
-  if (!value) return "—";
-
-  return new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(value));
 }
 
 function statusLabel(status: StaffProfile["status"]) {
@@ -359,7 +352,6 @@ function RevenueReport({
 
     periodPayments.forEach((payment) => {
       const plan = getPaymentPlan(payment);
-
       const existing = grouped.get(plan);
 
       if (existing) {
@@ -516,7 +508,6 @@ function RevenueReport({
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Revenue
                 </p>
-
                 <DollarSign className="h-5 w-5 text-muted-foreground" />
               </div>
 
@@ -534,7 +525,6 @@ function RevenueReport({
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Today
                 </p>
-
                 <CalendarDays className="h-5 w-5 text-muted-foreground" />
               </div>
 
@@ -552,7 +542,6 @@ function RevenueReport({
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Payments
                 </p>
-
                 <CreditCard className="h-5 w-5 text-muted-foreground" />
               </div>
 
@@ -570,7 +559,6 @@ function RevenueReport({
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Average Payment
                 </p>
-
                 <Users className="h-5 w-5 text-muted-foreground" />
               </div>
 
@@ -811,6 +799,16 @@ function StaffAdminPage() {
   const [employmentDate, setEmploymentDate] = useState("");
   const [role, setRole] = useState("staff");
 
+  /* PERSONAL INFORMATION EDITING */
+  const [editingPersonalInfo, setEditingPersonalInfo] =
+    useState(false);
+
+  const [personalFullName, setPersonalFullName] = useState("");
+  const [personalPhone, setPersonalPhone] = useState("");
+  const [personalBirthDay, setPersonalBirthDay] = useState("");
+  const [personalBirthMonth, setPersonalBirthMonth] = useState("");
+  const [personalAddress, setPersonalAddress] = useState("");
+
   const [salaryAmount, setSalaryAmount] = useState("");
   const [salaryStart, setSalaryStart] = useState("");
   const [salaryEnd, setSalaryEnd] = useState("");
@@ -858,174 +856,157 @@ function StaffAdminPage() {
   }
 
   async function loadRevenue() {
-  setRevenueLoading(true);
+    setRevenueLoading(true);
 
-  try {
-    // Step 1: Load successful payment records directly.
-    // We deliberately do NOT use nested Supabase relations here because
-    // RLS/relationship permissions can cause valid payment rows to be
-    // omitted from the result.
-    const { data: paymentData, error: paymentError } =
-      await supabase
-        .from("payments")
-        .select(
-          `
-          id,
-          member_id,
-          membership_id,
-          amount,
-          currency,
-          status,
-          payment_method,
-          provider,
-          paystack_reference,
-          paid_at,
-          created_at,
-          metadata
-        `,
-        )
-        .eq("status", "success")
-        .order("paid_at", {
-          ascending: false,
-          nullsFirst: false,
-        })
-        .limit(2000);
-
-    if (paymentError) {
-      setError(paymentError.message);
-      setRevenuePayments([]);
-      return;
-    }
-
-    const payments = (paymentData || []) as RevenuePayment[];
-
-    if (payments.length === 0) {
-      setRevenuePayments([]);
-      return;
-    }
-
-    // Step 2: Collect the member IDs and membership IDs that
-    // actually exist on the payment records.
-    const memberIds = Array.from(
-      new Set(
-        payments
-          .map((payment) => payment.member_id)
-          .filter(
-            (id): id is string =>
-              typeof id === "string" && id.length > 0,
-          ),
-      ),
-    );
-
-    const membershipIds = Array.from(
-      new Set(
-        payments
-          .map((payment) => payment.membership_id)
-          .filter(
-            (id): id is string =>
-              typeof id === "string" && id.length > 0,
-          ),
-      ),
-    );
-
-    // Step 3: Load member information separately.
-    // A missing member record must NEVER prevent the payment
-    // itself from appearing in the revenue report.
-    let members: RevenueMember[] = [];
-
-    if (memberIds.length > 0) {
-      const { data: memberData, error: memberError } =
+    try {
+      const { data: paymentData, error: paymentError } =
         await supabase
-          .from("members")
+          .from("payments")
           .select(
             `
             id,
-            full_name,
-            email,
-            phone
+            member_id,
+            membership_id,
+            amount,
+            currency,
+            status,
+            payment_method,
+            provider,
+            paystack_reference,
+            paid_at,
+            created_at,
+            metadata
           `,
           )
-          .in("id", memberIds);
+          .eq("status", "success")
+          .order("paid_at", {
+            ascending: false,
+            nullsFirst: false,
+          })
+          .limit(2000);
 
-      if (memberError) {
-        console.warn(
-          "Could not load member details for revenue report:",
-          memberError.message,
-        );
-      } else {
-        members = (memberData || []) as RevenueMember[];
+      if (paymentError) {
+        setError(paymentError.message);
+        setRevenuePayments([]);
+        return;
       }
-    }
 
-    // Step 4: Load membership information separately.
-    let memberships: RevenueMembership[] = [];
+      const payments = (paymentData || []) as RevenuePayment[];
 
-    if (membershipIds.length > 0) {
-      const { data: membershipData, error: membershipError } =
-        await supabase
-          .from("memberships")
-          .select(
-            `
-            id,
-            plan_name
-          `,
-          )
-          .in("id", membershipIds);
-
-      if (membershipError) {
-        console.warn(
-          "Could not load membership details for revenue report:",
-          membershipError.message,
-        );
-      } else {
-        memberships = (membershipData ||
-          []) as RevenueMembership[];
+      if (payments.length === 0) {
+        setRevenuePayments([]);
+        return;
       }
+
+      const memberIds = Array.from(
+        new Set(
+          payments
+            .map((payment) => payment.member_id)
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && id.length > 0,
+            ),
+        ),
+      );
+
+      const membershipIds = Array.from(
+        new Set(
+          payments
+            .map((payment) => payment.membership_id)
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && id.length > 0,
+            ),
+        ),
+      );
+
+      let members: RevenueMember[] = [];
+
+      if (memberIds.length > 0) {
+        const { data: memberData, error: memberError } =
+          await supabase
+            .from("members")
+            .select(
+              `
+              id,
+              full_name,
+              email,
+              phone
+            `,
+            )
+            .in("id", memberIds);
+
+        if (memberError) {
+          console.warn(
+            "Could not load member details for revenue report:",
+            memberError.message,
+          );
+        } else {
+          members = (memberData || []) as RevenueMember[];
+        }
+      }
+
+      let memberships: RevenueMembership[] = [];
+
+      if (membershipIds.length > 0) {
+        const { data: membershipData, error: membershipError } =
+          await supabase
+            .from("memberships")
+            .select(
+              `
+              id,
+              plan_name
+            `,
+            )
+            .in("id", membershipIds);
+
+        if (membershipError) {
+          console.warn(
+            "Could not load membership details for revenue report:",
+            membershipError.message,
+          );
+        } else {
+          memberships = (membershipData ||
+            []) as RevenueMembership[];
+        }
+      }
+
+      const memberMap = new Map(
+        members.map((member) => [member.id, member]),
+      );
+
+      const membershipMap = new Map(
+        memberships.map((membership) => [
+          membership.id,
+          membership,
+        ]),
+      );
+
+      const normalized: RevenuePaymentRow[] = payments.map(
+        (payment) => ({
+          ...payment,
+          member: payment.member_id
+            ? memberMap.get(payment.member_id) || null
+            : null,
+          membership: payment.membership_id
+            ? membershipMap.get(payment.membership_id) || null
+            : null,
+        }),
+      );
+
+      setRevenuePayments(normalized);
+    } catch (error) {
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load revenue records.",
+      );
+
+      setRevenuePayments([]);
+    } finally {
+      setRevenueLoading(false);
     }
-
-    // Step 5: Create lookup maps for fast matching.
-    const memberMap = new Map(
-      members.map((member) => [member.id, member]),
-    );
-
-    const membershipMap = new Map(
-      memberships.map((membership) => [
-        membership.id,
-        membership,
-      ]),
-    );
-
-    // Step 6: Combine the payment rows with their optional
-    // member and membership information.
-    //
-    // IMPORTANT:
-    // Every successful payment is kept even if its member or
-    // membership relationship cannot be loaded.
-    const normalized: RevenuePaymentRow[] = payments.map(
-      (payment) => ({
-        ...payment,
-        member: payment.member_id
-          ? memberMap.get(payment.member_id) || null
-          : null,
-        membership: payment.membership_id
-          ? membershipMap.get(payment.membership_id) || null
-          : null,
-      }),
-    );
-
-    setRevenuePayments(normalized);
-  } catch (error) {
-    setError(
-      error instanceof Error
-        ? error.message
-        : "Unable to load revenue records.",
-    );
-
-    setRevenuePayments([]);
-  } finally {
-    setRevenueLoading(false);
   }
-}
 
   async function loadStaff() {
     setLoading(true);
@@ -1093,6 +1074,18 @@ function StaffAdminPage() {
     setEmploymentDate(profile.employment_date || "");
     setRole(profile.role || "staff");
 
+    /* Load personal information into editable fields */
+    setPersonalFullName(profile.full_name || "");
+    setPersonalPhone(profile.phone || "");
+    setPersonalBirthDay(
+      profile.birth_day ? String(profile.birth_day) : "",
+    );
+    setPersonalBirthMonth(
+      profile.birth_month ? String(profile.birth_month) : "",
+    );
+    setPersonalAddress(profile.address || "");
+
+    setEditingPersonalInfo(false);
     setShowSalaryForm(false);
 
     const [salaryResult, attendanceResult] = await Promise.all([
@@ -1147,6 +1140,141 @@ function StaffAdminPage() {
     setAttendanceRecords(
       (attendanceResult.data || []) as AttendanceRecord[],
     );
+  }
+
+  async function savePersonalInformation() {
+    if (!selectedStaff) return;
+
+    const cleanName = personalFullName.trim();
+    const cleanPhone = personalPhone.trim();
+    const cleanAddress = personalAddress.trim();
+
+    const birthDayValue = personalBirthDay
+      ? Number(personalBirthDay)
+      : null;
+
+    const birthMonthValue = personalBirthMonth
+      ? Number(personalBirthMonth)
+      : null;
+
+    if (!cleanName) {
+      setError("Full name cannot be empty.");
+      return;
+    }
+
+    if (
+      birthDayValue !== null &&
+      (birthDayValue < 1 || birthDayValue > 31)
+    ) {
+      setError("Birthday must be between 1 and 31.");
+      return;
+    }
+
+    if (
+      birthMonthValue !== null &&
+      (birthMonthValue < 1 || birthMonthValue > 12)
+    ) {
+      setError("Birth month must be between 1 and 12.");
+      return;
+    }
+
+    if (
+      (birthDayValue === null) !==
+      (birthMonthValue === null)
+    ) {
+      setError("Enter both birthday and birth month.");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    const { error: profileError } = await supabase
+      .from("staff_profiles")
+      .update({
+        full_name: cleanName,
+        phone: cleanPhone || null,
+        birth_day: birthDayValue,
+        birth_month: birthMonthValue,
+        address: cleanAddress || null,
+      })
+      .eq("id", selectedStaff.id);
+
+    if (profileError) {
+      setError(profileError.message);
+      setSaving(false);
+      return;
+    }
+
+    /*
+     * Keep staff_users.full_name synchronized with the staff profile.
+     * We deliberately do NOT change the auth email here because
+     * changing the profile email without changing the Supabase Auth
+     * email would create a login mismatch.
+     */
+    const { data: existingStaffUser, error: lookupError } =
+      await supabase
+        .from("staff_users")
+        .select("id")
+        .eq("auth_user_id", selectedStaff.auth_user_id)
+        .maybeSingle();
+
+    if (lookupError) {
+      setError(lookupError.message);
+      setSaving(false);
+      return;
+    }
+
+    if (existingStaffUser?.id) {
+      const { error: updateError } = await supabase
+        .from("staff_users")
+        .update({
+          full_name: cleanName,
+        })
+        .eq("id", existingStaffUser.id);
+
+      if (updateError) {
+        setError(updateError.message);
+        setSaving(false);
+        return;
+      }
+    }
+
+    const updatedProfile: StaffProfile = {
+      ...selectedStaff,
+      full_name: cleanName,
+      phone: cleanPhone || null,
+      birth_day: birthDayValue,
+      birth_month: birthMonthValue,
+      address: cleanAddress || null,
+    };
+
+    setSelectedStaff(updatedProfile);
+
+    setStaff((current) =>
+      current.map((member) =>
+        member.id === updatedProfile.id
+          ? updatedProfile
+          : member,
+      ),
+    );
+
+    setPersonalFullName(cleanName);
+    setPersonalPhone(cleanPhone);
+    setPersonalBirthDay(
+      birthDayValue !== null ? String(birthDayValue) : "",
+    );
+    setPersonalBirthMonth(
+      birthMonthValue !== null ? String(birthMonthValue) : "",
+    );
+    setPersonalAddress(cleanAddress);
+
+    setEditingPersonalInfo(false);
+
+    setSuccess("Personal information updated successfully.");
+
+    setSaving(false);
   }
 
   async function saveStaffDetails() {
@@ -1473,7 +1601,6 @@ function StaffAdminPage() {
           </div>
         )}
 
-        {/* ADMIN REVENUE REPORT */}
         {!loading && (
           <RevenueReport
             payments={revenuePayments}
@@ -1711,67 +1838,332 @@ function StaffAdminPage() {
                       )}
                     </div>
 
+                    {/* PERSONAL INFORMATION */}
                     <div className="border border-border bg-card p-6">
-                      <h3 className="font-display text-xl font-bold uppercase">
-                        Personal Information
-                      </h3>
-
-                      <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Full Name
-                          </p>
+                          <h3 className="font-display text-xl font-bold uppercase">
+                            Personal Information
+                          </h3>
 
-                          <p className="mt-1 font-medium">
-                            {selectedStaff.full_name}
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Personal details for this staff member.
                           </p>
                         </div>
 
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Email
-                          </p>
+                        {!editingPersonalInfo ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setError("");
+                              setSuccess("");
 
-                          <p className="mt-1 break-all font-medium">
-                            {selectedStaff.email || "—"}
-                          </p>
-                        </div>
+                              setPersonalFullName(
+                                selectedStaff.full_name || "",
+                              );
 
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Phone
-                          </p>
+                              setPersonalPhone(
+                                selectedStaff.phone || "",
+                              );
 
-                          <p className="mt-1 font-medium">
-                            {selectedStaff.phone || "—"}
-                          </p>
-                        </div>
+                              setPersonalBirthDay(
+                                selectedStaff.birth_day
+                                  ? String(
+                                      selectedStaff.birth_day,
+                                    )
+                                  : "",
+                              );
 
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Birthday
-                          </p>
+                              setPersonalBirthMonth(
+                                selectedStaff.birth_month
+                                  ? String(
+                                      selectedStaff.birth_month,
+                                    )
+                                  : "",
+                              );
 
-                          <p className="mt-1 font-medium">
-                            {selectedStaff.birth_day &&
-                            selectedStaff.birth_month
-                              ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}`
-                              : "—"}
-                          </p>
-                        </div>
+                              setPersonalAddress(
+                                selectedStaff.address || "",
+                              );
 
-                        <div className="sm:col-span-2">
-                          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Address
-                          </p>
+                              setEditingPersonalInfo(true);
+                            }}
+                            disabled={saving}
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit Personal Information
+                          </Button>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditingPersonalInfo(false);
+                                setPersonalFullName(
+                                  selectedStaff.full_name || "",
+                                );
+                                setPersonalPhone(
+                                  selectedStaff.phone || "",
+                                );
+                                setPersonalBirthDay(
+                                  selectedStaff.birth_day
+                                    ? String(
+                                        selectedStaff.birth_day,
+                                      )
+                                    : "",
+                                );
+                                setPersonalBirthMonth(
+                                  selectedStaff.birth_month
+                                    ? String(
+                                        selectedStaff.birth_month,
+                                      )
+                                    : "",
+                                );
+                                setPersonalAddress(
+                                  selectedStaff.address || "",
+                                );
+                              }}
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </Button>
 
-                          <p className="mt-1 font-medium">
-                            {selectedStaff.address || "—"}
-                          </p>
-                        </div>
+                            <Button
+                              onClick={() =>
+                                void savePersonalInformation()
+                              }
+                              disabled={saving}
+                            >
+                              <Save className="h-4 w-4" />
+                              {saving
+                                ? "Saving..."
+                                : "Save Personal Information"}
+                            </Button>
+                          </div>
+                        )}
                       </div>
+
+                      {!editingPersonalInfo ? (
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Full Name
+                            </p>
+
+                            <p className="mt-1 font-medium">
+                              {selectedStaff.full_name}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Email
+                            </p>
+
+                            <p className="mt-1 break-all font-medium">
+                              {selectedStaff.email || "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Phone
+                            </p>
+
+                            <p className="mt-1 font-medium">
+                              {selectedStaff.phone || "—"}
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Birthday
+                            </p>
+
+                            <p className="mt-1 font-medium">
+                              {selectedStaff.birth_day &&
+                              selectedStaff.birth_month
+                                ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div className="sm:col-span-2">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Address
+                            </p>
+
+                            <p className="mt-1 font-medium">
+                              {selectedStaff.address || "—"}
+                            </p>
+                          </div>
+
+                          <div className="sm:col-span-2 border-t border-border pt-4">
+                            <p className="text-xs text-muted-foreground">
+                              Staff login email
+                            </p>
+
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              The login email is linked to the staff
+                              account and is not changed from this
+                              section.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Full Name
+                            </span>
+
+                            <input
+                              value={personalFullName}
+                              onChange={(event) =>
+                                setPersonalFullName(
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="Full name"
+                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                            />
+                          </label>
+
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Email
+                            </span>
+
+                            <input
+                              value={selectedStaff.email || ""}
+                              readOnly
+                              disabled
+                              className="mt-2 h-11 w-full cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground outline-none"
+                            />
+
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              Login email. Contact system
+                              administration if this needs to change.
+                            </p>
+                          </label>
+
+                          <label className="block">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Phone
+                            </span>
+
+                            <input
+                              type="tel"
+                              value={personalPhone}
+                              onChange={(event) =>
+                                setPersonalPhone(
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="Phone number"
+                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                            />
+                          </label>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="block">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Birth Day
+                              </span>
+
+                              <select
+                                value={personalBirthDay}
+                                onChange={(event) =>
+                                  setPersonalBirthDay(
+                                    event.target.value,
+                                  )
+                                }
+                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                              >
+                                <option value="">
+                                  Day
+                                </option>
+
+                                {Array.from(
+                                  { length: 31 },
+                                  (_, index) => index + 1,
+                                ).map((day) => (
+                                  <option
+                                    key={day}
+                                    value={day}
+                                  >
+                                    {day}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="block">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Birth Month
+                              </span>
+
+                              <select
+                                value={personalBirthMonth}
+                                onChange={(event) =>
+                                  setPersonalBirthMonth(
+                                    event.target.value,
+                                  )
+                                }
+                                className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                              >
+                                <option value="">
+                                  Month
+                                </option>
+
+                                {[
+                                  "January",
+                                  "February",
+                                  "March",
+                                  "April",
+                                  "May",
+                                  "June",
+                                  "July",
+                                  "August",
+                                  "September",
+                                  "October",
+                                  "November",
+                                  "December",
+                                ].map((month, index) => (
+                                  <option
+                                    key={month}
+                                    value={index + 1}
+                                  >
+                                    {month}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+
+                          <label className="block sm:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Address
+                            </span>
+
+                            <textarea
+                              value={personalAddress}
+                              onChange={(event) =>
+                                setPersonalAddress(
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="Staff residential address"
+                              rows={3}
+                              className="mt-2 w-full resize-y border border-border bg-background px-3 py-3 outline-none focus:border-foreground"
+                            />
+                          </label>
+                        </div>
+                      )}
                     </div>
 
+                    {/* EMPLOYMENT INFORMATION */}
                     <div className="border border-border bg-card p-6">
                       <div>
                         <h3 className="font-display text-xl font-bold uppercase">
@@ -1965,6 +2357,7 @@ function StaffAdminPage() {
                       </div>
                     </div>
 
+                    {/* SALARY */}
                     <div className="border border-border bg-card p-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
@@ -2197,6 +2590,7 @@ function StaffAdminPage() {
                       </div>
                     </div>
 
+                    {/* ATTENDANCE */}
                     <div className="border border-border bg-card p-6">
                       <div>
                         <h3 className="font-display text-xl font-bold uppercase">
