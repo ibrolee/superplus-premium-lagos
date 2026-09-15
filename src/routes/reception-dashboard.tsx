@@ -1035,6 +1035,7 @@ function ReceptionDashboardPage() {
                 />
               </div>
 
+              {/* NEW SEARCH RESULT DESIGN */}
               {memberSearch.trim() && (
                 <div className="mt-4">
                   {searchedMembers.length ===
@@ -1053,132 +1054,38 @@ function ReceptionDashboardPage() {
                   ) : (
                     <div className="divide-y divide-border overflow-hidden border border-border">
                       {searchedMembers.map(
-                        (member) => {
-                          const active =
-                            isMembershipActive(
-                              member.membership,
-                            );
-
-                          const expiry =
-                            getDateOnly(
-                              member
-                                .membership
-                                ?.end_date,
-                            );
-
-                          const inside =
-                            currentlyInside.some(
-                              (
-                                attendance,
-                              ) =>
-                                attendance.member_id ===
-                                member.id,
-                            );
-
-                          return (
-                            <div
-                              key={
-                                member.id
-                              }
-                              className="p-5"
-                            >
-                              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div className="min-w-0">
-                                  <h3 className="font-display text-2xl font-bold uppercase">
-                                    {member.full_name ||
-                                      "Member"}
-                                  </h3>
-
-                                  <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
-                                    {member.phone && (
-                                      <a
-                                        href={`tel:${member.phone}`}
-                                        className="flex items-center gap-2 hover:text-primary"
-                                      >
-                                        <Phone className="size-3.5" />
-                                        {
-                                          member.phone
-                                        }
-                                      </a>
-                                    )}
-
-                                    {member.email && (
-                                      <span className="truncate">
-                                        {
-                                          member.email
-                                        }
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-
-                                <div className="flex flex-wrap gap-2">
-                                  <span
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase ${
-                                      active
-                                        ? "bg-green-600/10 text-green-700"
-                                        : "bg-destructive/10 text-destructive"
-                                    }`}
-                                  >
-                                    {active ? (
-                                      <CheckCircle2 className="size-3" />
-                                    ) : (
-                                      <XCircle className="size-3" />
-                                    )}
-
-                                    {active
-                                      ? "Active"
-                                      : "Expired"}
-                                  </span>
-
-                                  {inside && (
-                                    <span className="inline-flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 text-[10px] font-extrabold uppercase text-primary">
-                                      <LogIn className="size-3" />
-                                      Inside
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
-                                <div>
-                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                    Membership
-                                  </span>
-
-                                  <p className="mt-1 text-sm font-bold">
-                                    {member.membership?.plan_name ||
-                                      "No membership record"}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                    Expiry
-                                  </span>
-
-                                  <p className="mt-1 text-sm font-bold">
-                                    {expiry ||
-                                      "Not available"}
-                                  </p>
-                                </div>
-
-                                <div>
-                                  <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                                    Birthday
-                                  </span>
-
-                                  <p className="mt-1 text-sm font-bold">
-                                    {formatBirthday(
-                                      member.birth_day,
-                                      member.birth_month,
-                                    )}
-                                  </p>
-                                </div>
-                              </div>
+                        (member) => (
+                          <div
+                            key={
+                              member.id
+                            }
+                            className="flex flex-col gap-4 bg-background p-5 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <h3 className="font-display text-2xl font-bold uppercase">
+                                {member.full_name ||
+                                  "Member"}
+                              </h3>
                             </div>
-                          );
-                        },
+
+                            <Link
+                              to="/reception-member/$memberId"
+                              params={{
+                                memberId:
+                                  member.id,
+                              }}
+                              className="w-full sm:w-auto"
+                            >
+                              <Button
+                                variant="outline"
+                                className="w-full sm:w-auto"
+                              >
+                                <UserRound />
+                                View Profile
+                              </Button>
+                            </Link>
+                          </div>
+                        ),
                       )}
                     </div>
                   )}
