@@ -216,6 +216,36 @@ function MemberDashboard() {
         return;
       }
 
+      /*
+       * Automatically link an existing manually-created member
+       * account to the authenticated OTP account.
+       *
+       * This is safe to run every time:
+       * - Already-linked members are simply returned as already linked.
+       * - Unlinked existing members are matched by their verified
+       *   authenticated email address.
+       * - New members who are already linked are unaffected.
+       */
+      const { data: linkResult, error: linkError } =
+        await supabase.rpc("link_member_account");
+
+      if (linkError) {
+        console.error(
+          "Member account linking error:",
+          linkError,
+        );
+      } else {
+        console.log(
+          "Member account linking result:",
+          linkResult,
+        );
+      }
+
+      if (!active) return;
+
+      /*
+       * Now retrieve the member using the newly-linked auth_user_id.
+       */
       const { data: memberData, error: memberError } =
         await supabase
           .from("members")
@@ -233,7 +263,7 @@ function MemberDashboard() {
 
       if (!memberData) {
         setError(
-          "Your login was successful, but your member account has not been linked yet. Please contact Super Plus Fitness reception.",
+          "Your login was successful, but we could not find a member account connected to this email. Please contact Super Plus Fitness reception.",
         );
         setLoading(false);
         return;
