@@ -159,11 +159,11 @@ export function MobileNavbar() {
             </Link>
 
             <Link
-              to="/reception-dashboard"
+              to="/staff"
               onClick={() => setOpen(false)}
               className="text-sm font-bold uppercase"
             >
-              Reception Dashboard
+              Staff Portal
             </Link>
 
             <Button asChild size="lg">
@@ -667,10 +667,7 @@ export function Footer() {
             links={[
               { label: "Member Login", to: "/login" },
               { label: "My QR Code", to: "/my-qr" },
-              {
-                label: "Reception Dashboard",
-                to: "/reception-dashboard",
-              },
+              { label: "Staff Portal", to: "/staff" },
             ]}
           />
 
@@ -772,9 +769,7 @@ export function UtilityBar() {
       <div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase">
         <Link to="/login">Member login</Link>
         <Link to="/my-qr">My QR Code</Link>
-        <Link to="/reception-dashboard">
-          Reception Dashboard
-        </Link>
+        <Link to="/staff">Staff Portal</Link>
       </div>
     </div>
   );
