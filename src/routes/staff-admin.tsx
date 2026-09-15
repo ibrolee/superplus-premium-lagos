@@ -1,3 +1,4 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -136,9 +137,10 @@ function statusClass(status: StaffProfile["status"]) {
   }
 }
 
-export default function StaffAdminPage() {
+function StaffAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -152,6 +154,7 @@ export default function StaffAdminPage() {
   >([]);
 
   const [search, setSearch] = useState("");
+
   const [filter, setFilter] = useState<
     "all" | "pending" | "approved" | "suspended" | "inactive"
   >("all");
@@ -168,25 +171,24 @@ export default function StaffAdminPage() {
   const [salaryStart, setSalaryStart] = useState("");
   const [salaryEnd, setSalaryEnd] = useState("");
   const [salaryPaymentDate, setSalaryPaymentDate] = useState("");
+
   const [salaryStatus, setSalaryStatus] = useState<
     "pending" | "paid" | "cancelled"
   >("pending");
+
   const [salaryNotes, setSalaryNotes] = useState("");
 
-  async function loadStaff() {
-    setLoading(true);
-    setError("");
-
+  async function verifyAdmin() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) {
       window.location.href = "/staff";
-      return;
+      return false;
     }
 
-    const { data: adminRecord, error: adminError } = await supabase
+    const { data, error: adminError } = await supabase
       .from("staff_users")
       .select("id, role, active")
       .eq("auth_user_id", user.id)
@@ -194,16 +196,30 @@ export default function StaffAdminPage() {
 
     if (adminError) {
       setError(adminError.message);
-      setLoading(false);
-      return;
+      return false;
     }
 
     const isAdmin =
-      adminRecord?.active === true &&
-      ["admin", "owner", "manager"].includes(adminRecord.role);
+      data?.active === true &&
+      ["admin", "owner", "manager"].includes(data.role);
 
     if (!isAdmin) {
-      setError("You do not have permission to access staff management.");
+      setError(
+        "You do not have permission to access staff management.",
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  async function loadStaff() {
+    setLoading(true);
+    setError("");
+
+    const allowed = await verifyAdmin();
+
+    if (!allowed) {
       setLoading(false);
       return;
     }
@@ -244,6 +260,7 @@ export default function StaffAdminPage() {
 
   async function loadStaffDetails(profile: StaffProfile) {
     setSelectedStaff(profile);
+
     setError("");
     setSuccess("");
 
@@ -252,6 +269,8 @@ export default function StaffAdminPage() {
     setEmploymentType(profile.employment_type || "Full Time");
     setEmploymentDate(profile.employment_date || "");
     setRole(profile.role || "staff");
+
+    setShowSalaryForm(false);
 
     const [salaryResult, attendanceResult] = await Promise.all([
       supabase
@@ -298,7 +317,10 @@ export default function StaffAdminPage() {
       return;
     }
 
-    setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
+    setSalaryRecords(
+      (salaryResult.data || []) as SalaryRecord[],
+    );
+
     setAttendanceRecords(
       (attendanceResult.data || []) as AttendanceRecord[],
     );
@@ -319,6 +341,10 @@ export default function StaffAdminPage() {
         employment_type: employmentType,
         employment_date: employmentDate || null,
         role,
+        status:
+          selectedStaff.status === "pending"
+            ? "approved"
+            : selectedStaff.status,
       })
       .eq("id", selectedStaff.id);
 
@@ -328,21 +354,21 @@ export default function StaffAdminPage() {
       return;
     }
 
-    const { data: existingStaffUser, error: staffUserLookupError } =
+    const { data: existingStaffUser, error: lookupError } =
       await supabase
         .from("staff_users")
         .select("id")
         .eq("auth_user_id", selectedStaff.auth_user_id)
         .maybeSingle();
 
-    if (staffUserLookupError) {
-      setError(staffUserLookupError.message);
+    if (lookupError) {
+      setError(lookupError.message);
       setSaving(false);
       return;
     }
 
     if (existingStaffUser?.id) {
-      const { error: staffUserUpdateError } = await supabase
+      const { error: updateError } = await supabase
         .from("staff_users")
         .update({
           role,
@@ -351,13 +377,13 @@ export default function StaffAdminPage() {
         })
         .eq("id", existingStaffUser.id);
 
-      if (staffUserUpdateError) {
-        setError(staffUserUpdateError.message);
+      if (updateError) {
+        setError(updateError.message);
         setSaving(false);
         return;
       }
     } else {
-      const { error: staffUserInsertError } = await supabase
+      const { error: insertError } = await supabase
         .from("staff_users")
         .insert({
           id: crypto.randomUUID(),
@@ -367,44 +393,43 @@ export default function StaffAdminPage() {
           active: true,
         });
 
-      if (staffUserInsertError) {
-        setError(staffUserInsertError.message);
+      if (insertError) {
+        setError(insertError.message);
         setSaving(false);
         return;
       }
     }
 
-    if (selectedStaff.status === "pending") {
-      const { error: approvalError } = await supabase
-        .from("staff_profiles")
-        .update({ status: "approved" })
-        .eq("id", selectedStaff.id);
+    const updatedProfile: StaffProfile = {
+      ...selectedStaff,
+      position: position.trim() || null,
+      department: department || null,
+      employment_type: employmentType,
+      employment_date: employmentDate || null,
+      role,
+      status:
+        selectedStaff.status === "pending"
+          ? "approved"
+          : selectedStaff.status,
+    };
 
-      if (approvalError) {
-        setError(approvalError.message);
-        setSaving(false);
-        return;
-      }
-    }
+    setSelectedStaff(updatedProfile);
 
-    setSuccess("Staff details saved successfully.");
+    setStaff((current) =>
+      current.map((member) =>
+        member.id === updatedProfile.id
+          ? updatedProfile
+          : member,
+      ),
+    );
+
+    setSuccess(
+      selectedStaff.status === "pending"
+        ? "Staff member approved successfully."
+        : "Staff details saved successfully.",
+    );
+
     setSaving(false);
-
-    await loadStaff();
-
-    const updated = staff.find((item) => item.id === selectedStaff.id);
-
-    if (updated) {
-      await loadStaffDetails({
-        ...updated,
-        position: position.trim() || null,
-        department: department || null,
-        employment_type: employmentType,
-        employment_date: employmentDate || null,
-        role,
-        status: "approved",
-      });
-    }
   }
 
   async function changeStaffStatus(
@@ -435,27 +460,44 @@ export default function StaffAdminPage() {
       .maybeSingle();
 
     if (existingStaffUser?.id) {
-      await supabase
+      const { error: staffUserError } = await supabase
         .from("staff_users")
         .update({
           active: newStatus === "approved",
         })
         .eq("id", existingStaffUser.id);
+
+      if (staffUserError) {
+        setError(staffUserError.message);
+        setSaving(false);
+        return;
+      }
+    }
+
+    const updatedProfile = {
+      ...profile,
+      status: newStatus,
+    };
+
+    setStaff((current) =>
+      current.map((member) =>
+        member.id === profile.id
+          ? updatedProfile
+          : member,
+      ),
+    );
+
+    if (selectedStaff?.id === profile.id) {
+      setSelectedStaff(updatedProfile);
     }
 
     setSuccess(
-      `${profile.full_name} is now ${statusLabel(newStatus).toLowerCase()}.`,
+      `${profile.full_name} is now ${statusLabel(
+        newStatus,
+      ).toLowerCase()}.`,
     );
 
     setSaving(false);
-    await loadStaff();
-
-    if (selectedStaff?.id === profile.id) {
-      setSelectedStaff({
-        ...profile,
-        status: newStatus,
-      });
-    }
   }
 
   async function addSalaryRecord() {
@@ -500,6 +542,7 @@ export default function StaffAdminPage() {
     setShowSalaryForm(false);
 
     setSuccess("Salary record added successfully.");
+
     setSaving(false);
 
     await loadStaffDetails(selectedStaff);
@@ -557,6 +600,7 @@ export default function StaffAdminPage() {
           <div>
             <div className="mb-1 flex items-center gap-2">
               <ShieldCheck className="h-5 w-5" />
+
               <span className="text-sm font-semibold uppercase tracking-[0.2em]">
                 Super Plus Fitness
               </span>
@@ -582,7 +626,11 @@ export default function StaffAdminPage() {
               Refresh
             </Button>
 
-            <Button variant="outline" onClick={logout}>
+            <Button
+              variant="outline"
+              onClick={logout}
+              disabled={saving}
+            >
               <LogOut className="h-4 w-4" />
               Logout
             </Button>
@@ -614,28 +662,40 @@ export default function StaffAdminPage() {
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Pending
                 </p>
-                <p className="mt-2 text-4xl font-bold">{pendingCount}</p>
+
+                <p className="mt-2 text-4xl font-bold">
+                  {pendingCount}
+                </p>
               </div>
 
               <div className="border border-border bg-card p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Approved
                 </p>
-                <p className="mt-2 text-4xl font-bold">{approvedCount}</p>
+
+                <p className="mt-2 text-4xl font-bold">
+                  {approvedCount}
+                </p>
               </div>
 
               <div className="border border-border bg-card p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Suspended
                 </p>
-                <p className="mt-2 text-4xl font-bold">{suspendedCount}</p>
+
+                <p className="mt-2 text-4xl font-bold">
+                  {suspendedCount}
+                </p>
               </div>
 
               <div className="border border-border bg-card p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Inactive
                 </p>
-                <p className="mt-2 text-4xl font-bold">{inactiveCount}</p>
+
+                <p className="mt-2 text-4xl font-bold">
+                  {inactiveCount}
+                </p>
               </div>
             </div>
 
@@ -759,21 +819,19 @@ export default function StaffAdminPage() {
                   <div className="space-y-6">
                     <div className="border border-border bg-card p-6">
                       <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                              <UserRound className="h-6 w-6" />
-                            </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                            <UserRound className="h-6 w-6" />
+                          </div>
 
-                            <div>
-                              <h2 className="font-display text-3xl font-bold uppercase">
-                                {selectedStaff.full_name}
-                              </h2>
+                          <div>
+                            <h2 className="font-display text-3xl font-bold uppercase">
+                              {selectedStaff.full_name}
+                            </h2>
 
-                              <p className="text-sm text-muted-foreground">
-                                {selectedStaff.staff_id}
-                              </p>
-                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStaff.staff_id}
+                            </p>
                           </div>
                         </div>
 
@@ -817,6 +875,7 @@ export default function StaffAdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Full Name
                           </p>
+
                           <p className="mt-1 font-medium">
                             {selectedStaff.full_name}
                           </p>
@@ -826,6 +885,7 @@ export default function StaffAdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Email
                           </p>
+
                           <p className="mt-1 break-all font-medium">
                             {selectedStaff.email || "—"}
                           </p>
@@ -835,6 +895,7 @@ export default function StaffAdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Phone
                           </p>
+
                           <p className="mt-1 font-medium">
                             {selectedStaff.phone || "—"}
                           </p>
@@ -844,6 +905,7 @@ export default function StaffAdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Birthday
                           </p>
+
                           <p className="mt-1 font-medium">
                             {selectedStaff.birth_day &&
                             selectedStaff.birth_month
@@ -856,6 +918,7 @@ export default function StaffAdminPage() {
                           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Address
                           </p>
+
                           <p className="mt-1 font-medium">
                             {selectedStaff.address || "—"}
                           </p>
@@ -864,23 +927,15 @@ export default function StaffAdminPage() {
                     </div>
 
                     <div className="border border-border bg-card p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <h3 className="font-display text-xl font-bold uppercase">
-                            Employment Information
-                          </h3>
+                      <div>
+                        <h3 className="font-display text-xl font-bold uppercase">
+                          Employment Information
+                        </h3>
 
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Assign the staff member's job and access
-                            level.
-                          </p>
-                        </div>
-
-                        {selectedStaff.status === "pending" && (
-                          <span className="text-xs font-semibold uppercase text-orange-600">
-                            Approval Required
-                          </span>
-                        )}
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Assign the staff member's job and access
+                          level.
+                        </p>
                       </div>
 
                       <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -981,10 +1036,7 @@ export default function StaffAdminPage() {
                           </select>
 
                           <p className="mt-2 text-xs text-muted-foreground">
-                            Admin, Manager and Reception roles can
-                            provide access to staff-management or
-                            reception functions depending on the
-                            portal permissions.
+                            Controls the staff member's system access.
                           </p>
                         </label>
                       </div>
@@ -1034,7 +1086,7 @@ export default function StaffAdminPage() {
                           </Button>
                         )}
 
-                        {selectedStaff.status !== "inactive" && (
+                        {selectedStaff.status === "approved" && (
                           <Button
                             variant="outline"
                             onClick={() =>
@@ -1075,8 +1127,7 @@ export default function StaffAdminPage() {
                           </h3>
 
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Salary records are visible only to
-                            authorized management and the staff member.
+                            Salary records for this staff member.
                           </p>
                         </div>
 
@@ -1087,6 +1138,7 @@ export default function StaffAdminPage() {
                           }
                         >
                           <DollarSign className="h-4 w-4" />
+
                           {showSalaryForm
                             ? "Close"
                             : "Add Salary"}
@@ -1133,7 +1185,11 @@ export default function StaffAdminPage() {
                                 <option value="pending">
                                   Pending
                                 </option>
-                                <option value="paid">Paid</option>
+
+                                <option value="paid">
+                                  Paid
+                                </option>
+
                                 <option value="cancelled">
                                   Cancelled
                                 </option>
@@ -1229,15 +1285,19 @@ export default function StaffAdminPage() {
                                 <th className="px-3 py-3">
                                   Amount
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Period
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Payment Date
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Status
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Notes
                                 </th>
@@ -1314,12 +1374,15 @@ export default function StaffAdminPage() {
                                 <th className="px-3 py-3">
                                   Check-in
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Check-out
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Duration
                                 </th>
+
                                 <th className="px-3 py-3">
                                   Notes
                                 </th>
@@ -1398,3 +1461,7 @@ export default function StaffAdminPage() {
     </main>
   );
 }
+
+export const Route = createFileRoute("/staff-admin")({
+  component: StaffAdminPage,
+});
