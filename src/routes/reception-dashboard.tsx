@@ -16,6 +16,7 @@ import {
   RefreshCw,
   Search,
   TrendingUp,
+  UserPlus,
   UserRound,
   Users,
   XCircle,
@@ -23,6 +24,10 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import {
+  membershipPlans,
+  formatNaira,
+} from "@/lib/site-data";
 
 export const Route = createFileRoute("/reception-dashboard")({
   head: () => ({
@@ -76,6 +81,19 @@ type AttendanceWithMember = AttendanceRecord & {
   } | null;
 };
 
+const planDurationDays: Record<string, number> = {
+  daily: 1,
+  weekly: 7,
+  monthly: 30,
+  quarterly: 90,
+  "semi-annual": 180,
+  yearly: 365,
+  "vip-silver": 30,
+  "vip-gold": 30,
+  family: 30,
+  "personal-training": 30,
+};
+
 function getTodayParts() {
   const now = new Date();
 
@@ -117,9 +135,7 @@ function getLocalWeekRange() {
 
   const daysSinceMonday = day === 0 ? 6 : day - 1;
 
-  start.setDate(
-    start.getDate() - daysSinceMonday,
-  );
+  start.setDate(start.getDate() - daysSinceMonday);
 
   const end = new Date(start);
   end.setDate(end.getDate() + 7);
@@ -498,6 +514,59 @@ function ReceptionDashboardPage() {
   const [memberSearch, setMemberSearch] =
     useState("");
 
+  /*
+   * ADD MEMBER FORM
+   */
+  const [addMemberName, setAddMemberName] =
+    useState("");
+
+  const [addMemberEmail, setAddMemberEmail] =
+    useState("");
+
+  const [addMemberPhone, setAddMemberPhone] =
+    useState("");
+
+  const [addMemberAddress, setAddMemberAddress] =
+    useState("");
+
+  const [addMemberBirthDay, setAddMemberBirthDay] =
+    useState("");
+
+  const [addMemberBirthMonth, setAddMemberBirthMonth] =
+    useState("");
+
+  const [selectedPlanId, setSelectedPlanId] =
+    useState(
+      membershipPlans[2]?.id || "",
+    );
+
+  const [addMemberStartDate, setAddMemberStartDate] =
+    useState(
+      getLocalDateString(),
+    );
+
+  const [includeRegistrationFee, setIncludeRegistrationFee] =
+    useState(true);
+
+  const [paymentMethod, setPaymentMethod] =
+    useState("Cash");
+
+  const [addingMember, setAddingMember] =
+    useState(false);
+
+  const [addMemberError, setAddMemberError] =
+    useState("");
+
+  const [addMemberSuccess, setAddMemberSuccess] =
+    useState<{
+      memberId: string;
+      membershipId: string;
+      planName: string;
+      startDate: string;
+      endDate: string;
+      total: number;
+    } | null>(null);
+
   const today = useMemo(
     () => getTodayParts(),
     [],
@@ -519,6 +588,40 @@ function ReceptionDashboardPage() {
     () => getLocalWeekRange(),
     [],
   );
+
+  const selectedPlan =
+    membershipPlans.find(
+      (plan) =>
+        plan.id === selectedPlanId,
+    ) ||
+    membershipPlans[0];
+
+  const selectedPlanDuration =
+    selectedPlan
+      ? planDurationDays[
+          selectedPlan.id
+        ] || 30
+      : 30;
+
+  const registrationAmount =
+    selectedPlan &&
+    includeRegistrationFee
+      ? selectedPlan.registration
+      : 0;
+
+  const totalAmount =
+    selectedPlan
+      ? selectedPlan.price +
+        registrationAmount
+      : 0;
+
+  const calculatedEndDate =
+    addMemberStartDate
+      ? addDaysToDateString(
+          addMemberStartDate,
+          selectedPlanDuration - 1,
+        )
+      : "";
 
   useEffect(() => {
     let active = true;
@@ -942,6 +1045,161 @@ function ReceptionDashboardPage() {
     setLoggingOut(false);
   }
 
+  async function handleAddMember(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    setAddMemberError("");
+    setAddMemberSuccess(null);
+
+    if (!addMemberName.trim()) {
+      setAddMemberError(
+        "Full name is required.",
+      );
+      return;
+    }
+
+    if (!selectedPlan) {
+      setAddMemberError(
+        "Please select a membership plan.",
+      );
+      return;
+    }
+
+    if (!addMemberStartDate) {
+      setAddMemberError(
+        "Membership start date is required.",
+      );
+      return;
+    }
+
+    if (
+      addMemberBirthDay &&
+      (Number(addMemberBirthDay) < 1 ||
+        Number(addMemberBirthDay) > 31)
+    ) {
+      setAddMemberError(
+        "Please enter a valid birthday.",
+      );
+      return;
+    }
+
+    if (
+      addMemberBirthMonth &&
+      (Number(addMemberBirthMonth) < 1 ||
+        Number(addMemberBirthMonth) > 12)
+    ) {
+      setAddMemberError(
+        "Please select a valid birth month.",
+      );
+      return;
+    }
+
+    setAddingMember(true);
+
+    try {
+      const durationDays =
+        planDurationDays[
+          selectedPlan.id
+        ] || 30;
+
+      const { data, error } =
+        await supabase.rpc(
+          "reception_add_member",
+          {
+            p_full_name:
+              addMemberName.trim(),
+            p_email:
+              addMemberEmail.trim() ||
+              null,
+            p_phone:
+              addMemberPhone.trim() ||
+              null,
+            p_address:
+              addMemberAddress.trim() ||
+              null,
+            p_birth_day:
+              addMemberBirthDay
+                ? Number(
+                    addMemberBirthDay,
+                  )
+                : null,
+            p_birth_month:
+              addMemberBirthMonth
+                ? Number(
+                    addMemberBirthMonth,
+                  )
+                : null,
+            p_plan_name:
+              selectedPlan.name,
+            p_start_date:
+              addMemberStartDate,
+            p_duration_days:
+              durationDays,
+            p_amount:
+              totalAmount,
+            p_payment_method:
+              paymentMethod,
+          },
+        );
+
+      if (error) {
+        throw new Error(
+          error.message,
+        );
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            "Unable to add member.",
+        );
+      }
+
+      setAddMemberSuccess({
+        memberId:
+          data.member_id,
+        membershipId:
+          data.membership_id,
+        planName:
+          data.plan_name ||
+          selectedPlan.name,
+        startDate:
+          data.start_date ||
+          addMemberStartDate,
+        endDate:
+          data.end_date ||
+          calculatedEndDate,
+        total: totalAmount,
+      });
+
+      setAddMemberName("");
+      setAddMemberEmail("");
+      setAddMemberPhone("");
+      setAddMemberAddress("");
+      setAddMemberBirthDay("");
+      setAddMemberBirthMonth("");
+      setPaymentMethod("Cash");
+      setIncludeRegistrationFee(true);
+
+      await refreshDashboard();
+    } catch (error) {
+      console.error(
+        "Add member error:",
+        error,
+      );
+
+      setAddMemberError(
+        error instanceof Error
+          ? error.message
+          : "Unable to add member.",
+      );
+    } finally {
+      setAddingMember(false);
+    }
+  }
+
   const birthdaysToday =
     members.filter(
       (member) =>
@@ -979,10 +1237,6 @@ function ReceptionDashboardPage() {
       ),
     ).size;
 
-  /*
-   * Memberships expiring from today
-   * through the next 7 days.
-   */
   const expiringSoon =
     members
       .filter((member) => {
@@ -1015,10 +1269,6 @@ function ReceptionDashboardPage() {
           dateB,
         );
       });
-
-  /*
-   * ATTENDANCE ANALYTICS
-   */
 
   const thisWeekAttendance =
     monthlyAttendance.filter(
@@ -1354,6 +1604,604 @@ function ReceptionDashboardPage() {
               </div>
             </section>
           )}
+
+          {/* ADD A MEMBER */}
+          <section className="mb-10">
+            <div className="border border-border bg-background shadow-sm">
+              <div className="border-b border-border bg-primary p-6 text-primary-foreground sm:p-7">
+                <div className="flex items-start gap-4">
+                  <div className="flex size-12 shrink-0 items-center justify-center bg-primary-foreground text-primary">
+                    <UserPlus className="size-6" />
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.18em] opacity-80">
+                      Reception
+                    </p>
+
+                    <h2 className="mt-1 font-display text-3xl font-bold uppercase sm:text-4xl">
+                      Add A Member
+                    </h2>
+
+                    <p className="mt-2 max-w-2xl text-sm leading-6 opacity-80">
+                      Register a new member, activate their membership and record their payment.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleAddMember}
+                className="p-5 sm:p-7"
+              >
+                {addMemberError && (
+                  <div className="mb-6 border border-destructive/30 bg-destructive/10 p-4">
+                    <div className="flex items-start gap-3">
+                      <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
+
+                      <div>
+                        <p className="text-xs font-extrabold uppercase text-destructive">
+                          Unable To Add Member
+                        </p>
+
+                        <p className="mt-1 text-sm text-destructive">
+                          {addMemberError}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {addMemberSuccess && (
+                  <div className="mb-6 border border-green-600/30 bg-green-600/10 p-5">
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 size-6 shrink-0 text-green-700" />
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-extrabold uppercase text-green-700">
+                          Member Added Successfully
+                        </p>
+
+                        <h3 className="mt-1 font-display text-2xl font-bold uppercase">
+                          Membership Activated
+                        </h3>
+
+                        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                          <div>
+                            <span className="text-xs font-extrabold uppercase text-muted-foreground">
+                              Plan
+                            </span>
+
+                            <p className="mt-1 font-bold">
+                              {addMemberSuccess.planName}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-extrabold uppercase text-muted-foreground">
+                              Amount Recorded
+                            </span>
+
+                            <p className="mt-1 font-bold">
+                              {formatNaira(
+                                addMemberSuccess.total,
+                              )}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-extrabold uppercase text-muted-foreground">
+                              Start
+                            </span>
+
+                            <p className="mt-1 font-bold">
+                              {formatDate(
+                                addMemberSuccess.startDate,
+                              )}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="text-xs font-extrabold uppercase text-muted-foreground">
+                              Expiry
+                            </span>
+
+                            <p className="mt-1 font-bold">
+                              {formatDate(
+                                addMemberSuccess.endDate,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <Link
+                          to="/reception-member/$memberId"
+                          params={{
+                            memberId:
+                              addMemberSuccess.memberId,
+                          }}
+                          className="mt-5 inline-block"
+                        >
+                          <Button
+                            type="button"
+                            variant="outline"
+                          >
+                            <UserRound />
+                            View Member Profile
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-6 lg:grid-cols-2">
+
+                  {/* PERSONAL INFORMATION */}
+                  <div>
+                    <div className="mb-5">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                        01
+                      </p>
+
+                      <h3 className="mt-1 font-display text-2xl font-bold uppercase">
+                        Personal Information
+                      </h3>
+                    </div>
+
+                    <div className="grid gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Full Name *
+                        </label>
+
+                        <input
+                          type="text"
+                          value={addMemberName}
+                          onChange={(event) =>
+                            setAddMemberName(
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Member full name"
+                          required
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Email
+                        </label>
+
+                        <input
+                          type="email"
+                          value={addMemberEmail}
+                          onChange={(event) =>
+                            setAddMemberEmail(
+                              event.target.value,
+                            )
+                          }
+                          placeholder="member@email.com"
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Phone Number
+                        </label>
+
+                        <input
+                          type="tel"
+                          value={addMemberPhone}
+                          onChange={(event) =>
+                            setAddMemberPhone(
+                              event.target.value,
+                            )
+                          }
+                          placeholder="08012345678"
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Address
+                        </label>
+
+                        <textarea
+                          value={addMemberAddress}
+                          onChange={(event) =>
+                            setAddMemberAddress(
+                              event.target.value,
+                            )
+                          }
+                          placeholder="Member address"
+                          rows={3}
+                          className="w-full rounded-md border border-input bg-background px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* BIRTHDAY */}
+                  <div>
+                    <div className="mb-5">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                        02
+                      </p>
+
+                      <h3 className="mt-1 font-display text-2xl font-bold uppercase">
+                        Birthday
+                      </h3>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Year is not required.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Day
+                        </label>
+
+                        <select
+                          value={
+                            addMemberBirthDay
+                          }
+                          onChange={(event) =>
+                            setAddMemberBirthDay(
+                              event.target.value,
+                            )
+                          }
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">
+                            Day
+                          </option>
+
+                          {Array.from(
+                            { length: 31 },
+                            (_, index) =>
+                              index + 1,
+                          ).map(
+                            (day) => (
+                              <option
+                                key={day}
+                                value={day}
+                              >
+                                {day}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Month
+                        </label>
+
+                        <select
+                          value={
+                            addMemberBirthMonth
+                          }
+                          onChange={(event) =>
+                            setAddMemberBirthMonth(
+                              event.target.value,
+                            )
+                          }
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="">
+                            Month
+                          </option>
+
+                          {Array.from(
+                            { length: 12 },
+                            (_, index) =>
+                              index + 1,
+                          ).map(
+                            (month) => (
+                              <option
+                                key={month}
+                                value={month}
+                              >
+                                {getMonthName(
+                                  month,
+                                )}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MEMBERSHIP */}
+                  <div className="lg:col-span-2">
+                    <div className="mb-5">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                        03
+                      </p>
+
+                      <h3 className="mt-1 font-display text-2xl font-bold uppercase">
+                        Membership
+                      </h3>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-3">
+
+                      <div className="lg:col-span-2">
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Membership Plan *
+                        </label>
+
+                        <select
+                          value={
+                            selectedPlanId
+                          }
+                          onChange={(event) =>
+                            setSelectedPlanId(
+                              event.target.value,
+                            )
+                          }
+                          required
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm font-bold outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          {membershipPlans.map(
+                            (plan) => (
+                              <option
+                                key={plan.id}
+                                value={plan.id}
+                              >
+                                {plan.name} —{" "}
+                                {formatNaira(
+                                  plan.price,
+                                )}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Start Date *
+                        </label>
+
+                        <input
+                          type="date"
+                          value={
+                            addMemberStartDate
+                          }
+                          onChange={(event) =>
+                            setAddMemberStartDate(
+                              event.target.value,
+                            )
+                          }
+                          required
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        />
+                      </div>
+                    </div>
+
+                    {selectedPlan && (
+                      <div className="mt-5 grid gap-4 sm:grid-cols-3">
+
+                        <div className="border border-border bg-muted p-5">
+                          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                            Membership Fee
+                          </p>
+
+                          <p className="mt-2 font-display text-2xl font-black">
+                            {formatNaira(
+                              selectedPlan.price,
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {selectedPlan.duration}
+                          </p>
+                        </div>
+
+                        <div className="border border-border bg-muted p-5">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                              Registration
+                            </p>
+
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={
+                                includeRegistrationFee
+                              }
+                              onClick={() =>
+                                setIncludeRegistrationFee(
+                                  (current) =>
+                                    !current,
+                                )
+                              }
+                              className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+                                includeRegistrationFee
+                                  ? "bg-primary"
+                                  : "bg-muted-foreground/30"
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-1 size-4 rounded-full bg-white transition-transform ${
+                                  includeRegistrationFee
+                                    ? "translate-x-6"
+                                    : "translate-x-1"
+                                }`}
+                              />
+                            </button>
+                          </div>
+
+                          <p className="mt-2 font-display text-2xl font-black">
+                            {formatNaira(
+                              registrationAmount,
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {includeRegistrationFee
+                              ? "Registration fee included"
+                              : "Registration fee waived"}
+                          </p>
+                        </div>
+
+                        <div className="border border-primary/30 bg-primary/5 p-5">
+                          <p className="text-xs font-extrabold uppercase text-primary">
+                            Total Amount
+                          </p>
+
+                          <p className="mt-2 font-display text-3xl font-black">
+                            {formatNaira(
+                              totalAmount,
+                            )}
+                          </p>
+
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Amount to record
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPlan && (
+                      <div className="mt-5 flex flex-col gap-3 border border-border bg-background p-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                            Membership Period
+                          </p>
+
+                          <p className="mt-1 font-bold">
+                            {formatDate(
+                              addMemberStartDate,
+                            )}{" "}
+                            →{" "}
+                            {formatDate(
+                              calculatedEndDate,
+                            )}
+                          </p>
+                        </div>
+
+                        <div className="text-left sm:text-right">
+                          <p className="text-xs font-extrabold uppercase tracking-wide text-muted-foreground">
+                            Duration
+                          </p>
+
+                          <p className="mt-1 font-bold">
+                            {selectedPlanDuration} day
+                            {selectedPlanDuration ===
+                            1
+                              ? ""
+                              : "s"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* PAYMENT */}
+                  <div className="lg:col-span-2">
+                    <div className="mb-5">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-primary">
+                        04
+                      </p>
+
+                      <h3 className="mt-1 font-display text-2xl font-bold uppercase">
+                        Payment
+                      </h3>
+                    </div>
+
+                    <div className="grid gap-4 lg:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-xs font-extrabold uppercase tracking-wide">
+                          Payment Method *
+                        </label>
+
+                        <select
+                          value={
+                            paymentMethod
+                          }
+                          onChange={(event) =>
+                            setPaymentMethod(
+                              event.target.value,
+                            )
+                          }
+                          required
+                          className="h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value="Cash">
+                            Cash
+                          </option>
+
+                          <option value="POS">
+                            POS
+                          </option>
+
+                          <option value="Bank Transfer">
+                            Bank Transfer
+                          </option>
+
+                          <option value="Paystack">
+                            Paystack
+                          </option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-end">
+                        <div className="w-full border border-primary/30 bg-primary/5 p-4">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-xs font-extrabold uppercase">
+                              Amount To Record
+                            </span>
+
+                            <span className="font-display text-2xl font-black">
+                              {formatNaira(
+                                totalAmount,
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 border-t border-border pt-6">
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={
+                      addingMember ||
+                      !selectedPlan
+                    }
+                    className="w-full sm:w-auto"
+                  >
+                    {addingMember ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <UserPlus />
+                    )}
+
+                    {addingMember
+                      ? "Activating Member..."
+                      : "Activate Member"}
+                  </Button>
+
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    Activating the member will create their member record, membership, payment record and QR token.
+                  </p>
+                </div>
+              </form>
+            </div>
+          </section>
 
           {/* MEMBER SEARCH */}
           <section className="mb-8">
