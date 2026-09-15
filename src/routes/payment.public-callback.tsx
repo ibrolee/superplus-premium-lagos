@@ -2,48 +2,46 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 
 type PaymentResult = {
   success?: boolean;
   already_processed?: boolean;
   error?: string;
   reference?: string;
-  member?: {
-    id?: string;
-    full_name?: string;
-    email?: string;
-    phone?: string;
-    auth_user_id?: string;
-  };
-  membership?: {
-    id?: string;
-    plan_name?: string;
-    start_date?: string;
-    end_date?: string;
-    status?: string;
-  };
-  payment?: {
-    id?: string;
-    amount?: number;
-    status?: string;
-    reference?: string;
-  };
+
+  member_id?: string;
+  auth_user_id?: string;
+
+  membership_id?: string;
+  payment_id?: string;
+
+  plan_name?: string;
+  start_date?: string;
+  end_date?: string;
+
+  email?: string;
 };
 
-export const Route = createFileRoute("/payment/public-callback")({
+export const Route = createFileRoute(
+  "/payment/public-callback",
+)({
   component: PublicPaymentCallback,
 });
 
 function PublicPaymentCallback() {
   const [loading, setLoading] = useState(true);
-  const [result, setResult] = useState<PaymentResult | null>(null);
+  const [result, setResult] =
+    useState<PaymentResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     async function verifyPayment() {
       try {
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(
+          window.location.search,
+        );
 
         const reference =
           params.get("reference") ||
@@ -53,43 +51,39 @@ function PublicPaymentCallback() {
           if (!cancelled) {
             setResult({
               success: false,
-              error: "No payment reference was found.",
+              error:
+                "No payment reference was found.",
             });
+
             setLoading(false);
           }
+
           return;
         }
 
-        const supabaseUrl =
-          import.meta.env.VITE_SUPABASE_URL;
+        const { data, error } =
+          await supabase.functions.invoke(
+            "verify-public-payment",
+            {
+              body: {
+                reference,
+              },
+            },
+          );
 
-        const supabaseAnonKey =
-          import.meta.env.VITE_SUPABASE_ANON_KEY;
+        if (error) {
+          console.error(
+            "Public payment verification error:",
+            error,
+          );
 
-        if (!supabaseUrl || !supabaseAnonKey) {
           throw new Error(
-            "Payment system configuration is missing.",
+            error.message ||
+              "We could not verify your payment.",
           );
         }
 
-        const response = await fetch(
-          `${supabaseUrl}/functions/v1/verify-public-payment`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-            },
-            body: JSON.stringify({
-              reference,
-            }),
-          },
-        );
-
-        const data = await response.json();
-
-        if (!response.ok || !data?.success) {
+        if (!data?.success) {
           throw new Error(
             data?.error ||
               "We could not verify your payment.",
@@ -114,6 +108,7 @@ function PublicPaymentCallback() {
                 ? error.message
                 : "We could not verify your payment.",
           });
+
           setLoading(false);
         }
       }
@@ -128,7 +123,7 @@ function PublicPaymentCallback() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center px-6">
+      <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
             <Loader2 className="h-8 w-8 animate-spin" />
@@ -149,7 +144,7 @@ function PublicPaymentCallback() {
 
   if (!result?.success) {
     return (
-      <main className="min-h-screen bg-background flex items-center justify-center px-6">
+      <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <div className="w-full max-w-md text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
             <XCircle className="h-8 w-8 text-destructive" />
@@ -171,7 +166,10 @@ function PublicPaymentCallback() {
               </Link>
             </Button>
 
-            <Button asChild variant="outline">
+            <Button
+              asChild
+              variant="outline"
+            >
               <Link to="/">
                 Back to website
               </Link>
@@ -182,23 +180,20 @@ function PublicPaymentCallback() {
     );
   }
 
-  const memberName =
-    result.member?.full_name || "Member";
-
-  const email =
-    result.member?.email || "";
-
   const planName =
-    result.membership?.plan_name || "Membership";
+    result.plan_name || "Membership";
 
   const startDate =
-    result.membership?.start_date || "";
+    result.start_date || "";
 
   const endDate =
-    result.membership?.end_date || "";
+    result.end_date || "";
+
+  const email =
+    result.email || "";
 
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
+    <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-lg">
         <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-8">
           <div className="text-center">
@@ -211,12 +206,7 @@ function PublicPaymentCallback() {
             </h1>
 
             <p className="mt-3 text-muted-foreground">
-              Welcome to Super Plus Fitness & Spa,
-              {" "}
-              <span className="font-medium text-foreground">
-                {memberName}
-              </span>
-              .
+              Welcome to Super Plus Fitness & Spa!
             </p>
           </div>
 
@@ -231,7 +221,7 @@ function PublicPaymentCallback() {
                   Plan
                 </span>
 
-                <span className="font-medium text-right">
+                <span className="text-right font-medium">
                   {planName}
                 </span>
               </div>
@@ -264,18 +254,23 @@ function PublicPaymentCallback() {
             </h2>
 
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Your member account has been created using:
+              Your member account has been created
+              successfully.
             </p>
 
-            <p className="mt-3 break-all font-medium">
-              {email}
-            </p>
+            {email && (
+              <>
+                <p className="mt-3 break-all font-medium">
+                  {email}
+                </p>
+              </>
+            )}
 
             <p className="mt-3 text-sm leading-6 text-muted-foreground">
-              You can now log in with your email using our
-              secure OTP login. From your member dashboard,
-              you can access your QR code and membership
-              details.
+              You can now log in with your email using
+              our secure OTP login. From your member
+              dashboard, you can access your QR code
+              and membership details.
             </p>
           </div>
 
@@ -286,7 +281,11 @@ function PublicPaymentCallback() {
               </Link>
             </Button>
 
-            <Button asChild variant="outline" size="lg">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+            >
               <Link to="/">
                 Back to Website
               </Link>
