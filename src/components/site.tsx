@@ -141,7 +141,7 @@ export function MobileNavbar() {
             ))}
           </nav>
 
-          <div className="mt-auto grid gap-3">
+          <div className="mt-auto grid gap-3 border-t border-primary-foreground/15 pt-5">
             <Link
               to="/login"
               onClick={() => setOpen(false)}
@@ -159,6 +159,14 @@ export function MobileNavbar() {
             </Link>
 
             <Link
+              to="/reception-dashboard"
+              onClick={() => setOpen(false)}
+              className="text-sm font-bold uppercase"
+            >
+              Reception Dashboard
+            </Link>
+
+            <Link
               to="/staff"
               onClick={() => setOpen(false)}
               className="text-sm font-bold uppercase"
@@ -166,7 +174,15 @@ export function MobileNavbar() {
               Staff Portal
             </Link>
 
-            <Button asChild size="lg">
+            <Link
+              to="/staff-admin"
+              onClick={() => setOpen(false)}
+              className="text-sm font-bold uppercase"
+            >
+              Staff Management
+            </Link>
+
+            <Button asChild size="lg" className="mt-2">
               <Link
                 to="/join"
                 onClick={() => setOpen(false)}
@@ -663,11 +679,13 @@ export function Footer() {
           />
 
           <FooterLinks
-            title="Member"
+            title="Member & Staff"
             links={[
               { label: "Member Login", to: "/login" },
               { label: "My QR Code", to: "/my-qr" },
+              { label: "Reception Dashboard", to: "/reception-dashboard" },
               { label: "Staff Portal", to: "/staff" },
+              { label: "Staff Management", to: "/staff-admin" },
             ]}
           />
 
@@ -769,7 +787,9 @@ export function UtilityBar() {
       <div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase">
         <Link to="/login">Member login</Link>
         <Link to="/my-qr">My QR Code</Link>
+        <Link to="/reception-dashboard">Reception Dashboard</Link>
         <Link to="/staff">Staff Portal</Link>
+        <Link to="/staff-admin">Staff Management</Link>
       </div>
     </div>
   );
