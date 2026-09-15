@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   BriefcaseBusiness,
   CalendarDays,
@@ -9,9 +8,6 @@ import {
   Download,
   LogIn,
   LogOut,
-  Mail,
-  MapPin,
-  Phone,
   QrCode,
   ShieldCheck,
   UserRound,
@@ -20,23 +16,11 @@ import {
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/staff")({
-  head: () => ({
-    meta: [
-      {
-        title: "Staff Portal — Super Plus Fitness",
-      },
-      {
-        name: "description",
-        content:
-          "Super Plus Fitness staff portal.",
-      },
-    ],
-  }),
-  component: StaffPortalPage,
+  component: StaffPage,
 });
 
 type StaffProfile = {
@@ -54,8 +38,9 @@ type StaffProfile = {
   employment_type: string | null;
   employment_date: string | null;
   role: string;
-  status: string;
+  status: "pending" | "approved" | "suspended" | "inactive";
   qr_token: string;
+  created_at: string;
 };
 
 type SalaryRecord = {
@@ -65,719 +50,627 @@ type SalaryRecord = {
   pay_period_start: string | null;
   pay_period_end: string | null;
   payment_date: string | null;
-  status: string;
+  status: "pending" | "paid" | "cancelled";
   notes: string | null;
+  created_at: string;
 };
 
 type AttendanceRecord = {
   id: string;
   checked_in_at: string;
   checked_out_at: string | null;
+  notes: string | null;
+  created_at: string;
 };
 
-function formatMoney(
-  amount: number,
-) {
-  return `₦${Number(amount || 0).toLocaleString(
-    "en-NG",
-  )}`;
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${value.slice(0, 10)}T00:00:00`));
 }
 
-function formatDate(
-  value: string | null,
-) {
-  if (!value) return "Not available";
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "—";
 
-  return new Intl.DateTimeFormat(
-    "en-NG",
-    {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    },
-  ).format(
-    new Date(`${value}T00:00:00`),
-  );
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function formatDateTime(
-  value: string,
-) {
-  return new Intl.DateTimeFormat(
-    "en-NG",
-    {
-      day: "numeric",
-      month: "short",
-      hour: "numeric",
-      minute: "2-digit",
-    },
-  ).format(new Date(value));
+function formatMoney(amount: number, currency = "NGN") {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(amount || 0);
 }
 
-function formatDuration(
-  start: string,
-  end: string | null,
+function statusLabel(status: StaffProfile["status"]) {
+  switch (status) {
+    case "approved":
+      return "Approved";
+    case "suspended":
+      return "Suspended";
+    case "inactive":
+      return "Inactive";
+    default:
+      return "Pending";
+  }
+}
+
+function statusClass(status: StaffProfile["status"]) {
+  switch (status) {
+    case "approved":
+      return "border-green-500/30 bg-green-500/10 text-green-700";
+    case "suspended":
+      return "border-red-500/30 bg-red-500/10 text-red-700";
+    case "inactive":
+      return "border-gray-400/30 bg-gray-400/10 text-gray-600";
+    default:
+      return "border-orange-500/30 bg-orange-500/10 text-orange-700";
+  }
+}
+
+function durationLabel(
+  checkedIn: string,
+  checkedOut: string | null,
 ) {
-  const startDate = new Date(start);
-  const endDate = end
-    ? new Date(end)
-    : new Date();
+  const start = new Date(checkedIn).getTime();
+
+  const end = checkedOut
+    ? new Date(checkedOut).getTime()
+    : Date.now();
 
   const minutes = Math.max(
     0,
-    Math.round(
-      (endDate.getTime() -
-        startDate.getTime()) /
-        60000,
-    ),
+    Math.floor((end - start) / 60000),
   );
 
-  const hours = Math.floor(
-    minutes / 60,
-  );
-
-  const mins = minutes % 60;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
   if (hours > 0) {
-    return `${hours}h ${mins}m`;
+    return `${hours}h ${remainingMinutes}m`;
   }
 
-  return `${mins}m`;
+  return `${remainingMinutes}m`;
 }
 
-function StaffPortalPage() {
-  const [loading, setLoading] =
-    useState(true);
+function getRoleLabel(role: string) {
+  const labels: Record<string, string> = {
+    staff: "Staff",
+    reception: "Reception",
+    trainer: "Trainer",
+    spa_staff: "Spa Staff",
+    manager: "Manager",
+    admin: "Admin",
+    owner: "Owner",
+  };
 
-  const [profile, setProfile] =
-    useState<StaffProfile | null>(
-      null,
-    );
+  return labels[role] || role;
+}
 
-  const [salary, setSalary] =
-    useState<SalaryRecord[]>([]);
+function StaffPage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [attendance, setAttendance] =
-    useState<AttendanceRecord[]>(
-      [],
-    );
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const [mode, setMode] =
-    useState<
-      "login" | "register"
-    >("login");
+  const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] =
+    useState<AttendanceRecord[]>([]);
 
-  const [fullName, setFullName] =
-    useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const [email, setEmail] =
-    useState("");
+  const [loginMode, setLoginMode] = useState(true);
 
-  const [phone, setPhone] =
-    useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
 
-  const [confirmPassword, setConfirmPassword] =
-    useState("");
+  const [showProfile, setShowProfile] = useState(true);
+  const [showEmployment, setShowEmployment] = useState(false);
+  const [showSalary, setShowSalary] = useState(false);
+  const [showAttendance, setShowAttendance] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
-  const [error, setError] =
-    useState("");
-
-  const [message, setMessage] =
-    useState("");
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [loggingOut, setLoggingOut] =
-    useState(false);
-
-  const [editingProfile, setEditingProfile] =
-    useState(false);
-
-  const [address, setAddress] =
-    useState("");
+  const [editContact, setEditContact] = useState(false);
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
 
   async function loadStaff() {
     setLoading(true);
     setError("");
 
     const {
-      data: {
-        session,
-      },
-    } =
-      await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       setProfile(null);
+      setIsAdmin(false);
       setLoading(false);
       return;
     }
 
-    const {
-      data,
-      error: profileError,
-    } = await supabase
-      .from("staff_profiles")
-      .select("*")
-      .eq(
-        "auth_user_id",
-        session.user.id,
-      )
+    /*
+     * ----------------------------------------------------
+     * CHECK STAFF MANAGEMENT ACCESS
+     * ----------------------------------------------------
+     */
+
+    const { data: staffUser } = await supabase
+      .from("staff_users")
+      .select("id, role, active")
+      .eq("auth_user_id", user.id)
       .maybeSingle();
 
+    const managementAccess =
+      staffUser?.active === true &&
+      ["admin", "owner", "manager"].includes(
+        String(staffUser.role || "").toLowerCase(),
+      );
+
+    setIsAdmin(managementAccess);
+
+    /*
+     * ----------------------------------------------------
+     * LOAD STAFF PROFILE
+     * ----------------------------------------------------
+     */
+
+    const { data: staffProfile, error: profileError } =
+      await supabase
+        .from("staff_profiles")
+        .select(
+          `
+          id,
+          auth_user_id,
+          staff_id,
+          full_name,
+          email,
+          phone,
+          birth_day,
+          birth_month,
+          address,
+          position,
+          department,
+          employment_type,
+          employment_date,
+          role,
+          status,
+          qr_token,
+          created_at
+        `,
+        )
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
     if (profileError) {
-      setError(
-        profileError.message,
-      );
+      setError(profileError.message);
       setLoading(false);
       return;
     }
 
-    if (!data) {
-      await supabase.auth.signOut();
-
-      setProfile(null);
-      setError(
-        "No staff profile was found for this account.",
-      );
+    if (!staffProfile) {
+      setError("No staff profile was found for this account.");
       setLoading(false);
       return;
     }
 
-    setProfile(
-      data as StaffProfile,
-    );
+    const staff = staffProfile as StaffProfile;
 
-    setAddress(
-      data.address || "",
-    );
+    setProfile(staff);
+    setEditPhone(staff.phone || "");
+    setEditAddress(staff.address || "");
 
-    if (
-      data.status ===
-      "approved"
-    ) {
-      await loadStaffData(
-        data.id,
-      );
+    /*
+     * ----------------------------------------------------
+     * LOAD SALARY + ATTENDANCE
+     * ----------------------------------------------------
+     */
+
+    const [salaryResult, attendanceResult] = await Promise.all([
+      supabase
+        .from("staff_salary_records")
+        .select(
+          `
+          id,
+          amount,
+          currency,
+          pay_period_start,
+          pay_period_end,
+          payment_date,
+          status,
+          notes,
+          created_at
+        `,
+        )
+        .eq("staff_profile_id", staff.id)
+        .order("created_at", { ascending: false }),
+
+      supabase
+        .from("staff_attendance")
+        .select(
+          `
+          id,
+          checked_in_at,
+          checked_out_at,
+          notes,
+          created_at
+        `,
+        )
+        .eq("staff_profile_id", staff.id)
+        .order("checked_in_at", { ascending: false })
+        .limit(100),
+    ]);
+
+    if (salaryResult.error) {
+      setError(salaryResult.error.message);
+      setLoading(false);
+      return;
     }
+
+    if (attendanceResult.error) {
+      setError(attendanceResult.error.message);
+      setLoading(false);
+      return;
+    }
+
+    setSalaryRecords(
+      (salaryResult.data || []) as SalaryRecord[],
+    );
+
+    setAttendanceRecords(
+      (attendanceResult.data || []) as AttendanceRecord[],
+    );
 
     setLoading(false);
   }
 
-  async function loadStaffData(
-    staffProfileId: string,
-  ) {
-    const [
-      salaryResult,
-      attendanceResult,
-    ] =
-      await Promise.all([
-        supabase
-          .from(
-            "staff_salary_records",
-          )
-          .select(
-            "id, amount, currency, pay_period_start, pay_period_end, payment_date, status, notes",
-          )
-          .eq(
-            "staff_profile_id",
-            staffProfileId,
-          )
-          .order(
-            "payment_date",
-            {
-              ascending: false,
-            },
-          ),
-
-        supabase
-          .from(
-            "staff_attendance",
-          )
-          .select(
-            "id, checked_in_at, checked_out_at",
-          )
-          .eq(
-            "staff_profile_id",
-            staffProfileId,
-          )
-          .order(
-            "checked_in_at",
-            {
-              ascending: false,
-            },
-          )
-          .limit(50),
-      ]);
-
-    if (!salaryResult.error) {
-      setSalary(
-        (salaryResult.data ||
-          []) as SalaryRecord[],
-      );
+  async function login() {
+    if (!email.trim() || !password) {
+      setError("Enter your email and password.");
+      return;
     }
-
-    if (
-      !attendanceResult.error
-    ) {
-      setAttendance(
-        (attendanceResult.data ||
-          []) as AttendanceRecord[],
-      );
-    }
-  }
-
-  useEffect(() => {
-    loadStaff();
-
-    const {
-      data: listener,
-    } =
-      supabase.auth.onAuthStateChange(
-        () => {
-          loadStaff();
-        },
-      );
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  async function handleLogin(
-    event: FormEvent,
-  ) {
-    event.preventDefault();
 
     setSaving(true);
     setError("");
-    setMessage("");
+    setSuccess("");
 
-    const {
-      error: loginError,
-    } =
-      await supabase.auth.signInWithPassword(
-        {
-          email:
-            email.trim(),
-          password,
-        },
-      );
+    const { error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
     if (loginError) {
-      setError(
-        loginError.message,
-      );
+      setError(loginError.message);
       setSaving(false);
       return;
     }
 
+    setPassword("");
     await loadStaff();
 
     setSaving(false);
   }
 
-  async function handleRegister(
-    event: FormEvent,
-  ) {
-    event.preventDefault();
+  async function register() {
+    if (!fullName.trim()) {
+      setError("Enter your full name.");
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Enter your email address.");
+      return;
+    }
+
+    if (!phone.trim()) {
+      setError("Enter your phone number.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
 
     setSaving(true);
     setError("");
-    setMessage("");
+    setSuccess("");
 
-    if (
-      password.length < 8
-    ) {
-      setError(
-        "Password must be at least 8 characters.",
-      );
-      setSaving(false);
-      return;
-    }
+    const redirectUrl =
+      `${window.location.origin}/staff`;
 
-    if (
-      password !==
-      confirmPassword
-    ) {
-      setError(
-        "Passwords do not match.",
-      );
-      setSaving(false);
-      return;
-    }
-
-    const {
-      data,
-      error: signupError,
-    } =
+    const { data, error: signupError } =
       await supabase.auth.signUp({
-        email:
-          email.trim(),
+        email: email.trim(),
         password,
         options: {
+          emailRedirectTo: redirectUrl,
           data: {
-            account_type:
-              "staff",
-            full_name:
-              fullName.trim(),
-            phone:
-              phone.trim(),
+            account_type: "staff",
+            full_name: fullName.trim(),
+            phone: phone.trim(),
           },
-          emailRedirectTo:
-            `${window.location.origin}/staff`,
         },
       });
 
     if (signupError) {
-      setError(
-        signupError.message,
-      );
+      setError(signupError.message);
       setSaving(false);
       return;
     }
 
-    if (data.session) {
-      await loadStaff();
+    setPassword("");
+
+    if (!data.session) {
+      setSuccess(
+        "Registration submitted successfully. Please confirm your email, then return to the Staff Portal. Your application is waiting for management approval.",
+      );
     } else {
-      setMessage(
-        "Registration received. Check your email to confirm your account. After confirmation, return to the Staff Portal and log in.",
+      setSuccess(
+        "Registration submitted. Your staff application is waiting for management approval.",
       );
     }
 
     setSaving(false);
   }
 
-  async function saveProfile(
-    event: FormEvent,
-  ) {
-    event.preventDefault();
+  async function logout() {
+    await supabase.auth.signOut();
 
+    setProfile(null);
+    setSalaryRecords([]);
+    setAttendanceRecords([]);
+    setIsAdmin(false);
+    setError("");
+    setSuccess("");
+  }
+
+  async function updateContactInformation() {
     if (!profile) return;
 
     setSaving(true);
     setError("");
-    setMessage("");
+    setSuccess("");
 
-    const {
-      error: updateError,
-    } =
-      await supabase
-        .from("staff_profiles")
-        .update({
-          phone:
-            phone.trim() ||
-            null,
-          address:
-            address.trim() ||
-            null,
-        })
-        .eq(
-          "id",
-          profile.id,
-        );
+    const { error: updateError } = await supabase
+      .from("staff_profiles")
+      .update({
+        phone: editPhone.trim() || null,
+        address: editAddress.trim() || null,
+      })
+      .eq("id", profile.id);
 
     if (updateError) {
-      setError(
-        updateError.message,
-      );
-    } else {
-      setMessage(
-        "Profile updated successfully.",
-      );
-
-      setEditingProfile(
-        false,
-      );
-
-      await loadStaff();
+      setError(updateError.message);
+      setSaving(false);
+      return;
     }
 
+    setProfile({
+      ...profile,
+      phone: editPhone.trim() || null,
+      address: editAddress.trim() || null,
+    });
+
+    setEditContact(false);
+    setSuccess("Contact information updated successfully.");
     setSaving(false);
   }
 
-  async function handleClockIn() {
+  async function clockIn() {
     if (!profile) return;
 
     setSaving(true);
     setError("");
+    setSuccess("");
 
-    const {
-      data: openVisit,
-    } =
-      await supabase
-        .from(
-          "staff_attendance",
-        )
-        .select("id")
-        .eq(
-          "staff_profile_id",
-          profile.id,
-        )
-        .is(
-          "checked_out_at",
-          null,
-        )
-        .limit(1)
-        .maybeSingle();
+    const activeRecord = attendanceRecords.find(
+      (record) => !record.checked_out_at,
+    );
 
-    if (openVisit) {
-      setError(
-        "You are already checked in.",
-      );
+    if (activeRecord) {
+      setError("You are already clocked in.");
       setSaving(false);
       return;
     }
 
-    const {
-      error: clockError,
-    } =
-      await supabase
-        .from(
-          "staff_attendance",
-        )
-        .insert({
-          staff_profile_id:
-            profile.id,
-        });
+    const { error: attendanceError } = await supabase
+      .from("staff_attendance")
+      .insert({
+        staff_profile_id: profile.id,
+        checked_in_at: new Date().toISOString(),
+      });
 
-    if (clockError) {
-      setError(
-        clockError.message,
-      );
-    } else {
-      await loadStaffData(
-        profile.id,
-      );
+    if (attendanceError) {
+      setError(attendanceError.message);
+      setSaving(false);
+      return;
     }
 
+    setSuccess("You have been clocked in successfully.");
     setSaving(false);
+
+    await loadStaff();
   }
 
-  async function handleClockOut() {
+  async function clockOut() {
     if (!profile) return;
 
     setSaving(true);
     setError("");
+    setSuccess("");
 
-    const {
-      data: openVisit,
-      error: findError,
-    } =
-      await supabase
-        .from(
-          "staff_attendance",
-        )
-        .select("id")
-        .eq(
-          "staff_profile_id",
-          profile.id,
-        )
-        .is(
-          "checked_out_at",
-          null,
-        )
-        .order(
-          "checked_in_at",
-          {
-            ascending: false,
-          },
-        )
-        .limit(1)
-        .maybeSingle();
+    const activeRecord = attendanceRecords.find(
+      (record) => !record.checked_out_at,
+    );
 
-    if (findError) {
-      setError(
-        findError.message,
-      );
+    if (!activeRecord) {
+      setError("You are not currently clocked in.");
       setSaving(false);
       return;
     }
 
-    if (!openVisit) {
-      setError(
-        "You are not currently checked in.",
-      );
+    const { error: attendanceError } = await supabase
+      .from("staff_attendance")
+      .update({
+        checked_out_at: new Date().toISOString(),
+      })
+      .eq("id", activeRecord.id);
+
+    if (attendanceError) {
+      setError(attendanceError.message);
       setSaving(false);
       return;
     }
 
-    const {
-      error: clockError,
-    } =
-      await supabase
-        .from(
-          "staff_attendance",
-        )
-        .update({
-          checked_out_at:
-            new Date().toISOString(),
-        })
-        .eq(
-          "id",
-          openVisit.id,
-        );
-
-    if (clockError) {
-      setError(
-        clockError.message,
-      );
-    } else {
-      await loadStaffData(
-        profile.id,
-      );
-    }
-
+    setSuccess("You have been clocked out successfully.");
     setSaving(false);
+
+    await loadStaff();
   }
 
   async function downloadQr() {
-    const canvas =
-      document.querySelector(
-        "#staff-profile-qr",
-      ) as SVGSVGElement | null;
+    const svg = document.querySelector(
+      "#staff-profile-qr",
+    ) as SVGElement | null;
 
-    if (!canvas || !profile) {
+    if (!svg || !profile) {
+      setError("QR code is not ready yet.");
       return;
     }
 
-    const svgData =
-      new XMLSerializer().serializeToString(
-        canvas,
-      );
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
 
-    const svgBlob =
-      new Blob(
-        [svgData],
-        {
-          type: "image/svg+xml;charset=utf-8",
-        },
-      );
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
+    });
 
-    const url =
-      URL.createObjectURL(
-        svgBlob,
-      );
+    const url = URL.createObjectURL(svgBlob);
 
-    const image =
-      new Image();
+    const image = new Image();
 
     image.onload = () => {
-      const canvasElement =
-        document.createElement(
-          "canvas",
-        );
+      const canvas = document.createElement("canvas");
 
-      canvasElement.width = 1000;
-      canvasElement.height = 1000;
+      canvas.width = 1000;
+      canvas.height = 1000;
 
-      const context =
-        canvasElement.getContext(
-          "2d",
-        );
+      const context = canvas.getContext("2d");
 
-      if (!context) return;
+      if (!context) {
+        URL.revokeObjectURL(url);
+        return;
+      }
 
-      context.fillStyle =
-        "#ffffff";
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, 1000, 1000);
 
-      context.fillRect(
-        0,
-        0,
-        1000,
-        1000,
-      );
+      context.drawImage(image, 100, 100, 800, 800);
 
-      context.drawImage(
-        image,
-        100,
-        100,
-        800,
-        800,
-      );
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          URL.revokeObjectURL(url);
+          return;
+        }
 
-      const link =
-        document.createElement(
-          "a",
-        );
+        const downloadUrl =
+          URL.createObjectURL(blob);
 
-      link.download =
-        `${profile.staff_id}-qr.png`;
+        const link =
+          document.createElement("a");
 
-      link.href =
-        canvasElement.toDataURL(
-          "image/png",
-        );
+        link.href = downloadUrl;
+        link.download = `${profile.staff_id}-QR.png`;
+        link.click();
 
-      link.click();
-
-      URL.revokeObjectURL(
-        url,
-      );
+        URL.revokeObjectURL(downloadUrl);
+        URL.revokeObjectURL(url);
+      }, "image/png");
     };
 
     image.src = url;
   }
 
-  async function handleLogout() {
-    setLoggingOut(true);
+  useEffect(() => {
+    void loadStaff();
 
-    await supabase.auth.signOut();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void loadStaff();
+    });
 
-    setProfile(null);
-    setSalary([]);
-    setAttendance([]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
-    setLoggingOut(false);
-  }
+  const activeAttendance = useMemo(
+    () =>
+      attendanceRecords.find(
+        (record) => !record.checked_out_at,
+      ) || null,
+    [attendanceRecords],
+  );
 
-  if (loading) {
+  /*
+   * ----------------------------------------------------
+   * LOGIN / REGISTER SCREEN
+   * ----------------------------------------------------
+   */
+
+  if (!profile && !loading) {
     return (
-      <main className="min-h-[70vh] bg-muted py-20">
-        <div className="section-shell flex min-h-[50vh] items-center justify-center">
-          <div className="flex items-center gap-3 text-sm font-bold uppercase">
-            <Clock3 className="size-5 animate-spin" />
-            Loading staff portal...
-          </div>
-        </div>
-      </main>
-    );
-  }
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="border border-border bg-card p-6 sm:p-10">
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center bg-primary text-primary-foreground">
+                <BriefcaseBusiness className="h-8 w-8" />
+              </div>
 
-  if (!profile) {
-    return (
-      <main className="min-h-[75vh] bg-muted py-12 sm:py-20">
-        <div className="section-shell">
-          <div className="mx-auto max-w-lg border border-border bg-background p-7 shadow-sm sm:p-10">
+              <p className="mt-6 text-sm font-bold uppercase tracking-[0.25em] text-primary">
+                Super Plus Fitness
+              </p>
 
-            <div className="mx-auto flex size-14 items-center justify-center bg-primary text-primary-foreground">
-              <BriefcaseBusiness className="size-7" />
+              <h1 className="mt-3 font-display text-5xl font-bold uppercase sm:text-7xl">
+                Staff Portal
+              </h1>
+
+              <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground">
+                Staff members can register and access their employee
+                information here.
+              </p>
             </div>
 
-            <p className="mt-6 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-              Super Plus Fitness
-            </p>
-
-            <h1 className="display-title mt-3 text-center text-4xl sm:text-5xl">
-              Staff Portal
-            </h1>
-
-            <p className="mt-3 text-center text-sm text-muted-foreground">
-              Staff members can register and access their employee information here.
-            </p>
-
-            <div className="mt-8 grid grid-cols-2 border border-border">
+            <div className="mt-10 grid grid-cols-2 border border-border">
               <button
                 type="button"
-                onClick={() =>
-                  setMode("login")
-                }
-                className={`p-4 text-xs font-extrabold uppercase ${
-                  mode === "login"
+                onClick={() => {
+                  setLoginMode(true);
+                  setError("");
+                  setSuccess("");
+                }}
+                className={`py-4 text-sm font-bold uppercase ${
+                  loginMode
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"
                 }`}
@@ -787,13 +680,13 @@ function StaffPortalPage() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setMode(
-                    "register",
-                  )
-                }
-                className={`p-4 text-xs font-extrabold uppercase ${
-                  mode === "register"
+                onClick={() => {
+                  setLoginMode(false);
+                  setError("");
+                  setSuccess("");
+                }}
+                className={`py-4 text-sm font-bold uppercase ${
+                  !loginMode
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"
                 }`}
@@ -803,201 +696,124 @@ function StaffPortalPage() {
             </div>
 
             {error && (
-              <div className="mt-5 border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+              <div className="mt-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
                 {error}
               </div>
             )}
 
-            {message && (
-              <div className="mt-5 border border-green-600/30 bg-green-600/10 p-4 text-sm text-green-700">
-                {message}
+            {success && (
+              <div className="mt-6 border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
+                {success}
               </div>
             )}
 
-            {mode ===
-            "login" ? (
-              <form
-                onSubmit={
-                  handleLogin
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+
+                if (loginMode) {
+                  void login();
+                } else {
+                  void register();
                 }
-                className="mt-7 space-y-5"
-              >
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
-                    Email
-                  </label>
-
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) =>
-                      setEmail(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
-                    Password
-                  </label>
-
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(event) =>
-                      setPassword(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={
-                    saving
-                  }
-                  className="h-12 w-full"
-                >
-                  {saving ? (
-                    "Signing in..."
-                  ) : (
-                    <>
-                      <LogIn />
-                      Staff Login
-                    </>
-                  )}
-                </Button>
-              </form>
-            ) : (
-              <form
-                onSubmit={
-                  handleRegister
-                }
-                className="mt-7 space-y-5"
-              >
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
+              }}
+              className="mt-8 grid gap-5"
+            >
+              {!loginMode && (
+                <>
+                  <label className="grid gap-2 text-sm font-bold">
                     Full Name
+
+                    <input
+                      value={fullName}
+                      onChange={(event) =>
+                        setFullName(event.target.value)
+                      }
+                      placeholder="Enter your full name"
+                      className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                    />
                   </label>
 
-                  <input
-                    required
-                    value={fullName}
-                    onChange={(event) =>
-                      setFullName(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
-                    Email
-                  </label>
-
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(event) =>
-                      setEmail(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
+                  <label className="grid gap-2 text-sm font-bold">
                     Phone
+
+                    <input
+                      value={phone}
+                      onChange={(event) =>
+                        setPhone(event.target.value)
+                      }
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                    />
                   </label>
+                </>
+              )}
 
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(event) =>
-                      setPhone(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
+              <label className="grid gap-2 text-sm font-bold">
+                Email
 
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
-                    Password
-                  </label>
-
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(event) =>
-                      setPassword(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-extrabold uppercase">
-                    Confirm Password
-                  </label>
-
-                  <input
-                    type="password"
-                    required
-                    value={
-                      confirmPassword
-                    }
-                    onChange={(
-                      event,
-                    ) =>
-                      setConfirmPassword(
-                        event.target
-                          .value,
-                      )
-                    }
-                    className="mt-2 h-12 w-full rounded-md border border-input bg-background px-4 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={
-                    saving
+                <input
+                  value={email}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
                   }
-                  className="h-12 w-full"
-                >
-                  {saving
-                    ? "Creating account..."
-                    : "Create Staff Account"}
-                </Button>
+                  type="email"
+                  placeholder="Enter your email"
+                  className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
 
-                <p className="text-center text-xs leading-5 text-muted-foreground">
-                  Registration does not automatically grant staff access. Management must approve the account.
+              <label className="grid gap-2 text-sm font-bold">
+                Password
+
+                <input
+                  value={password}
+                  onChange={(event) =>
+                    setPassword(event.target.value)
+                  }
+                  type="password"
+                  placeholder={
+                    loginMode
+                      ? "Enter your password"
+                      : "Create a password"
+                  }
+                  className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
+                />
+              </label>
+
+              <Button
+                type="submit"
+                size="lg"
+                disabled={saving}
+                className="mt-2"
+              >
+                {loginMode ? (
+                  <>
+                    <LogIn />
+                    Staff Login
+                  </>
+                ) : (
+                  <>
+                    <BriefcaseBusiness />
+                    Submit Staff Application
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {!loginMode && (
+              <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-800">
+                <strong className="block">
+                  Staff approval required
+                </strong>
+
+                <p className="mt-1">
+                  Your registration will be reviewed by Super Plus
+                  Fitness management before your staff account becomes
+                  active.
                 </p>
-              </form>
+              </div>
             )}
           </div>
         </div>
@@ -1005,715 +821,780 @@ function StaffPortalPage() {
     );
   }
 
-  if (
-    profile.status !==
-    "approved"
-  ) {
+  if (loading) {
     return (
-      <main className="min-h-[75vh] bg-muted py-20">
-        <div className="section-shell">
-          <div className="mx-auto max-w-lg border border-border bg-background p-8 text-center shadow-sm">
-
-            <div className="mx-auto flex size-14 items-center justify-center bg-primary/10 text-primary">
-              <ShieldCheck className="size-7" />
-            </div>
-
-            <h1 className="display-title mt-6 text-4xl">
-              Account Pending
-            </h1>
-
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              Your staff account has been created successfully, but management has not approved it yet.
-            </p>
-
-            <div className="mt-6 flex items-center justify-center gap-2 bg-primary/10 px-4 py-3 text-xs font-extrabold uppercase text-primary">
-              <Clock3 className="size-4" />
-              Awaiting Approval
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={
-                handleLogout
-              }
-              className="mt-6"
-            >
-              <LogOut />
-              Log Out
-            </Button>
-          </div>
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-4xl px-4 py-24 text-center">
+          <p className="text-sm text-muted-foreground">
+            Loading Staff Portal...
+          </p>
         </div>
       </main>
     );
   }
 
-  const currentlyClockedIn =
-    attendance.some(
-      (record) =>
-        !record.checked_out_at,
-    );
+  if (!profile) {
+    return null;
+  }
 
-  return (
-    <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
-      <div className="section-shell">
-        <div className="mx-auto max-w-6xl">
+  /*
+   * ----------------------------------------------------
+   * PENDING / SUSPENDED / INACTIVE
+   * ----------------------------------------------------
+   */
 
-          {/* HEADER */}
-          <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+  if (profile.status !== "approved") {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+          <div className="border border-border bg-card p-6 sm:p-10">
+            <div className="text-center">
+              {profile.status === "pending" ? (
+                <Clock3 className="mx-auto h-14 w-14 text-primary" />
+              ) : profile.status === "suspended" ? (
+                <XCircle className="mx-auto h-14 w-14 text-red-600" />
+              ) : (
+                <XCircle className="mx-auto h-14 w-14 text-muted-foreground" />
+              )}
+
+              <p className="mt-6 text-xs font-bold uppercase tracking-[0.25em] text-primary">
                 Super Plus Fitness
               </p>
 
-              <h1 className="display-title mt-3 text-4xl sm:text-6xl">
+              <h1 className="mt-3 font-display text-4xl font-bold uppercase sm:text-6xl">
                 Staff Portal
               </h1>
 
-              <p className="mt-3 text-sm text-muted-foreground">
-                Welcome,{" "}
-                <strong>
-                  {profile.full_name}
-                </strong>
+              <div
+                className={`mx-auto mt-8 w-fit rounded-full border px-4 py-2 text-xs font-bold uppercase ${statusClass(
+                  profile.status,
+                )}`}
+              >
+                {statusLabel(profile.status)}
+              </div>
+
+              <h2 className="mt-8 font-display text-2xl font-bold uppercase">
+                {profile.status === "pending"
+                  ? "Application Awaiting Approval"
+                  : profile.status === "suspended"
+                    ? "Staff Account Suspended"
+                    : "Staff Account Inactive"}
+              </h2>
+
+              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
+                {profile.status === "pending"
+                  ? "Your staff application has been received. Management needs to review and approve your application before you can access staff features."
+                  : profile.status === "suspended"
+                    ? "Your staff account is currently suspended. Please contact Super Plus Fitness management."
+                    : "Your staff account is currently inactive. Please contact Super Plus Fitness management."}
+              </p>
+
+              <div className="mt-8 border border-border bg-muted p-5 text-left">
+                <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                  Staff ID
+                </p>
+
+                <p className="mt-2 font-display text-2xl font-bold">
+                  {profile.staff_id}
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                className="mt-6"
+                onClick={() => void logout()}
+              >
+                <LogOut />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+   * ----------------------------------------------------
+   * APPROVED STAFF DASHBOARD
+   * ----------------------------------------------------
+   */
+
+  return (
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        {error && (
+          <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
+            {success}
+          </div>
+        )}
+
+        {/* HEADER */}
+        <header className="border border-border bg-card p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                Super Plus Fitness
+              </p>
+
+              <h1 className="mt-2 font-display text-4xl font-bold uppercase sm:text-5xl">
+                Staff Portal
+              </h1>
+
+              <p className="mt-2 text-sm text-muted-foreground">
+                Welcome, {profile.full_name}
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={
-                handleLogout
-              }
-              disabled={
-                loggingOut
-              }
-            >
-              <LogOut />
-              {loggingOut
-                ? "Logging out..."
-                : "Log Out"}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {isAdmin && (
+                <Button asChild>
+                  <Link to="/staff-admin">
+                    <ShieldCheck />
+                    Staff Management
+                  </Link>
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                onClick={() => void logout()}
+              >
+                <LogOut />
+                Logout
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* STAFF SUMMARY */}
+        <section className="mt-6 border border-border bg-card p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+              <UserRound className="h-8 w-8" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Staff Member
+              </p>
+
+              <h2 className="mt-1 font-display text-3xl font-bold uppercase">
+                {profile.full_name}
+              </h2>
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                {profile.position || "Staff"}{" "}
+                {profile.department
+                  ? `• ${profile.department}`
+                  : ""}
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase text-green-700">
+                  Active Staff
+                </span>
+
+                <span className="rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase">
+                  {profile.staff_id}
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* STAFF ID */}
+        <section className="mt-4 border border-border bg-card p-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Staff ID
+          </p>
+
+          <p className="mt-2 font-display text-2xl font-bold uppercase">
+            {profile.staff_id}
+          </p>
+
+          <p className="mt-2 text-xs text-muted-foreground">
+            Use this ID when communicating with management.
+          </p>
+        </section>
+
+        {/* TODAY'S ATTENDANCE */}
+        <section className="mt-4 border border-border bg-card p-6">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary">
+            Today's Attendance
+          </p>
+
+          <h2 className="mt-2 font-display text-3xl font-bold uppercase">
+            {activeAttendance
+              ? "You Are Clocked In"
+              : "You Are Clocked Out"}
+          </h2>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            Record your working hours directly from the staff portal.
+          </p>
+
+          <div className="mt-5">
+            {activeAttendance ? (
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => void clockOut()}
+                disabled={saving}
+              >
+                <LogOut />
+                Clock Out
+              </Button>
+            ) : (
+              <Button
+                className="w-full sm:w-auto"
+                onClick={() => void clockIn()}
+                disabled={saving}
+              >
+                <LogIn />
+                Clock In
+              </Button>
+            )}
           </div>
 
-          {error && (
-            <div className="mb-6 border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
-              {error}
-            </div>
-          )}
-
-          {message && (
-            <div className="mb-6 border border-green-600/30 bg-green-600/10 p-4 text-sm text-green-700">
-              {message}
-            </div>
-          )}
-
-          {/* PROFILE SUMMARY */}
-          <section className="grid gap-4 md:grid-cols-3">
-
-            <div className="border border-border bg-background p-6 shadow-sm md:col-span-2">
-              <div className="flex items-start gap-5">
-                <div className="flex size-16 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-                  <UserRound className="size-8" />
-                </div>
-
-                <div className="min-w-0">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                    Staff Member
-                  </p>
-
-                  <h2 className="mt-1 font-display text-3xl font-bold uppercase sm:text-4xl">
-                    {profile.full_name}
-                  </h2>
-
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {profile.position ||
-                      "Staff Member"}
-                    {profile.department
-                      ? ` • ${profile.department}`
-                      : ""}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="bg-green-600/10 px-3 py-1.5 text-[10px] font-extrabold uppercase text-green-700">
-                      Active Staff
-                    </span>
-
-                    <span className="bg-muted px-3 py-1.5 text-[10px] font-extrabold uppercase">
-                      {profile.staff_id}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border border-border bg-background p-6 shadow-sm">
-              <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                Staff ID
-              </p>
-
-              <p className="mt-3 font-display text-3xl font-black">
-                {profile.staff_id}
-              </p>
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                Use this ID when communicating with management.
-              </p>
-            </div>
-          </section>
-
-          {/* CLOCK IN */}
-          <section className="mt-8 border border-border bg-background p-6 shadow-sm">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                  Today's Attendance
-                </p>
-
-                <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                  {currentlyClockedIn
-                    ? "You Are Clocked In"
-                    : "You Are Clocked Out"}
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Record your working hours directly from the staff portal.
-                </p>
-              </div>
-
-              <div className="flex w-full gap-3 md:w-auto">
-                {!currentlyClockedIn ? (
-                  <Button
-                    onClick={
-                      handleClockIn
-                    }
-                    disabled={
-                      saving
-                    }
-                    className="w-full md:w-auto"
-                  >
-                    <LogIn />
-                    Clock In
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={
-                      handleClockOut
-                    }
-                    disabled={
-                      saving
-                    }
-                    className="w-full md:w-auto"
-                  >
-                    <LogOut />
-                    Clock Out
-                  </Button>
+          {activeAttendance && (
+            <p className="mt-4 text-xs text-muted-foreground">
+              Clocked in:{" "}
+              <strong>
+                {formatDateTime(
+                  activeAttendance.checked_in_at,
                 )}
-              </div>
+              </strong>
+            </p>
+          )}
+        </section>
+
+        {/* PERSONAL INFORMATION */}
+        <section className="mt-4 border border-border bg-card">
+          <button
+            type="button"
+            onClick={() =>
+              setShowProfile((current) => !current)
+            }
+            className="flex w-full items-center justify-between p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Profile
+              </p>
+
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+                Personal Information
+              </h2>
             </div>
-          </section>
 
-          {/* PERSONAL INFORMATION */}
-          <section className="mt-8">
-            <details
-              open
-              className="group"
-            >
-              <summary className="cursor-pointer list-none border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                      Profile
-                    </p>
+            <UserRound className="text-primary" />
+          </button>
 
-                    <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                      Personal Information
-                    </h2>
-                  </div>
+          {showProfile && (
+            <div className="border-t border-border p-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Full Name
+                  </p>
 
-                  <UserRound className="size-6 text-primary" />
+                  <p className="mt-1 font-medium">
+                    {profile.full_name}
+                  </p>
                 </div>
-              </summary>
 
-              <div className="mt-3 border border-border bg-background p-6 shadow-sm">
-                {!editingProfile ? (
-                  <>
-                    <div className="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Email
+                  </p>
 
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Full Name
-                        </p>
+                  <p className="mt-1 break-all font-medium">
+                    {profile.email || "—"}
+                  </p>
+                </div>
 
-                        <p className="mt-1 font-bold">
-                          {profile.full_name}
-                        </p>
-                      </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Phone
+                  </p>
 
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Email
-                        </p>
+                  <p className="mt-1 font-medium">
+                    {profile.phone || "Not available"}
+                  </p>
+                </div>
 
-                        <p className="mt-1 font-bold">
-                          {profile.email ||
-                            "Not available"}
-                        </p>
-                      </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Birthday
+                  </p>
 
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Phone
-                        </p>
+                  <p className="mt-1 font-medium">
+                    {profile.birth_day &&
+                    profile.birth_month
+                      ? `${profile.birth_day}/${profile.birth_month}`
+                      : "Not available"}
+                  </p>
+                </div>
 
-                        <p className="mt-1 font-bold">
-                          {profile.phone ||
-                            "Not available"}
-                        </p>
-                      </div>
+                <div className="sm:col-span-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Address
+                  </p>
 
-                      <div>
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Address
-                        </p>
+                  <p className="mt-1 font-medium">
+                    {profile.address || "Not available"}
+                  </p>
+                </div>
+              </div>
 
-                        <p className="mt-1 font-bold">
-                          {profile.address ||
-                            "Not available"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setEditingProfile(
-                          true,
-                        )
-                      }
-                      className="mt-6"
-                    >
-                      Edit Contact Information
-                    </Button>
-                  </>
-                ) : (
-                  <form
-                    onSubmit={
-                      saveProfile
-                    }
-                    className="space-y-5"
-                  >
-                    <div>
-                      <label className="text-xs font-extrabold uppercase">
-                        Phone
-                      </label>
+              {!editContact ? (
+                <Button
+                  variant="outline"
+                  className="mt-5"
+                  onClick={() => setEditContact(true)}
+                >
+                  Edit Contact Information
+                </Button>
+              ) : (
+                <div className="mt-6 border border-border bg-muted/30 p-5">
+                  <div className="grid gap-5">
+                    <label className="grid gap-2 text-sm font-bold">
+                      Phone
 
                       <input
-                        value={
-                          phone
+                        value={editPhone}
+                        onChange={(event) =>
+                          setEditPhone(event.target.value)
                         }
-                        onChange={(
-                          event,
-                        ) =>
-                          setPhone(
-                            event.target
-                              .value,
-                          )
-                        }
-                        className="mt-2 h-12 w-full rounded-md border border-input px-4 text-sm"
+                        type="tel"
+                        className="h-11 border border-border bg-background px-3 font-normal outline-none"
                       />
-                    </div>
+                    </label>
 
-                    <div>
-                      <label className="text-xs font-extrabold uppercase">
-                        Address
-                      </label>
+                    <label className="grid gap-2 text-sm font-bold">
+                      Address
 
                       <textarea
-                        value={
-                          address
-                        }
-                        onChange={(
-                          event,
-                        ) =>
-                          setAddress(
-                            event.target
-                              .value,
-                          )
+                        value={editAddress}
+                        onChange={(event) =>
+                          setEditAddress(event.target.value)
                         }
                         rows={3}
-                        className="mt-2 w-full rounded-md border border-input px-4 py-3 text-sm"
+                        className="border border-border bg-background p-3 font-normal outline-none"
                       />
-                    </div>
+                    </label>
 
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2">
                       <Button
-                        type="submit"
-                        disabled={
-                          saving
+                        onClick={() =>
+                          void updateContactInformation()
                         }
+                        disabled={saving}
                       >
-                        Save Changes
+                        <CheckCircle2 />
+                        Save
                       </Button>
 
                       <Button
-                        type="button"
                         variant="outline"
                         onClick={() =>
-                          setEditingProfile(
-                            false,
-                          )
+                          setEditContact(false)
                         }
                       >
                         Cancel
                       </Button>
                     </div>
-                  </form>
-                )}
-              </div>
-            </details>
-          </section>
-
-          {/* JOB INFORMATION */}
-          <section className="mt-8">
-            <details className="group">
-              <summary className="cursor-pointer list-none border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                      Employment
-                    </p>
-
-                    <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                      Job Information
-                    </h2>
                   </div>
-
-                  <BriefcaseBusiness className="size-6 text-primary" />
                 </div>
-              </summary>
+              )}
+            </div>
+          )}
+        </section>
 
-              <div className="mt-3 grid gap-4 border border-border bg-background p-6 shadow-sm sm:grid-cols-2 lg:grid-cols-3">
+        {/* EMPLOYMENT */}
+        <section className="mt-4 border border-border bg-card">
+          <button
+            type="button"
+            onClick={() =>
+              setShowEmployment((current) => !current)
+            }
+            className="flex w-full items-center justify-between p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Employment
+              </p>
 
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+                Job Information
+              </h2>
+            </div>
+
+            <BriefcaseBusiness className="text-primary" />
+          </button>
+
+          {showEmployment && (
+            <div className="border-t border-border p-5">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Position
                   </p>
 
-                  <p className="mt-1 font-bold">
-                    {profile.position ||
-                      "Not assigned"}
+                  <p className="mt-1 font-medium">
+                    {profile.position || "Not assigned"}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Department
                   </p>
 
-                  <p className="mt-1 font-bold">
-                    {profile.department ||
-                      "Not assigned"}
+                  <p className="mt-1 font-medium">
+                    {profile.department || "Not assigned"}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Employment Type
                   </p>
 
-                  <p className="mt-1 font-bold">
-                    {profile.employment_type ||
-                      "Not specified"}
+                  <p className="mt-1 font-medium">
+                    {profile.employment_type || "Not assigned"}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Employment Date
                   </p>
 
-                  <p className="mt-1 font-bold">
-                    {formatDate(
-                      profile.employment_date,
-                    )}
+                  <p className="mt-1 font-medium">
+                    {formatDate(profile.employment_date)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                    Staff ID
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    System Role
                   </p>
 
-                  <p className="mt-1 font-bold">
-                    {profile.staff_id}
+                  <p className="mt-1 font-medium">
+                    {getRoleLabel(profile.role)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                    Status
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Staff Status
                   </p>
 
-                  <p className="mt-1 font-bold uppercase">
-                    {profile.status}
+                  <p className="mt-1 font-medium">
+                    {statusLabel(profile.status)}
                   </p>
                 </div>
               </div>
-            </details>
-          </section>
+            </div>
+          )}
+        </section>
 
-          {/* SALARY */}
-          <section className="mt-8">
-            <details className="group">
-              <summary className="cursor-pointer list-none border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                      Payroll
-                    </p>
+        {/* SALARY */}
+        <section className="mt-4 border border-border bg-card">
+          <button
+            type="button"
+            onClick={() =>
+              setShowSalary((current) => !current)
+            }
+            className="flex w-full items-center justify-between p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Payroll
+              </p>
 
-                    <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                      Salary History
-                    </h2>
-                  </div>
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+                Salary History
+              </h2>
+            </div>
 
-                  <Wallet className="size-6 text-primary" />
-                </div>
-              </summary>
+            <Wallet className="text-primary" />
+          </button>
 
-              <div className="mt-3 overflow-hidden border border-border bg-background shadow-sm">
+          {showSalary && (
+            <div className="border-t border-border p-5">
+              {salaryRecords.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No salary records available yet.
+                </p>
+              ) : (
+                <div className="grid gap-4">
+                  {salaryRecords.map((record) => (
+                    <article
+                      key={record.id}
+                      className="border border-border p-4"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                            Amount
+                          </p>
 
-                {salary.length ===
-                0 ? (
-                  <div className="p-8 text-center">
-                    <Wallet className="mx-auto size-8 text-muted-foreground" />
-
-                    <p className="mt-4 font-bold uppercase">
-                      No Salary Records Yet
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {salary.map(
-                      (record) => (
-                        <div
-                          key={
-                            record.id
-                          }
-                          className="grid gap-4 p-5 md:grid-cols-[1fr_160px_140px]"
-                        >
-                          <div>
-                            <p className="font-bold">
-                              {record.pay_period_start &&
-                              record.pay_period_end
-                                ? `${formatDate(
-                                    record.pay_period_start,
-                                  )} – ${formatDate(
-                                    record.pay_period_end,
-                                  )}`
-                                : "Salary period"}
-                            </p>
-
-                            {record.notes && (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {
-                                  record.notes
-                                }
-                              </p>
+                          <p className="mt-1 font-display text-2xl font-bold">
+                            {formatMoney(
+                              record.amount,
+                              record.currency,
                             )}
-                          </div>
+                          </p>
+                        </div>
 
-                          <div>
-                            <p className="font-display text-2xl font-bold">
-                              {formatMoney(
-                                record.amount,
-                              )}
-                            </p>
-                          </div>
+                        <span className="w-fit rounded-full border border-border px-3 py-1 text-xs font-bold uppercase">
+                          {record.status}
+                        </span>
+                      </div>
 
-                          <div>
-                            <span
-                              className={`inline-flex px-3 py-1.5 text-[10px] font-extrabold uppercase ${
-                                record.status ===
-                                "paid"
-                                  ? "bg-green-600/10 text-green-700"
-                                  : "bg-primary/10 text-primary"
-                              }`}
-                            >
-                              {
-                                record.status
-                              }
-                            </span>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Pay Period
+                          </p>
 
-                            {record.payment_date && (
-                              <p className="mt-2 text-xs text-muted-foreground">
-                                Paid{" "}
-                                {formatDate(
-                                  record.payment_date,
-                                )}
-                              </p>
+                          <p className="mt-1 text-sm">
+                            {record.pay_period_start ||
+                            record.pay_period_end
+                              ? `${formatDate(
+                                  record.pay_period_start,
+                                )} – ${formatDate(
+                                  record.pay_period_end,
+                                )}`
+                              : "—"}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Payment Date
+                          </p>
+
+                          <p className="mt-1 text-sm">
+                            {formatDate(
+                              record.payment_date,
                             )}
-                          </div>
+                          </p>
                         </div>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </details>
-          </section>
 
-          {/* ATTENDANCE */}
-          <section className="mt-8">
-            <details className="group">
-              <summary className="cursor-pointer list-none border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                      Timekeeping
-                    </p>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                            Notes
+                          </p>
 
-                    <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                      Attendance History
-                    </h2>
-                  </div>
-
-                  <CalendarDays className="size-6 text-primary" />
+                          <p className="mt-1 text-sm">
+                            {record.notes || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
-              </summary>
+              )}
+            </div>
+          )}
+        </section>
 
-              <div className="mt-3 overflow-hidden border border-border bg-background shadow-sm">
-                {attendance.length ===
-                0 ? (
-                  <div className="p-8 text-center">
-                    <CalendarDays className="mx-auto size-8 text-muted-foreground" />
+        {/* ATTENDANCE */}
+        <section className="mt-4 border border-border bg-card">
+          <button
+            type="button"
+            onClick={() =>
+              setShowAttendance((current) => !current)
+            }
+            className="flex w-full items-center justify-between p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Timekeeping
+              </p>
 
-                    <p className="mt-4 font-bold uppercase">
-                      No Attendance Records
-                    </p>
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {attendance.map(
-                      (record) => (
-                        <div
-                          key={
-                            record.id
-                          }
-                          className="grid gap-4 p-5 md:grid-cols-[1fr_1fr_140px]"
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+                Attendance History
+              </h2>
+            </div>
+
+            <CalendarDays className="text-primary" />
+          </button>
+
+          {showAttendance && (
+            <div className="border-t border-border p-5">
+              {attendanceRecords.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">
+                  No attendance records yet.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[650px] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                        <th className="px-3 py-3">
+                          Check-in
+                        </th>
+
+                        <th className="px-3 py-3">
+                          Check-out
+                        </th>
+
+                        <th className="px-3 py-3">
+                          Duration
+                        </th>
+
+                        <th className="px-3 py-3">
+                          Notes
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {attendanceRecords.map((record) => (
+                        <tr
+                          key={record.id}
+                          className="border-b border-border"
                         >
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                              Check-In
-                            </p>
+                          <td className="px-3 py-4">
+                            {formatDateTime(
+                              record.checked_in_at,
+                            )}
+                          </td>
 
-                            <p className="mt-1 font-bold">
-                              {formatDateTime(
-                                record.checked_in_at,
-                              )}
-                            </p>
-                          </div>
+                          <td className="px-3 py-4">
+                            {record.checked_out_at
+                              ? formatDateTime(
+                                  record.checked_out_at,
+                                )
+                              : "Still inside"}
+                          </td>
 
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                              Check-Out
-                            </p>
+                          <td className="px-3 py-4 font-semibold">
+                            {durationLabel(
+                              record.checked_in_at,
+                              record.checked_out_at,
+                            )}
+                          </td>
 
-                            <p className="mt-1 font-bold">
-                              {record.checked_out_at
-                                ? formatDateTime(
-                                    record.checked_out_at,
-                                  )
-                                : "Still working"}
-                            </p>
-                          </div>
-
-                          <div>
-                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                              Duration
-                            </p>
-
-                            <p className="mt-1 font-bold">
-                              {formatDuration(
-                                record.checked_in_at,
-                                record.checked_out_at,
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                      ),
-                    )}
-                  </div>
-                )}
-              </div>
-            </details>
-          </section>
-
-          {/* QR */}
-          <section className="mt-8">
-            <details className="group">
-              <summary className="cursor-pointer list-none border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden">
-                <div className="flex items-center justify-between gap-4">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-primary">
-                      Identification
-                    </p>
-
-                    <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-                      Staff QR Code
-                    </h2>
-                  </div>
-
-                  <QrCode className="size-6 text-primary" />
+                          <td className="px-3 py-4">
+                            {record.notes || "—"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </summary>
+              )}
+            </div>
+          )}
+        </section>
 
-              <div className="mt-3 border border-border bg-background p-8 shadow-sm">
+        {/* QR CODE */}
+        <section className="mt-4 border border-border bg-card">
+          <button
+            type="button"
+            onClick={() =>
+              setShowQr((current) => !current)
+            }
+            className="flex w-full items-center justify-between p-5 text-left"
+          >
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Identification
+              </p>
 
-                <div className="mx-auto flex max-w-md flex-col items-center text-center">
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+                Staff QR Code
+              </h2>
+            </div>
 
-                  <div className="border border-border bg-white p-6">
-                    <QRCodeSVG
-                      id="staff-profile-qr"
-                      value={`STAFF:${profile.qr_token}`}
-                      size={260}
-                      level="H"
-                      includeMargin
-                    />
-                  </div>
+            <QrCode className="text-primary" />
+          </button>
 
-                  <h3 className="mt-6 font-display text-2xl font-bold uppercase">
-                    {profile.full_name}
-                  </h3>
+          {showQr && (
+            <div className="border-t border-border p-6">
+              <div className="mx-auto max-w-md text-center">
+                <p className="text-sm text-muted-foreground">
+                  Use this QR code for staff identification and
+                  attendance systems.
+                </p>
 
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {profile.staff_id}
-                  </p>
-
-                  <p className="mt-4 max-w-sm text-xs leading-5 text-muted-foreground">
-                    Keep this QR code available for staff attendance and identification.
-                  </p>
-
-                  <Button
-                    onClick={
-                      downloadQr
-                    }
-                    className="mt-6"
-                  >
-                    <Download />
-                    Download QR Code
-                  </Button>
+                <div className="mt-6 flex justify-center bg-white p-6">
+                  <QRCodeSVG
+                    id="staff-profile-qr"
+                    value={`STAFF:${profile.qr_token}`}
+                    size={260}
+                    level="H"
+                    includeMargin
+                  />
                 </div>
-              </div>
-            </details>
-          </section>
 
-          <div className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <ShieldCheck className="size-4" />
-            <span>
-              Super Plus Fitness &amp; Spa — Staff Portal
-            </span>
-          </div>
-        </div>
+                <p className="mt-4 font-display text-xl font-bold">
+                  {profile.staff_id}
+                </p>
+
+                <Button
+                  variant="outline"
+                  className="mt-5"
+                  onClick={() => void downloadQr()}
+                >
+                  <Download />
+                  Download QR Code
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* ADMIN MANAGEMENT SHORTCUT */}
+        {isAdmin && (
+          <section className="mt-6 border border-primary/30 bg-primary/5 p-6">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+
+                  <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                    Management Access
+                  </p>
+                </div>
+
+                <h2 className="mt-2 font-display text-2xl font-bold uppercase">
+                  Staff Management
+                </h2>
+
+                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                  Review staff applications, approve staff, assign
+                  employment details, manage salaries and view staff
+                  attendance.
+                </p>
+              </div>
+
+              <Button asChild className="shrink-0">
+                <Link to="/staff-admin">
+                  <ShieldCheck />
+                  Open Staff Management
+                </Link>
+              </Button>
+            </div>
+          </section>
+        )}
+
+        <p className="py-8 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Super Plus Fitness & Spa — Staff
+          Portal
+        </p>
       </div>
     </main>
   );
