@@ -319,9 +319,14 @@ function ReceptionDashboardPage() {
     total: number;
   } | null>(null);
 
+    const receptionPlans = [
+    ...membershipPlans,
+    receptionOnlyPlan,
+  ];
+
   const selectedPlan =
-    membershipPlans.find((plan) => plan.id === selectedPlanId) ||
-    membershipPlans[0];
+    receptionPlans.find((plan) => plan.id === selectedPlanId) ||
+    receptionPlans[0];
 
   const selectedPlanDuration = selectedPlan
     ? planDurationDays[selectedPlan.id] || 30
