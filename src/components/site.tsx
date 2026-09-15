@@ -107,12 +107,13 @@ export function MobileNavbar() {
 
       <SheetContent
         side="right"
-        className="w-[88vw] bg-secondary p-0 text-secondary-foreground"
+        className="w-[88vw] max-w-md bg-secondary p-0 text-secondary-foreground"
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
 
-        <div className="flex h-full flex-col p-6">
-          <div className="mb-8 flex items-center justify-between">
+        <div className="flex h-full flex-col px-5 py-4">
+          {/* HEADER */}
+          <div className="mb-4 flex items-center justify-between">
             <Logo inverse />
 
             <Button
@@ -125,6 +126,7 @@ export function MobileNavbar() {
             </Button>
           </div>
 
+          {/* MAIN NAVIGATION */}
           <nav
             className="flex flex-col"
             aria-label="Mobile navigation"
@@ -134,26 +136,27 @@ export function MobileNavbar() {
                 key={item.to}
                 to={item.to}
                 onClick={() => setOpen(false)}
-                className="border-b border-primary-foreground/15 py-3 font-display text-3xl font-bold uppercase hover:text-primary"
+                className="border-b border-primary-foreground/15 py-2.5 font-display text-2xl font-bold uppercase leading-tight hover:text-primary"
               >
                 {item.label}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-auto grid gap-3 border-t border-primary-foreground/15 pt-5">
+          {/* MEMBER / STAFF LINKS */}
+          <div className="mt-4 grid gap-2">
             <Link
               to="/login"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase"
+              className="text-sm font-bold uppercase leading-5 hover:text-primary"
             >
-              Member login
+              Member Login
             </Link>
 
             <Link
               to="/my-qr"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase"
+              className="text-sm font-bold uppercase leading-5 hover:text-primary"
             >
               My QR Code
             </Link>
@@ -161,7 +164,7 @@ export function MobileNavbar() {
             <Link
               to="/reception-dashboard"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase"
+              className="text-sm font-bold uppercase leading-5 hover:text-primary"
             >
               Reception Dashboard
             </Link>
@@ -169,7 +172,7 @@ export function MobileNavbar() {
             <Link
               to="/staff"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase"
+              className="text-sm font-bold uppercase leading-5 hover:text-primary"
             >
               Staff Portal
             </Link>
@@ -177,7 +180,7 @@ export function MobileNavbar() {
             <Link
               to="/staff-admin"
               onClick={() => setOpen(false)}
-              className="text-sm font-bold uppercase"
+              className="text-sm font-bold uppercase leading-5 hover:text-primary"
             >
               Staff Management
             </Link>
@@ -187,7 +190,7 @@ export function MobileNavbar() {
                 to="/join"
                 onClick={() => setOpen(false)}
               >
-                Join now
+                Join Now
               </Link>
             </Button>
           </div>
