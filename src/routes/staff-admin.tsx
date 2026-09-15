@@ -9,6 +9,10 @@ import {
   ShieldCheck,
   UserRound,
   XCircle,
+  CreditCard,
+  TrendingUp,
+  Users,
+  CalendarDays,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -50,6 +54,38 @@ type AttendanceRecord = {
   checked_in_at: string;
   checked_out_at: string | null;
   notes: string | null;
+};
+
+type RevenuePayment = {
+  id: string;
+  member_id: string | null;
+  membership_id: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method: string | null;
+  provider: string;
+  paystack_reference: string | null;
+  paid_at: string | null;
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+};
+
+type RevenueMember = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+type RevenueMembership = {
+  id: string;
+  plan_name: string | null;
+};
+
+type RevenuePaymentRow = RevenuePayment & {
+  member: RevenueMember | null;
+  membership: RevenueMembership | null;
 };
 
 const roles = [
@@ -111,6 +147,16 @@ function formatMoney(amount: number, currency = "NGN") {
   }).format(amount || 0);
 }
 
+function formatShortDate(value: string | null | undefined) {
+  if (!value) return "—";
+
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 function statusLabel(status: StaffProfile["status"]) {
   switch (status) {
     case "approved":
@@ -137,9 +183,572 @@ function statusClass(status: StaffProfile["status"]) {
   }
 }
 
+function getPaymentPlan(payment: RevenuePaymentRow) {
+  const membershipPlan = payment.membership?.plan_name;
+
+  if (membershipPlan) {
+    return membershipPlan;
+  }
+
+  const metadataPlan = payment.metadata?.plan_name;
+
+  if (typeof metadataPlan === "string" && metadataPlan.trim()) {
+    return metadataPlan;
+  }
+
+  return "Membership";
+}
+
+function getPaymentMemberName(payment: RevenuePaymentRow) {
+  if (payment.member?.full_name) {
+    return payment.member.full_name;
+  }
+
+  const metadataName = payment.metadata?.full_name;
+
+  if (typeof metadataName === "string" && metadataName.trim()) {
+    return metadataName;
+  }
+
+  return "Unknown Member";
+}
+
+function getPaymentDate(payment: RevenuePaymentRow) {
+  return payment.paid_at || payment.created_at;
+}
+
+function startOfDay(date: Date) {
+  const result = new Date(date);
+
+  result.setHours(0, 0, 0, 0);
+
+  return result;
+}
+
+function startOfWeek(date: Date) {
+  const result = startOfDay(date);
+  const day = result.getDay();
+  const difference = day === 0 ? -6 : 1 - day;
+
+  result.setDate(result.getDate() + difference);
+
+  return result;
+}
+
+function startOfMonth(date: Date) {
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+}
+
+function isSameDay(first: Date, second: Date) {
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
+}
+
+function RevenueReport({
+  payments,
+  loading,
+  onRefresh,
+}: {
+  payments: RevenuePaymentRow[];
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  const [period, setPeriod] = useState<
+    "today" | "week" | "month" | "all"
+  >("month");
+
+  const [paymentSearch, setPaymentSearch] = useState("");
+
+  const now = new Date();
+
+  const periodStart = useMemo(() => {
+    switch (period) {
+      case "today":
+        return startOfDay(now);
+      case "week":
+        return startOfWeek(now);
+      case "month":
+        return startOfMonth(now);
+      default:
+        return null;
+    }
+  }, [period]);
+
+  const periodPayments = useMemo(() => {
+    return payments.filter((payment) => {
+      if (payment.status.toLowerCase() !== "success") {
+        return false;
+      }
+
+      if (!periodStart) {
+        return true;
+      }
+
+      const paymentDate = new Date(getPaymentDate(payment));
+
+      return paymentDate >= periodStart;
+    });
+  }, [payments, periodStart]);
+
+  const totalRevenue = useMemo(() => {
+    return periodPayments.reduce(
+      (total, payment) => total + Number(payment.amount || 0),
+      0,
+    );
+  }, [periodPayments]);
+
+  const todayRevenue = useMemo(() => {
+    return payments
+      .filter(
+        (payment) =>
+          payment.status.toLowerCase() === "success" &&
+          isSameDay(
+            new Date(getPaymentDate(payment)),
+            now,
+          ),
+      )
+      .reduce(
+        (total, payment) => total + Number(payment.amount || 0),
+        0,
+      );
+  }, [payments, now]);
+
+  const monthRevenue = useMemo(() => {
+    const monthStart = startOfMonth(now);
+
+    return payments
+      .filter((payment) => {
+        if (payment.status.toLowerCase() !== "success") {
+          return false;
+        }
+
+        return new Date(getPaymentDate(payment)) >= monthStart;
+      })
+      .reduce(
+        (total, payment) => total + Number(payment.amount || 0),
+        0,
+      );
+  }, [payments, now]);
+
+  const averagePayment =
+    periodPayments.length > 0
+      ? totalRevenue / periodPayments.length
+      : 0;
+
+  const revenueByPlan = useMemo(() => {
+    const grouped = new Map<
+      string,
+      {
+        plan: string;
+        amount: number;
+        count: number;
+      }
+    >();
+
+    periodPayments.forEach((payment) => {
+      const plan = getPaymentPlan(payment);
+
+      const existing = grouped.get(plan);
+
+      if (existing) {
+        existing.amount += Number(payment.amount || 0);
+        existing.count += 1;
+      } else {
+        grouped.set(plan, {
+          plan,
+          amount: Number(payment.amount || 0),
+          count: 1,
+        });
+      }
+    });
+
+    return Array.from(grouped.values()).sort(
+      (a, b) => b.amount - a.amount,
+    );
+  }, [periodPayments]);
+
+  const filteredPayments = useMemo(() => {
+    const query = paymentSearch.trim().toLowerCase();
+
+    return periodPayments
+      .filter((payment) => {
+        if (!query) return true;
+
+        const memberName =
+          getPaymentMemberName(payment).toLowerCase();
+
+        const email =
+          payment.member?.email?.toLowerCase() || "";
+
+        const phone =
+          payment.member?.phone?.toLowerCase() || "";
+
+        const reference =
+          payment.paystack_reference?.toLowerCase() || "";
+
+        const plan = getPaymentPlan(payment).toLowerCase();
+
+        return (
+          memberName.includes(query) ||
+          email.includes(query) ||
+          phone.includes(query) ||
+          reference.includes(query) ||
+          plan.includes(query)
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(getPaymentDate(b)).getTime() -
+          new Date(getPaymentDate(a)).getTime(),
+      );
+  }, [periodPayments, paymentSearch]);
+
+  return (
+    <section className="mb-8 border border-border bg-card">
+      <div className="border-b border-border p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted">
+                <TrendingUp className="h-5 w-5" />
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl font-bold uppercase">
+                  Revenue Report
+                </h2>
+
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Track successful membership payments and revenue.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={onRefresh}
+            disabled={loading}
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh Revenue
+          </Button>
+        </div>
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          {[
+            ["today", "Today"],
+            ["week", "This Week"],
+            ["month", "This Month"],
+            ["all", "All Time"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() =>
+                setPeriod(
+                  value as
+                    | "today"
+                    | "week"
+                    | "month"
+                    | "all",
+                )
+              }
+              className={`border px-4 py-2 text-xs font-semibold uppercase ${
+                period === value
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border bg-background"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="border border-border bg-background p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Revenue
+              </p>
+
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <p className="mt-3 break-words text-3xl font-bold">
+              {formatMoney(totalRevenue)}
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Selected period
+            </p>
+          </div>
+
+          <div className="border border-border bg-background p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Today
+              </p>
+
+              <CalendarDays className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <p className="mt-3 break-words text-3xl font-bold">
+              {formatMoney(todayRevenue)}
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Successful payments today
+            </p>
+          </div>
+
+          <div className="border border-border bg-background p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Payments
+              </p>
+
+              <CreditCard className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <p className="mt-3 text-3xl font-bold">
+              {periodPayments.length}
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Successful transactions
+            </p>
+          </div>
+
+          <div className="border border-border bg-background p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Average Payment
+              </p>
+
+              <Users className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <p className="mt-3 break-words text-3xl font-bold">
+              {formatMoney(averagePayment)}
+            </p>
+
+            <p className="mt-1 text-xs text-muted-foreground">
+              Average per successful payment
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+          <div className="border border-border bg-background p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-display text-xl font-bold uppercase">
+                  Revenue by Plan
+                </h3>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Based on successful payments
+                </p>
+              </div>
+
+              <DollarSign className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <div className="mt-5">
+              {revenueByPlan.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No successful payments in this period.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {revenueByPlan.map((item) => {
+                    const percentage =
+                      totalRevenue > 0
+                        ? (item.amount / totalRevenue) * 100
+                        : 0;
+
+                    return (
+                      <div
+                        key={item.plan}
+                        className="border-b border-border pb-3 last:border-0"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="font-semibold">
+                              {item.plan}
+                            </p>
+
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {item.count} payment
+                              {item.count === 1 ? "" : "s"}
+                            </p>
+                          </div>
+
+                          <p className="shrink-0 font-bold">
+                            {formatMoney(item.amount)}
+                          </p>
+                        </div>
+
+                        <div className="mt-3 h-2 overflow-hidden bg-muted">
+                          <div
+                            className="h-full bg-foreground"
+                            style={{
+                              width: `${Math.min(
+                                100,
+                                Math.max(0, percentage),
+                              )}%`,
+                            }}
+                          />
+                        </div>
+
+                        <p className="mt-1 text-right text-[10px] text-muted-foreground">
+                          {percentage.toFixed(1)}%
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 border-t border-border pt-5">
+              <div className="flex items-center justify-between gap-4">
+                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  This Month
+                </span>
+
+                <span className="font-bold">
+                  {formatMoney(monthRevenue)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-border bg-background p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-display text-xl font-bold uppercase">
+                  Payment Transactions
+                </h3>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {periodPayments.length} successful payment
+                  {periodPayments.length === 1 ? "" : "s"} in selected
+                  period
+                </p>
+              </div>
+
+              <div className="w-full sm:w-64">
+                <input
+                  value={paymentSearch}
+                  onChange={(event) =>
+                    setPaymentSearch(event.target.value)
+                  }
+                  placeholder="Search payments..."
+                  className="h-10 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 overflow-x-auto">
+              {loading ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  Loading payment records...
+                </p>
+              ) : filteredPayments.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No successful payment records found.
+                </p>
+              ) : (
+                <table className="w-full min-w-[850px] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                      <th className="px-3 py-3">Member</th>
+                      <th className="px-3 py-3">Plan</th>
+                      <th className="px-3 py-3">Amount</th>
+                      <th className="px-3 py-3">Method</th>
+                      <th className="px-3 py-3">Date</th>
+                      <th className="px-3 py-3">Reference</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {filteredPayments.map((payment) => (
+                      <tr
+                        key={payment.id}
+                        className="border-b border-border"
+                      >
+                        <td className="px-3 py-4">
+                          <p className="font-semibold">
+                            {getPaymentMemberName(payment)}
+                          </p>
+
+                          {payment.member?.email && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {payment.member.email}
+                            </p>
+                          )}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          {getPaymentPlan(payment)}
+                        </td>
+
+                        <td className="px-3 py-4 font-bold">
+                          {formatMoney(
+                            Number(payment.amount || 0),
+                            payment.currency || "NGN",
+                          )}
+                        </td>
+
+                        <td className="px-3 py-4 capitalize">
+                          {payment.payment_method || "Paystack"}
+                        </td>
+
+                        <td className="px-3 py-4 whitespace-nowrap">
+                          {formatDateTime(getPaymentDate(payment))}
+                        </td>
+
+                        <td className="px-3 py-4">
+                          <span className="font-mono text-xs">
+                            {payment.paystack_reference || "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function StaffAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [revenueLoading, setRevenueLoading] = useState(true);
+  const [revenuePayments, setRevenuePayments] = useState<
+    RevenuePaymentRow[]
+  >([]);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -213,6 +822,61 @@ function StaffAdminPage() {
     return true;
   }
 
+  async function loadRevenue() {
+    setRevenueLoading(true);
+
+    const { data, error: revenueError } = await supabase
+      .from("payments")
+      .select(
+        `
+        id,
+        member_id,
+        membership_id,
+        amount,
+        currency,
+        status,
+        payment_method,
+        provider,
+        paystack_reference,
+        paid_at,
+        created_at,
+        metadata,
+        member:members (
+          id,
+          full_name,
+          email,
+          phone
+        ),
+        membership:memberships (
+          id,
+          plan_name
+        )
+      `,
+      )
+      .eq("status", "success")
+      .order("paid_at", { ascending: false })
+      .limit(2000);
+
+    if (revenueError) {
+      setError(revenueError.message);
+      setRevenueLoading(false);
+      return;
+    }
+
+    const normalized = (data || []).map((payment: any) => ({
+      ...payment,
+      member: Array.isArray(payment.member)
+        ? payment.member[0] || null
+        : payment.member || null,
+      membership: Array.isArray(payment.membership)
+        ? payment.membership[0] || null
+        : payment.membership || null,
+    })) as RevenuePaymentRow[];
+
+    setRevenuePayments(normalized);
+    setRevenueLoading(false);
+  }
+
   async function loadStaff() {
     setLoading(true);
     setError("");
@@ -256,6 +920,14 @@ function StaffAdminPage() {
 
     setStaff((data || []) as StaffProfile[]);
     setLoading(false);
+  }
+
+  async function refreshAll() {
+    setError("");
+    await Promise.all([
+      loadStaff(),
+      loadRevenue(),
+    ]);
   }
 
   async function loadStaffDetails(profile: StaffProfile) {
@@ -590,7 +1262,7 @@ function StaffAdminPage() {
   ).length;
 
   useEffect(() => {
-    void loadStaff();
+    void refreshAll();
   }, []);
 
   return (
@@ -619,8 +1291,8 @@ function StaffAdminPage() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => void loadStaff()}
-              disabled={loading || saving}
+              onClick={() => void refreshAll()}
+              disabled={loading || saving || revenueLoading}
             >
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -649,6 +1321,14 @@ function StaffAdminPage() {
           <div className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
             {success}
           </div>
+        )}
+
+        {!loading && (
+          <RevenueReport
+            payments={revenuePayments}
+            loading={revenueLoading}
+            onRefresh={() => void loadRevenue()}
+          />
         )}
 
         {loading ? (
