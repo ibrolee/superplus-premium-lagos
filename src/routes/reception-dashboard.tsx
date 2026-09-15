@@ -77,6 +77,24 @@ const planDurationDays: Record<string, number> = {
   "vip-gold": 30,
   family: 30,
   "personal-training": 30,
+  "personal-training-only": 30,
+};
+
+const receptionOnlyPlan = {
+  id: "personal-training-only",
+  name: "Personal Training Only",
+  category: "Training" as const,
+  group: "Training" as const,
+  price: 30000,
+  duration: "One month",
+  registration: 0,
+  benefits: [
+    "Personal training only",
+    "30-day validity",
+    "Can run concurrently with another membership",
+  ],
+  checkoutUrl: "",
+};
 };
 
 function getLocalDateString() {
