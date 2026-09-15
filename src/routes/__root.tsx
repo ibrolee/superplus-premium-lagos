@@ -66,7 +66,8 @@ function ErrorComponent({
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Something went wrong on our end. You can try refreshing or head back
+          home.
         </p>
 
         <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -97,38 +98,70 @@ export const Route =
     head: () => ({
       meta: [
         { charSet: "utf-8" },
+
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
         },
+
         {
-          title: "Super Plus Fitness & Spa",
+          title:
+            "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
         },
+
         {
           name: "description",
           content:
-            "Modern fitness, spa and recovery in Shomolu, Lagos.",
+            "Super Plus Fitness & Spa is a modern gym, spa and wellness centre in Shomolu, Lagos. Gym memberships, personal training, spa, massage and recovery services.",
         },
+
         {
           name: "author",
-          content: "Super Plus Fitness",
-        },
-        {
-          property: "og:title",
           content: "Super Plus Fitness & Spa",
         },
+
+        {
+          name: "robots",
+          content: "index, follow",
+        },
+
+        {
+          property: "og:title",
+          content:
+            "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
+        },
+
         {
           property: "og:description",
           content:
-            "Modern fitness, spa and recovery in Shomolu, Lagos.",
+            "A modern gym, spa and wellness centre in Shomolu, Lagos offering gym memberships, personal training, spa, massage and recovery services.",
         },
+
         {
           property: "og:type",
           content: "website",
         },
+
+        {
+          property: "og:site_name",
+          content: "Super Plus Fitness & Spa",
+        },
+
         {
           name: "twitter:card",
           content: "summary_large_image",
+        },
+
+        {
+          name: "twitter:title",
+          content:
+            "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
+        },
+
+        {
+          name: "twitter:description",
+          content:
+            "Modern gym, spa and wellness centre in Shomolu, Lagos. Memberships, personal training, massage and recovery services.",
         },
       ],
 
