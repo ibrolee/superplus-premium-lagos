@@ -93,6 +93,51 @@ function ErrorComponent({
   );
 }
 
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "HealthClub",
+  "@id": "https://www.superplusfitness.com/#business",
+  name: "Super Plus Fitness & Spa",
+  url: "https://www.superplusfitness.com/",
+  logo: "https://www.superplusfitness.com/header-logo.png",
+  telephone: "+2347054263170",
+  email: "spfitnessandspa@gmail.com",
+  description:
+    "Modern gym, personal training, spa and recovery centre in Shomolu, Lagos.",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: "No. 105 Apata Street",
+    addressLocality: "Shomolu",
+    addressRegion: "Lagos",
+    addressCountry: "NG",
+  },
+  areaServed: {
+    "@type": "Place",
+    name: "Shomolu, Lagos, Nigeria",
+  },
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ],
+      opens: "06:00",
+      closes: "20:30",
+    },
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: "Sunday",
+      opens: "06:30",
+      closes: "19:00",
+    },
+  ],
+};
+
 export const Route =
   createRootRouteWithContext<{ queryClient: QueryClient }>()({
     head: () => ({
@@ -206,6 +251,13 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData),
+          }}
+        />
       </head>
 
       <body>
