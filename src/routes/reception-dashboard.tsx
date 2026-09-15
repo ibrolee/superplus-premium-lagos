@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock3,
   Loader2,
+  LogIn,
   LogOut,
   Phone,
   QrCode,
@@ -55,6 +56,20 @@ type MemberWithMembership = Member & {
   membership: Membership | null;
 };
 
+type AttendanceRecord = {
+  id: string;
+  member_id: string;
+  checked_in_at: string;
+  checked_out_at: string | null;
+};
+
+type AttendanceWithMember = AttendanceRecord & {
+  member: {
+    full_name: string | null;
+    phone: string | null;
+  } | null;
+};
+
 function getTodayParts() {
   const now = new Date();
 
@@ -64,14 +79,52 @@ function getTodayParts() {
   };
 }
 
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function getLocalDayRange() {
+  const start = new Date();
+
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
+function addDaysToDateString(
+  dateString: string,
+  days: number,
+) {
+  const date = new Date(`${dateString}T00:00:00`);
+
+  date.setDate(date.getDate() + days);
+
+  return getLocalDateString(date);
+}
+
 function getMonthName(month: number) {
   return new Intl.DateTimeFormat("en-NG", {
     month: "long",
   }).format(new Date(2026, month - 1, 1));
 }
 
-function formatBirthday(day: number | null, month: number | null) {
-  if (!day || !month) return "Birthday not available";
+function formatBirthday(
+  day: number | null,
+  month: number | null,
+) {
+  if (!day || !month) {
+    return "Birthday not available";
+  }
 
   return `${day} ${getMonthName(month)}`;
 }
@@ -86,17 +139,9 @@ function getDateOnly(value: unknown) {
   return stringValue.slice(0, 10);
 }
 
-function getLocalDateString() {
-  const now = new Date();
-
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
-
-function isMembershipActive(membership: Membership | null) {
+function isMembershipActive(
+  membership: Membership | null,
+) {
   if (!membership) return false;
 
   const startDate = getDateOnly(membership.start_date);
@@ -109,20 +154,75 @@ function isMembershipActive(membership: Membership | null) {
   return startDate <= today && today <= endDate;
 }
 
-function getMembershipStatus(membership: Membership | null) {
-  if (isMembershipActive(membership)) {
-    return "Active";
+function getDaysUntilExpiry(
+  endDate: string | null,
+) {
+  if (!endDate) return null;
+
+  const today = getLocalDateString();
+
+  const start = new Date(`${today}T00:00:00`);
+  const end = new Date(`${endDate}T00:00:00`);
+
+  const difference =
+    end.getTime() - start.getTime();
+
+  return Math.round(
+    difference / (1000 * 60 * 60 * 24),
+  );
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatDuration(
+  checkedInAt: string,
+  checkedOutAt: string | null,
+) {
+  const end = checkedOutAt
+    ? new Date(checkedOutAt)
+    : new Date();
+
+  const start = new Date(checkedInAt);
+
+  const minutes = Math.max(
+    0,
+    Math.round(
+      (end.getTime() - start.getTime()) / 60000,
+    ),
+  );
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+
+  if (hours > 0) {
+    return `${hours}h ${remainingMinutes}m`;
   }
 
-  return "Expired";
+  return `${remainingMinutes}m`;
 }
 
 function ReceptionDashboardPage() {
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [staffName, setStaffName] = useState("");
 
-  const [members, setMembers] = useState<MemberWithMembership[]>([]);
-  const [loadingMembers, setLoadingMembers] = useState(false);
+  const [members, setMembers] = useState<
+    MemberWithMembership[]
+  >([]);
+
+  const [todayAttendance, setTodayAttendance] =
+    useState<AttendanceWithMember[]>([]);
+
+  const [loadingMembers, setLoadingMembers] =
+    useState(false);
+
+  const [loadingAttendance, setLoadingAttendance] =
+    useState(false);
+
   const [loadError, setLoadError] = useState("");
 
   const [loggingOut, setLoggingOut] = useState(false);
@@ -130,6 +230,13 @@ function ReceptionDashboardPage() {
   const today = useMemo(() => getTodayParts(), []);
 
   const currentMonthName = getMonthName(today.month);
+
+  const todayDateString = getLocalDateString();
+
+  const sevenDaysFromToday = addDaysToDateString(
+    todayDateString,
+    7,
+  );
 
   useEffect(() => {
     let active = true;
@@ -148,12 +255,13 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { data: staff, error: staffError } = await supabase
-        .from("staff_users")
-        .select("full_name, role, active")
-        .eq("auth_user_id", session.user.id)
-        .eq("active", true)
-        .maybeSingle();
+      const { data: staff, error: staffError } =
+        await supabase
+          .from("staff_users")
+          .select("full_name, role, active")
+          .eq("auth_user_id", session.user.id)
+          .eq("active", true)
+          .maybeSingle();
 
       if (!active) return;
 
@@ -174,6 +282,95 @@ function ReceptionDashboardPage() {
     };
   }, []);
 
+  async function loadAttendance() {
+    setLoadingAttendance(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setStaffName("");
+        return;
+      }
+
+      const { data: staff, error: staffError } =
+        await supabase
+          .from("staff_users")
+          .select("full_name, role, active")
+          .eq("auth_user_id", session.user.id)
+          .eq("active", true)
+          .maybeSingle();
+
+      if (staffError || !staff) {
+        await supabase.auth.signOut();
+        setStaffName("");
+        return;
+      }
+
+      const { start, end } = getLocalDayRange();
+
+      const {
+        data: attendanceData,
+        error: attendanceError,
+      } = await supabase
+        .from("attendance")
+        .select(
+          `
+            id,
+            member_id,
+            checked_in_at,
+            checked_out_at,
+            members (
+              full_name,
+              phone
+            )
+          `,
+        )
+        .gte("checked_in_at", start)
+        .lt("checked_in_at", end)
+        .order("checked_in_at", {
+          ascending: false,
+        });
+
+      if (attendanceError) {
+        throw new Error(attendanceError.message);
+      }
+
+      const records: AttendanceWithMember[] =
+        (attendanceData || []).map((record: any) => ({
+          id: record.id,
+          member_id: record.member_id,
+          checked_in_at: record.checked_in_at,
+          checked_out_at: record.checked_out_at,
+          member: record.members
+            ? {
+                full_name:
+                  record.members.full_name || null,
+                phone:
+                  record.members.phone || null,
+              }
+            : null,
+        }));
+
+      setTodayAttendance(records);
+    } catch (error) {
+      console.error(
+        "Reception attendance error:",
+        error,
+      );
+
+      setLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load today's attendance.",
+      );
+    } finally {
+      setLoadingAttendance(false);
+    }
+  }
+
   async function loadMembers() {
     setLoadingMembers(true);
     setLoadError("");
@@ -188,12 +385,13 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const { data: staff, error: staffError } = await supabase
-        .from("staff_users")
-        .select("full_name, role, active")
-        .eq("auth_user_id", session.user.id)
-        .eq("active", true)
-        .maybeSingle();
+      const { data: staff, error: staffError } =
+        await supabase
+          .from("staff_users")
+          .select("full_name, role, active")
+          .eq("auth_user_id", session.user.id)
+          .eq("active", true)
+          .maybeSingle();
 
       if (staffError || !staff) {
         await supabase.auth.signOut();
@@ -203,44 +401,51 @@ function ReceptionDashboardPage() {
 
       setStaffName(staff.full_name || "Reception");
 
-      const { data: memberData, error: membersError } =
-        await supabase
-          .from("members")
-          .select(
-            "id, full_name, email, phone, birth_day, birth_month",
-          )
-          .not("birth_day", "is", null)
-          .not("birth_month", "is", null)
-          .order("birth_month", {
-            ascending: true,
-          })
-          .order("birth_day", {
-            ascending: true,
-          });
+      const {
+        data: memberData,
+        error: membersError,
+      } = await supabase
+        .from("members")
+        .select(
+          "id, full_name, email, phone, birth_day, birth_month",
+        )
+        .not("birth_day", "is", null)
+        .not("birth_month", "is", null)
+        .order("birth_month", {
+          ascending: true,
+        })
+        .order("birth_day", {
+          ascending: true,
+        });
 
       if (membersError) {
         throw new Error(membersError.message);
       }
 
-      const memberRows = (memberData || []) as Member[];
+      const memberRows = (memberData ||
+        []) as Member[];
 
       if (memberRows.length === 0) {
         setMembers([]);
         return;
       }
 
-      const memberIds = memberRows.map((member) => member.id);
+      const memberIds = memberRows.map(
+        (member) => member.id,
+      );
 
-      const { data: membershipData, error: membershipError } =
-        await supabase
-          .from("memberships")
-          .select(
-            "id, member_id, plan_name, start_date, end_date, status",
-          )
-          .in("member_id", memberIds)
-          .order("end_date", {
-            ascending: false,
-          });
+      const {
+        data: membershipData,
+        error: membershipError,
+      } = await supabase
+        .from("memberships")
+        .select(
+          "id, member_id, plan_name, start_date, end_date, status",
+        )
+        .in("member_id", memberIds)
+        .order("end_date", {
+          ascending: false,
+        });
 
       if (membershipError) {
         throw new Error(membershipError.message);
@@ -253,7 +458,11 @@ function ReceptionDashboardPage() {
         new Map<string, Membership>();
 
       for (const membership of membershipRows) {
-        if (!latestMembershipByMember.has(membership.member_id)) {
+        if (
+          !latestMembershipByMember.has(
+            membership.member_id,
+          )
+        ) {
           latestMembershipByMember.set(
             membership.member_id,
             membership,
@@ -265,26 +474,39 @@ function ReceptionDashboardPage() {
         memberRows.map((member) => ({
           ...member,
           membership:
-            latestMembershipByMember.get(member.id) || null,
+            latestMembershipByMember.get(member.id) ||
+            null,
         }));
 
       setMembers(combined);
     } catch (error) {
-      console.error("Reception dashboard error:", error);
+      console.error(
+        "Reception dashboard error:",
+        error,
+      );
 
       setLoadError(
         error instanceof Error
           ? error.message
-          : "Unable to load birthday information.",
+          : "Unable to load dashboard information.",
       );
     } finally {
       setLoadingMembers(false);
     }
   }
 
+  async function refreshDashboard() {
+    setLoadError("");
+
+    await Promise.all([
+      loadMembers(),
+      loadAttendance(),
+    ]);
+  }
+
   useEffect(() => {
     if (!checkingAccess && staffName) {
-      loadMembers();
+      refreshDashboard();
     }
   }, [checkingAccess, staffName]);
 
@@ -295,6 +517,7 @@ function ReceptionDashboardPage() {
 
     setStaffName("");
     setMembers([]);
+    setTodayAttendance([]);
     setLoggingOut(false);
   }
 
@@ -306,13 +529,53 @@ function ReceptionDashboardPage() {
 
   const birthdaysThisMonth = members
     .filter(
-      (member) => member.birth_month === today.month,
+      (member) =>
+        member.birth_month === today.month,
     )
     .sort((a, b) => {
       const dayA = a.birth_day || 0;
       const dayB = b.birth_day || 0;
 
       return dayA - dayB;
+    });
+
+  const currentlyInside = todayAttendance.filter(
+    (attendance) =>
+      !attendance.checked_out_at,
+  );
+
+  const uniqueVisitorsToday = new Set(
+    todayAttendance.map(
+      (attendance) => attendance.member_id,
+    ),
+  ).size;
+
+  const newMembersToday = members.filter(
+    (member) => {
+      return false;
+    },
+  );
+
+  const expiringSoon = members
+    .filter((member) => {
+      const endDate = getDateOnly(
+        member.membership?.end_date,
+      );
+
+      if (!endDate) return false;
+
+      return (
+        endDate >= todayDateString &&
+        endDate <= sevenDaysFromToday
+      );
+    })
+    .sort((a, b) => {
+      const dateA =
+        getDateOnly(a.membership?.end_date) || "";
+      const dateB =
+        getDateOnly(b.membership?.end_date) || "";
+
+      return dateA.localeCompare(dateB);
     });
 
   if (checkingAccess) {
@@ -374,6 +637,7 @@ function ReceptionDashboardPage() {
     <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
       <div className="section-shell">
         <div className="mx-auto max-w-6xl">
+
           {/* HEADER */}
           <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
@@ -403,11 +667,15 @@ function ReceptionDashboardPage() {
 
               <Button
                 variant="outline"
-                onClick={loadMembers}
-                disabled={loadingMembers}
+                onClick={refreshDashboard}
+                disabled={
+                  loadingMembers ||
+                  loadingAttendance
+                }
                 className="w-full sm:w-auto"
               >
-                {loadingMembers ? (
+                {loadingMembers ||
+                loadingAttendance ? (
                   <Loader2 className="animate-spin" />
                 ) : (
                   <RefreshCw />
@@ -431,12 +699,56 @@ function ReceptionDashboardPage() {
             </div>
           </div>
 
-          {/* SUMMARY CARDS */}
+          {/* OVERVIEW */}
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
             <div className="border border-border bg-background p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
-                  Today's Birthdays
+                  Currently Inside
+                </p>
+
+                <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
+                  <Users className="size-5" />
+                </div>
+              </div>
+
+              <p className="mt-5 font-display text-4xl font-bold">
+                {currentlyInside.length}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Members currently in the gym
+              </p>
+            </div>
+
+            <div className="border border-border bg-background p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
+                  Visits Today
+                </p>
+
+                <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
+                  <LogIn className="size-5" />
+                </div>
+              </div>
+
+              <p className="mt-5 font-display text-4xl font-bold">
+                {todayAttendance.length}
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                {uniqueVisitorsToday} unique member
+                {uniqueVisitorsToday === 1
+                  ? ""
+                  : "s"}
+              </p>
+            </div>
+
+            <div className="border border-border bg-background p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
+                  Birthdays Today
                 </p>
 
                 <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
@@ -449,54 +761,17 @@ function ReceptionDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                Birthday{birthdaysToday.length === 1 ? "" : "s"} today
+                Birthday
+                {birthdaysToday.length === 1
+                  ? ""
+                  : "s"} today
               </p>
             </div>
 
             <div className="border border-border bg-background p-6 shadow-sm">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
-                  This Month
-                </p>
-
-                <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
-                  <Cake className="size-5" />
-                </div>
-              </div>
-
-              <p className="mt-5 font-display text-4xl font-bold">
-                {birthdaysThisMonth.length}
-              </p>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Birthdays in {currentMonthName}
-              </p>
-            </div>
-
-            <div className="border border-border bg-background p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
-                  Members With DOB
-                </p>
-
-                <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
-                  <Users className="size-5" />
-                </div>
-              </div>
-
-              <p className="mt-5 font-display text-4xl font-bold">
-                {members.length}
-              </p>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Birthday records available
-              </p>
-            </div>
-
-            <div className="border border-border bg-background p-6 shadow-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-extrabold uppercase tracking-[0.12em]">
-                  Current Date
+                  Expiring Soon
                 </p>
 
                 <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
@@ -505,35 +780,239 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {today.day}
+                {expiringSoon.length}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                {currentMonthName}
+                Memberships within 7 days
               </p>
             </div>
           </section>
 
-          {loadError && (
-            <section className="mt-6 border border-destructive/30 bg-destructive/10 p-6">
-              <div className="flex items-start gap-4">
-                <XCircle className="mt-0.5 size-6 shrink-0 text-destructive" />
+          {/* CURRENTLY INSIDE */}
+          <section className="mt-8">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                  Live Attendance
+                </p>
 
-                <div>
-                  <h2 className="font-bold uppercase text-destructive">
-                    Dashboard Problem
-                  </h2>
+                <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
+                  Currently Inside
+                </h2>
 
-                  <p className="mt-2 text-sm leading-6 text-destructive">
-                    {loadError}
-                  </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Members who have checked in but have not
+                  checked out.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-extrabold uppercase">
+                <Users className="size-4 text-primary" />
+                {currentlyInside.length} inside
+              </div>
+            </div>
+
+            {loadingAttendance ? (
+              <div className="flex items-center justify-center border border-border bg-background py-16">
+                <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                  <Loader2 className="size-5 animate-spin" />
+                  Loading attendance...
                 </div>
               </div>
-            </section>
-          )}
+            ) : currentlyInside.length === 0 ? (
+              <div className="border border-border bg-background p-8 text-center shadow-sm">
+                <LogIn className="mx-auto size-8 text-muted-foreground" />
+
+                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                  Nobody Is Currently Inside
+                </h3>
+
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Members will appear here after they scan in.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-hidden border border-border bg-background shadow-sm">
+                <div className="hidden grid-cols-[1fr_130px_130px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
+                  <div>Member</div>
+                  <div>Check-In</div>
+                  <div>Duration</div>
+                </div>
+
+                <div className="divide-y divide-border">
+                  {currentlyInside.map((attendance) => (
+                    <div
+                      key={attendance.id}
+                      className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-bold uppercase">
+                          {attendance.member?.full_name ||
+                            "Member"}
+                        </p>
+
+                        {attendance.member?.phone && (
+                          <a
+                            href={`tel:${attendance.member.phone}`}
+                            className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
+                          >
+                            <Phone className="size-3" />
+                            {attendance.member.phone}
+                          </a>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold">
+                          {formatTime(
+                            attendance.checked_in_at,
+                          )}
+                        </p>
+
+                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                          Checked in
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-sm font-bold">
+                          {formatDuration(
+                            attendance.checked_in_at,
+                            null,
+                          )}
+                        </p>
+
+                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                          Current visit
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* EXPIRING SOON */}
+          <section className="mt-10">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                  Membership Alerts
+                </p>
+
+                <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
+                  Expiring Soon
+                </h2>
+
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Memberships expiring today or within the next
+                  7 days.
+                </p>
+              </div>
+
+              <div className="text-xs font-extrabold uppercase">
+                {expiringSoon.length} member
+                {expiringSoon.length === 1
+                  ? ""
+                  : "s"}
+              </div>
+            </div>
+
+            {expiringSoon.length === 0 ? (
+              <div className="border border-border bg-background p-8 text-center shadow-sm">
+                <CheckCircle2 className="mx-auto size-8 text-green-700" />
+
+                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                  No Expiring Memberships
+                </h3>
+
+                <p className="mt-2 text-sm text-muted-foreground">
+                  No memberships are expiring within the next
+                  7 days.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                {expiringSoon.map((member) => {
+                  const days =
+                    getDaysUntilExpiry(
+                      getDateOnly(
+                        member.membership?.end_date,
+                      ),
+                    );
+
+                  return (
+                    <div
+                      key={member.id}
+                      className="border border-border bg-background p-6 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <h3 className="font-display text-2xl font-bold uppercase">
+                            {member.full_name ||
+                              "Member"}
+                          </h3>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {member.membership?.plan_name ||
+                              "Membership"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
+                            days === 0
+                              ? "bg-destructive/10 text-destructive"
+                              : days !== null &&
+                                  days <= 3
+                                ? "bg-primary/10 text-primary"
+                                : "bg-muted text-foreground"
+                          }`}
+                        >
+                          {days === 0
+                            ? "Expires today"
+                            : days === 1
+                              ? "1 day left"
+                              : `${days} days left`}
+                        </span>
+                      </div>
+
+                      <div className="mt-5 grid gap-3 text-sm">
+                        <div className="flex items-center gap-3">
+                          <Clock3 className="size-4 text-primary" />
+
+                          <span>
+                            Expires{" "}
+                            <strong>
+                              {getDateOnly(
+                                member.membership
+                                  ?.end_date,
+                              )}
+                            </strong>
+                          </span>
+                        </div>
+
+                        {member.phone && (
+                          <a
+                            href={`tel:${member.phone}`}
+                            className="flex items-center gap-3 hover:text-primary"
+                          >
+                            <Phone className="size-4 text-primary" />
+                            <span>{member.phone}</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           {/* TODAY'S BIRTHDAYS */}
-          <section className="mt-8">
+          <section className="mt-10">
             <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
@@ -552,7 +1031,9 @@ function ReceptionDashboardPage() {
               <div className="flex items-center gap-2 text-xs font-extrabold uppercase">
                 <Cake className="size-4 text-primary" />
                 {birthdaysToday.length} member
-                {birthdaysToday.length === 1 ? "" : "s"}
+                {birthdaysToday.length === 1
+                  ? ""
+                  : "s"}
               </div>
             </div>
 
@@ -578,9 +1059,10 @@ function ReceptionDashboardPage() {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {birthdaysToday.map((member) => {
-                  const active = isMembershipActive(
-                    member.membership,
-                  );
+                  const active =
+                    isMembershipActive(
+                      member.membership,
+                    );
 
                   return (
                     <div
@@ -617,6 +1099,7 @@ function ReceptionDashboardPage() {
                               ) : (
                                 <XCircle className="size-3" />
                               )}
+
                               {active
                                 ? "Active"
                                 : "Expired"}
@@ -626,6 +1109,7 @@ function ReceptionDashboardPage() {
                           <div className="mt-5 grid gap-3 text-sm">
                             <div className="flex items-center gap-3">
                               <Cake className="size-4 shrink-0 text-primary" />
+
                               <span>
                                 {formatBirthday(
                                   member.birth_day,
@@ -640,13 +1124,17 @@ function ReceptionDashboardPage() {
                                 className="flex items-center gap-3 hover:text-primary"
                               >
                                 <Phone className="size-4 shrink-0 text-primary" />
-                                <span>{member.phone}</span>
+                                <span>
+                                  {member.phone}
+                                </span>
                               </a>
                             )}
 
-                            {member.membership?.plan_name && (
+                            {member.membership
+                              ?.plan_name && (
                               <div className="flex items-center gap-3">
                                 <UserRound className="size-4 shrink-0 text-primary" />
+
                                 <span>
                                   {
                                     member.membership
@@ -665,7 +1153,7 @@ function ReceptionDashboardPage() {
             )}
           </section>
 
-          {/* THIS MONTH */}
+          {/* BIRTHDAYS THIS MONTH */}
           <section className="mt-10">
             <div className="mb-5">
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
@@ -713,9 +1201,10 @@ function ReceptionDashboardPage() {
 
                 <div className="divide-y divide-border">
                   {birthdaysThisMonth.map((member) => {
-                    const active = isMembershipActive(
-                      member.membership,
-                    );
+                    const active =
+                      isMembershipActive(
+                        member.membership,
+                      );
 
                     const isToday =
                       member.birth_day === today.day;
@@ -773,7 +1262,8 @@ function ReceptionDashboardPage() {
                               : "Expired"}
                           </span>
 
-                          {member.membership?.plan_name && (
+                          {member.membership
+                            ?.plan_name && (
                             <p className="mt-2 text-xs text-muted-foreground">
                               {
                                 member.membership
@@ -836,7 +1326,7 @@ function ReceptionDashboardPage() {
 
             <button
               type="button"
-              onClick={loadMembers}
+              onClick={refreshDashboard}
               className="text-left"
             >
               <div className="h-full border border-border bg-background p-6 shadow-sm transition-colors hover:border-primary">
@@ -851,7 +1341,8 @@ function ReceptionDashboardPage() {
                     </h3>
 
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Refresh member birthday information.
+                      Refresh attendance, birthdays and
+                      membership alerts.
                     </p>
                   </div>
                 </div>
@@ -861,6 +1352,7 @@ function ReceptionDashboardPage() {
 
           <div className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground">
             <UserRound className="size-4" />
+
             <span>
               Super Plus Fitness &amp; Spa — Reception
             </span>
