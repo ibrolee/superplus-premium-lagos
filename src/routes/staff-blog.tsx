@@ -137,9 +137,9 @@ function StaffBlogPage() {
     } = await supabase.auth.getSession();
 
     if (!session?.user?.id) {
-      window.location.href = "/login";
-      return;
-    }
+  window.location.href = "/staff";
+  return;
+}
 
     const { data: staff, error: staffError } =
       await supabase
