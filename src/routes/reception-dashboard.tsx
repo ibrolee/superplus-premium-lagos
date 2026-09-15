@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
+  Activity,
+  BarChart3,
   Cake,
   CheckCircle2,
   ChevronDown,
@@ -13,6 +15,7 @@ import {
   QrCode,
   RefreshCw,
   Search,
+  TrendingUp,
   UserRound,
   Users,
   XCircle,
@@ -104,6 +107,59 @@ function getLocalDayRange() {
   };
 }
 
+function getLocalMonthRange() {
+  const now = new Date();
+
+  const start = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  const end = new Date(
+    now.getFullYear(),
+    now.getMonth() + 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
+function getLocalWeekRange() {
+  const now = new Date();
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  const day = start.getDay();
+
+  const daysSinceMonday =
+    day === 0 ? 6 : day - 1;
+
+  start.setDate(
+    start.getDate() - daysSinceMonday,
+  );
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
 function addDaysToDateString(
   dateString: string,
   days: number,
@@ -147,14 +203,22 @@ function isMembershipActive(
 ) {
   if (!membership) return false;
 
-  const startDate = getDateOnly(membership.start_date);
-  const endDate = getDateOnly(membership.end_date);
+  const startDate = getDateOnly(
+    membership.start_date,
+  );
+
+  const endDate = getDateOnly(
+    membership.end_date,
+  );
 
   if (!startDate || !endDate) return false;
 
   const today = getLocalDateString();
 
-  return startDate <= today && today <= endDate;
+  return (
+    startDate <= today &&
+    today <= endDate
+  );
 }
 
 function getDaysUntilExpiry(
@@ -164,14 +228,20 @@ function getDaysUntilExpiry(
 
   const today = getLocalDateString();
 
-  const start = new Date(`${today}T00:00:00`);
-  const end = new Date(`${endDate}T00:00:00`);
+  const start = new Date(
+    `${today}T00:00:00`,
+  );
+
+  const end = new Date(
+    `${endDate}T00:00:00`,
+  );
 
   const difference =
     end.getTime() - start.getTime();
 
   return Math.round(
-    difference / (1000 * 60 * 60 * 24),
+    difference /
+      (1000 * 60 * 60 * 24),
   );
 }
 
@@ -180,6 +250,14 @@ function formatTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function formatDuration(
@@ -195,12 +273,18 @@ function formatDuration(
   const minutes = Math.max(
     0,
     Math.round(
-      (end.getTime() - start.getTime()) / 60000,
+      (end.getTime() -
+        start.getTime()) /
+        60000,
     ),
   );
 
-  const hours = Math.floor(minutes / 60);
-  const remainingMinutes = minutes % 60;
+  const hours = Math.floor(
+    minutes / 60,
+  );
+
+  const remainingMinutes =
+    minutes % 60;
 
   if (hours > 0) {
     return `${hours}h ${remainingMinutes}m`;
@@ -209,26 +293,50 @@ function formatDuration(
   return `${remainingMinutes}m`;
 }
 
+function getHourLabel(hour: number) {
+  const date = new Date();
+
+  date.setHours(hour, 0, 0, 0);
+
+  return new Intl.DateTimeFormat(
+    "en-NG",
+    {
+      hour: "numeric",
+      minute: "2-digit",
+    },
+  ).format(date);
+}
+
 /* WhatsApp birthday message */
 function createWhatsAppBirthdayUrl(
   member: Member,
 ) {
   if (!member.phone) return null;
 
-  const phone = member.phone.replace(/\D/g, "");
+  const phone =
+    member.phone.replace(
+      /\D/g,
+      "",
+    );
 
   if (!phone) return null;
 
   let whatsappNumber = phone;
 
   if (phone.startsWith("0")) {
-    whatsappNumber = `234${phone.slice(1)}`;
-  } else if (phone.startsWith("234")) {
+    whatsappNumber = `234${phone.slice(
+      1,
+    )}`;
+  } else if (
+    phone.startsWith("234")
+  ) {
     whatsappNumber = phone;
   }
 
   const firstName =
-    member.full_name?.trim().split(/\s+/)[0] ||
+    member.full_name
+      ?.trim()
+      .split(/\s+/)[0] ||
     "Member";
 
   const message =
@@ -253,36 +361,52 @@ function createWhatsAppRenewalUrl(
 ) {
   if (!member.phone) return null;
 
-  const phone = member.phone.replace(/\D/g, "");
+  const phone =
+    member.phone.replace(
+      /\D/g,
+      "",
+    );
 
   if (!phone) return null;
 
   let whatsappNumber = phone;
 
   if (phone.startsWith("0")) {
-    whatsappNumber = `234${phone.slice(1)}`;
-  } else if (phone.startsWith("234")) {
+    whatsappNumber = `234${phone.slice(
+      1,
+    )}`;
+  } else if (
+    phone.startsWith("234")
+  ) {
     whatsappNumber = phone;
   }
 
   const firstName =
-    member.full_name?.trim().split(/\s+/)[0] ||
+    member.full_name
+      ?.trim()
+      .split(/\s+/)[0] ||
     "Member";
 
   const expiryDate =
     getDateOnly(
-      member.membership?.end_date,
+      member.membership
+        ?.end_date,
     );
 
   if (!expiryDate) return null;
 
   const formattedExpiryDate =
-    new Intl.DateTimeFormat("en-NG", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(
-      new Date(`${expiryDate}T00:00:00`),
+    new Intl.DateTimeFormat(
+      "en-NG",
+      {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      },
+    ).format(
+      new Date(
+        `${expiryDate}T00:00:00`,
+      ),
     );
 
   const message =
@@ -359,17 +483,28 @@ function ReceptionDashboardPage() {
   const [staffName, setStaffName] =
     useState("");
 
-  const [members, setMembers] = useState<
-    MemberWithMembership[]
-  >([]);
+  const [members, setMembers] =
+    useState<MemberWithMembership[]>(
+      [],
+    );
 
   const [todayAttendance, setTodayAttendance] =
-    useState<AttendanceWithMember[]>([]);
+    useState<AttendanceWithMember[]>(
+      [],
+    );
+
+  const [monthlyAttendance, setMonthlyAttendance] =
+    useState<AttendanceWithMember[]>(
+      [],
+    );
 
   const [loadingMembers, setLoadingMembers] =
     useState(false);
 
   const [loadingAttendance, setLoadingAttendance] =
+    useState(false);
+
+  const [loadingAnalytics, setLoadingAnalytics] =
     useState(false);
 
   const [loadError, setLoadError] =
@@ -420,7 +555,9 @@ function ReceptionDashboardPage() {
         error: staffError,
       } = await supabase
         .from("staff_users")
-        .select("full_name, role, active")
+        .select(
+          "full_name, role, active",
+        )
         .eq(
           "auth_user_id",
           session.user.id,
@@ -437,7 +574,8 @@ function ReceptionDashboardPage() {
       }
 
       setStaffName(
-        staff.full_name || "Reception",
+        staff.full_name ||
+          "Reception",
       );
 
       setCheckingAccess(false);
@@ -452,6 +590,7 @@ function ReceptionDashboardPage() {
 
   async function loadAttendance() {
     setLoadingAttendance(true);
+    setLoadingAnalytics(true);
 
     try {
       const {
@@ -468,7 +607,9 @@ function ReceptionDashboardPage() {
         error: staffError,
       } = await supabase
         .from("staff_users")
-        .select("full_name, role, active")
+        .select(
+          "full_name, role, active",
+        )
         .eq(
           "auth_user_id",
           session.user.id,
@@ -476,73 +617,141 @@ function ReceptionDashboardPage() {
         .eq("active", true)
         .maybeSingle();
 
-      if (staffError || !staff) {
+      if (
+        staffError ||
+        !staff
+      ) {
         await supabase.auth.signOut();
         setStaffName("");
         return;
       }
 
-      const { start, end } =
-        getLocalDayRange();
+      const {
+        start: todayStart,
+        end: todayEnd,
+      } = getLocalDayRange();
 
       const {
-        data: attendanceData,
-        error: attendanceError,
-      } = await supabase
-        .from("attendance")
-        .select(
-          `
-            id,
-            member_id,
-            checked_in_at,
-            checked_out_at,
-            members (
-              full_name,
-              phone
-            )
-          `,
-        )
-        .gte(
-          "checked_in_at",
-          start,
-        )
-        .lt(
-          "checked_in_at",
-          end,
-        )
-        .order("checked_in_at", {
-          ascending: false,
-        });
+        start: monthStart,
+        end: monthEnd,
+      } = getLocalMonthRange();
 
-      if (attendanceError) {
+      const [
+        todayResult,
+        monthResult,
+      ] = await Promise.all([
+        supabase
+          .from("attendance")
+          .select(
+            `
+              id,
+              member_id,
+              checked_in_at,
+              checked_out_at,
+              members (
+                full_name,
+                phone
+              )
+            `,
+          )
+          .gte(
+            "checked_in_at",
+            todayStart,
+          )
+          .lt(
+            "checked_in_at",
+            todayEnd,
+          )
+          .order(
+            "checked_in_at",
+            {
+              ascending: false,
+            },
+          ),
+
+        supabase
+          .from("attendance")
+          .select(
+            `
+              id,
+              member_id,
+              checked_in_at,
+              checked_out_at,
+              members (
+                full_name,
+                phone
+              )
+            `,
+          )
+          .gte(
+            "checked_in_at",
+            monthStart,
+          )
+          .lt(
+            "checked_in_at",
+            monthEnd,
+          )
+          .order(
+            "checked_in_at",
+            {
+              ascending: false,
+            },
+          ),
+      ]);
+
+      if (todayResult.error) {
         throw new Error(
-          attendanceError.message,
+          todayResult.error.message,
         );
       }
 
-      const records: AttendanceWithMember[] =
-        (attendanceData || []).map(
-          (record: any) => ({
+      if (monthResult.error) {
+        throw new Error(
+          monthResult.error.message,
+        );
+      }
+
+      const mapAttendance = (
+        data: any[],
+      ): AttendanceWithMember[] =>
+        (data || []).map(
+          (record) => ({
             id: record.id,
-            member_id: record.member_id,
+            member_id:
+              record.member_id,
             checked_in_at:
               record.checked_in_at,
             checked_out_at:
               record.checked_out_at,
-            member: record.members
-              ? {
-                  full_name:
-                    record.members
-                      .full_name || null,
-                  phone:
-                    record.members.phone ||
-                    null,
-                }
-              : null,
+            member:
+              record.members
+                ? {
+                    full_name:
+                      record
+                        .members
+                        .full_name ||
+                      null,
+                    phone:
+                      record
+                        .members
+                        .phone ||
+                      null,
+                  }
+                : null,
           }),
         );
 
-      setTodayAttendance(records);
+      setTodayAttendance(
+        mapAttendance(
+          todayResult.data || [],
+        ),
+      );
+
+      setMonthlyAttendance(
+        mapAttendance(
+          monthResult.data || [],
+        ),
+      );
     } catch (error) {
       console.error(
         "Reception attendance error:",
@@ -552,10 +761,11 @@ function ReceptionDashboardPage() {
       setLoadError(
         error instanceof Error
           ? error.message
-          : "Unable to load today's attendance.",
+          : "Unable to load attendance information.",
       );
     } finally {
       setLoadingAttendance(false);
+      setLoadingAnalytics(false);
     }
   }
 
@@ -578,7 +788,9 @@ function ReceptionDashboardPage() {
         error: staffError,
       } = await supabase
         .from("staff_users")
-        .select("full_name, role, active")
+        .select(
+          "full_name, role, active",
+        )
         .eq(
           "auth_user_id",
           session.user.id,
@@ -586,14 +798,18 @@ function ReceptionDashboardPage() {
         .eq("active", true)
         .maybeSingle();
 
-      if (staffError || !staff) {
+      if (
+        staffError ||
+        !staff
+      ) {
         await supabase.auth.signOut();
         setStaffName("");
         return;
       }
 
       setStaffName(
-        staff.full_name || "Reception",
+        staff.full_name ||
+          "Reception",
       );
 
       const {
@@ -615,16 +831,21 @@ function ReceptionDashboardPage() {
       }
 
       const memberRows =
-        (memberData || []) as Member[];
+        (memberData ||
+          []) as Member[];
 
-      if (memberRows.length === 0) {
+      if (
+        memberRows.length ===
+        0
+      ) {
         setMembers([]);
         return;
       }
 
       const memberIds =
         memberRows.map(
-          (member) => member.id,
+          (member) =>
+            member.id,
         );
 
       const {
@@ -654,7 +875,10 @@ function ReceptionDashboardPage() {
           []) as Membership[];
 
       const latestMembershipByMember =
-        new Map<string, Membership>();
+        new Map<
+          string,
+          Membership
+        >();
 
       for (const membership of membershipRows) {
         if (
@@ -670,15 +894,19 @@ function ReceptionDashboardPage() {
       }
 
       const combined: MemberWithMembership[] =
-        memberRows.map((member) => ({
-          ...member,
-          membership:
-            latestMembershipByMember.get(
-              member.id,
-            ) || null,
-        }));
+        memberRows.map(
+          (member) => ({
+            ...member,
+            membership:
+              latestMembershipByMember.get(
+                member.id,
+              ) || null,
+          }),
+        );
 
-      setMembers(combined);
+      setMembers(
+        combined,
+      );
     } catch (error) {
       console.error(
         "Reception dashboard error:",
@@ -724,6 +952,7 @@ function ReceptionDashboardPage() {
     setStaffName("");
     setMembers([]);
     setTodayAttendance([]);
+    setMonthlyAttendance([]);
     setMemberSearch("");
     setLoggingOut(false);
   }
@@ -768,39 +997,172 @@ function ReceptionDashboardPage() {
       ),
     ).size;
 
-  const expiringSoon =
-    members
-      .filter((member) => {
-        const endDate =
-          getDateOnly(
-            member.membership
-              ?.end_date,
+  const {
+    start: weekStart,
+    end: weekEnd,
+  } = useMemo(
+    () => getLocalWeekRange(),
+    [],
+  );
+
+  const weekStartDate =
+    new Date(weekStart);
+
+  const weekEndDate =
+    new Date(weekEnd);
+
+  const thisWeekAttendance =
+    monthlyAttendance.filter(
+      (attendance) => {
+        const checkIn =
+          new Date(
+            attendance.checked_in_at,
           );
 
-        if (!endDate) return false;
-
         return (
-          endDate >=
-            todayDateString &&
-          endDate <=
-            sevenDaysFromToday
+          checkIn >=
+            weekStartDate &&
+          checkIn < weekEndDate
         );
-      })
-      .sort((a, b) => {
-        const dateA =
-          getDateOnly(
-            a.membership?.end_date,
-          ) || "";
+      },
+    );
 
-        const dateB =
-          getDateOnly(
-            b.membership?.end_date,
-          ) || "";
+  const todayVisits =
+    todayAttendance.length;
 
-        return dateA.localeCompare(
-          dateB,
+  const weekVisits =
+    thisWeekAttendance.length;
+
+  const monthVisits =
+    monthlyAttendance.length;
+
+  const monthUniqueMembers =
+    new Set(
+      monthlyAttendance.map(
+        (attendance) =>
+          attendance.member_id,
+      ),
+    ).size;
+
+  const averageVisitsPerMember =
+    monthUniqueMembers > 0
+      ? monthVisits /
+        monthUniqueMembers
+      : 0;
+
+  const busiestDayData =
+    useMemo(() => {
+      const counts =
+        new Map<
+          string,
+          number
+        >();
+
+      for (const attendance of monthlyAttendance) {
+        const date =
+          getDateOnly(
+            attendance.checked_in_at,
+          );
+
+        if (!date) continue;
+
+        counts.set(
+          date,
+          (counts.get(date) ||
+            0) + 1,
         );
-      });
+      }
+
+      let busiestDate: string | null =
+        null;
+
+      let busiestCount = 0;
+
+      for (const [
+        date,
+        count,
+      ] of counts.entries()) {
+        if (
+          count >
+          busiestCount
+        ) {
+          busiestDate =
+            date;
+
+          busiestCount =
+            count;
+        }
+      }
+
+      return {
+        date: busiestDate,
+        count: busiestCount,
+      };
+    }, [
+      monthlyAttendance,
+    ]);
+
+  const busiestHourData =
+    useMemo(() => {
+      const counts =
+        new Map<
+          number,
+          number
+        >();
+
+      for (const attendance of monthlyAttendance) {
+        const date =
+          new Date(
+            attendance.checked_in_at,
+          );
+
+        if (
+          Number.isNaN(
+            date.getTime(),
+          )
+        ) {
+          continue;
+        }
+
+        const hour =
+          date.getHours();
+
+        counts.set(
+          hour,
+          (counts.get(hour) ||
+            0) + 1,
+        );
+      }
+
+      let busiestHour:
+        | number
+        | null = null;
+
+      let busiestCount = 0;
+
+      for (const [
+        hour,
+        count,
+      ] of counts.entries()) {
+        if (
+          count >
+          busiestCount
+        ) {
+          busiestHour =
+            hour;
+
+          busiestCount =
+            count;
+        }
+      }
+
+      return {
+        hour: busiestHour,
+        count: busiestCount,
+      };
+    }, [
+      monthlyAttendance,
+    ]);
 
   const searchTerm =
     memberSearch
@@ -959,7 +1321,9 @@ function ReceptionDashboardPage() {
                 onClick={
                   handleLogout
                 }
-                disabled={loggingOut}
+                disabled={
+                  loggingOut
+                }
                 className="w-full sm:w-auto"
               >
                 {loggingOut ? (
@@ -1035,7 +1399,6 @@ function ReceptionDashboardPage() {
                 />
               </div>
 
-              {/* NEW SEARCH RESULT DESIGN */}
               {memberSearch.trim() && (
                 <div className="mt-4">
                   {searchedMembers.length ===
@@ -1139,7 +1502,7 @@ function ReceptionDashboardPage() {
 
               <p className="mt-5 font-display text-4xl font-bold">
                 {
-                  todayAttendance.length
+                  todayVisits
                 }
               </p>
 
@@ -1205,8 +1568,398 @@ function ReceptionDashboardPage() {
             </div>
           </section>
 
+          {/* ATTENDANCE ANALYTICS */}
+          <section className="mt-10">
+            <div className="border border-border bg-background p-5 shadow-sm sm:p-6">
+
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-11 items-center justify-center bg-primary text-primary-foreground">
+                      <BarChart3 className="size-6" />
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                        Attendance Analytics
+                      </p>
+
+                      <h2 className="mt-1 font-display text-3xl font-bold uppercase sm:text-4xl">
+                        {currentMonthName}
+                      </h2>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
+                    Understand how busy the gym is and when members are most likely to visit.
+                  </p>
+                </div>
+
+                {loadingAnalytics && (
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Updating
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+                <div className="border border-border p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                      Today
+                    </p>
+
+                    <Activity className="size-5 text-primary" />
+                  </div>
+
+                  <p className="mt-4 font-display text-4xl font-black">
+                    {todayVisits}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    visits
+                  </p>
+                </div>
+
+                <div className="border border-border p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                      This Week
+                    </p>
+
+                    <TrendingUp className="size-5 text-primary" />
+                  </div>
+
+                  <p className="mt-4 font-display text-4xl font-black">
+                    {weekVisits}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    visits
+                  </p>
+                </div>
+
+                <div className="border border-border p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                      This Month
+                    </p>
+
+                    <BarChart3 className="size-5 text-primary" />
+                  </div>
+
+                  <p className="mt-4 font-display text-4xl font-black">
+                    {monthVisits}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    total visits
+                  </p>
+                </div>
+
+                <div className="border border-border p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                      Unique Members
+                    </p>
+
+                    <Users className="size-5 text-primary" />
+                  </div>
+
+                  <p className="mt-4 font-display text-4xl font-black">
+                    {monthUniqueMembers}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    visited this month
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+
+                <div className="border border-border bg-muted p-5">
+                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                    Average Visits / Member
+                  </p>
+
+                  <p className="mt-3 font-display text-3xl font-black">
+                    {averageVisitsPerMember.toFixed(
+                      1,
+                    )}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    visits per unique member
+                  </p>
+                </div>
+
+                <div className="border border-border bg-muted p-5">
+                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                    Busiest Day
+                  </p>
+
+                  <p className="mt-3 font-display text-2xl font-black uppercase">
+                    {busiestDayData.date
+                      ? formatDate(
+                          busiestDayData.date,
+                        )
+                      : "No data"}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {busiestDayData.count}{" "}
+                    visit
+                    {busiestDayData.count ===
+                    1
+                      ? ""
+                      : "s"}{" "}
+                    this month
+                  </p>
+                </div>
+
+                <div className="border border-border bg-muted p-5">
+                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                    Busiest Hour
+                  </p>
+
+                  <p className="mt-3 font-display text-2xl font-black uppercase">
+                    {busiestHourData.hour !==
+                    null
+                      ? `${getHourLabel(
+                          busiestHourData.hour,
+                        )}–${getHourLabel(
+                          (busiestHourData.hour +
+                            1) %
+                            24,
+                        )}`
+                      : "No data"}
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {busiestHourData.count}{" "}
+                    visit
+                    {busiestHourData.count ===
+                    1
+                      ? ""
+                      : "s"}{" "}
+                    starting during this hour
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* TODAY'S ATTENDANCE */}
+          <section className="mt-10">
+            <details
+              className="group"
+              open
+            >
+              <ExpandableSummary
+                eyebrow="Daily Attendance"
+                title="Today's Attendance"
+                description="Every member visit recorded today, including completed and ongoing visits."
+                count={
+                  todayAttendance.length
+                }
+                icon={
+                  <Activity className="size-6" />
+                }
+              />
+
+              <div className="mt-3">
+                {loadingAttendance ? (
+                  <div className="flex items-center justify-center border border-border bg-background py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Loading today's attendance...
+                    </div>
+                  </div>
+                ) : todayAttendance.length ===
+                  0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <Activity className="mx-auto size-8 text-muted-foreground" />
+
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      No Attendance Today
+                    </h3>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No member check-ins have been recorded today.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden border border-border bg-background shadow-sm">
+
+                    {/* DESKTOP TABLE HEADER */}
+                    <div className="hidden grid-cols-[1fr_130px_130px_120px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
+                      <div>
+                        Member
+                      </div>
+
+                      <div>
+                        Check-In
+                      </div>
+
+                      <div>
+                        Check-Out
+                      </div>
+
+                      <div>
+                        Duration
+                      </div>
+                    </div>
+
+                    <div className="divide-y divide-border">
+                      {todayAttendance.map(
+                        (
+                          attendance,
+                        ) => {
+                          const inside =
+                            !attendance.checked_out_at;
+
+                          return (
+                            <div
+                              key={
+                                attendance.id
+                              }
+                              className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px_120px] md:items-center"
+                            >
+                              {/* MEMBER */}
+                              <div className="min-w-0">
+                                <p className="font-bold uppercase">
+                                  {attendance
+                                    .member
+                                    ?.full_name ||
+                                    "Member"}
+                                </p>
+
+                                {attendance
+                                  .member
+                                  ?.phone && (
+                                  <a
+                                    href={`tel:${attendance.member.phone}`}
+                                    className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
+                                  >
+                                    <Phone className="size-3" />
+                                    {
+                                      attendance
+                                        .member
+                                        .phone
+                                    }
+                                  </a>
+                                )}
+                              </div>
+
+                              {/* CHECK IN */}
+                              <div>
+                                <p className="text-sm font-bold">
+                                  {formatTime(
+                                    attendance.checked_in_at,
+                                  )}
+                                </p>
+
+                                <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  Check-in
+                                </p>
+                              </div>
+
+                              {/* CHECK OUT */}
+                              <div>
+                                <p className="text-sm font-bold">
+                                  {inside
+                                    ? "Still inside"
+                                    : formatTime(
+                                        attendance.checked_out_at!,
+                                      )}
+                                </p>
+
+                                <p
+                                  className={`text-[10px] font-extrabold uppercase ${
+                                    inside
+                                      ? "text-primary"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {inside
+                                    ? "Currently inside"
+                                    : "Check-out"}
+                                </p>
+                              </div>
+
+                              {/* DURATION */}
+                              <div>
+                                <p className="text-sm font-bold">
+                                  {formatDuration(
+                                    attendance.checked_in_at,
+                                    attendance.checked_out_at,
+                                  )}
+                                </p>
+
+                                <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  Duration
+                                </p>
+                              </div>
+
+                              {/* MOBILE SUMMARY */}
+                              <div className="border-t border-border pt-4 md:hidden">
+                                <div className="grid grid-cols-3 gap-3">
+                                  <div>
+                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
+                                      Check-in
+                                    </p>
+
+                                    <p className="mt-1 text-xs font-bold">
+                                      {formatTime(
+                                        attendance.checked_in_at,
+                                      )}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
+                                      Check-out
+                                    </p>
+
+                                    <p className="mt-1 text-xs font-bold">
+                                      {inside
+                                        ? "Inside"
+                                        : formatTime(
+                                            attendance.checked_out_at!,
+                                          )}
+                                    </p>
+                                  </div>
+
+                                  <div>
+                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
+                                      Duration
+                                    </p>
+
+                                    <p className="mt-1 text-xs font-bold">
+                                      {formatDuration(
+                                        attendance.checked_in_at,
+                                        attendance.checked_out_at,
+                                      )}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </details>
+          </section>
+
           {/* CURRENTLY INSIDE */}
-          <section className="mt-8">
+          <section className="mt-10">
             <details className="group">
               <ExpandableSummary
                 eyebrow="Live Attendance"
@@ -1270,11 +2023,14 @@ function ReceptionDashboardPage() {
                           >
                             <div className="min-w-0">
                               <p className="font-bold uppercase">
-                                {attendance.member?.full_name ||
+                                {attendance
+                                  .member
+                                  ?.full_name ||
                                   "Member"}
                               </p>
 
-                              {attendance.member
+                              {attendance
+                                .member
                                 ?.phone && (
                                 <a
                                   href={`tel:${attendance.member.phone}`}
@@ -1350,8 +2106,7 @@ function ReceptionDashboardPage() {
                     </h3>
 
                     <p className="mt-2 text-sm text-muted-foreground">
-                      No memberships are expiring within the next
-                      7 days.
+                      No memberships are expiring within the next 7 days.
                     </p>
                   </div>
                 ) : (
@@ -1437,6 +2192,7 @@ function ReceptionDashboardPage() {
                                   className="flex items-center gap-3 hover:text-primary"
                                 >
                                   <Phone className="size-4 text-primary" />
+
                                   <span>
                                     {
                                       member.phone
@@ -1588,6 +2344,7 @@ function ReceptionDashboardPage() {
                                       className="flex items-center gap-3 hover:text-primary"
                                     >
                                       <Phone className="size-4 shrink-0 text-primary" />
+
                                       <span>
                                         {
                                           member.phone
@@ -1837,8 +2594,7 @@ function ReceptionDashboardPage() {
                     </h3>
 
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Scan member QR codes for check-in and
-                      check-out.
+                      Scan member QR codes for check-in and check-out.
                     </p>
                   </div>
                 </div>
@@ -1864,8 +2620,7 @@ function ReceptionDashboardPage() {
                     </h3>
 
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Refresh attendance, birthdays and
-                      membership alerts.
+                      Refresh attendance, birthdays and membership alerts.
                     </p>
                   </div>
                 </div>
