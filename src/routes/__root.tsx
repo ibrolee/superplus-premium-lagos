@@ -171,6 +171,11 @@ export const Route =
         },
 
         {
+          name: "google-site-verification",
+          content: "dvLoiUjionw-0ABS1gIa7Fd0cPzWNVOPn4SiPTT8dfw",
+        },
+
+        {
           property: "og:title",
           content:
             "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
