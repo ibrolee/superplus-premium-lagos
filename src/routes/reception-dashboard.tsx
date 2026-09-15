@@ -107,6 +107,29 @@ function getLocalDayRange() {
   };
 }
 
+function getLocalWeekRange() {
+  const now = new Date();
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  const day = start.getDay();
+
+  const daysSinceMonday = day === 0 ? 6 : day - 1;
+
+  start.setDate(
+    start.getDate() - daysSinceMonday,
+  );
+
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+
+  return {
+    start,
+    end,
+  };
+}
+
 function getLocalMonthRange() {
   const now = new Date();
 
@@ -129,30 +152,6 @@ function getLocalMonthRange() {
     0,
     0,
   );
-
-  return {
-    start: start.toISOString(),
-    end: end.toISOString(),
-  };
-}
-
-function getLocalWeekRange() {
-  const now = new Date();
-
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-
-  const day = start.getDay();
-
-  const daysSinceMonday =
-    day === 0 ? 6 : day - 1;
-
-  start.setDate(
-    start.getDate() - daysSinceMonday,
-  );
-
-  const end = new Date(start);
-  end.setDate(end.getDate() + 7);
 
   return {
     start: start.toISOString(),
@@ -236,11 +235,8 @@ function getDaysUntilExpiry(
     `${endDate}T00:00:00`,
   );
 
-  const difference =
-    end.getTime() - start.getTime();
-
   return Math.round(
-    difference /
+    (end.getTime() - start.getTime()) /
       (1000 * 60 * 60 * 24),
   );
 }
@@ -257,34 +253,31 @@ function formatDate(value: string) {
     day: "numeric",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${value}T00:00:00`));
+  }).format(
+    new Date(`${value}T00:00:00`),
+  );
 }
 
 function formatDuration(
   checkedInAt: string,
   checkedOutAt: string | null,
 ) {
+  const start = new Date(checkedInAt);
+
   const end = checkedOutAt
     ? new Date(checkedOutAt)
     : new Date();
 
-  const start = new Date(checkedInAt);
-
   const minutes = Math.max(
     0,
     Math.round(
-      (end.getTime() -
-        start.getTime()) /
+      (end.getTime() - start.getTime()) /
         60000,
     ),
   );
 
-  const hours = Math.floor(
-    minutes / 60,
-  );
-
-  const remainingMinutes =
-    minutes % 60;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
   if (hours > 0) {
     return `${hours}h ${remainingMinutes}m`;
@@ -293,18 +286,22 @@ function formatDuration(
   return `${remainingMinutes}m`;
 }
 
-function getHourLabel(hour: number) {
-  const date = new Date();
+function formatHourRange(hour: number) {
+  const start = new Date();
+  start.setHours(hour, 0, 0, 0);
 
-  date.setHours(hour, 0, 0, 0);
+  const end = new Date(start);
+  end.setHours(hour + 1, 0, 0, 0);
 
-  return new Intl.DateTimeFormat(
+  const formatter = new Intl.DateTimeFormat(
     "en-NG",
     {
       hour: "numeric",
       minute: "2-digit",
     },
-  ).format(date);
+  );
+
+  return `${formatter.format(start)}–${formatter.format(end)}`;
 }
 
 /* WhatsApp birthday message */
@@ -313,23 +310,18 @@ function createWhatsAppBirthdayUrl(
 ) {
   if (!member.phone) return null;
 
-  const phone =
-    member.phone.replace(
-      /\D/g,
-      "",
-    );
+  const phone = member.phone.replace(
+    /\D/g,
+    "",
+  );
 
   if (!phone) return null;
 
   let whatsappNumber = phone;
 
   if (phone.startsWith("0")) {
-    whatsappNumber = `234${phone.slice(
-      1,
-    )}`;
-  } else if (
-    phone.startsWith("234")
-  ) {
+    whatsappNumber = `234${phone.slice(1)}`;
+  } else if (phone.startsWith("234")) {
     whatsappNumber = phone;
   }
 
@@ -361,23 +353,18 @@ function createWhatsAppRenewalUrl(
 ) {
   if (!member.phone) return null;
 
-  const phone =
-    member.phone.replace(
-      /\D/g,
-      "",
-    );
+  const phone = member.phone.replace(
+    /\D/g,
+    "",
+  );
 
   if (!phone) return null;
 
   let whatsappNumber = phone;
 
   if (phone.startsWith("0")) {
-    whatsappNumber = `234${phone.slice(
-      1,
-    )}`;
-  } else if (
-    phone.startsWith("234")
-  ) {
+    whatsappNumber = `234${phone.slice(1)}`;
+  } else if (phone.startsWith("234")) {
     whatsappNumber = phone;
   }
 
@@ -387,23 +374,18 @@ function createWhatsAppRenewalUrl(
       .split(/\s+/)[0] ||
     "Member";
 
-  const expiryDate =
-    getDateOnly(
-      member.membership
-        ?.end_date,
-    );
+  const expiryDate = getDateOnly(
+    member.membership?.end_date,
+  );
 
   if (!expiryDate) return null;
 
   const formattedExpiryDate =
-    new Intl.DateTimeFormat(
-      "en-NG",
-      {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      },
-    ).format(
+    new Intl.DateTimeFormat("en-NG", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(
       new Date(
         `${expiryDate}T00:00:00`,
       ),
@@ -533,6 +515,11 @@ function ReceptionDashboardPage() {
       7,
     );
 
+  const weekRange = useMemo(
+    () => getLocalWeekRange(),
+    [],
+  );
+
   useEffect(() => {
     let active = true;
 
@@ -587,187 +574,6 @@ function ReceptionDashboardPage() {
       active = false;
     };
   }, []);
-
-  async function loadAttendance() {
-    setLoadingAttendance(true);
-    setLoadingAnalytics(true);
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        setStaffName("");
-        return;
-      }
-
-      const {
-        data: staff,
-        error: staffError,
-      } = await supabase
-        .from("staff_users")
-        .select(
-          "full_name, role, active",
-        )
-        .eq(
-          "auth_user_id",
-          session.user.id,
-        )
-        .eq("active", true)
-        .maybeSingle();
-
-      if (
-        staffError ||
-        !staff
-      ) {
-        await supabase.auth.signOut();
-        setStaffName("");
-        return;
-      }
-
-      const {
-        start: todayStart,
-        end: todayEnd,
-      } = getLocalDayRange();
-
-      const {
-        start: monthStart,
-        end: monthEnd,
-      } = getLocalMonthRange();
-
-      const [
-        todayResult,
-        monthResult,
-      ] = await Promise.all([
-        supabase
-          .from("attendance")
-          .select(
-            `
-              id,
-              member_id,
-              checked_in_at,
-              checked_out_at,
-              members (
-                full_name,
-                phone
-              )
-            `,
-          )
-          .gte(
-            "checked_in_at",
-            todayStart,
-          )
-          .lt(
-            "checked_in_at",
-            todayEnd,
-          )
-          .order(
-            "checked_in_at",
-            {
-              ascending: false,
-            },
-          ),
-
-        supabase
-          .from("attendance")
-          .select(
-            `
-              id,
-              member_id,
-              checked_in_at,
-              checked_out_at,
-              members (
-                full_name,
-                phone
-              )
-            `,
-          )
-          .gte(
-            "checked_in_at",
-            monthStart,
-          )
-          .lt(
-            "checked_in_at",
-            monthEnd,
-          )
-          .order(
-            "checked_in_at",
-            {
-              ascending: false,
-            },
-          ),
-      ]);
-
-      if (todayResult.error) {
-        throw new Error(
-          todayResult.error.message,
-        );
-      }
-
-      if (monthResult.error) {
-        throw new Error(
-          monthResult.error.message,
-        );
-      }
-
-      const mapAttendance = (
-        data: any[],
-      ): AttendanceWithMember[] =>
-        (data || []).map(
-          (record) => ({
-            id: record.id,
-            member_id:
-              record.member_id,
-            checked_in_at:
-              record.checked_in_at,
-            checked_out_at:
-              record.checked_out_at,
-            member:
-              record.members
-                ? {
-                    full_name:
-                      record
-                        .members
-                        .full_name ||
-                      null,
-                    phone:
-                      record
-                        .members
-                        .phone ||
-                      null,
-                  }
-                : null,
-          }),
-        );
-
-      setTodayAttendance(
-        mapAttendance(
-          todayResult.data || [],
-        ),
-      );
-
-      setMonthlyAttendance(
-        mapAttendance(
-          monthResult.data || [],
-        ),
-      );
-    } catch (error) {
-      console.error(
-        "Reception attendance error:",
-        error,
-      );
-
-      setLoadError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load attendance information.",
-      );
-    } finally {
-      setLoadingAttendance(false);
-      setLoadingAnalytics(false);
-    }
-  }
 
   async function loadMembers() {
     setLoadingMembers(true);
@@ -893,7 +699,7 @@ function ReceptionDashboardPage() {
         }
       }
 
-      const combined: MemberWithMembership[] =
+      setMembers(
         memberRows.map(
           (member) => ({
             ...member,
@@ -902,24 +708,203 @@ function ReceptionDashboardPage() {
                 member.id,
               ) || null,
           }),
-        );
-
-      setMembers(
-        combined,
+        ),
       );
     } catch (error) {
       console.error(
-        "Reception dashboard error:",
+        "Reception dashboard member error:",
         error,
       );
 
       setLoadError(
         error instanceof Error
           ? error.message
-          : "Unable to load dashboard information.",
+          : "Unable to load members.",
       );
     } finally {
       setLoadingMembers(false);
+    }
+  }
+
+  async function loadAttendance() {
+    setLoadingAttendance(true);
+    setLoadingAnalytics(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        setStaffName("");
+        return;
+      }
+
+      const {
+        data: staff,
+        error: staffError,
+      } = await supabase
+        .from("staff_users")
+        .select(
+          "full_name, role, active",
+        )
+        .eq(
+          "auth_user_id",
+          session.user.id,
+        )
+        .eq("active", true)
+        .maybeSingle();
+
+      if (
+        staffError ||
+        !staff
+      ) {
+        await supabase.auth.signOut();
+        setStaffName("");
+        return;
+      }
+
+      const {
+        start: todayStart,
+        end: todayEnd,
+      } = getLocalDayRange();
+
+      const {
+        start: monthStart,
+        end: monthEnd,
+      } = getLocalMonthRange();
+
+      const [
+        todayResult,
+        monthResult,
+      ] = await Promise.all([
+        supabase
+          .from("attendance")
+          .select(
+            `
+              id,
+              member_id,
+              checked_in_at,
+              checked_out_at,
+              members (
+                full_name,
+                phone
+              )
+            `,
+          )
+          .gte(
+            "checked_in_at",
+            todayStart,
+          )
+          .lt(
+            "checked_in_at",
+            todayEnd,
+          )
+          .order(
+            "checked_in_at",
+            {
+              ascending: false,
+            },
+          ),
+
+        supabase
+          .from("attendance")
+          .select(
+            `
+              id,
+              member_id,
+              checked_in_at,
+              checked_out_at,
+              members (
+                full_name,
+                phone
+              )
+            `,
+          )
+          .gte(
+            "checked_in_at",
+            monthStart,
+          )
+          .lt(
+            "checked_in_at",
+            monthEnd,
+          )
+          .order(
+            "checked_in_at",
+            {
+              ascending: false,
+            },
+          ),
+      ]);
+
+      if (todayResult.error) {
+        throw new Error(
+          todayResult.error.message,
+        );
+      }
+
+      if (monthResult.error) {
+        throw new Error(
+          monthResult.error.message,
+        );
+      }
+
+      function mapAttendance(
+        rows: any[],
+      ): AttendanceWithMember[] {
+        return (rows || []).map(
+          (record) => ({
+            id: record.id,
+            member_id:
+              record.member_id,
+            checked_in_at:
+              record.checked_in_at,
+            checked_out_at:
+              record.checked_out_at,
+            member:
+              record.members
+                ? {
+                    full_name:
+                      record
+                        .members
+                        .full_name ||
+                      null,
+                    phone:
+                      record
+                        .members
+                        .phone ||
+                      null,
+                  }
+                : null,
+          }),
+        );
+      }
+
+      setTodayAttendance(
+        mapAttendance(
+          todayResult.data || [],
+        ),
+      );
+
+      setMonthlyAttendance(
+        mapAttendance(
+          monthResult.data || [],
+        ),
+      );
+    } catch (error) {
+      console.error(
+        "Reception attendance error:",
+        error,
+      );
+
+      setLoadError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load attendance.",
+      );
+    } finally {
+      setLoadingAttendance(false);
+      setLoadingAnalytics(false);
     }
   }
 
@@ -974,13 +959,10 @@ function ReceptionDashboardPage() {
           today.month,
       )
       .sort((a, b) => {
-        const dayA =
-          a.birth_day || 0;
-
-        const dayB =
-          b.birth_day || 0;
-
-        return dayA - dayB;
+        return (
+          (a.birth_day || 0) -
+          (b.birth_day || 0)
+        );
       });
 
   const currentlyInside =
@@ -997,32 +979,59 @@ function ReceptionDashboardPage() {
       ),
     ).size;
 
-  const {
-    start: weekStart,
-    end: weekEnd,
-  } = useMemo(
-    () => getLocalWeekRange(),
-    [],
-  );
+  /*
+   * Memberships expiring from today
+   * through the next 7 days.
+   */
+  const expiringSoon =
+    members
+      .filter((member) => {
+        const endDate =
+          getDateOnly(
+            member.membership?.end_date,
+          );
 
-  const weekStartDate =
-    new Date(weekStart);
+        if (!endDate) return false;
 
-  const weekEndDate =
-    new Date(weekEnd);
+        return (
+          endDate >=
+            todayDateString &&
+          endDate <=
+            sevenDaysFromToday
+        );
+      })
+      .sort((a, b) => {
+        const dateA =
+          getDateOnly(
+            a.membership?.end_date,
+          ) || "";
+
+        const dateB =
+          getDateOnly(
+            b.membership?.end_date,
+          ) || "";
+
+        return dateA.localeCompare(
+          dateB,
+        );
+      });
+
+  /*
+   * ATTENDANCE ANALYTICS
+   */
 
   const thisWeekAttendance =
     monthlyAttendance.filter(
       (attendance) => {
-        const checkIn =
-          new Date(
-            attendance.checked_in_at,
-          );
+        const checkIn = new Date(
+          attendance.checked_in_at,
+        );
 
         return (
           checkIn >=
-            weekStartDate &&
-          checkIn < weekEndDate
+            weekRange.start &&
+          checkIn <
+            weekRange.end
         );
       },
     );
@@ -1073,8 +1082,9 @@ function ReceptionDashboardPage() {
         );
       }
 
-      let busiestDate: string | null =
-        null;
+      let busiestDate:
+        | string
+        | null = null;
 
       let busiestCount = 0;
 
@@ -1234,8 +1244,7 @@ function ReceptionDashboardPage() {
             </h1>
 
             <p className="mt-4 text-center text-sm leading-6 text-muted-foreground">
-              Staff login is required to access the reception
-              dashboard.
+              Staff login is required to access the reception dashboard.
             </p>
 
             <Link
@@ -1252,8 +1261,7 @@ function ReceptionDashboardPage() {
             </Link>
 
             <p className="mt-6 text-center text-xs leading-5 text-muted-foreground">
-              This area is restricted to authorized Super Plus
-              Fitness staff.
+              This area is restricted to authorized Super Plus Fitness staff.
             </p>
           </div>
         </div>
@@ -1278,10 +1286,8 @@ function ReceptionDashboardPage() {
               </h1>
 
               <p className="mt-3 text-sm text-muted-foreground">
-                Welcome,{" "}
-                <strong>
-                  {staffName}
-                </strong>
+                Welcome{" "}
+                <strong>{staffName}</strong>
               </p>
             </div>
 
@@ -1298,9 +1304,7 @@ function ReceptionDashboardPage() {
 
               <Button
                 variant="outline"
-                onClick={
-                  refreshDashboard
-                }
+                onClick={refreshDashboard}
                 disabled={
                   loadingMembers ||
                   loadingAttendance
@@ -1318,12 +1322,8 @@ function ReceptionDashboardPage() {
 
               <Button
                 variant="outline"
-                onClick={
-                  handleLogout
-                }
-                disabled={
-                  loggingOut
-                }
+                onClick={handleLogout}
+                disabled={loggingOut}
                 className="w-full sm:w-auto"
               >
                 {loggingOut ? (
@@ -1383,15 +1383,10 @@ function ReceptionDashboardPage() {
 
                 <input
                   type="search"
-                  value={
-                    memberSearch
-                  }
-                  onChange={(
-                    event,
-                  ) =>
+                  value={memberSearch}
+                  onChange={(event) =>
                     setMemberSearch(
-                      event.target
-                        .value,
+                      event.target.value,
                     )
                   }
                   placeholder="Search member name, phone or email..."
@@ -1419,17 +1414,13 @@ function ReceptionDashboardPage() {
                       {searchedMembers.map(
                         (member) => (
                           <div
-                            key={
-                              member.id
-                            }
+                            key={member.id}
                             className="flex flex-col gap-4 bg-background p-5 sm:flex-row sm:items-center sm:justify-between"
                           >
-                            <div className="min-w-0">
-                              <h3 className="font-display text-2xl font-bold uppercase">
-                                {member.full_name ||
-                                  "Member"}
-                              </h3>
-                            </div>
+                            <h3 className="font-display text-2xl font-bold uppercase">
+                              {member.full_name ||
+                                "Member"}
+                            </h3>
 
                             <Link
                               to="/reception-member/$memberId"
@@ -1479,9 +1470,7 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {
-                  currentlyInside.length
-                }
+                {currentlyInside.length}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1501,18 +1490,12 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {
-                  todayVisits
-                }
+                {todayVisits}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                {
-                  uniqueVisitorsToday
-                }{" "}
-                unique member
-                {uniqueVisitorsToday ===
-                1
+                {uniqueVisitorsToday} unique member
+                {uniqueVisitorsToday === 1
                   ? ""
                   : "s"}
               </p>
@@ -1530,15 +1513,12 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {
-                  birthdaysToday.length
-                }
+                {birthdaysToday.length}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
                 Birthday
-                {birthdaysToday.length ===
-                1
+                {birthdaysToday.length === 1
                   ? ""
                   : "s"}{" "}
                 today
@@ -1557,9 +1537,7 @@ function ReceptionDashboardPage() {
               </div>
 
               <p className="mt-5 font-display text-4xl font-bold">
-                {
-                  expiringSoon.length
-                }
+                {expiringSoon.length}
               </p>
 
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1570,186 +1548,172 @@ function ReceptionDashboardPage() {
 
           {/* ATTENDANCE ANALYTICS */}
           <section className="mt-10">
-            <div className="border border-border bg-background p-5 shadow-sm sm:p-6">
+            <details className="group">
+              <ExpandableSummary
+                eyebrow="Business Intelligence"
+                title="Attendance Analytics"
+                description={`Attendance performance for ${currentMonthName}.`}
+                count={monthVisits}
+                icon={
+                  <BarChart3 className="size-6" />
+                }
+              />
 
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-11 items-center justify-center bg-primary text-primary-foreground">
-                      <BarChart3 className="size-6" />
-                    </div>
+              <div className="mt-3 border border-border bg-background p-5 shadow-sm sm:p-6">
 
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                        Attendance Analytics
-                      </p>
-
-                      <h2 className="mt-1 font-display text-3xl font-bold uppercase sm:text-4xl">
-                        {currentMonthName}
-                      </h2>
+                {loadingAnalytics ? (
+                  <div className="flex items-center justify-center py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Calculating analytics...
                     </div>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-                  <p className="mt-4 max-w-2xl text-sm text-muted-foreground">
-                    Understand how busy the gym is and when members are most likely to visit.
-                  </p>
-                </div>
+                      <div className="border border-border p-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                            Today
+                          </p>
 
-                {loadingAnalytics && (
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground">
-                    <Loader2 className="size-4 animate-spin" />
-                    Updating
-                  </div>
+                          <Activity className="size-5 text-primary" />
+                        </div>
+
+                        <p className="mt-4 font-display text-4xl font-black">
+                          {todayVisits}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          visits
+                        </p>
+                      </div>
+
+                      <div className="border border-border p-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                            This Week
+                          </p>
+
+                          <TrendingUp className="size-5 text-primary" />
+                        </div>
+
+                        <p className="mt-4 font-display text-4xl font-black">
+                          {weekVisits}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          visits
+                        </p>
+                      </div>
+
+                      <div className="border border-border p-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                            This Month
+                          </p>
+
+                          <BarChart3 className="size-5 text-primary" />
+                        </div>
+
+                        <p className="mt-4 font-display text-4xl font-black">
+                          {monthVisits}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          total visits
+                        </p>
+                      </div>
+
+                      <div className="border border-border p-5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                            Unique Members
+                          </p>
+
+                          <Users className="size-5 text-primary" />
+                        </div>
+
+                        <p className="mt-4 font-display text-4xl font-black">
+                          {monthUniqueMembers}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          visited this month
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+
+                      <div className="border border-border bg-muted p-5">
+                        <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                          Average Visits / Member
+                        </p>
+
+                        <p className="mt-3 font-display text-3xl font-black">
+                          {averageVisitsPerMember.toFixed(
+                            1,
+                          )}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          visits per unique member
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-muted p-5">
+                        <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                          Busiest Day
+                        </p>
+
+                        <p className="mt-3 font-display text-2xl font-black uppercase">
+                          {busiestDayData.date
+                            ? formatDate(
+                                busiestDayData.date,
+                              )
+                            : "No data"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {busiestDayData.count} visit
+                          {busiestDayData.count ===
+                          1
+                            ? ""
+                            : "s"}{" "}
+                          this month
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-muted p-5">
+                        <p className="text-xs font-extrabold uppercase text-muted-foreground">
+                          Busiest Hour
+                        </p>
+
+                        <p className="mt-3 font-display text-2xl font-black uppercase">
+                          {busiestHourData.hour !==
+                          null
+                            ? formatHourRange(
+                                busiestHourData.hour,
+                              )
+                            : "No data"}
+                        </p>
+
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {busiestHourData.count} visit
+                          {busiestHourData.count ===
+                          1
+                            ? ""
+                            : "s"}{" "}
+                          started during this hour
+                        </p>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
-
-              <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-
-                <div className="border border-border p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                      Today
-                    </p>
-
-                    <Activity className="size-5 text-primary" />
-                  </div>
-
-                  <p className="mt-4 font-display text-4xl font-black">
-                    {todayVisits}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    visits
-                  </p>
-                </div>
-
-                <div className="border border-border p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                      This Week
-                    </p>
-
-                    <TrendingUp className="size-5 text-primary" />
-                  </div>
-
-                  <p className="mt-4 font-display text-4xl font-black">
-                    {weekVisits}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    visits
-                  </p>
-                </div>
-
-                <div className="border border-border p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                      This Month
-                    </p>
-
-                    <BarChart3 className="size-5 text-primary" />
-                  </div>
-
-                  <p className="mt-4 font-display text-4xl font-black">
-                    {monthVisits}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    total visits
-                  </p>
-                </div>
-
-                <div className="border border-border p-5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                      Unique Members
-                    </p>
-
-                    <Users className="size-5 text-primary" />
-                  </div>
-
-                  <p className="mt-4 font-display text-4xl font-black">
-                    {monthUniqueMembers}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    visited this month
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-
-                <div className="border border-border bg-muted p-5">
-                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                    Average Visits / Member
-                  </p>
-
-                  <p className="mt-3 font-display text-3xl font-black">
-                    {averageVisitsPerMember.toFixed(
-                      1,
-                    )}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    visits per unique member
-                  </p>
-                </div>
-
-                <div className="border border-border bg-muted p-5">
-                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                    Busiest Day
-                  </p>
-
-                  <p className="mt-3 font-display text-2xl font-black uppercase">
-                    {busiestDayData.date
-                      ? formatDate(
-                          busiestDayData.date,
-                        )
-                      : "No data"}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {busiestDayData.count}{" "}
-                    visit
-                    {busiestDayData.count ===
-                    1
-                      ? ""
-                      : "s"}{" "}
-                    this month
-                  </p>
-                </div>
-
-                <div className="border border-border bg-muted p-5">
-                  <p className="text-xs font-extrabold uppercase text-muted-foreground">
-                    Busiest Hour
-                  </p>
-
-                  <p className="mt-3 font-display text-2xl font-black uppercase">
-                    {busiestHourData.hour !==
-                    null
-                      ? `${getHourLabel(
-                          busiestHourData.hour,
-                        )}–${getHourLabel(
-                          (busiestHourData.hour +
-                            1) %
-                            24,
-                        )}`
-                      : "No data"}
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {busiestHourData.count}{" "}
-                    visit
-                    {busiestHourData.count ===
-                    1
-                      ? ""
-                      : "s"}{" "}
-                    starting during this hour
-                  </p>
-                </div>
-              </div>
-            </div>
+            </details>
           </section>
 
           {/* TODAY'S ATTENDANCE */}
@@ -1761,7 +1725,7 @@ function ReceptionDashboardPage() {
               <ExpandableSummary
                 eyebrow="Daily Attendance"
                 title="Today's Attendance"
-                description="Every member visit recorded today, including completed and ongoing visits."
+                description="Every member visit recorded today."
                 count={
                   todayAttendance.length
                 }
@@ -1794,30 +1758,16 @@ function ReceptionDashboardPage() {
                 ) : (
                   <div className="overflow-hidden border border-border bg-background shadow-sm">
 
-                    {/* DESKTOP TABLE HEADER */}
                     <div className="hidden grid-cols-[1fr_130px_130px_120px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                      <div>
-                        Member
-                      </div>
-
-                      <div>
-                        Check-In
-                      </div>
-
-                      <div>
-                        Check-Out
-                      </div>
-
-                      <div>
-                        Duration
-                      </div>
+                      <div>Member</div>
+                      <div>Check-In</div>
+                      <div>Check-Out</div>
+                      <div>Duration</div>
                     </div>
 
                     <div className="divide-y divide-border">
                       {todayAttendance.map(
-                        (
-                          attendance,
-                        ) => {
+                        (attendance) => {
                           const inside =
                             !attendance.checked_out_at;
 
@@ -1828,18 +1778,13 @@ function ReceptionDashboardPage() {
                               }
                               className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px_120px] md:items-center"
                             >
-                              {/* MEMBER */}
                               <div className="min-w-0">
                                 <p className="font-bold uppercase">
-                                  {attendance
-                                    .member
-                                    ?.full_name ||
+                                  {attendance.member?.full_name ||
                                     "Member"}
                                 </p>
 
-                                {attendance
-                                  .member
-                                  ?.phone && (
+                                {attendance.member?.phone && (
                                   <a
                                     href={`tel:${attendance.member.phone}`}
                                     className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
@@ -1854,7 +1799,6 @@ function ReceptionDashboardPage() {
                                 )}
                               </div>
 
-                              {/* CHECK IN */}
                               <div>
                                 <p className="text-sm font-bold">
                                   {formatTime(
@@ -1867,7 +1811,6 @@ function ReceptionDashboardPage() {
                                 </p>
                               </div>
 
-                              {/* CHECK OUT */}
                               <div>
                                 <p className="text-sm font-bold">
                                   {inside
@@ -1890,7 +1833,6 @@ function ReceptionDashboardPage() {
                                 </p>
                               </div>
 
-                              {/* DURATION */}
                               <div>
                                 <p className="text-sm font-bold">
                                   {formatDuration(
@@ -1902,50 +1844,6 @@ function ReceptionDashboardPage() {
                                 <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
                                   Duration
                                 </p>
-                              </div>
-
-                              {/* MOBILE SUMMARY */}
-                              <div className="border-t border-border pt-4 md:hidden">
-                                <div className="grid grid-cols-3 gap-3">
-                                  <div>
-                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
-                                      Check-in
-                                    </p>
-
-                                    <p className="mt-1 text-xs font-bold">
-                                      {formatTime(
-                                        attendance.checked_in_at,
-                                      )}
-                                    </p>
-                                  </div>
-
-                                  <div>
-                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
-                                      Check-out
-                                    </p>
-
-                                    <p className="mt-1 text-xs font-bold">
-                                      {inside
-                                        ? "Inside"
-                                        : formatTime(
-                                            attendance.checked_out_at!,
-                                          )}
-                                    </p>
-                                  </div>
-
-                                  <div>
-                                    <p className="text-[9px] font-extrabold uppercase text-muted-foreground">
-                                      Duration
-                                    </p>
-
-                                    <p className="mt-1 text-xs font-bold">
-                                      {formatDuration(
-                                        attendance.checked_in_at,
-                                        attendance.checked_out_at,
-                                      )}
-                                    </p>
-                                  </div>
-                                </div>
                               </div>
                             </div>
                           );
@@ -1974,15 +1872,8 @@ function ReceptionDashboardPage() {
               />
 
               <div className="mt-3">
-                {loadingAttendance ? (
-                  <div className="flex items-center justify-center border border-border bg-background py-16">
-                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                      <Loader2 className="size-5 animate-spin" />
-                      Loading attendance...
-                    </div>
-                  </div>
-                ) : currentlyInside.length ===
-                  0 ? (
+                {currentlyInside.length ===
+                0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <LogIn className="mx-auto size-8 text-muted-foreground" />
 
@@ -1996,42 +1887,22 @@ function ReceptionDashboardPage() {
                   </div>
                 ) : (
                   <div className="overflow-hidden border border-border bg-background shadow-sm">
-                    <div className="hidden grid-cols-[1fr_130px_130px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                      <div>
-                        Member
-                      </div>
-
-                      <div>
-                        Check-In
-                      </div>
-
-                      <div>
-                        Duration
-                      </div>
-                    </div>
-
                     <div className="divide-y divide-border">
                       {currentlyInside.map(
-                        (
-                          attendance,
-                        ) => (
+                        (attendance) => (
                           <div
                             key={
                               attendance.id
                             }
                             className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
                           >
-                            <div className="min-w-0">
+                            <div>
                               <p className="font-bold uppercase">
-                                {attendance
-                                  .member
-                                  ?.full_name ||
+                                {attendance.member?.full_name ||
                                   "Member"}
                               </p>
 
-                              {attendance
-                                .member
-                                ?.phone && (
+                              {attendance.member?.phone && (
                                 <a
                                   href={`tel:${attendance.member.phone}`}
                                   className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
@@ -2116,9 +1987,7 @@ function ReceptionDashboardPage() {
                         const days =
                           getDaysUntilExpiry(
                             getDateOnly(
-                              member
-                                .membership
-                                ?.end_date,
+                              member.membership?.end_date,
                             ),
                           );
 
@@ -2147,24 +2016,10 @@ function ReceptionDashboardPage() {
                                 </p>
                               </div>
 
-                              <span
-                                className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
-                                  days ===
-                                  0
-                                    ? "bg-destructive/10 text-destructive"
-                                    : days !==
-                                          null &&
-                                        days <=
-                                          3
-                                      ? "bg-primary/10 text-primary"
-                                      : "bg-muted text-foreground"
-                                }`}
-                              >
-                                {days ===
-                                0
+                              <span className="shrink-0 bg-primary/10 px-3 py-1 text-[10px] font-extrabold uppercase text-primary">
+                                {days === 0
                                   ? "Expires today"
-                                  : days ===
-                                      1
+                                  : days === 1
                                     ? "1 day left"
                                     : `${days} days left`}
                               </span>
@@ -2178,9 +2033,7 @@ function ReceptionDashboardPage() {
                                   Expires{" "}
                                   <strong>
                                     {getDateOnly(
-                                      member
-                                        .membership
-                                        ?.end_date,
+                                      member.membership?.end_date,
                                     )}
                                   </strong>
                                 </span>
@@ -2194,9 +2047,7 @@ function ReceptionDashboardPage() {
                                   <Phone className="size-4 text-primary" />
 
                                   <span>
-                                    {
-                                      member.phone
-                                    }
+                                    {member.phone}
                                   </span>
                                 </a>
                               )}
@@ -2248,15 +2099,8 @@ function ReceptionDashboardPage() {
               />
 
               <div className="mt-3">
-                {loadingMembers ? (
-                  <div className="flex items-center justify-center border border-border bg-background py-16">
-                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                      <Loader2 className="size-5 animate-spin" />
-                      Loading birthdays...
-                    </div>
-                  </div>
-                ) : birthdaysToday.length ===
-                  0 ? (
+                {birthdaysToday.length ===
+                0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <Cake className="mx-auto size-8 text-muted-foreground" />
 
@@ -2346,15 +2190,12 @@ function ReceptionDashboardPage() {
                                       <Phone className="size-4 shrink-0 text-primary" />
 
                                       <span>
-                                        {
-                                          member.phone
-                                        }
+                                        {member.phone}
                                       </span>
                                     </a>
                                   )}
 
-                                  {member.membership
-                                    ?.plan_name && (
+                                  {member.membership?.plan_name && (
                                     <div className="flex items-center gap-3">
                                       <UserRound className="size-4 shrink-0 text-primary" />
 
@@ -2405,9 +2246,7 @@ function ReceptionDashboardPage() {
           <section className="mt-10">
             <details className="group">
               <ExpandableSummary
-                eyebrow={
-                  currentMonthName
-                }
+                eyebrow={currentMonthName}
                 title="Birthdays This Month"
                 description={`All members celebrating their birthday in ${currentMonthName}, arranged by date.`}
                 count={
@@ -2419,15 +2258,8 @@ function ReceptionDashboardPage() {
               />
 
               <div className="mt-3">
-                {loadingMembers ? (
-                  <div className="flex items-center justify-center border border-border bg-background py-16">
-                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                      <Loader2 className="size-5 animate-spin" />
-                      Loading birthdays...
-                    </div>
-                  </div>
-                ) : birthdaysThisMonth.length ===
-                  0 ? (
+                {birthdaysThisMonth.length ===
+                0 ? (
                   <div className="border border-border bg-background p-8 text-center shadow-sm">
                     <Cake className="mx-auto size-8 text-muted-foreground" />
 
@@ -2437,29 +2269,16 @@ function ReceptionDashboardPage() {
 
                     <p className="mt-2 text-sm text-muted-foreground">
                       No member birthdays have been recorded for{" "}
-                      {
-                        currentMonthName
-                      }.
+                      {currentMonthName}.
                     </p>
                   </div>
                 ) : (
                   <div className="overflow-hidden border border-border bg-background shadow-sm">
                     <div className="hidden grid-cols-[90px_1fr_150px_170px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                      <div>
-                        Date
-                      </div>
-
-                      <div>
-                        Member
-                      </div>
-
-                      <div>
-                        Membership
-                      </div>
-
-                      <div>
-                        Phone
-                      </div>
+                      <div>Date</div>
+                      <div>Member</div>
+                      <div>Membership</div>
+                      <div>Phone</div>
                     </div>
 
                     <div className="divide-y divide-border">
@@ -2472,7 +2291,7 @@ function ReceptionDashboardPage() {
 
                           const isToday =
                             member.birth_day ===
-                            today.day;
+                              today.day;
 
                           return (
                             <div
@@ -2533,8 +2352,7 @@ function ReceptionDashboardPage() {
                                     : "Expired"}
                                 </span>
 
-                                {member.membership
-                                  ?.plan_name && (
+                                {member.membership?.plan_name && (
                                   <p className="mt-2 text-xs text-muted-foreground">
                                     {
                                       member
@@ -2603,9 +2421,7 @@ function ReceptionDashboardPage() {
 
             <button
               type="button"
-              onClick={
-                refreshDashboard
-              }
+              onClick={refreshDashboard}
               className="text-left"
             >
               <div className="h-full border border-border bg-background p-6 shadow-sm transition-colors hover:border-primary">
