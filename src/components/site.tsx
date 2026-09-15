@@ -188,14 +188,6 @@ export function MobileNavbar() {
               Staff Portal
             </Link>
 
-            <Link
-              to="/staff-admin"
-              onClick={() => setOpen(false)}
-              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
-            >
-              Staff Management
-            </Link>
-
             <Button
               asChild
               size="lg"
@@ -706,7 +698,6 @@ export function Footer() {
                 to: "/reception-dashboard",
               },
               { label: "Staff Portal", to: "/staff" },
-              { label: "Staff Management", to: "/staff-admin" },
             ]}
           />
 
@@ -812,7 +803,6 @@ export function UtilityBar() {
           Reception Dashboard
         </Link>
         <Link to="/staff">Staff Portal</Link>
-        <Link to="/staff-admin">Staff Management</Link>
       </div>
     </div>
   );
