@@ -11,6 +11,7 @@ import {
   Phone,
   QrCode,
   RefreshCw,
+  Search,
   UserRound,
   Users,
   XCircle,
@@ -223,7 +224,7 @@ function ExpandableSummary({
   return (
     <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden sm:p-6">
       <div className="min-w-0">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
             {eyebrow}
           </p>
@@ -276,6 +277,8 @@ function ReceptionDashboardPage() {
   const [loadError, setLoadError] = useState("");
 
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [memberSearch, setMemberSearch] = useState("");
 
   const today = useMemo(() => getTodayParts(), []);
 
@@ -451,6 +454,12 @@ function ReceptionDashboardPage() {
 
       setStaffName(staff.full_name || "Reception");
 
+      /*
+       * Load ALL members.
+       *
+       * This is intentional. Birthday information is optional,
+       * but reception search must be able to find every member.
+       */
       const {
         data: memberData,
         error: membersError,
@@ -459,12 +468,7 @@ function ReceptionDashboardPage() {
         .select(
           "id, full_name, email, phone, birth_day, birth_month",
         )
-        .not("birth_day", "is", null)
-        .not("birth_month", "is", null)
-        .order("birth_month", {
-          ascending: true,
-        })
-        .order("birth_day", {
+        .order("full_name", {
           ascending: true,
         });
 
@@ -568,6 +572,7 @@ function ReceptionDashboardPage() {
     setStaffName("");
     setMembers([]);
     setTodayAttendance([]);
+    setMemberSearch("");
     setLoggingOut(false);
   }
 
@@ -621,6 +626,29 @@ function ReceptionDashboardPage() {
 
       return dateA.localeCompare(dateB);
     });
+
+  const searchTerm = memberSearch.trim().toLowerCase();
+
+  const searchedMembers = searchTerm
+    ? members
+        .filter((member) => {
+          const name =
+            member.full_name?.toLowerCase() || "";
+
+          const phone =
+            member.phone?.toLowerCase() || "";
+
+          const email =
+            member.email?.toLowerCase() || "";
+
+          return (
+            name.includes(searchTerm) ||
+            phone.includes(searchTerm) ||
+            email.includes(searchTerm)
+          );
+        })
+        .slice(0, 20)
+    : [];
 
   if (checkingAccess) {
     return (
@@ -761,6 +789,190 @@ function ReceptionDashboardPage() {
               </div>
             </section>
           )}
+
+          {/* MEMBER SEARCH */}
+          <section className="mb-8">
+            <div className="border border-border bg-background p-5 shadow-sm sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex size-11 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+                  <Search className="size-6" />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                    Reception
+                  </p>
+
+                  <h2 className="mt-1 font-display text-3xl font-bold uppercase">
+                    Find A Member
+                  </h2>
+
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Search by name, phone number or email.
+                  </p>
+                </div>
+              </div>
+
+              <div className="relative mt-5">
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+
+                <input
+                  type="search"
+                  value={memberSearch}
+                  onChange={(event) =>
+                    setMemberSearch(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="Search member name, phone or email..."
+                  className="h-13 w-full rounded-md border border-input bg-background pl-12 pr-4 text-sm outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+
+              {memberSearch.trim() && (
+                <div className="mt-4">
+                  {searchedMembers.length === 0 ? (
+                    <div className="border border-border bg-muted p-6 text-center">
+                      <XCircle className="mx-auto size-7 text-muted-foreground" />
+
+                      <p className="mt-3 font-bold uppercase">
+                        No Member Found
+                      </p>
+
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Try another name, phone number or email.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border overflow-hidden border border-border">
+                      {searchedMembers.map((member) => {
+                        const active =
+                          isMembershipActive(
+                            member.membership,
+                          );
+
+                        const expiry =
+                          getDateOnly(
+                            member.membership?.end_date,
+                          );
+
+                        const inside =
+                          currentlyInside.some(
+                            (attendance) =>
+                              attendance.member_id ===
+                              member.id,
+                          );
+
+                        return (
+                          <div
+                            key={member.id}
+                            className="p-5"
+                          >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <h3 className="font-display text-2xl font-bold uppercase">
+                                  {member.full_name ||
+                                    "Member"}
+                                </h3>
+
+                                <div className="mt-2 grid gap-1 text-xs text-muted-foreground">
+                                  {member.phone && (
+                                    <a
+                                      href={`tel:${member.phone}`}
+                                      className="flex items-center gap-2 hover:text-primary"
+                                    >
+                                      <Phone className="size-3.5" />
+                                      {member.phone}
+                                    </a>
+                                  )}
+
+                                  {member.email && (
+                                    <span className="truncate">
+                                      {member.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-extrabold uppercase ${
+                                    active
+                                      ? "bg-green-600/10 text-green-700"
+                                      : "bg-destructive/10 text-destructive"
+                                  }`}
+                                >
+                                  {active ? (
+                                    <CheckCircle2 className="size-3" />
+                                  ) : (
+                                    <XCircle className="size-3" />
+                                  )}
+
+                                  {active
+                                    ? "Active"
+                                    : "Expired"}
+                                </span>
+
+                                {inside && (
+                                  <span className="inline-flex items-center gap-1.5 bg-primary/10 px-3 py-1.5 text-[10px] font-extrabold uppercase text-primary">
+                                    <LogIn className="size-3" />
+                                    Inside
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid gap-3 border-t border-border pt-4 sm:grid-cols-3">
+                              <div>
+                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  Membership
+                                </span>
+
+                                <p className="mt-1 text-sm font-bold">
+                                  {member.membership?.plan_name ||
+                                    "No membership record"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  Expiry
+                                </span>
+
+                                <p className="mt-1 text-sm font-bold">
+                                  {expiry ||
+                                    "Not available"}
+                                </p>
+                              </div>
+
+                              <div>
+                                <span className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  Birthday
+                                </span>
+
+                                <p className="mt-1 text-sm font-bold">
+                                  {formatBirthday(
+                                    member.birth_day,
+                                    member.birth_month,
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {searchedMembers.length === 20 && (
+                    <p className="mt-3 text-center text-[10px] font-extrabold uppercase text-muted-foreground">
+                      Showing first 20 matches — refine your search
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* OVERVIEW */}
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
