@@ -23,6 +23,7 @@ import {
   Play,
   CalendarPlus,
   Ban,
+  Plus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -95,7 +96,6 @@ const receptionOnlyPlan = {
   ],
   checkoutUrl: "",
 };
-};
 
 function getLocalDateString() {
   const now = new Date();
@@ -130,7 +130,6 @@ function getDateOnly(value: unknown) {
 function isMembershipValidToday(membership: Membership | null) {
   if (!membership) return false;
 
-  // Paused and cancelled memberships must never be considered active.
   const status = String(membership.status || "").toLowerCase();
 
   if (status === "paused" || status === "cancelled") {
@@ -275,6 +274,10 @@ function ReceptionDashboardPage() {
 
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
+  const [selectedMembershipId, setSelectedMembershipId] = useState<
+    string | null
+  >(null);
+
   const [membershipAction, setMembershipAction] = useState<
     "extend" | "pause" | "resume" | "cancel" | null
   >(null);
@@ -288,6 +291,18 @@ function ReceptionDashboardPage() {
 
   const [membershipActionSuccess, setMembershipActionSuccess] =
     useState("");
+
+  const [addMembershipOpen, setAddMembershipOpen] = useState(false);
+  const [addMembershipPlanId, setAddMembershipPlanId] = useState(
+    membershipPlans[2]?.id || "",
+  );
+  const [addMembershipStartDate, setAddMembershipStartDate] =
+    useState(getLocalDateString());
+  const [addMembershipPaymentMethod, setAddMembershipPaymentMethod] =
+    useState("Cash");
+  const [addingMembership, setAddingMembership] = useState(false);
+  const [addMembershipError, setAddMembershipError] = useState("");
+  const [addMembershipSuccess, setAddMembershipSuccess] = useState("");
 
   const [addMemberName, setAddMemberName] = useState("");
   const [addMemberEmail, setAddMemberEmail] = useState("");
@@ -319,21 +334,35 @@ function ReceptionDashboardPage() {
     total: number;
   } | null>(null);
 
-    const receptionPlans = [
-    ...membershipPlans,
-    receptionOnlyPlan,
-  ];
+  const receptionPlans = useMemo(
+    () => [...membershipPlans, receptionOnlyPlan],
+    [],
+  );
 
   const selectedPlan =
     receptionPlans.find((plan) => plan.id === selectedPlanId) ||
     receptionPlans[0];
 
+  const selectedAddMembershipPlan =
+    receptionPlans.find((plan) => plan.id === addMembershipPlanId) ||
+    receptionPlans[0];
+
+  const isPersonalTrainingOnly =
+    selectedPlan?.id === "personal-training-only";
+
+  const isAddMembershipPersonalTrainingOnly =
+    selectedAddMembershipPlan?.id === "personal-training-only";
+
   const selectedPlanDuration = selectedPlan
     ? planDurationDays[selectedPlan.id] || 30
     : 30;
 
+  const addMembershipDuration = selectedAddMembershipPlan
+    ? planDurationDays[selectedAddMembershipPlan.id] || 30
+    : 30;
+
   const registrationAmount =
-    selectedPlan && includeRegistrationFee
+    selectedPlan && !isPersonalTrainingOnly && includeRegistrationFee
       ? selectedPlan.registration
       : 0;
 
@@ -341,11 +370,22 @@ function ReceptionDashboardPage() {
     ? selectedPlan.price + registrationAmount
     : 0;
 
+  const addMembershipTotal =
+    selectedAddMembershipPlan?.price || 0;
+
   const calculatedEndDate =
     addMemberStartDate && selectedPlan
       ? addDaysToDateString(
           addMemberStartDate,
           selectedPlanDuration - 1,
+        )
+      : "";
+
+  const addMembershipEndDate =
+    addMembershipStartDate && selectedAddMembershipPlan
+      ? addDaysToDateString(
+          addMembershipStartDate,
+          addMembershipDuration - 1,
         )
       : "";
 
@@ -485,6 +525,18 @@ function ReceptionDashboardPage() {
     };
   }, []);
 
+  const membershipsByMember = useMemo(() => {
+    const map = new Map<string, Membership[]>();
+
+    for (const membership of memberships) {
+      const existing = map.get(membership.member_id) || [];
+      existing.push(membership);
+      map.set(membership.member_id, existing);
+    }
+
+    return map;
+  }, [memberships]);
+
   const latestMembershipByMember = useMemo(() => {
     const map = new Map<string, Membership>();
 
@@ -523,32 +575,53 @@ function ReceptionDashboardPage() {
   );
 
   const expiringSoon = useMemo(() => {
-    return members
-      .map((member) => ({
-        member,
-        membership: latestMembershipByMember.get(member.id) || null,
-      }))
-      .filter(({ membership }) => {
-        if (!membership?.end_date) return false;
+    const result: {
+      member: Member;
+      membership: Membership;
+    }[] = [];
+
+    for (const member of members) {
+      const memberMemberships =
+        membershipsByMember.get(member.id) || [];
+
+      for (const membership of memberMemberships) {
+        if (!membership.end_date) continue;
+
+        const status = String(
+          membership.status || "",
+        ).toLowerCase();
 
         if (
-          membership.status === "paused" ||
-          membership.status === "cancelled"
+          status === "paused" ||
+          status === "cancelled"
         ) {
-          return false;
+          continue;
         }
 
-        const days = getDaysRemaining(membership.end_date);
+        const days = getDaysRemaining(
+          membership.end_date,
+        );
 
-        return days !== null && days >= 0 && days <= 7;
-      })
-      .sort((a, b) => {
-        const aDate = a.membership?.end_date || "";
-        const bDate = b.membership?.end_date || "";
+        if (
+          days !== null &&
+          days >= 0 &&
+          days <= 7
+        ) {
+          result.push({
+            member,
+            membership,
+          });
+        }
+      }
+    }
 
-        return aDate.localeCompare(bDate);
-      });
-  }, [members, latestMembershipByMember]);
+    return result.sort((a, b) => {
+      const aDate = a.membership.end_date || "";
+      const bDate = b.membership.end_date || "";
+
+      return aDate.localeCompare(bDate);
+    });
+  }, [members, membershipsByMember]);
 
   const searchResults = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -566,12 +639,31 @@ function ReceptionDashboardPage() {
       .slice(0, 20);
   }, [members, search]);
 
+  const selectedMemberMemberships = selectedMember
+    ? membershipsByMember.get(selectedMember.id) || []
+    : [];
+
+  const selectedMembership =
+    selectedMembershipId
+      ? memberships.find(
+          (membership) =>
+            membership.id === selectedMembershipId,
+        ) || null
+      : selectedMemberMemberships[0] || null;
+
   const visitsToday = attendance.length;
   const monthlyVisits = monthlyAttendance.length;
 
   async function handleLogout() {
     await supabase.auth.signOut();
     window.location.href = "/reception-checkin";
+  }
+
+  function resetMembershipManagement() {
+    setMembershipAction(null);
+    setSelectedMembershipId(null);
+    setMembershipActionError("");
+    setMembershipActionSuccess("");
   }
 
   async function handleMembershipAction() {
@@ -593,7 +685,9 @@ function ReceptionDashboardPage() {
 
     if (membershipAction === "cancel") {
       const confirmed = window.confirm(
-        `Cancel ${selectedMember.full_name || "this member"}'s membership?\n\nThis will immediately make the membership inactive and prevent gym access.`,
+        `Cancel ${selectedMembership?.plan_name || "this membership"} for ${
+          selectedMember.full_name || "this member"
+        }?\n\nThis will immediately make this membership inactive.`,
       );
 
       if (!confirmed) return;
@@ -602,19 +696,16 @@ function ReceptionDashboardPage() {
     setMembershipActionLoading(true);
 
     try {
-      const membership =
-        latestMembershipByMember.get(selectedMember.id) || null;
-
-      if (!membership) {
+      if (!selectedMembership) {
         throw new Error(
-          "This member does not have a membership to manage.",
+          "Please select a membership to manage.",
         );
       }
 
       const { data, error } = await supabase.rpc(
         "reception_manage_membership",
         {
-          p_membership_id: membership.id,
+          p_membership_id: selectedMembership.id,
           p_action: membershipAction,
           p_days:
             membershipAction === "extend"
@@ -641,32 +732,32 @@ function ReceptionDashboardPage() {
       }
 
       if (membershipAction === "extend") {
+        const days =
+          result.days_added ||
+          Number(extensionDays);
+
         setMembershipActionSuccess(
-          `Membership extended by ${result.days_added || Number(extensionDays)} day${
-            (result.days_added || Number(extensionDays)) === 1
-              ? ""
-              : "s"
+          `${selectedMembership.plan_name || "Membership"} extended by ${days} day${
+            days === 1 ? "" : "s"
           }. New expiry: ${formatDate(
             result.new_end_date || null,
           )}.`,
         );
       } else if (membershipAction === "pause") {
         setMembershipActionSuccess(
-          "Membership paused successfully. Gym access is now disabled.",
+          `${selectedMembership.plan_name || "Membership"} paused successfully.`,
         );
       } else if (membershipAction === "resume") {
         setMembershipActionSuccess(
-          `Membership resumed successfully. ${
+          `${selectedMembership.plan_name || "Membership"} resumed successfully. ${
             result.pause_days || 0
           } paused day${
             (result.pause_days || 0) === 1 ? "" : "s"
-          } ${
-            (result.pause_days || 0) === 1 ? "was" : "were"
-          } restored to the expiry date.`,
+          } restored.`,
         );
       } else if (membershipAction === "cancel") {
         setMembershipActionSuccess(
-          "Membership cancelled successfully. Gym access is now disabled.",
+          `${selectedMembership.plan_name || "Membership"} cancelled successfully.`,
         );
       }
 
@@ -685,6 +776,129 @@ function ReceptionDashboardPage() {
     }
   }
 
+  async function handleAddMembershipToExistingMember() {
+    if (!selectedMember) return;
+
+    setAddMembershipError("");
+    setAddMembershipSuccess("");
+
+    if (!selectedAddMembershipPlan) {
+      setAddMembershipError(
+        "Please select a membership plan.",
+      );
+      return;
+    }
+
+    if (!addMembershipStartDate) {
+      setAddMembershipError(
+        "Membership start date is required.",
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Activate ${selectedAddMembershipPlan.name} for ${
+        selectedMember.full_name || "this member"
+      }?\n\nAmount: ${formatNaira(addMembershipTotal)}\nStart: ${formatDate(
+        addMembershipStartDate,
+      )}\nEnd: ${formatDate(addMembershipEndDate)}\n\nThis will create a separate membership and will NOT replace any existing membership.`,
+    );
+
+    if (!confirmed) return;
+
+    setAddingMembership(true);
+
+    try {
+      const { data: planData, error: planError } =
+        await supabase
+          .from("membership_plans")
+          .select("id, name")
+          .eq("name", selectedAddMembershipPlan.name)
+          .maybeSingle();
+
+      if (planError) throw planError;
+
+      if (!planData) {
+        throw new Error(
+          `Membership plan "${selectedAddMembershipPlan.name}" was not found in the database.`,
+        );
+      }
+
+      const endDate = addMembershipEndDate;
+
+      const {
+        data: membershipData,
+        error: membershipError,
+      } = await supabase
+        .from("memberships")
+        .insert({
+          member_id: selectedMember.id,
+          plan_id: planData.id,
+          plan_name: selectedAddMembershipPlan.name,
+          start_date: addMembershipStartDate,
+          end_date: endDate,
+          status: "active",
+          payment_status: "paid",
+          source: "reception_manual",
+        })
+        .select("id")
+        .single();
+
+      if (membershipError) throw membershipError;
+
+      const {
+        error: paymentError,
+      } = await supabase
+        .from("payments")
+        .insert({
+          member_id: selectedMember.id,
+          membership_id: membershipData.id,
+          amount: addMembershipTotal,
+          currency: "NGN",
+          status: "success",
+          payment_method: addMembershipPaymentMethod,
+          provider: "manual",
+          paid_at: new Date().toISOString(),
+          metadata: {
+            plan_name: selectedAddMembershipPlan.name,
+            start_date: addMembershipStartDate,
+            end_date: endDate,
+            concurrent_membership: true,
+          },
+          source: "reception_manual",
+        });
+
+      if (paymentError) throw paymentError;
+
+      setAddMembershipSuccess(
+        `${selectedAddMembershipPlan.name} activated successfully for ${selectedMember.full_name || "this member"}. Existing memberships were not changed.`,
+      );
+
+      setAddMembershipOpen(false);
+      setAddMembershipPlanId(
+        membershipPlans[2]?.id || "",
+      );
+      setAddMembershipStartDate(
+        getLocalDateString(),
+      );
+      setAddMembershipPaymentMethod("Cash");
+
+      await loadDashboard();
+    } catch (error: any) {
+      console.error(
+        "Add concurrent membership error:",
+        error,
+      );
+
+      setAddMembershipError(
+        error?.message ||
+          "Unable to activate the additional membership.",
+      );
+    } finally {
+      setAddingMembership(false);
+    }
+  }
+
   async function handleAddMember(
     event: React.FormEvent<HTMLFormElement>,
   ) {
@@ -699,12 +913,16 @@ function ReceptionDashboardPage() {
     }
 
     if (!selectedPlan) {
-      setAddMemberError("Please select a membership plan.");
+      setAddMemberError(
+        "Please select a membership plan.",
+      );
       return;
     }
 
     if (!addMemberStartDate) {
-      setAddMemberError("Membership start date is required.");
+      setAddMemberError(
+        "Membership start date is required.",
+      );
       return;
     }
 
@@ -713,7 +931,9 @@ function ReceptionDashboardPage() {
       (Number(addMemberBirthDay) < 1 ||
         Number(addMemberBirthDay) > 31)
     ) {
-      setAddMemberError("Please enter a valid birth day.");
+      setAddMemberError(
+        "Please enter a valid birth day.",
+      );
       return;
     }
 
@@ -722,7 +942,9 @@ function ReceptionDashboardPage() {
       (Number(addMemberBirthMonth) < 1 ||
         Number(addMemberBirthMonth) > 12)
     ) {
-      setAddMemberError("Please select a valid birth month.");
+      setAddMemberError(
+        "Please select a valid birth month.",
+      );
       return;
     }
 
@@ -765,17 +987,24 @@ function ReceptionDashboardPage() {
       };
 
       if (!result?.success) {
-        throw new Error("Member registration failed.");
+        throw new Error(
+          "Member registration failed.",
+        );
       }
 
       setAddMemberSuccess({
         memberId: result.member_id || "",
-        membershipId: result.membership_id || "",
-        planName: result.plan_name || selectedPlan.name,
+        membershipId:
+          result.membership_id || "",
+        planName:
+          result.plan_name ||
+          selectedPlan.name,
         startDate:
-          result.start_date || addMemberStartDate,
+          result.start_date ||
+          addMemberStartDate,
         endDate:
-          result.end_date || calculatedEndDate,
+          result.end_date ||
+          calculatedEndDate,
         total: totalAmount,
       });
 
@@ -785,8 +1014,12 @@ function ReceptionDashboardPage() {
       setAddMemberAddress("");
       setAddMemberBirthDay("");
       setAddMemberBirthMonth("");
-      setSelectedPlanId(membershipPlans[2]?.id || "");
-      setAddMemberStartDate(getLocalDateString());
+      setSelectedPlanId(
+        membershipPlans[2]?.id || "",
+      );
+      setAddMemberStartDate(
+        getLocalDateString(),
+      );
       setIncludeRegistrationFee(true);
       setPaymentMethod("Cash");
 
@@ -803,12 +1036,17 @@ function ReceptionDashboardPage() {
     }
   }
 
-  function sendWhatsApp(message: string, phone: string | null) {
+  function sendWhatsApp(
+    message: string,
+    phone: string | null,
+  ) {
     if (!phone) return;
 
     const cleanPhone = phone.replace(/\D/g, "");
 
-    const normalizedPhone = cleanPhone.startsWith("0")
+    const normalizedPhone = cleanPhone.startsWith(
+      "0",
+    )
       ? `234${cleanPhone.slice(1)}`
       : cleanPhone;
 
@@ -854,7 +1092,9 @@ function ReceptionDashboardPage() {
             >
               <RefreshCw
                 className={`size-4 ${
-                  refreshing ? "animate-spin" : ""
+                  refreshing
+                    ? "animate-spin"
+                    : ""
                 }`}
               />
               <span className="hidden sm:inline">
@@ -897,19 +1137,22 @@ function ReceptionDashboardPage() {
                   onClick={() => {
                     setSelectedMember(member);
                     setSearch("");
-                    setMembershipAction(null);
-                    setMembershipActionError("");
-                    setMembershipActionSuccess("");
+                    resetMembershipManagement();
+                    setAddMembershipError("");
+                    setAddMembershipSuccess("");
                   }}
                   className="flex w-full items-center justify-between border-b border-border px-4 py-4 text-left last:border-b-0 hover:bg-muted"
                 >
                   <div>
                     <p className="font-bold">
-                      {member.full_name || "Unnamed member"}
+                      {member.full_name ||
+                        "Unnamed member"}
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {member.phone || member.email || "No contact"}
+                      {member.phone ||
+                        member.email ||
+                        "No contact"}
                     </p>
                   </div>
 
@@ -1046,7 +1289,9 @@ function ReceptionDashboardPage() {
                     <input
                       value={addMemberName}
                       onChange={(event) =>
-                        setAddMemberName(event.target.value)
+                        setAddMemberName(
+                          event.target.value,
+                        )
                       }
                       placeholder="Member full name"
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -1062,7 +1307,9 @@ function ReceptionDashboardPage() {
                       type="email"
                       value={addMemberEmail}
                       onChange={(event) =>
-                        setAddMemberEmail(event.target.value)
+                        setAddMemberEmail(
+                          event.target.value,
+                        )
                       }
                       placeholder="member@email.com"
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -1077,7 +1324,9 @@ function ReceptionDashboardPage() {
                     <input
                       value={addMemberPhone}
                       onChange={(event) =>
-                        setAddMemberPhone(event.target.value)
+                        setAddMemberPhone(
+                          event.target.value,
+                        )
                       }
                       placeholder="080..."
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -1092,7 +1341,9 @@ function ReceptionDashboardPage() {
                     <textarea
                       value={addMemberAddress}
                       onChange={(event) =>
-                        setAddMemberAddress(event.target.value)
+                        setAddMemberAddress(
+                          event.target.value,
+                        )
                       }
                       placeholder="Member address"
                       rows={3}
@@ -1123,7 +1374,9 @@ function ReceptionDashboardPage() {
                       max="31"
                       value={addMemberBirthDay}
                       onChange={(event) =>
-                        setAddMemberBirthDay(event.target.value)
+                        setAddMemberBirthDay(
+                          event.target.value,
+                        )
                       }
                       placeholder="1–31"
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -1138,25 +1391,51 @@ function ReceptionDashboardPage() {
                     <select
                       value={addMemberBirthMonth}
                       onChange={(event) =>
-                        setAddMemberBirthMonth(event.target.value)
+                        setAddMemberBirthMonth(
+                          event.target.value,
+                        )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
                       <option value="">
                         Select month
                       </option>
-                      <option value="1">January</option>
-                      <option value="2">February</option>
-                      <option value="3">March</option>
-                      <option value="4">April</option>
-                      <option value="5">May</option>
-                      <option value="6">June</option>
-                      <option value="7">July</option>
-                      <option value="8">August</option>
-                      <option value="9">September</option>
-                      <option value="10">October</option>
-                      <option value="11">November</option>
-                      <option value="12">December</option>
+                      <option value="1">
+                        January
+                      </option>
+                      <option value="2">
+                        February
+                      </option>
+                      <option value="3">
+                        March
+                      </option>
+                      <option value="4">
+                        April
+                      </option>
+                      <option value="5">
+                        May
+                      </option>
+                      <option value="6">
+                        June
+                      </option>
+                      <option value="7">
+                        July
+                      </option>
+                      <option value="8">
+                        August
+                      </option>
+                      <option value="9">
+                        September
+                      </option>
+                      <option value="10">
+                        October
+                      </option>
+                      <option value="11">
+                        November
+                      </option>
+                      <option value="12">
+                        December
+                      </option>
                     </select>
                   </div>
                 </div>
@@ -1175,16 +1454,46 @@ function ReceptionDashboardPage() {
 
                     <select
                       value={selectedPlanId}
-                      onChange={(event) =>
-                        setSelectedPlanId(event.target.value)
-                      }
+                      onChange={(event) => {
+                        const nextPlanId =
+                          event.target.value;
+
+                        setSelectedPlanId(
+                          nextPlanId,
+                        );
+
+                        if (
+                          nextPlanId ===
+                          "personal-training-only"
+                        ) {
+                          setIncludeRegistrationFee(
+                            false,
+                          );
+                        } else {
+                          setIncludeRegistrationFee(
+                            true,
+                          );
+                        }
+                      }}
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
-                      {membershipPlans.map((plan) => (
-                        <option key={plan.id} value={plan.id}>
-                          {plan.name} — {formatNaira(plan.price)}
-                        </option>
-                      ))}
+                      {receptionPlans.map(
+                        (plan) => (
+                          <option
+                            key={plan.id}
+                            value={plan.id}
+                          >
+                            {plan.name} —{" "}
+                            {formatNaira(
+                              plan.price,
+                            )}
+                            {plan.id ===
+                              "personal-training-only"
+                              ? " (No registration fee)"
+                              : ""}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
 
@@ -1197,7 +1506,9 @@ function ReceptionDashboardPage() {
                       type="date"
                       value={addMemberStartDate}
                       onChange={(event) =>
-                        setAddMemberStartDate(event.target.value)
+                        setAddMemberStartDate(
+                          event.target.value,
+                        )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     />
@@ -1212,7 +1523,9 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-2 text-xl font-bold">
-                        {formatNaira(selectedPlan.price)}
+                        {formatNaira(
+                          selectedPlan.price,
+                        )}
                       </p>
                     </div>
 
@@ -1232,7 +1545,9 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-2 text-xl font-bold">
-                        {formatDate(calculatedEndDate)}
+                        {formatDate(
+                          calculatedEndDate,
+                        )}
                       </p>
                     </div>
                   </div>
@@ -1253,16 +1568,24 @@ function ReceptionDashboardPage() {
                     <select
                       value={paymentMethod}
                       onChange={(event) =>
-                        setPaymentMethod(event.target.value)
+                        setPaymentMethod(
+                          event.target.value,
+                        )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
-                      <option value="Cash">Cash</option>
-                      <option value="POS">POS</option>
+                      <option value="Cash">
+                        Cash
+                      </option>
+                      <option value="POS">
+                        POS
+                      </option>
                       <option value="Bank Transfer">
                         Bank Transfer
                       </option>
-                      <option value="Other">Other</option>
+                      <option value="Other">
+                        Other
+                      </option>
                     </select>
                   </div>
 
@@ -1270,17 +1593,26 @@ function ReceptionDashboardPage() {
                     <label className="flex min-h-12 w-full cursor-pointer items-center gap-3 border border-border px-4">
                       <input
                         type="checkbox"
-                        checked={includeRegistrationFee}
+                        checked={
+                          isPersonalTrainingOnly
+                            ? false
+                            : includeRegistrationFee
+                        }
                         onChange={(event) =>
                           setIncludeRegistrationFee(
                             event.target.checked,
                           )
                         }
+                        disabled={
+                          isPersonalTrainingOnly
+                        }
                         className="size-4"
                       />
 
                       <span className="text-sm font-bold">
-                        Include registration fee
+                        {isPersonalTrainingOnly
+                          ? "No registration fee for this plan"
+                          : "Include registration fee"}
                       </span>
                     </label>
                   </div>
@@ -1293,16 +1625,22 @@ function ReceptionDashboardPage() {
                     </span>
 
                     <span className="font-display text-3xl font-bold">
-                      {formatNaira(totalAmount)}
+                      {formatNaira(
+                        totalAmount,
+                      )}
                     </span>
                   </div>
 
                   {selectedPlan && (
                     <p className="mt-2 text-xs text-muted-foreground">
                       {selectedPlan.name}:{" "}
-                      {formatNaira(selectedPlan.price)}
-                      {includeRegistrationFee &&
-                        selectedPlan.registration > 0 &&
+                      {formatNaira(
+                        selectedPlan.price,
+                      )}
+                      {!isPersonalTrainingOnly &&
+                        includeRegistrationFee &&
+                        selectedPlan.registration >
+                          0 &&
                         ` + ${formatNaira(
                           selectedPlan.registration,
                         )} registration`}
@@ -1338,7 +1676,10 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {addMemberSuccess.planName} has been activated.
+                        {
+                          addMemberSuccess.planName
+                        }{" "}
+                        has been activated.
                       </p>
                     </div>
                   </div>
@@ -1506,7 +1847,8 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {item.member?.phone || "No phone"}
+                        {item.member?.phone ||
+                          "No phone"}
                       </p>
                     </div>
 
@@ -1577,7 +1919,8 @@ function ReceptionDashboardPage() {
                         </p>
 
                         <p className="mt-1 text-sm text-muted-foreground">
-                          {member.phone || "No phone"}
+                          {member.phone ||
+                            "No phone"}
                         </p>
                       </div>
                     </div>
@@ -1598,7 +1941,7 @@ function ReceptionDashboardPage() {
           <ExpandableSummary
             eyebrow="Membership"
             title="Expiring Soon"
-            description="Members whose memberships expire within the next 7 days."
+            description="Memberships expiring within the next 7 days."
             count={expiringSoon.length}
             icon={<TrendingUp className="size-5" />}
           />
@@ -1614,12 +1957,12 @@ function ReceptionDashboardPage() {
                   ({ member, membership }) => {
                     const daysRemaining =
                       getDaysRemaining(
-                        membership?.end_date || null,
+                        membership.end_date,
                       );
 
                     return (
                       <div
-                        key={member.id}
+                        key={membership.id}
                         className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"
                       >
                         <div>
@@ -1628,12 +1971,11 @@ function ReceptionDashboardPage() {
                           </p>
 
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {membership?.plan_name ||
+                            {membership.plan_name ||
                               "Membership"}{" "}
                             · Expires{" "}
                             {formatDate(
-                              membership?.end_date ||
-                                null,
+                              membership.end_date,
                             )}
                           </p>
                         </div>
@@ -1658,11 +2000,10 @@ function ReceptionDashboardPage() {
                                   member.full_name ||
                                   "there"
                                 }, this is Super Plus Fitness & Spa. Your ${
-                                  membership?.plan_name ||
+                                  membership.plan_name ||
                                   "membership"
                                 } expires on ${formatDate(
-                                  membership?.end_date ||
-                                    null,
+                                  membership.end_date,
                                 )}. Contact us to renew your membership.`,
                                 member.phone,
                               )
@@ -1756,12 +2097,11 @@ function ReceptionDashboardPage() {
             ) : (
               <div className="divide-y divide-border">
                 {birthdaysThisMonth
-                  .sort((a, b) => {
-                    return (
+                  .sort(
+                    (a, b) =>
                       (a.birth_day || 0) -
-                      (b.birth_day || 0)
-                    );
-                  })
+                      (b.birth_day || 0),
+                  )
                   .map((member) => (
                     <div
                       key={member.id}
@@ -1867,7 +2207,7 @@ function ReceptionDashboardPage() {
       {/* MEMBER PROFILE MODAL */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto border border-border bg-background shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-border bg-background shadow-2xl">
             <div className="flex items-center justify-between border-b border-border p-5">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
@@ -1884,9 +2224,10 @@ function ReceptionDashboardPage() {
                 type="button"
                 onClick={() => {
                   setSelectedMember(null);
-                  setMembershipAction(null);
-                  setMembershipActionError("");
-                  setMembershipActionSuccess("");
+                  resetMembershipManagement();
+                  setAddMembershipOpen(false);
+                  setAddMembershipError("");
+                  setAddMembershipSuccess("");
                 }}
                 className="flex size-10 items-center justify-center border border-border hover:bg-muted"
                 aria-label="Close"
@@ -1896,6 +2237,7 @@ function ReceptionDashboardPage() {
             </div>
 
             <div className="space-y-5 p-5">
+              {/* MEMBER DETAILS */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -1903,7 +2245,8 @@ function ReceptionDashboardPage() {
                   </p>
 
                   <p className="mt-1 font-bold">
-                    {selectedMember.phone || "Not provided"}
+                    {selectedMember.phone ||
+                      "Not provided"}
                   </p>
                 </div>
 
@@ -1913,7 +2256,8 @@ function ReceptionDashboardPage() {
                   </p>
 
                   <p className="mt-1 break-all font-bold">
-                    {selectedMember.email || "Not provided"}
+                    {selectedMember.email ||
+                      "Not provided"}
                   </p>
                 </div>
 
@@ -1923,99 +2267,175 @@ function ReceptionDashboardPage() {
                   </p>
 
                   <p className="mt-1 font-bold">
-                    {getBirthdayLabel(selectedMember)}
+                    {getBirthdayLabel(
+                      selectedMember,
+                    )}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    Membership
+                    Memberships
                   </p>
 
                   <p className="mt-1 font-bold">
-                    {latestMembershipByMember.get(
-                      selectedMember.id,
-                    )?.plan_name || "No membership"}
+                    {
+                      selectedMemberMemberships.length
+                    }{" "}
+                    active/recorded plan
+                    {selectedMemberMemberships.length ===
+                    1
+                      ? ""
+                      : "s"}
                   </p>
                 </div>
               </div>
 
-              {(() => {
-                const membership =
-                  latestMembershipByMember.get(
-                    selectedMember.id,
-                  ) || null;
+              {/* ALL MEMBERSHIPS */}
+              <div className="border border-border">
+                <div className="border-b border-border bg-muted/20 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                        Memberships
+                      </p>
 
-                const valid =
-                  isMembershipValidToday(membership);
-
-                const status = String(
-                  membership?.status || "",
-                ).toLowerCase();
-
-                return (
-                  <div
-                    className={`border p-4 ${
-                      status === "paused"
-                        ? "border-orange-500/30 bg-orange-500/10"
-                        : status === "cancelled"
-                          ? "border-destructive/30 bg-destructive/10"
-                          : valid
-                            ? "border-primary bg-primary/5"
-                            : "border-destructive/30 bg-destructive/5"
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {status === "paused" ? (
-                        <Pause className="mt-0.5 size-5 shrink-0 text-orange-600" />
-                      ) : status === "cancelled" ? (
-                        <Ban className="mt-0.5 size-5 shrink-0 text-destructive" />
-                      ) : valid ? (
-                        <CheckCircle2 className="mt-0.5 size-5 text-primary" />
-                      ) : (
-                        <XCircle className="mt-0.5 size-5 text-destructive" />
-                      )}
-
-                      <div>
-                        <p className="font-bold">
-                          {status === "paused"
-                            ? "Membership Paused"
-                            : status === "cancelled"
-                              ? "Membership Cancelled"
-                              : valid
-                                ? "Membership Active"
-                                : "Membership Not Active"}
-                        </p>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {membership
-                            ? `${formatDate(
-                                membership.start_date,
-                              )} – ${formatDate(
-                                membership.end_date,
-                              )}`
-                            : "No membership found"}
-                        </p>
-
-                        {membership?.paused_at && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Paused on{" "}
-                            {formatDate(
-                              membership.paused_at,
-                            )}
-                          </p>
-                        )}
-                      </div>
+                      <h3 className="mt-1 font-display text-xl font-bold uppercase">
+                        Member Plans
+                      </h3>
                     </div>
-                  </div>
-                );
-              })()}
 
-              {/* MANAGE MEMBERSHIP */}
-              <div className="border border-border bg-muted/20">
-                <div className="border-b border-border p-5">
+                    <span className="bg-primary px-3 py-2 text-xs font-extrabold text-primary-foreground">
+                      {
+                        selectedMemberMemberships.length
+                      }
+                    </span>
+                  </div>
+                </div>
+
+                <div className="divide-y divide-border">
+                  {selectedMemberMemberships.length ===
+                  0 ? (
+                    <div className="p-5 text-sm text-muted-foreground">
+                      This member has no memberships.
+                    </div>
+                  ) : (
+                    selectedMemberMemberships.map(
+                      (membership) => {
+                        const valid =
+                          isMembershipValidToday(
+                            membership,
+                          );
+
+                        const status =
+                          String(
+                            membership.status ||
+                              "",
+                          ).toLowerCase();
+
+                        return (
+                          <div
+                            key={membership.id}
+                            className="p-5"
+                          >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-bold">
+                                    {membership.plan_name ||
+                                      "Membership"}
+                                  </p>
+
+                                  <span
+                                    className={`px-2 py-1 text-[10px] font-extrabold uppercase ${
+                                      status ===
+                                      "paused"
+                                        ? "bg-orange-500/10 text-orange-600"
+                                        : status ===
+                                            "cancelled"
+                                          ? "bg-destructive/10 text-destructive"
+                                          : valid
+                                            ? "bg-primary/10 text-primary"
+                                            : "bg-muted text-muted-foreground"
+                                    }`}
+                                  >
+                                    {status ===
+                                    "paused"
+                                      ? "Paused"
+                                      : status ===
+                                          "cancelled"
+                                        ? "Cancelled"
+                                        : valid
+                                          ? "Active"
+                                          : "Not Active"}
+                                  </span>
+                                </div>
+
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {formatDate(
+                                    membership.start_date,
+                                  )}{" "}
+                                  –{" "}
+                                  {formatDate(
+                                    membership.end_date,
+                                  )}
+                                </p>
+                              </div>
+
+                              <Button
+                                variant={
+                                  selectedMembershipId ===
+                                  membership.id
+                                    ? "default"
+                                    : "outline"
+                                }
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedMembershipId(
+                                    membership.id,
+                                  );
+                                  setMembershipAction(
+                                    null,
+                                  );
+                                  setMembershipActionError(
+                                    "",
+                                  );
+                                  setMembershipActionSuccess(
+                                    "",
+                                  );
+                                }}
+                              >
+                                {selectedMembershipId ===
+                                membership.id
+                                  ? "Selected"
+                                  : "Manage"}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      },
+                    )
+                  )}
+                </div>
+              </div>
+
+              {/* ADD ANOTHER MEMBERSHIP */}
+              <div className="border border-primary/30 bg-primary/5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAddMembershipOpen(
+                      !addMembershipOpen,
+                    );
+                    setAddMembershipError("");
+                    setAddMembershipSuccess("");
+                  }}
+                  className="flex w-full items-center justify-between gap-4 p-5 text-left"
+                >
                   <div className="flex items-center gap-3">
-                    <CalendarPlus className="size-5 text-primary" />
+                    <div className="flex size-10 items-center justify-center bg-primary text-primary-foreground">
+                      <Plus className="size-5" />
+                    </div>
 
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
@@ -2023,260 +2443,452 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <h3 className="mt-1 font-display text-xl font-bold uppercase">
-                        Manage Membership
+                        Add Another Membership
                       </h3>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Activate another plan without replacing existing memberships.
+                      </p>
                     </div>
                   </div>
 
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Pause, resume, extend or cancel this member's current membership.
-                  </p>
-                </div>
+                  <ChevronDown
+                    className={`size-5 transition-transform ${
+                      addMembershipOpen
+                        ? "rotate-180"
+                        : ""
+                    }`}
+                  />
+                </button>
 
-                <div className="p-5">
-                  {membershipActionError && (
-                    <div className="mb-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
-                      {membershipActionError}
-                    </div>
-                  )}
+                {addMembershipOpen && (
+                  <div className="border-t border-primary/20 p-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold">
+                          Membership Plan
+                        </label>
 
-                  {membershipActionSuccess && (
-                    <div className="mb-4 border border-primary/30 bg-primary/10 p-4 text-sm font-semibold text-primary">
-                      {membershipActionSuccess}
-                    </div>
-                  )}
+                        <select
+                          value={
+                            addMembershipPlanId
+                          }
+                          onChange={(event) =>
+                            setAddMembershipPlanId(
+                              event.target.value,
+                            )
+                          }
+                          className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                        >
+                          {receptionPlans.map(
+                            (plan) => (
+                              <option
+                                key={plan.id}
+                                value={plan.id}
+                              >
+                                {plan.name} —{" "}
+                                {formatNaira(
+                                  plan.price,
+                                )}
+                                {plan.id ===
+                                "personal-training-only"
+                                  ? " (No registration fee)"
+                                  : ""}
+                              </option>
+                            ),
+                          )}
+                        </select>
+                      </div>
 
-                  {(() => {
-                    const membership =
-                      latestMembershipByMember.get(
-                        selectedMember.id,
-                      ) || null;
+                      <div>
+                        <label className="mb-2 block text-sm font-bold">
+                          Start Date
+                        </label>
 
-                    const status = String(
-                      membership?.status || "",
-                    ).toLowerCase();
+                        <input
+                          type="date"
+                          value={
+                            addMembershipStartDate
+                          }
+                          onChange={(event) =>
+                            setAddMembershipStartDate(
+                              event.target.value,
+                            )
+                          }
+                          className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                        />
+                      </div>
 
-                    if (!membership) {
-                      return (
-                        <p className="text-sm text-muted-foreground">
-                          This member has no membership to manage.
+                      <div>
+                        <label className="mb-2 block text-sm font-bold">
+                          Payment Method
+                        </label>
+
+                        <select
+                          value={
+                            addMembershipPaymentMethod
+                          }
+                          onChange={(event) =>
+                            setAddMembershipPaymentMethod(
+                              event.target.value,
+                            )
+                          }
+                          className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                        >
+                          <option value="Cash">
+                            Cash
+                          </option>
+                          <option value="POS">
+                            POS
+                          </option>
+                          <option value="Bank Transfer">
+                            Bank Transfer
+                          </option>
+                          <option value="Other">
+                            Other
+                          </option>
+                        </select>
+                      </div>
+
+                      <div className="border border-border bg-background p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          New Membership
                         </p>
-                      );
-                    }
 
-                    if (
-                      membershipAction === "extend"
-                    ) {
-                      return (
-                        <div>
-                          <p className="text-sm font-semibold">
-                            How many days would you like to add?
-                          </p>
+                        <p className="mt-1 font-bold">
+                          {
+                            selectedAddMembershipPlan.name
+                          }
+                        </p>
 
-                          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                            <input
-                              type="number"
-                              min="1"
-                              max="3650"
-                              value={extensionDays}
-                              onChange={(event) =>
-                                setExtensionDays(
-                                  event.target.value,
-                                )
-                              }
-                              className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
-                            />
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {formatDate(
+                            addMembershipStartDate,
+                          )}{" "}
+                          –{" "}
+                          {formatDate(
+                            addMembershipEndDate,
+                          )}
+                        </p>
 
-                            <Button
-                              onClick={() =>
-                                void handleMembershipAction()
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              {membershipActionLoading ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <CalendarPlus className="size-4" />
-                              )}
-                              Confirm Extension
-                            </Button>
-                          </div>
+                        <p className="mt-3 text-lg font-bold">
+                          {formatNaira(
+                            addMembershipTotal,
+                          )}
+                        </p>
+                      </div>
+                    </div>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setMembershipAction(null);
-                              setMembershipActionError("");
-                            }}
-                            className="mt-3 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
+                    {isAddMembershipPersonalTrainingOnly && (
+                      <div className="mt-4 border border-primary/30 bg-primary/10 p-4 text-sm">
+                        <p className="font-bold text-primary">
+                          Personal Training Only
+                        </p>
+
+                        <p className="mt-1 text-muted-foreground">
+                          No registration fee. This plan will remain separate from the member's existing gym membership and can be active concurrently.
+                        </p>
+                      </div>
+                    )}
+
+                    {addMembershipError && (
+                      <div className="mt-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
+                        {addMembershipError}
+                      </div>
+                    )}
+
+                    {addMembershipSuccess && (
+                      <div className="mt-4 border border-primary/30 bg-primary/10 p-4 text-sm font-semibold text-primary">
+                        {addMembershipSuccess}
+                      </div>
+                    )}
+
+                    <div className="mt-5">
+                      <Button
+                        onClick={() =>
+                          void handleAddMembershipToExistingMember()
+                        }
+                        disabled={
+                          addingMembership
+                        }
+                        className="w-full sm:w-auto"
+                      >
+                        {addingMembership ? (
+                          <>
+                            <Loader2 className="size-4 animate-spin" />
+                            Activating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="size-4" />
+                            Activate Membership
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* SELECTED MEMBERSHIP MANAGEMENT */}
+              {selectedMembership && (
+                <div className="border border-border bg-muted/20">
+                  <div className="border-b border-border p-5">
+                    <div className="flex items-center gap-3">
+                      <CalendarPlus className="size-5 text-primary" />
+
+                      <div>
+                        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                          Reception
+                        </p>
+
+                        <h3 className="mt-1 font-display text-xl font-bold uppercase">
+                          Manage Membership
+                        </h3>
+                      </div>
+                    </div>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Managing:{" "}
+                      <span className="font-bold text-foreground">
+                        {selectedMembership.plan_name ||
+                          "Membership"}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="p-5">
+                    {membershipActionError && (
+                      <div className="mb-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
+                        {membershipActionError}
+                      </div>
+                    )}
+
+                    {membershipActionSuccess && (
+                      <div className="mb-4 border border-primary/30 bg-primary/10 p-4 text-sm font-semibold text-primary">
+                        {membershipActionSuccess}
+                      </div>
+                    )}
+
+                    {membershipAction ===
+                    "extend" ? (
+                      <div>
+                        <p className="text-sm font-semibold">
+                          How many days would you like to add?
+                        </p>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+                          <input
+                            type="number"
+                            min="1"
+                            max="3650"
+                            value={extensionDays}
+                            onChange={(event) =>
+                              setExtensionDays(
+                                event.target.value,
+                              )
+                            }
+                            className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                          />
+
+                          <Button
+                            onClick={() =>
+                              void handleMembershipAction()
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
                           >
-                            Cancel
-                          </button>
+                            {membershipActionLoading ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <CalendarPlus className="size-4" />
+                            )}
+                            Confirm Extension
+                          </Button>
                         </div>
-                      );
-                    }
 
-                    if (
-                      membershipAction === "pause"
-                    ) {
-                      return (
-                        <div>
-                          <p className="text-sm font-semibold">
-                            Pause this membership?
-                          </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMembershipAction(
+                              null,
+                            );
+                            setMembershipActionError(
+                              "",
+                            );
+                          }}
+                          className="mt-3 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : membershipAction ===
+                      "pause" ? (
+                      <div>
+                        <p className="text-sm font-semibold">
+                          Pause this membership?
+                        </p>
 
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            Gym access will be disabled immediately. When resumed, the paused days will be added back to the expiry date.
-                          </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Only this selected membership will be paused. Other memberships remain unchanged.
+                        </p>
 
-                          <div className="mt-4 flex flex-wrap gap-3">
-                            <Button
-                              onClick={() =>
-                                void handleMembershipAction()
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              {membershipActionLoading ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <Pause className="size-4" />
-                              )}
-                              Confirm Pause
-                            </Button>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button
+                            onClick={() =>
+                              void handleMembershipAction()
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            {membershipActionLoading ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Pause className="size-4" />
+                            )}
+                            Confirm Pause
+                          </Button>
 
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setMembershipAction(null)
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              Back
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setMembershipAction(
+                                null,
+                              )
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            Back
+                          </Button>
                         </div>
-                      );
-                    }
+                      </div>
+                    ) : membershipAction ===
+                      "resume" ? (
+                      <div>
+                        <p className="text-sm font-semibold">
+                          Resume this membership?
+                        </p>
 
-                    if (
-                      membershipAction === "resume"
-                    ) {
-                      return (
-                        <div>
-                          <p className="text-sm font-semibold">
-                            Resume this membership?
-                          </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          The paused period will be added back to this membership's expiry date.
+                        </p>
 
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            The membership will become active again and the paused period will be added to its expiry date.
-                          </p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button
+                            onClick={() =>
+                              void handleMembershipAction()
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            {membershipActionLoading ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Play className="size-4" />
+                            )}
+                            Confirm Resume
+                          </Button>
 
-                          <div className="mt-4 flex flex-wrap gap-3">
-                            <Button
-                              onClick={() =>
-                                void handleMembershipAction()
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              {membershipActionLoading ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <Play className="size-4" />
-                              )}
-                              Confirm Resume
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setMembershipAction(null)
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              Back
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setMembershipAction(
+                                null,
+                              )
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            Back
+                          </Button>
                         </div>
-                      );
-                    }
+                      </div>
+                    ) : membershipAction ===
+                      "cancel" ? (
+                      <div>
+                        <p className="text-sm font-semibold">
+                          Cancel this membership?
+                        </p>
 
-                    if (
-                      membershipAction === "cancel"
-                    ) {
-                      return (
-                        <div>
-                          <p className="text-sm font-semibold">
-                            Cancel this membership?
-                          </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          Only this membership will be cancelled. Other memberships remain active.
+                        </p>
 
-                          <p className="mt-2 text-sm text-muted-foreground">
-                            This action will immediately disable gym access. The membership will remain in the database for record keeping.
-                          </p>
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              void handleMembershipAction()
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            {membershipActionLoading ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Ban className="size-4" />
+                            )}
+                            Confirm Cancellation
+                          </Button>
 
-                          <div className="mt-4 flex flex-wrap gap-3">
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                void handleMembershipAction()
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              {membershipActionLoading ? (
-                                <Loader2 className="size-4 animate-spin" />
-                              ) : (
-                                <Ban className="size-4" />
-                              )}
-                              Confirm Cancellation
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setMembershipAction(null)
-                              }
-                              disabled={
-                                membershipActionLoading
-                              }
-                            >
-                              Keep Membership
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() =>
+                              setMembershipAction(
+                                null,
+                              )
+                            }
+                            disabled={
+                              membershipActionLoading
+                            }
+                          >
+                            Keep Membership
+                          </Button>
                         </div>
-                      );
-                    }
-
-                    return (
+                      </div>
+                    ) : (
                       <div className="grid gap-3 sm:grid-cols-2">
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setMembershipAction("extend");
-                            setMembershipActionError("");
-                            setMembershipActionSuccess("");
+                            setMembershipAction(
+                              "extend",
+                            );
+                            setMembershipActionError(
+                              "",
+                            );
+                            setMembershipActionSuccess(
+                              "",
+                            );
                           }}
                         >
                           <CalendarPlus className="size-4" />
                           Extend
                         </Button>
 
-                        {status === "paused" ? (
+                        {String(
+                          selectedMembership.status ||
+                            "",
+                        ).toLowerCase() ===
+                        "paused" ? (
                           <Button
                             onClick={() => {
-                              setMembershipAction("resume");
-                              setMembershipActionError("");
-                              setMembershipActionSuccess("");
+                              setMembershipAction(
+                                "resume",
+                              );
+                              setMembershipActionError(
+                                "",
+                              );
+                              setMembershipActionSuccess(
+                                "",
+                              );
                             }}
                           >
                             <Play className="size-4" />
@@ -2286,12 +2898,22 @@ function ReceptionDashboardPage() {
                           <Button
                             variant="outline"
                             onClick={() => {
-                              setMembershipAction("pause");
-                              setMembershipActionError("");
-                              setMembershipActionSuccess("");
+                              setMembershipAction(
+                                "pause",
+                              );
+                              setMembershipActionError(
+                                "",
+                              );
+                              setMembershipActionSuccess(
+                                "",
+                              );
                             }}
                             disabled={
-                              status === "cancelled"
+                              String(
+                                selectedMembership.status ||
+                                  "",
+                              ).toLowerCase() ===
+                              "cancelled"
                             }
                           >
                             <Pause className="size-4" />
@@ -2302,12 +2924,22 @@ function ReceptionDashboardPage() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setMembershipAction("cancel");
-                            setMembershipActionError("");
-                            setMembershipActionSuccess("");
+                            setMembershipAction(
+                              "cancel",
+                            );
+                            setMembershipActionError(
+                              "",
+                            );
+                            setMembershipActionSuccess(
+                              "",
+                            );
                           }}
                           disabled={
-                            status === "cancelled"
+                            String(
+                              selectedMembership.status ||
+                                "",
+                            ).toLowerCase() ===
+                            "cancelled"
                           }
                           className="sm:col-span-2"
                         >
@@ -2315,10 +2947,88 @@ function ReceptionDashboardPage() {
                           Cancel Membership
                         </Button>
                       </div>
-                    );
-                  })()}
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* STATUS SUMMARY */}
+              {selectedMemberMemberships.map(
+                (membership) => {
+                  const valid =
+                    isMembershipValidToday(
+                      membership,
+                    );
+
+                  const status = String(
+                    membership.status || "",
+                  ).toLowerCase();
+
+                  return (
+                    <div
+                      key={`status-${membership.id}`}
+                      className={`border p-4 ${
+                        status === "paused"
+                          ? "border-orange-500/30 bg-orange-500/10"
+                          : status === "cancelled"
+                            ? "border-destructive/30 bg-destructive/10"
+                            : valid
+                              ? "border-primary bg-primary/5"
+                              : "border-destructive/30 bg-destructive/5"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {status === "paused" ? (
+                          <Pause className="mt-0.5 size-5 shrink-0 text-orange-600" />
+                        ) : status ===
+                          "cancelled" ? (
+                          <Ban className="mt-0.5 size-5 shrink-0 text-destructive" />
+                        ) : valid ? (
+                          <CheckCircle2 className="mt-0.5 size-5 text-primary" />
+                        ) : (
+                          <XCircle className="mt-0.5 size-5 text-destructive" />
+                        )}
+
+                        <div>
+                          <p className="font-bold">
+                            {membership.plan_name ||
+                              "Membership"}{" "}
+                            —{" "}
+                            {status ===
+                            "paused"
+                              ? "Paused"
+                              : status ===
+                                  "cancelled"
+                                ? "Cancelled"
+                                : valid
+                                  ? "Active"
+                                  : "Not Active"}
+                          </p>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {formatDate(
+                              membership.start_date,
+                            )}{" "}
+                            –{" "}
+                            {formatDate(
+                              membership.end_date,
+                            )}
+                          </p>
+
+                          {membership.paused_at && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Paused on{" "}
+                              {formatDate(
+                                membership.paused_at,
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                },
+              )}
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 {selectedMember.phone && (
@@ -2344,9 +3054,10 @@ function ReceptionDashboardPage() {
                   className="flex-1"
                   onClick={() => {
                     setSelectedMember(null);
-                    setMembershipAction(null);
-                    setMembershipActionError("");
-                    setMembershipActionSuccess("");
+                    resetMembershipManagement();
+                    setAddMembershipOpen(false);
+                    setAddMembershipError("");
+                    setAddMembershipSuccess("");
                   }}
                 >
                   Close
