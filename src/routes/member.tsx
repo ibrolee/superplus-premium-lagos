@@ -11,6 +11,7 @@ import {
   AlertCircle,
   RefreshCw,
   CreditCard,
+  MessageCircle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -130,15 +131,12 @@ function getContinuousMembership(memberships: any[]) {
     return null;
   }
 
-  // Find the membership that is active today.
   let currentIndex = normalized.findIndex(
     (membership) =>
       membership.normalizedStart <= today &&
       today <= membership.normalizedEnd,
   );
 
-  // If there is no membership active today,
-  // show the most recently created membership.
   if (currentIndex === -1) {
     return (
       [...normalized].sort((a, b) =>
@@ -154,9 +152,6 @@ function getContinuousMembership(memberships: any[]) {
   let combinedStart = currentMembership.normalizedStart;
   let combinedEnd = currentMembership.normalizedEnd;
 
-  // Look forward and combine memberships that start
-  // on the day immediately after the current period ends,
-  // or overlap it.
   for (
     let index = currentIndex + 1;
     index < normalized.length;
@@ -173,9 +168,6 @@ function getContinuousMembership(memberships: any[]) {
 
     const dayAfterCurrentEnd = addDays(combinedEnd, 1);
 
-    // If the next membership starts on or before the day
-    // immediately after the current membership ends,
-    // it is continuous.
     if (nextStart <= dayAfterCurrentEnd) {
       if (nextEnd > combinedEnd) {
         combinedEnd = nextEnd;
@@ -184,7 +176,6 @@ function getContinuousMembership(memberships: any[]) {
       continue;
     }
 
-    // There is a gap, so stop combining.
     break;
   }
 
@@ -541,6 +532,49 @@ function MemberDashboard() {
             Log Out
           </Button>
         </div>
+
+        {/* WHATSAPP GROUP */}
+        <section className="mb-6 border-2 border-green-600/30 bg-green-600/5 p-5 sm:p-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className="flex size-12 shrink-0 items-center justify-center bg-green-600 text-white">
+                <MessageCircle className="size-6" />
+              </div>
+
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.15em] text-green-700">
+                  Stay Connected
+                </p>
+
+                <h2 className="mt-1 font-display text-xl font-bold uppercase">
+                  Join Our WhatsApp Group
+                </h2>
+
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  Get gym updates, announcements,
+                  events and important member
+                  information.
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="https://chat.whatsapp.com/FysNYsQkx3rAqlB5WS4k6s?s=cl&p=i&mlu=4&ilr=4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto"
+            >
+              <Button
+                type="button"
+                size="lg"
+                className="w-full bg-green-600 text-white hover:bg-green-700 sm:w-auto"
+              >
+                <MessageCircle />
+                Join WhatsApp Group
+              </Button>
+            </a>
+          </div>
+        </section>
 
         <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
           {/* Membership */}
