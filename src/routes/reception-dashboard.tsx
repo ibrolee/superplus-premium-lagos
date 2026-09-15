@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   Cake,
   CheckCircle2,
@@ -246,6 +247,62 @@ function createWhatsAppBirthdayUrl(
   )}`;
 }
 
+/* WhatsApp renewal reminder */
+function createWhatsAppRenewalUrl(
+  member: MemberWithMembership,
+) {
+  if (!member.phone) return null;
+
+  const phone = member.phone.replace(/\D/g, "");
+
+  if (!phone) return null;
+
+  let whatsappNumber = phone;
+
+  if (phone.startsWith("0")) {
+    whatsappNumber = `234${phone.slice(1)}`;
+  } else if (phone.startsWith("234")) {
+    whatsappNumber = phone;
+  }
+
+  const firstName =
+    member.full_name?.trim().split(/\s+/)[0] ||
+    "Member";
+
+  const expiryDate =
+    getDateOnly(
+      member.membership?.end_date,
+    );
+
+  if (!expiryDate) return null;
+
+  const formattedExpiryDate =
+    new Intl.DateTimeFormat("en-NG", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(
+      new Date(`${expiryDate}T00:00:00`),
+    );
+
+  const message =
+    `💪🏽❤️ HELLO ${firstName}! ❤️💪🏽\n\n` +
+    `We noticed that your membership at Super Plus Fitness & Spa is coming to an end soon, and we wanted to personally reach out to you. 😊\n\n` +
+    `It has been a pleasure having you as part of the Super Plus family. Every workout, every effort, and every step you've taken toward becoming stronger and healthier matters. 🏋🏽‍♂️🔥\n\n` +
+    `We would love to see you continue your fitness journey with us without any break. Your goals are important to us, and we are always here to support you, encourage you and help you keep moving forward. ❤️\n\n` +
+    `Your membership expires on ${formattedExpiryDate}. 📅\n\n` +
+    `Whenever you're ready, you can renew your membership and keep the momentum going. Don't let the progress you've worked so hard for stop here. 💪🏽✨\n\n` +
+    `Thank you for choosing Super Plus Fitness & Spa and for being part of our family. We truly appreciate having you with us. 🙏❤️\n\n` +
+    `Stay strong. Stay consistent. Keep becoming better. 🔥\n\n` +
+    `We look forward to seeing you again! 😊💪🏽\n\n` +
+    `With love from your Super Plus family ❤️\n` +
+    `— Super Plus Fitness & Spa`;
+
+  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
+    message,
+  )}`;
+}
+
 function ExpandableSummary({
   eyebrow,
   title,
@@ -257,7 +314,7 @@ function ExpandableSummary({
   title: string;
   description: string;
   count: number;
-  icon: React.ReactNode;
+  icon: ReactNode;
 }) {
   return (
     <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden sm:p-6">
@@ -1403,6 +1460,11 @@ function ReceptionDashboardPage() {
                             ),
                           );
 
+                        const whatsappUrl =
+                          createWhatsAppRenewalUrl(
+                            member,
+                          );
+
                         return (
                           <div
                             key={
@@ -1474,6 +1536,27 @@ function ReceptionDashboardPage() {
                                     }
                                   </span>
                                 </a>
+                              )}
+
+                              {whatsappUrl ? (
+                                <a
+                                  href={
+                                    whatsappUrl
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-green-600 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-white transition-opacity hover:opacity-90"
+                                >
+                                  <span className="mr-2 text-base">
+                                    💬
+                                  </span>
+
+                                  Send WhatsApp Renewal Reminder
+                                </a>
+                              ) : (
+                                <div className="mt-2 rounded-md bg-muted px-4 py-3 text-center text-[10px] font-extrabold uppercase text-muted-foreground">
+                                  No phone number — WhatsApp unavailable
+                                </div>
                               )}
                             </div>
                           </div>
