@@ -323,6 +323,7 @@ export const navItems = [
   { label: "Personal Training", to: "/personal-training" },
   { label: "Facilities", to: "/facilities" },
   { label: "Spa & Recovery", to: "/spa-recovery" },
+  { label: "Blog", to: "/blog" },
   { label: "About", to: "/about" },
   { label: "HMO", to: "/hmo" },
   { label: "Contact", to: "/contact" },
