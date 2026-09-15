@@ -19,6 +19,8 @@ function JoinPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,6 +57,8 @@ function JoinPage() {
     const trimmedName = fullName.trim();
     const trimmedEmail = email.trim().toLowerCase();
     const trimmedPhone = phone.trim();
+    const day = Number(birthDay);
+    const month = Number(birthMonth);
 
     if (!trimmedName) {
       setError("Please enter your full name.");
@@ -71,6 +75,21 @@ function JoinPage() {
       return;
     }
 
+    if (!birthDay || !Number.isInteger(day) || day < 1 || day > 31) {
+      setError("Please select a valid birth day.");
+      return;
+    }
+
+    if (
+      !birthMonth ||
+      !Number.isInteger(month) ||
+      month < 1 ||
+      month > 12
+    ) {
+      setError("Please select a valid birth month.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -83,6 +102,8 @@ function JoinPage() {
               fullName: trimmedName,
               email: trimmedEmail,
               phone: trimmedPhone,
+              birthDay: day,
+              birthMonth: month,
             },
           },
         );
@@ -361,6 +382,72 @@ function JoinPage() {
                       disabled={loading}
                       className="h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                     />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      Date of birth
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <select
+                        id="birthDay"
+                        value={birthDay}
+                        onChange={(event) =>
+                          setBirthDay(event.target.value)
+                        }
+                        disabled={loading}
+                        className="h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                      >
+                        <option value="">
+                          Day
+                        </option>
+
+                        {Array.from(
+                          { length: 31 },
+                          (_, index) => index + 1,
+                        ).map((day) => (
+                          <option
+                            key={day}
+                            value={day}
+                          >
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        id="birthMonth"
+                        value={birthMonth}
+                        onChange={(event) =>
+                          setBirthMonth(event.target.value)
+                        }
+                        disabled={loading}
+                        className="h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                      >
+                        <option value="">
+                          Month
+                        </option>
+
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                      </select>
+                    </div>
+
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      We only need your birth day and month for
+                      birthday offers and member benefits.
+                    </p>
                   </div>
 
                   {error && (
