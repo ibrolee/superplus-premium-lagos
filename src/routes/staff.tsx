@@ -9,6 +9,7 @@ import {
   LogIn,
   LogOut,
   QrCode,
+  ScanLine,
   ShieldCheck,
   UserRound,
   Wallet,
@@ -205,12 +206,6 @@ function StaffPage() {
       return;
     }
 
-    /*
-     * ----------------------------------------------------
-     * CHECK STAFF MANAGEMENT ACCESS
-     * ----------------------------------------------------
-     */
-
     const { data: staffUser } = await supabase
       .from("staff_users")
       .select("id, role, active")
@@ -224,12 +219,6 @@ function StaffPage() {
       );
 
     setIsAdmin(managementAccess);
-
-    /*
-     * ----------------------------------------------------
-     * LOAD STAFF PROFILE
-     * ----------------------------------------------------
-     */
 
     const { data: staffProfile, error: profileError } =
       await supabase
@@ -275,12 +264,6 @@ function StaffPage() {
     setProfile(staff);
     setEditPhone(staff.phone || "");
     setEditAddress(staff.address || "");
-
-    /*
-     * ----------------------------------------------------
-     * LOAD SALARY + ATTENDANCE
-     * ----------------------------------------------------
-     */
 
     const [salaryResult, attendanceResult] = await Promise.all([
       supabase
@@ -474,78 +457,6 @@ function StaffPage() {
     setSaving(false);
   }
 
-  async function clockIn() {
-    if (!profile) return;
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const activeRecord = attendanceRecords.find(
-      (record) => !record.checked_out_at,
-    );
-
-    if (activeRecord) {
-      setError("You are already clocked in.");
-      setSaving(false);
-      return;
-    }
-
-    const { error: attendanceError } = await supabase
-      .from("staff_attendance")
-      .insert({
-        staff_profile_id: profile.id,
-        checked_in_at: new Date().toISOString(),
-      });
-
-    if (attendanceError) {
-      setError(attendanceError.message);
-      setSaving(false);
-      return;
-    }
-
-    setSuccess("You have been clocked in successfully.");
-    setSaving(false);
-
-    await loadStaff();
-  }
-
-  async function clockOut() {
-    if (!profile) return;
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const activeRecord = attendanceRecords.find(
-      (record) => !record.checked_out_at,
-    );
-
-    if (!activeRecord) {
-      setError("You are not currently clocked in.");
-      setSaving(false);
-      return;
-    }
-
-    const { error: attendanceError } = await supabase
-      .from("staff_attendance")
-      .update({
-        checked_out_at: new Date().toISOString(),
-      })
-      .eq("id", activeRecord.id);
-
-    if (attendanceError) {
-      setError(attendanceError.message);
-      setSaving(false);
-      return;
-    }
-
-    setSuccess("You have been clocked out successfully.");
-    setSaving(false);
-
-    await loadStaff();
-  }
-
   async function downloadQr() {
     const svg = document.querySelector(
       "#staff-profile-qr",
@@ -633,7 +544,7 @@ function StaffPage() {
 
   /*
    * ----------------------------------------------------
-   * LOGIN / REGISTER SCREEN
+   * LOGIN / REGISTER
    * ----------------------------------------------------
    */
 
@@ -923,6 +834,7 @@ function StaffPage() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+
         {error && (
           <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
             {error}
@@ -1009,6 +921,52 @@ function StaffPage() {
           </div>
         </section>
 
+        {/* QR ATTENDANCE */}
+        <section className="mt-4 border-2 border-primary/40 bg-primary/5 p-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <ScanLine className="size-6 text-primary" />
+
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                  Staff Timekeeping
+                </p>
+              </div>
+
+              <h2 className="mt-2 font-display text-3xl font-black uppercase">
+                {activeAttendance
+                  ? "Currently Clocked In"
+                  : "Clock In / Clock Out"}
+              </h2>
+
+              <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+                Scan the attendance QR code displayed at the gym to
+                record your working hours.
+              </p>
+
+              {activeAttendance && (
+                <p className="mt-3 text-sm font-semibold">
+                  Clocked in:{" "}
+                  {formatDateTime(
+                    activeAttendance.checked_in_at,
+                  )}
+                </p>
+              )}
+            </div>
+
+            <Button
+              asChild
+              size="lg"
+              className="w-full shrink-0 sm:w-auto"
+            >
+              <Link to="/staff-attendance">
+                <ScanLine />
+                Scan Attendance QR
+              </Link>
+            </Button>
+          </div>
+        </section>
+
         {/* STAFF ID */}
         <section className="mt-4 border border-border bg-card p-6">
           <p className="text-xs font-bold uppercase tracking-widest text-primary">
@@ -1022,57 +980,6 @@ function StaffPage() {
           <p className="mt-2 text-xs text-muted-foreground">
             Use this ID when communicating with management.
           </p>
-        </section>
-
-        {/* TODAY'S ATTENDANCE */}
-        <section className="mt-4 border border-border bg-card p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            Today's Attendance
-          </p>
-
-          <h2 className="mt-2 font-display text-3xl font-bold uppercase">
-            {activeAttendance
-              ? "You Are Clocked In"
-              : "You Are Clocked Out"}
-          </h2>
-
-          <p className="mt-2 text-sm text-muted-foreground">
-            Record your working hours directly from the staff portal.
-          </p>
-
-          <div className="mt-5">
-            {activeAttendance ? (
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => void clockOut()}
-                disabled={saving}
-              >
-                <LogOut />
-                Clock Out
-              </Button>
-            ) : (
-              <Button
-                className="w-full sm:w-auto"
-                onClick={() => void clockIn()}
-                disabled={saving}
-              >
-                <LogIn />
-                Clock In
-              </Button>
-            )}
-          </div>
-
-          {activeAttendance && (
-            <p className="mt-4 text-xs text-muted-foreground">
-              Clocked in:{" "}
-              <strong>
-                {formatDateTime(
-                  activeAttendance.checked_in_at,
-                )}
-              </strong>
-            </p>
-          )}
         </section>
 
         {/* PERSONAL INFORMATION */}
@@ -1409,7 +1316,7 @@ function StaffPage() {
           )}
         </section>
 
-        {/* ATTENDANCE */}
+        {/* ATTENDANCE HISTORY */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1500,7 +1407,7 @@ function StaffPage() {
           )}
         </section>
 
-        {/* QR CODE */}
+        {/* PERSONAL QR */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1526,8 +1433,7 @@ function StaffPage() {
             <div className="border-t border-border p-6">
               <div className="mx-auto max-w-md text-center">
                 <p className="text-sm text-muted-foreground">
-                  Use this QR code for staff identification and
-                  attendance systems.
+                  This is your personal staff identification QR.
                 </p>
 
                 <div className="mt-6 flex justify-center bg-white p-6">
@@ -1557,7 +1463,7 @@ function StaffPage() {
           )}
         </section>
 
-        {/* ADMIN MANAGEMENT SHORTCUT */}
+        {/* MANAGEMENT */}
         {isAdmin && (
           <section className="mt-6 border border-primary/30 bg-primary/5 p-6">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
