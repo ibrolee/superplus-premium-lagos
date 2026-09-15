@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Cake,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Loader2,
   LogIn,
@@ -204,6 +205,55 @@ function formatDuration(
   }
 
   return `${remainingMinutes}m`;
+}
+
+function ExpandableSummary({
+  eyebrow,
+  title,
+  description,
+  count,
+  icon,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+  count: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border border-border bg-background p-5 shadow-sm [&::-webkit-details-marker]:hidden sm:p-6">
+      <div className="min-w-0">
+        <div className="flex items-center gap-3">
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+            {eyebrow}
+          </p>
+
+          <span className="bg-muted px-2 py-1 text-[10px] font-extrabold uppercase">
+            {count}
+          </span>
+        </div>
+
+        <h2 className="mt-2 font-display text-3xl font-bold uppercase sm:text-4xl">
+          {title}
+        </h2>
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          {description}
+        </p>
+      </div>
+
+      <div className="flex shrink-0 flex-col items-center gap-2">
+        <div className="flex size-11 items-center justify-center bg-primary text-primary-foreground">
+          {icon}
+        </div>
+
+        <span className="flex items-center gap-1 text-[10px] font-extrabold uppercase text-primary">
+          View
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+        </span>
+      </div>
+    </summary>
+  );
 }
 
 function ReceptionDashboardPage() {
@@ -550,12 +600,6 @@ function ReceptionDashboardPage() {
     ),
   ).size;
 
-  const newMembersToday = members.filter(
-    (member) => {
-      return false;
-    },
-  );
-
   const expiringSoon = members
     .filter((member) => {
       const endDate = getDateOnly(
@@ -699,6 +743,25 @@ function ReceptionDashboardPage() {
             </div>
           </div>
 
+          {/* ERROR */}
+          {loadError && (
+            <section className="mb-8 border border-destructive/30 bg-destructive/10 p-5">
+              <div className="flex items-start gap-3">
+                <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
+
+                <div>
+                  <p className="text-xs font-extrabold uppercase text-destructive">
+                    Dashboard Error
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-destructive">
+                    {loadError}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* OVERVIEW */}
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
@@ -791,330 +854,182 @@ function ReceptionDashboardPage() {
 
           {/* CURRENTLY INSIDE */}
           <section className="mt-8">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                  Live Attendance
-                </p>
+            <details className="group">
+              <ExpandableSummary
+                eyebrow="Live Attendance"
+                title="Currently Inside"
+                description="Members who have checked in but have not checked out."
+                count={currentlyInside.length}
+                icon={<Users className="size-6" />}
+              />
 
-                <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
-                  Currently Inside
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Members who have checked in but have not
-                  checked out.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs font-extrabold uppercase">
-                <Users className="size-4 text-primary" />
-                {currentlyInside.length} inside
-              </div>
-            </div>
-
-            {loadingAttendance ? (
-              <div className="flex items-center justify-center border border-border bg-background py-16">
-                <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                  <Loader2 className="size-5 animate-spin" />
-                  Loading attendance...
-                </div>
-              </div>
-            ) : currentlyInside.length === 0 ? (
-              <div className="border border-border bg-background p-8 text-center shadow-sm">
-                <LogIn className="mx-auto size-8 text-muted-foreground" />
-
-                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
-                  Nobody Is Currently Inside
-                </h3>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Members will appear here after they scan in.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden border border-border bg-background shadow-sm">
-                <div className="hidden grid-cols-[1fr_130px_130px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                  <div>Member</div>
-                  <div>Check-In</div>
-                  <div>Duration</div>
-                </div>
-
-                <div className="divide-y divide-border">
-                  {currentlyInside.map((attendance) => (
-                    <div
-                      key={attendance.id}
-                      className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-bold uppercase">
-                          {attendance.member?.full_name ||
-                            "Member"}
-                        </p>
-
-                        {attendance.member?.phone && (
-                          <a
-                            href={`tel:${attendance.member.phone}`}
-                            className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
-                          >
-                            <Phone className="size-3" />
-                            {attendance.member.phone}
-                          </a>
-                        )}
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-bold">
-                          {formatTime(
-                            attendance.checked_in_at,
-                          )}
-                        </p>
-
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Checked in
-                        </p>
-                      </div>
-
-                      <div>
-                        <p className="text-sm font-bold">
-                          {formatDuration(
-                            attendance.checked_in_at,
-                            null,
-                          )}
-                        </p>
-
-                        <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
-                          Current visit
-                        </p>
-                      </div>
+              <div className="mt-3">
+                {loadingAttendance ? (
+                  <div className="flex items-center justify-center border border-border bg-background py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Loading attendance...
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : currentlyInside.length === 0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <LogIn className="mx-auto size-8 text-muted-foreground" />
+
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      Nobody Is Currently Inside
+                    </h3>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Members will appear here after they scan in.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden border border-border bg-background shadow-sm">
+                    <div className="hidden grid-cols-[1fr_130px_130px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
+                      <div>Member</div>
+                      <div>Check-In</div>
+                      <div>Duration</div>
+                    </div>
+
+                    <div className="divide-y divide-border">
+                      {currentlyInside.map((attendance) => (
+                        <div
+                          key={attendance.id}
+                          className="grid gap-4 px-5 py-5 md:grid-cols-[1fr_130px_130px] md:items-center"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-bold uppercase">
+                              {attendance.member?.full_name ||
+                                "Member"}
+                            </p>
+
+                            {attendance.member?.phone && (
+                              <a
+                                href={`tel:${attendance.member.phone}`}
+                                className="mt-1 flex items-center gap-2 text-xs text-muted-foreground hover:text-primary"
+                              >
+                                <Phone className="size-3" />
+                                {attendance.member.phone}
+                              </a>
+                            )}
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-bold">
+                              {formatTime(
+                                attendance.checked_in_at,
+                              )}
+                            </p>
+
+                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                              Checked in
+                            </p>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-bold">
+                              {formatDuration(
+                                attendance.checked_in_at,
+                                null,
+                              )}
+                            </p>
+
+                            <p className="text-[10px] font-extrabold uppercase text-muted-foreground">
+                              Current visit
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </details>
           </section>
 
           {/* EXPIRING SOON */}
           <section className="mt-10">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                  Membership Alerts
-                </p>
+            <details className="group">
+              <ExpandableSummary
+                eyebrow="Membership Alerts"
+                title="Expiring Soon"
+                description="Memberships expiring today or within the next 7 days."
+                count={expiringSoon.length}
+                icon={<Clock3 className="size-6" />}
+              />
 
-                <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
-                  Expiring Soon
-                </h2>
+              <div className="mt-3">
+                {expiringSoon.length === 0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <CheckCircle2 className="mx-auto size-8 text-green-700" />
 
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Memberships expiring today or within the next
-                  7 days.
-                </p>
-              </div>
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      No Expiring Memberships
+                    </h3>
 
-              <div className="text-xs font-extrabold uppercase">
-                {expiringSoon.length} member
-                {expiringSoon.length === 1
-                  ? ""
-                  : "s"}
-              </div>
-            </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No memberships are expiring within the next
+                      7 days.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {expiringSoon.map((member) => {
+                      const days =
+                        getDaysUntilExpiry(
+                          getDateOnly(
+                            member.membership?.end_date,
+                          ),
+                        );
 
-            {expiringSoon.length === 0 ? (
-              <div className="border border-border bg-background p-8 text-center shadow-sm">
-                <CheckCircle2 className="mx-auto size-8 text-green-700" />
-
-                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
-                  No Expiring Memberships
-                </h3>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No memberships are expiring within the next
-                  7 days.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {expiringSoon.map((member) => {
-                  const days =
-                    getDaysUntilExpiry(
-                      getDateOnly(
-                        member.membership?.end_date,
-                      ),
-                    );
-
-                  return (
-                    <div
-                      key={member.id}
-                      className="border border-border bg-background p-6 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <h3 className="font-display text-2xl font-bold uppercase">
-                            {member.full_name ||
-                              "Member"}
-                          </h3>
-
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {member.membership?.plan_name ||
-                              "Membership"}
-                          </p>
-                        </div>
-
-                        <span
-                          className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
-                            days === 0
-                              ? "bg-destructive/10 text-destructive"
-                              : days !== null &&
-                                  days <= 3
-                                ? "bg-primary/10 text-primary"
-                                : "bg-muted text-foreground"
-                          }`}
+                      return (
+                        <div
+                          key={member.id}
+                          className="border border-border bg-background p-6 shadow-sm"
                         >
-                          {days === 0
-                            ? "Expires today"
-                            : days === 1
-                              ? "1 day left"
-                              : `${days} days left`}
-                        </span>
-                      </div>
-
-                      <div className="mt-5 grid gap-3 text-sm">
-                        <div className="flex items-center gap-3">
-                          <Clock3 className="size-4 text-primary" />
-
-                          <span>
-                            Expires{" "}
-                            <strong>
-                              {getDateOnly(
-                                member.membership
-                                  ?.end_date,
-                              )}
-                            </strong>
-                          </span>
-                        </div>
-
-                        {member.phone && (
-                          <a
-                            href={`tel:${member.phone}`}
-                            className="flex items-center gap-3 hover:text-primary"
-                          >
-                            <Phone className="size-4 text-primary" />
-                            <span>{member.phone}</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-
-          {/* TODAY'S BIRTHDAYS */}
-          <section className="mt-10">
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                  Today
-                </p>
-
-                <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
-                  Today's Birthdays
-                </h2>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Members celebrating their birthday today.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs font-extrabold uppercase">
-                <Cake className="size-4 text-primary" />
-                {birthdaysToday.length} member
-                {birthdaysToday.length === 1
-                  ? ""
-                  : "s"}
-              </div>
-            </div>
-
-            {loadingMembers ? (
-              <div className="flex items-center justify-center border border-border bg-background py-16">
-                <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                  <Loader2 className="size-5 animate-spin" />
-                  Loading birthdays...
-                </div>
-              </div>
-            ) : birthdaysToday.length === 0 ? (
-              <div className="border border-border bg-background p-8 text-center shadow-sm">
-                <Cake className="mx-auto size-8 text-muted-foreground" />
-
-                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
-                  No Birthdays Today
-                </h3>
-
-                <p className="mt-2 text-sm text-muted-foreground">
-                  There are no recorded member birthdays for today.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {birthdaysToday.map((member) => {
-                  const active =
-                    isMembershipActive(
-                      member.membership,
-                    );
-
-                  return (
-                    <div
-                      key={member.id}
-                      className="border border-primary/30 bg-background p-6 shadow-sm"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-                          <Cake className="size-6" />
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
                               <h3 className="font-display text-2xl font-bold uppercase">
                                 {member.full_name ||
                                   "Member"}
                               </h3>
 
-                              <p className="mt-1 text-sm font-bold text-primary">
-                                Birthday today 🎉
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {member.membership?.plan_name ||
+                                  "Membership"}
                               </p>
                             </div>
 
                             <span
-                              className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
-                                active
-                                  ? "bg-green-600/10 text-green-700"
-                                  : "bg-destructive/10 text-destructive"
+                              className={`shrink-0 px-3 py-1 text-[10px] font-extrabold uppercase ${
+                                days === 0
+                                  ? "bg-destructive/10 text-destructive"
+                                  : days !== null &&
+                                      days <= 3
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-muted text-foreground"
                               }`}
                             >
-                              {active ? (
-                                <CheckCircle2 className="size-3" />
-                              ) : (
-                                <XCircle className="size-3" />
-                              )}
-
-                              {active
-                                ? "Active"
-                                : "Expired"}
+                              {days === 0
+                                ? "Expires today"
+                                : days === 1
+                                  ? "1 day left"
+                                  : `${days} days left`}
                             </span>
                           </div>
 
                           <div className="mt-5 grid gap-3 text-sm">
                             <div className="flex items-center gap-3">
-                              <Cake className="size-4 shrink-0 text-primary" />
+                              <Clock3 className="size-4 text-primary" />
 
                               <span>
-                                {formatBirthday(
-                                  member.birth_day,
-                                  member.birth_month,
-                                )}
+                                Expires{" "}
+                                <strong>
+                                  {getDateOnly(
+                                    member.membership
+                                      ?.end_date,
+                                  )}
+                                </strong>
                               </span>
                             </div>
 
@@ -1123,179 +1038,290 @@ function ReceptionDashboardPage() {
                                 href={`tel:${member.phone}`}
                                 className="flex items-center gap-3 hover:text-primary"
                               >
-                                <Phone className="size-4 shrink-0 text-primary" />
-                                <span>
-                                  {member.phone}
-                                </span>
+                                <Phone className="size-4 text-primary" />
+                                <span>{member.phone}</span>
                               </a>
-                            )}
-
-                            {member.membership
-                              ?.plan_name && (
-                              <div className="flex items-center gap-3">
-                                <UserRound className="size-4 shrink-0 text-primary" />
-
-                                <span>
-                                  {
-                                    member.membership
-                                      .plan_name
-                                  }
-                                </span>
-                              </div>
                             )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
+            </details>
+          </section>
+
+          {/* TODAY'S BIRTHDAYS */}
+          <section className="mt-10">
+            <details className="group">
+              <ExpandableSummary
+                eyebrow="Today"
+                title="Today's Birthdays"
+                description="Members celebrating their birthday today."
+                count={birthdaysToday.length}
+                icon={<Cake className="size-6" />}
+              />
+
+              <div className="mt-3">
+                {loadingMembers ? (
+                  <div className="flex items-center justify-center border border-border bg-background py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Loading birthdays...
+                    </div>
+                  </div>
+                ) : birthdaysToday.length === 0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <Cake className="mx-auto size-8 text-muted-foreground" />
+
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      No Birthdays Today
+                    </h3>
+
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      There are no recorded member birthdays for today.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {birthdaysToday.map((member) => {
+                      const active =
+                        isMembershipActive(
+                          member.membership,
+                        );
+
+                      return (
+                        <div
+                          key={member.id}
+                          className="border border-primary/30 bg-background p-6 shadow-sm"
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="flex size-12 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+                              <Cake className="size-6" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                  <h3 className="font-display text-2xl font-bold uppercase">
+                                    {member.full_name ||
+                                      "Member"}
+                                  </h3>
+
+                                  <p className="mt-1 text-sm font-bold text-primary">
+                                    Birthday today 🎉
+                                  </p>
+                                </div>
+
+                                <span
+                                  className={`inline-flex w-fit items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
+                                    active
+                                      ? "bg-green-600/10 text-green-700"
+                                      : "bg-destructive/10 text-destructive"
+                                  }`}
+                                >
+                                  {active ? (
+                                    <CheckCircle2 className="size-3" />
+                                  ) : (
+                                    <XCircle className="size-3" />
+                                  )}
+
+                                  {active
+                                    ? "Active"
+                                    : "Expired"}
+                                </span>
+                              </div>
+
+                              <div className="mt-5 grid gap-3 text-sm">
+                                <div className="flex items-center gap-3">
+                                  <Cake className="size-4 shrink-0 text-primary" />
+
+                                  <span>
+                                    {formatBirthday(
+                                      member.birth_day,
+                                      member.birth_month,
+                                    )}
+                                  </span>
+                                </div>
+
+                                {member.phone && (
+                                  <a
+                                    href={`tel:${member.phone}`}
+                                    className="flex items-center gap-3 hover:text-primary"
+                                  >
+                                    <Phone className="size-4 shrink-0 text-primary" />
+                                    <span>
+                                      {member.phone}
+                                    </span>
+                                  </a>
+                                )}
+
+                                {member.membership
+                                  ?.plan_name && (
+                                  <div className="flex items-center gap-3">
+                                    <UserRound className="size-4 shrink-0 text-primary" />
+
+                                    <span>
+                                      {
+                                        member.membership
+                                          .plan_name
+                                      }
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </details>
           </section>
 
           {/* BIRTHDAYS THIS MONTH */}
           <section className="mt-10">
-            <div className="mb-5">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                {currentMonthName}
-              </p>
+            <details className="group">
+              <ExpandableSummary
+                eyebrow={currentMonthName}
+                title="Birthdays This Month"
+                description={`All members celebrating their birthday in ${currentMonthName}, arranged by date.`}
+                count={birthdaysThisMonth.length}
+                icon={<Cake className="size-6" />}
+              />
 
-              <h2 className="font-display text-3xl font-bold uppercase sm:text-4xl">
-                Birthdays This Month
-              </h2>
+              <div className="mt-3">
+                {loadingMembers ? (
+                  <div className="flex items-center justify-center border border-border bg-background py-16">
+                    <div className="flex items-center gap-3 text-sm font-bold uppercase">
+                      <Loader2 className="size-5 animate-spin" />
+                      Loading birthdays...
+                    </div>
+                  </div>
+                ) : birthdaysThisMonth.length === 0 ? (
+                  <div className="border border-border bg-background p-8 text-center shadow-sm">
+                    <Cake className="mx-auto size-8 text-muted-foreground" />
 
-              <p className="mt-2 text-sm text-muted-foreground">
-                All members celebrating their birthday in{" "}
-                {currentMonthName}, arranged by date.
-              </p>
-            </div>
+                    <h3 className="mt-4 font-display text-2xl font-bold uppercase">
+                      No Birthdays This Month
+                    </h3>
 
-            {loadingMembers ? (
-              <div className="flex items-center justify-center border border-border bg-background py-16">
-                <div className="flex items-center gap-3 text-sm font-bold uppercase">
-                  <Loader2 className="size-5 animate-spin" />
-                  Loading birthdays...
-                </div>
-              </div>
-            ) : birthdaysThisMonth.length === 0 ? (
-              <div className="border border-border bg-background p-8 text-center shadow-sm">
-                <Cake className="mx-auto size-8 text-muted-foreground" />
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      No member birthdays have been recorded for{" "}
+                      {currentMonthName}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-hidden border border-border bg-background shadow-sm">
+                    <div className="hidden grid-cols-[90px_1fr_150px_170px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
+                      <div>Date</div>
+                      <div>Member</div>
+                      <div>Membership</div>
+                      <div>Phone</div>
+                    </div>
 
-                <h3 className="mt-4 font-display text-2xl font-bold uppercase">
-                  No Birthdays This Month
-                </h3>
+                    <div className="divide-y divide-border">
+                      {birthdaysThisMonth.map((member) => {
+                        const active =
+                          isMembershipActive(
+                            member.membership,
+                          );
 
-                <p className="mt-2 text-sm text-muted-foreground">
-                  No member birthdays have been recorded for{" "}
-                  {currentMonthName}.
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-hidden border border-border bg-background shadow-sm">
-                <div className="hidden grid-cols-[90px_1fr_150px_170px] gap-4 border-b border-border bg-muted px-5 py-4 text-[10px] font-extrabold uppercase tracking-[0.12em] md:grid">
-                  <div>Date</div>
-                  <div>Member</div>
-                  <div>Membership</div>
-                  <div>Phone</div>
-                </div>
+                        const isToday =
+                          member.birth_day === today.day;
 
-                <div className="divide-y divide-border">
-                  {birthdaysThisMonth.map((member) => {
-                    const active =
-                      isMembershipActive(
-                        member.membership,
-                      );
-
-                    const isToday =
-                      member.birth_day === today.day;
-
-                    return (
-                      <div
-                        key={member.id}
-                        className={`grid gap-4 px-5 py-5 md:grid-cols-[90px_1fr_150px_170px] md:items-center ${
-                          isToday
-                            ? "bg-primary/5"
-                            : "bg-background"
-                        }`}
-                      >
-                        <div>
-                          <div className="font-display text-2xl font-bold">
-                            {member.birth_day}
-                          </div>
-
-                          {isToday && (
-                            <span className="text-[10px] font-extrabold uppercase text-primary">
-                              Today
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="min-w-0">
-                          <p className="font-bold uppercase">
-                            {member.full_name ||
-                              "Member"}
-                          </p>
-
-                          {member.email && (
-                            <p className="mt-1 truncate text-xs text-muted-foreground">
-                              {member.email}
-                            </p>
-                          )}
-                        </div>
-
-                        <div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
-                              active
-                                ? "bg-green-600/10 text-green-700"
-                                : "bg-destructive/10 text-destructive"
+                        return (
+                          <div
+                            key={member.id}
+                            className={`grid gap-4 px-5 py-5 md:grid-cols-[90px_1fr_150px_170px] md:items-center ${
+                              isToday
+                                ? "bg-primary/5"
+                                : "bg-background"
                             }`}
                           >
-                            {active ? (
-                              <CheckCircle2 className="size-3" />
-                            ) : (
-                              <XCircle className="size-3" />
-                            )}
+                            <div>
+                              <div className="font-display text-2xl font-bold">
+                                {member.birth_day}
+                              </div>
 
-                            {active
-                              ? "Active"
-                              : "Expired"}
-                          </span>
+                              {isToday && (
+                                <span className="text-[10px] font-extrabold uppercase text-primary">
+                                  Today
+                                </span>
+                              )}
+                            </div>
 
-                          {member.membership
-                            ?.plan_name && (
-                            <p className="mt-2 text-xs text-muted-foreground">
-                              {
-                                member.membership
-                                  .plan_name
-                              }
-                            </p>
-                          )}
-                        </div>
+                            <div className="min-w-0">
+                              <p className="font-bold uppercase">
+                                {member.full_name ||
+                                  "Member"}
+                              </p>
 
-                        <div>
-                          {member.phone ? (
-                            <a
-                              href={`tel:${member.phone}`}
-                              className="flex items-center gap-2 text-sm hover:text-primary"
-                            >
-                              <Phone className="size-4 shrink-0 text-primary" />
-                              <span>
-                                {member.phone}
+                              {member.email && (
+                                <p className="mt-1 truncate text-xs text-muted-foreground">
+                                  {member.email}
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              <span
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-extrabold uppercase ${
+                                  active
+                                    ? "bg-green-600/10 text-green-700"
+                                    : "bg-destructive/10 text-destructive"
+                                }`}
+                              >
+                                {active ? (
+                                  <CheckCircle2 className="size-3" />
+                                ) : (
+                                  <XCircle className="size-3" />
+                                )}
+
+                                {active
+                                  ? "Active"
+                                  : "Expired"}
                               </span>
-                            </a>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              No phone number
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+
+                              {member.membership
+                                ?.plan_name && (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  {
+                                    member.membership
+                                      .plan_name
+                                  }
+                                </p>
+                              )}
+                            </div>
+
+                            <div>
+                              {member.phone ? (
+                                <a
+                                  href={`tel:${member.phone}`}
+                                  className="flex items-center gap-2 text-sm hover:text-primary"
+                                >
+                                  <Phone className="size-4 shrink-0 text-primary" />
+                                  <span>
+                                    {member.phone}
+                                  </span>
+                                </a>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">
+                                  No phone number
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
+            </details>
           </section>
 
           {/* QUICK ACTIONS */}
