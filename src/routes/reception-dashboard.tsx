@@ -105,16 +105,28 @@ const receptionOnlyPlan = {
   checkoutUrl: "",
 };
 
+const customMembershipPlan = {
+  id: "custom-plan",
+  name: "Custom Plan",
+  category: "Membership" as const,
+  group: "Membership" as const,
+  price: 0,
+  duration: "Custom duration",
+  registration: 7000,
+  benefits: [
+    "Custom number of days",
+    "Custom price",
+    "Optional ₦7,000 registration fee",
+  ],
+  checkoutUrl: "",
+};
+
 function getLocalDateString() {
   const now = new Date();
 
   const year = now.getFullYear();
-  const month = String(
-    now.getMonth() + 1,
-  ).padStart(2, "0");
-  const day = String(
-    now.getDate(),
-  ).padStart(2, "0");
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -123,19 +135,13 @@ function addDaysToDateString(
   dateString: string,
   days: number,
 ) {
-  const date = new Date(
-    `${dateString}T12:00:00`,
-  );
+  const date = new Date(`${dateString}T12:00:00`);
 
   date.setDate(date.getDate() + days);
 
   const year = date.getFullYear();
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, "0");
-  const day = String(
-    date.getDate(),
-  ).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
 }
@@ -154,13 +160,8 @@ function getDaysBetween(
   startDate: string,
   endDate: string,
 ) {
-  const start = new Date(
-    `${startDate}T12:00:00`,
-  );
-
-  const end = new Date(
-    `${endDate}T12:00:00`,
-  );
+  const start = new Date(`${startDate}T12:00:00`);
+  const end = new Date(`${endDate}T12:00:00`);
 
   return Math.max(
     0,
@@ -195,9 +196,7 @@ function isMembershipValidToday(
     membership.end_date,
   );
 
-  if (!startDate || !endDate) {
-    return false;
-  }
+  if (!startDate || !endDate) return false;
 
   const today = getLocalDateString();
 
@@ -214,9 +213,7 @@ function formatDate(value: string | null) {
 
   if (!dateOnly) return "—";
 
-  const date = new Date(
-    `${dateOnly}T12:00:00`,
-  );
+  const date = new Date(`${dateOnly}T12:00:00`);
 
   return date.toLocaleDateString("en-NG", {
     day: "numeric",
@@ -228,18 +225,13 @@ function formatDate(value: string | null) {
 function formatTime(value: string | null) {
   if (!value) return "—";
 
-  return new Date(value).toLocaleTimeString(
-    "en-NG",
-    {
-      hour: "numeric",
-      minute: "2-digit",
-    },
-  );
+  return new Date(value).toLocaleTimeString("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-function getDaysRemaining(
-  endDate: string | null,
-) {
+function getDaysRemaining(endDate: string | null) {
   if (!endDate) return null;
 
   const endDateOnly = getDateOnly(endDate);
@@ -250,9 +242,7 @@ function getDaysRemaining(
     `${getLocalDateString()}T12:00:00`,
   );
 
-  const end = new Date(
-    `${endDateOnly}T12:00:00`,
-  );
+  const end = new Date(`${endDateOnly}T12:00:00`);
 
   return Math.ceil(
     (end.getTime() - today.getTime()) /
@@ -292,8 +282,7 @@ function isBirthdayToday(member: Member) {
 
   return (
     member.birth_day === today.getDate() &&
-    member.birth_month ===
-      today.getMonth() + 1
+    member.birth_month === today.getMonth() + 1
   );
 }
 
@@ -355,221 +344,153 @@ function ExpandableSummary({
 }
 
 function ReceptionDashboardPage() {
-  const [authorized, setAuthorized] =
-    useState(false);
+  const [authorized, setAuthorized] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
-
-  const [members, setMembers] =
-    useState<Member[]>([]);
-
-  const [memberships, setMemberships] =
-    useState<Membership[]>([]);
-
-  const [attendance, setAttendance] =
+  const [members, setMembers] = useState<Member[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [attendance, setAttendance] = useState<Attendance[]>([]);
+  const [monthlyAttendance, setMonthlyAttendance] =
     useState<Attendance[]>([]);
 
-  const [
-    monthlyAttendance,
-    setMonthlyAttendance,
-  ] = useState<Attendance[]>([]);
+  const [search, setSearch] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [search, setSearch] =
-    useState("");
+  const [selectedMember, setSelectedMember] =
+    useState<Member | null>(null);
 
-  const [refreshing, setRefreshing] =
+  const [selectedMembershipId, setSelectedMembershipId] =
+    useState<string | null>(null);
+
+  const [membershipAction, setMembershipAction] =
+    useState<
+      "extend" | "pause" | "resume" | "cancel" | null
+    >(null);
+
+  const [extensionDays, setExtensionDays] =
+    useState("7");
+
+  const [pauseUntilDate, setPauseUntilDate] =
+    useState(
+      addDaysToDateString(
+        getLocalDateString(),
+        7,
+      ),
+    );
+
+  const [membershipActionLoading, setMembershipActionLoading] =
     useState(false);
 
-  const [
-    selectedMember,
-    setSelectedMember,
-  ] = useState<Member | null>(null);
+  const [membershipActionError, setMembershipActionError] =
+    useState("");
 
-  const [
-    selectedMembershipId,
-    setSelectedMembershipId,
-  ] = useState<string | null>(null);
+  const [membershipActionSuccess, setMembershipActionSuccess] =
+    useState("");
 
-  const [
-    membershipAction,
-    setMembershipAction,
-  ] = useState<
-    "extend" | "pause" | "resume" | "cancel" | null
-  >(null);
+  const [addMembershipOpen, setAddMembershipOpen] =
+    useState(false);
 
-  const [
-    extensionDays,
-    setExtensionDays,
-  ] = useState("7");
+  const [addMembershipPlanId, setAddMembershipPlanId] =
+    useState(membershipPlans[2]?.id || "");
+
+  const [addMembershipStartDate, setAddMembershipStartDate] =
+    useState(getLocalDateString());
+
+  const [addMembershipPaymentMethod, setAddMembershipPaymentMethod] =
+    useState("Cash");
 
   /*
-   * Pause-until date.
+   * Custom Plan fields.
    *
-   * Default is 7 days from today.
-   * Reception can change it using the date picker.
+   * These are only used by:
+   * Member Profile → Add Another Membership.
    */
-  const [
-    pauseUntilDate,
-    setPauseUntilDate,
-  ] = useState(
-    addDaysToDateString(
-      getLocalDateString(),
-      7,
-    ),
-  );
+  const [customMembershipDays, setCustomMembershipDays] =
+    useState("30");
 
-  const [
-    membershipActionLoading,
-    setMembershipActionLoading,
-  ] = useState(false);
+  const [customMembershipPrice, setCustomMembershipPrice] =
+    useState("");
 
-  const [
-    membershipActionError,
-    setMembershipActionError,
-  ] = useState("");
+  const [customIncludeRegistrationFee, setCustomIncludeRegistrationFee] =
+    useState(true);
 
-  const [
-    membershipActionSuccess,
-    setMembershipActionSuccess,
-  ] = useState("");
+  const [addingMembership, setAddingMembership] =
+    useState(false);
 
-  const [
-    addMembershipOpen,
-    setAddMembershipOpen,
-  ] = useState(false);
+  const [addMembershipError, setAddMembershipError] =
+    useState("");
 
-  const [
-    addMembershipPlanId,
-    setAddMembershipPlanId,
-  ] = useState(
-    membershipPlans[2]?.id || "",
-  );
+  const [addMembershipSuccess, setAddMembershipSuccess] =
+    useState("");
 
-  const [
-    addMembershipStartDate,
-    setAddMembershipStartDate,
-  ] = useState(
-    getLocalDateString(),
-  );
+  const [addMemberName, setAddMemberName] =
+    useState("");
 
-  const [
-    addMembershipPaymentMethod,
-    setAddMembershipPaymentMethod,
-  ] = useState("Cash");
+  const [addMemberEmail, setAddMemberEmail] =
+    useState("");
 
-  const [
-    addingMembership,
-    setAddingMembership,
-  ] = useState(false);
+  const [addMemberPhone, setAddMemberPhone] =
+    useState("");
 
-  const [
-    addMembershipError,
-    setAddMembershipError,
-  ] = useState("");
+  const [addMemberAddress, setAddMemberAddress] =
+    useState("");
 
-  const [
-    addMembershipSuccess,
-    setAddMembershipSuccess,
-  ] = useState("");
+  const [addMemberBirthDay, setAddMemberBirthDay] =
+    useState("");
 
-  const [
-    addMemberName,
-    setAddMemberName,
-  ] = useState("");
+  const [addMemberBirthMonth, setAddMemberBirthMonth] =
+    useState("");
 
-  const [
-    addMemberEmail,
-    setAddMemberEmail,
-  ] = useState("");
+  const [selectedPlanId, setSelectedPlanId] =
+    useState(membershipPlans[2]?.id || "");
 
-  const [
-    addMemberPhone,
-    setAddMemberPhone,
-  ] = useState("");
+  const [addMemberStartDate, setAddMemberStartDate] =
+    useState(getLocalDateString());
 
-  const [
-    addMemberAddress,
-    setAddMemberAddress,
-  ] = useState("");
+  const [includeRegistrationFee, setIncludeRegistrationFee] =
+    useState(true);
 
-  const [
-    addMemberBirthDay,
-    setAddMemberBirthDay,
-  ] = useState("");
+  const [paymentMethod, setPaymentMethod] =
+    useState("Cash");
 
-  const [
-    addMemberBirthMonth,
-    setAddMemberBirthMonth,
-  ] = useState("");
+  const [addingMember, setAddingMember] =
+    useState(false);
 
-  const [
-    selectedPlanId,
-    setSelectedPlanId,
-  ] = useState(
-    membershipPlans[2]?.id || "",
-  );
+  const [addMemberError, setAddMemberError] =
+    useState("");
 
-  const [
-    addMemberStartDate,
-    setAddMemberStartDate,
-  ] = useState(
-    getLocalDateString(),
-  );
+  const [addMemberSuccess, setAddMemberSuccess] =
+    useState<{
+      memberId: string;
+      membershipId: string;
+      planName: string;
+      startDate: string;
+      endDate: string;
+      total: number;
+    } | null>(null);
 
-  const [
-    includeRegistrationFee,
-    setIncludeRegistrationFee,
-  ] = useState(true);
-
-  const [
-    paymentMethod,
-    setPaymentMethod,
-  ] = useState("Cash");
-
-  const [
-    addingMember,
-    setAddingMember,
-  ] = useState(false);
-
-  const [
-    addMemberError,
-    setAddMemberError,
-  ] = useState("");
-
-  const [
-    addMemberSuccess,
-    setAddMemberSuccess,
-  ] = useState<{
-    memberId: string;
-    membershipId: string;
-    planName: string;
-    startDate: string;
-    endDate: string;
-    total: number;
-  } | null>(null);
-
+  /*
+   * Custom Plan is deliberately added only to receptionPlans.
+   * It is NOT added to the public customer website.
+   */
   const receptionPlans = useMemo(
     () => [
       ...membershipPlans,
       receptionOnlyPlan,
+      customMembershipPlan,
     ],
     [],
   );
 
   const selectedPlan =
     receptionPlans.find(
-      (plan) =>
-        plan.id === selectedPlanId,
-    ) ||
-    receptionPlans[0];
+      (plan) => plan.id === selectedPlanId,
+    ) || receptionPlans[0];
 
   const selectedAddMembershipPlan =
     receptionPlans.find(
-      (plan) =>
-        plan.id === addMembershipPlanId,
-    ) ||
-    receptionPlans[0];
+      (plan) => plan.id === addMembershipPlanId,
+    ) || receptionPlans[0];
 
   const isPersonalTrainingOnly =
     selectedPlan?.id ===
@@ -579,11 +500,13 @@ function ReceptionDashboardPage() {
     selectedAddMembershipPlan?.id ===
     "personal-training-only";
 
+  const isCustomAddMembership =
+    selectedAddMembershipPlan?.id ===
+    "custom-plan";
+
   const selectedPlanDuration =
     selectedPlan
-      ? planDurationDays[
-          selectedPlan.id
-        ] || 30
+      ? planDurationDays[selectedPlan.id] || 30
       : 30;
 
   const addMembershipDuration =
@@ -601,13 +524,29 @@ function ReceptionDashboardPage() {
       : 0;
 
   const totalAmount = selectedPlan
-    ? selectedPlan.price +
-      registrationAmount
+    ? selectedPlan.price + registrationAmount
     : 0;
 
-  const addMembershipTotal =
-    selectedAddMembershipPlan?.price ||
-    0;
+  /*
+   * Custom Plan registration fee is always exactly ₦7,000.
+   */
+  const customRegistrationAmount =
+    isCustomAddMembership &&
+    customIncludeRegistrationFee
+      ? 7000
+      : 0;
+
+  const customDaysNumber =
+    Number(customMembershipDays);
+
+  const customPriceNumber =
+    Number(customMembershipPrice);
+
+  const customMembershipTotal =
+    customPriceNumber > 0
+      ? customPriceNumber +
+        customRegistrationAmount
+      : customRegistrationAmount;
 
   const calculatedEndDate =
     addMemberStartDate && selectedPlan
@@ -617,24 +556,37 @@ function ReceptionDashboardPage() {
         )
       : "";
 
-  const addMembershipEndDate =
+  const standardAddMembershipEndDate =
     addMembershipStartDate &&
-    selectedAddMembershipPlan
+    selectedAddMembershipPlan &&
+    !isCustomAddMembership
       ? addDaysToDateString(
           addMembershipStartDate,
           addMembershipDuration - 1,
         )
       : "";
 
-  /*
-   * Number of paused calendar days.
-   *
-   * Example:
-   * 16 Sep → 21 Sep = 5 days
-   *
-   * The membership gets those 5 days restored
-   * when it is resumed.
-   */
+  const customAddMembershipEndDate =
+    addMembershipStartDate &&
+    Number.isInteger(customDaysNumber) &&
+    customDaysNumber >= 1 &&
+    customDaysNumber <= 3650
+      ? addDaysToDateString(
+          addMembershipStartDate,
+          customDaysNumber - 1,
+        )
+      : "";
+
+  const addMembershipEndDate =
+    isCustomAddMembership
+      ? customAddMembershipEndDate
+      : standardAddMembershipEndDate;
+
+  const addMembershipTotal =
+    isCustomAddMembership
+      ? customMembershipTotal
+      : selectedAddMembershipPlan?.price || 0;
+
   const pauseDaysPreview =
     pauseUntilDate &&
     membershipAction === "pause"
@@ -648,18 +600,10 @@ function ReceptionDashboardPage() {
     selectedMembershipId
       ? memberships.find(
           (membership) =>
-            membership.id ===
-            selectedMembershipId,
+            membership.id === selectedMembershipId,
         )?.end_date || null
       : null;
 
-  /*
-   * The expiry is extended by the number
-   * of paused days.
-   *
-   * The pause date itself does NOT have to
-   * be after the original membership expiry.
-   */
   const projectedExpiryAfterPause =
     selectedMembershipCurrentEnd &&
     pauseUntilDate &&
@@ -681,10 +625,7 @@ function ReceptionDashboardPage() {
       return false;
     }
 
-    const {
-      data,
-      error,
-    } = await supabase
+    const { data, error } = await supabase
       .from("staff_users")
       .select("id")
       .eq("auth_user_id", user.id)
@@ -709,12 +650,9 @@ function ReceptionDashboardPage() {
     setRefreshing(true);
 
     try {
-      const today =
-        getLocalDateString();
+      const today = getLocalDateString();
 
-      const firstDayOfMonth =
-        new Date();
-
+      const firstDayOfMonth = new Date();
       firstDayOfMonth.setDate(1);
 
       const monthStart = `${firstDayOfMonth.getFullYear()}-${String(
@@ -796,42 +734,32 @@ function ReceptionDashboardPage() {
           }),
       ]);
 
-      if (membersResult.error) {
+      if (membersResult.error)
         throw membersResult.error;
-      }
 
-      if (membershipsResult.error) {
+      if (membershipsResult.error)
         throw membershipsResult.error;
-      }
 
-      if (attendanceResult.error) {
+      if (attendanceResult.error)
         throw attendanceResult.error;
-      }
 
-      if (
-        monthlyAttendanceResult.error
-      ) {
+      if (monthlyAttendanceResult.error)
         throw monthlyAttendanceResult.error;
-      }
 
       setMembers(
-        (membersResult.data ||
-          []) as Member[],
+        (membersResult.data || []) as Member[],
       );
 
       setMemberships(
-        (membershipsResult.data ||
-          []) as Membership[],
+        (membershipsResult.data || []) as Membership[],
       );
 
       setAttendance(
-        (attendanceResult.data ||
-          []) as Attendance[],
+        (attendanceResult.data || []) as Attendance[],
       );
 
       setMonthlyAttendance(
-        (monthlyAttendanceResult.data ||
-          []) as Attendance[],
+        (monthlyAttendanceResult.data || []) as Attendance[],
       );
     } catch (error) {
       console.error(
@@ -848,8 +776,7 @@ function ReceptionDashboardPage() {
     let mounted = true;
 
     async function init() {
-      const ok =
-        await checkStaffAccess();
+      const ok = await checkStaffAccess();
 
       if (ok && mounted) {
         await loadDashboard();
@@ -865,16 +792,11 @@ function ReceptionDashboardPage() {
 
   const membershipsByMember =
     useMemo(() => {
-      const map = new Map<
-        string,
-        Membership[]
-      >();
+      const map = new Map<string, Membership[]>();
 
       for (const membership of memberships) {
         const existing =
-          map.get(
-            membership.member_id,
-          ) || [];
+          map.get(membership.member_id) || [];
 
         existing.push(membership);
 
@@ -888,40 +810,35 @@ function ReceptionDashboardPage() {
     }, [memberships]);
 
   const insideMemberIds =
-    useMemo(() => {
-      return new Set(
-        attendance
-          .filter(
-            (item) =>
-              item.checked_in_at &&
-              !item.checked_out_at,
-          )
-          .map(
-            (item) =>
-              item.member_id,
-          ),
-      );
-    }, [attendance]);
+    useMemo(
+      () =>
+        new Set(
+          attendance
+            .filter(
+              (item) =>
+                item.checked_in_at &&
+                !item.checked_out_at,
+            )
+            .map(
+              (item) => item.member_id,
+            ),
+        ),
+      [attendance],
+    );
 
   const currentlyInside =
-    useMemo(() => {
-      return members.filter(
-        (member) =>
-          insideMemberIds.has(
-            member.id,
-          ),
-      );
-    }, [
-      members,
-      insideMemberIds,
-    ]);
+    useMemo(
+      () =>
+        members.filter((member) =>
+          insideMemberIds.has(member.id),
+        ),
+      [members, insideMemberIds],
+    );
 
   const birthdaysToday =
     useMemo(
       () =>
-        members.filter(
-          isBirthdayToday,
-        ),
+        members.filter(isBirthdayToday),
       [members],
     );
 
@@ -948,15 +865,11 @@ function ReceptionDashboardPage() {
           ) || [];
 
         for (const membership of memberMemberships) {
-          if (!membership.end_date) {
-            continue;
-          }
+          if (!membership.end_date) continue;
 
-          const status =
-            String(
-              membership.status ||
-                "",
-            ).toLowerCase();
+          const status = String(
+            membership.status || "",
+          ).toLowerCase();
 
           if (
             status === "paused" ||
@@ -965,10 +878,9 @@ function ReceptionDashboardPage() {
             continue;
           }
 
-          const days =
-            getDaysRemaining(
-              membership.end_date,
-            );
+          const days = getDaysRemaining(
+            membership.end_date,
+          );
 
           if (
             days !== null &&
@@ -984,19 +896,12 @@ function ReceptionDashboardPage() {
       }
 
       return result.sort(
-        (a, b) => {
-          const aDate =
-            a.membership.end_date ||
-            "";
-
-          const bDate =
-            b.membership.end_date ||
-            "";
-
-          return aDate.localeCompare(
-            bDate,
-          );
-        },
+        (a, b) =>
+          (
+            a.membership.end_date || ""
+          ).localeCompare(
+            b.membership.end_date || "",
+          ),
       );
     }, [
       members,
@@ -1011,19 +916,17 @@ function ReceptionDashboardPage() {
       if (!query) return [];
 
       return members
-        .filter((member) => {
-          return (
-            member.full_name
-              ?.toLowerCase()
-              .includes(query) ||
-            member.email
-              ?.toLowerCase()
-              .includes(query) ||
-            member.phone
-              ?.toLowerCase()
-              .includes(query)
-          );
-        })
+        .filter((member) =>
+          member.full_name
+            ?.toLowerCase()
+            .includes(query) ||
+          member.email
+            ?.toLowerCase()
+            .includes(query) ||
+          member.phone
+            ?.toLowerCase()
+            .includes(query),
+        )
         .slice(0, 20);
     }, [members, search]);
 
@@ -1044,9 +947,7 @@ function ReceptionDashboardPage() {
       : selectedMemberMemberships[0] ||
         null;
 
-  const visitsToday =
-    attendance.length;
-
+  const visitsToday = attendance.length;
   const monthlyVisits =
     monthlyAttendance.length;
 
@@ -1059,13 +960,8 @@ function ReceptionDashboardPage() {
 
   function resetMembershipManagement() {
     setMembershipAction(null);
-
-    setSelectedMembershipId(
-      null,
-    );
-
+    setSelectedMembershipId(null);
     setMembershipActionError("");
-
     setMembershipActionSuccess("");
 
     setPauseUntilDate(
@@ -1076,13 +972,6 @@ function ReceptionDashboardPage() {
     );
   }
 
-  /*
-   * Membership management
-   *
-   * IMPORTANT:
-   * Pause-until only has to be AFTER TODAY.
-   * It does NOT have to be after membership expiry.
-   */
   async function handleMembershipAction() {
     if (
       !selectedMember ||
@@ -1095,11 +984,9 @@ function ReceptionDashboardPage() {
     setMembershipActionSuccess("");
 
     if (
-      membershipAction ===
-      "extend"
+      membershipAction === "extend"
     ) {
-      const days =
-        Number(extensionDays);
+      const days = Number(extensionDays);
 
       if (
         !Number.isInteger(days) ||
@@ -1115,8 +1002,7 @@ function ReceptionDashboardPage() {
     }
 
     if (
-      membershipAction ===
-      "pause"
+      membershipAction === "pause"
     ) {
       if (!pauseUntilDate) {
         setMembershipActionError(
@@ -1126,19 +1012,9 @@ function ReceptionDashboardPage() {
         return;
       }
 
-      const today =
-        getLocalDateString();
+      const today = getLocalDateString();
 
-      /*
-       * Only prevent today or a date
-       * in the past.
-       *
-       * We intentionally DO NOT compare
-       * the pause date with membership expiry.
-       */
-      if (
-        pauseUntilDate <= today
-      ) {
+      if (pauseUntilDate <= today) {
         setMembershipActionError(
           "Pause-until date must be after today.",
         );
@@ -1148,8 +1024,7 @@ function ReceptionDashboardPage() {
     }
 
     if (
-      membershipAction ===
-      "cancel"
+      membershipAction === "cancel"
     ) {
       const confirmed =
         window.confirm(
@@ -1162,14 +1037,10 @@ function ReceptionDashboardPage() {
           }?\n\nThis will immediately make this membership inactive.`,
         );
 
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
     }
 
-    setMembershipActionLoading(
-      true,
-    );
+    setMembershipActionLoading(true);
 
     try {
       if (!selectedMembership) {
@@ -1178,46 +1049,38 @@ function ReceptionDashboardPage() {
         );
       }
 
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
-        "reception_manage_membership",
-        {
-          p_membership_id:
-            selectedMembership.id,
+      const { data, error } =
+        await supabase.rpc(
+          "reception_manage_membership",
+          {
+            p_membership_id:
+              selectedMembership.id,
+            p_action:
+              membershipAction,
+            p_days:
+              membershipAction ===
+              "extend"
+                ? Number(extensionDays)
+                : null,
+            p_paused_until:
+              membershipAction ===
+              "pause"
+                ? pauseUntilDate
+                : null,
+          },
+        );
 
-          p_action:
-            membershipAction,
+      if (error) throw error;
 
-          p_days:
-            membershipAction ===
-            "extend"
-              ? Number(extensionDays)
-              : null,
-
-          p_paused_until:
-            membershipAction ===
-            "pause"
-              ? pauseUntilDate
-              : null,
-        },
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      const result =
-        data as {
-          success?: boolean;
-          action?: string;
-          new_status?: string;
-          new_end_date?: string;
-          days_added?: number;
-          pause_days?: number;
-          paused_until?: string;
-        };
+      const result = data as {
+        success?: boolean;
+        action?: string;
+        new_status?: string;
+        new_end_date?: string;
+        days_added?: number;
+        pause_days?: number;
+        paused_until?: string;
+      };
 
       if (!result?.success) {
         throw new Error(
@@ -1226,8 +1089,7 @@ function ReceptionDashboardPage() {
       }
 
       if (
-        membershipAction ===
-        "extend"
+        membershipAction === "extend"
       ) {
         const days =
           result.days_added ||
@@ -1245,8 +1107,7 @@ function ReceptionDashboardPage() {
           )}.`,
         );
       } else if (
-        membershipAction ===
-        "pause"
+        membershipAction === "pause"
       ) {
         setMembershipActionSuccess(
           `${
@@ -1258,8 +1119,7 @@ function ReceptionDashboardPage() {
           )}.`,
         );
       } else if (
-        membershipAction ===
-        "resume"
+        membershipAction === "resume"
       ) {
         setMembershipActionSuccess(
           `${
@@ -1275,8 +1135,7 @@ function ReceptionDashboardPage() {
           } restored.`,
         );
       } else if (
-        membershipAction ===
-        "cancel"
+        membershipAction === "cancel"
       ) {
         setMembershipActionSuccess(
           `${
@@ -1300,16 +1159,12 @@ function ReceptionDashboardPage() {
           "Unable to update membership. Please try again.",
       );
     } finally {
-      setMembershipActionLoading(
-        false,
-      );
+      setMembershipActionLoading(false);
     }
   }
 
   async function handleAddMembershipToExistingMember() {
-    if (!selectedMember) {
-      return;
-    }
+    if (!selectedMember) return;
 
     setAddMembershipError("");
     setAddMembershipSuccess("");
@@ -1330,6 +1185,40 @@ function ReceptionDashboardPage() {
       return;
     }
 
+    /*
+     * Custom Plan validation.
+     */
+    if (isCustomAddMembership) {
+      const days =
+        Number(customMembershipDays);
+
+      const price =
+        Number(customMembershipPrice);
+
+      if (
+        !Number.isInteger(days) ||
+        days < 1 ||
+        days > 3650
+      ) {
+        setAddMembershipError(
+          "Custom Plan duration must be between 1 and 3650 days.",
+        );
+
+        return;
+      }
+
+      if (
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
+        setAddMembershipError(
+          "Custom Plan price must be greater than ₦0.",
+        );
+
+        return;
+      }
+    }
+
     const confirmed =
       window.confirm(
         `Activate ${
@@ -1346,28 +1235,28 @@ function ReceptionDashboardPage() {
         )}\n\nThis will create a separate membership and will NOT replace any existing membership.`,
       );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setAddingMembership(true);
 
     try {
-      const {
-        data: planData,
-        error: planError,
-      } = await supabase
-        .from("membership_plans")
-        .select("id, name")
-        .eq(
-          "name",
-          selectedAddMembershipPlan.name,
-        )
-        .maybeSingle();
+      /*
+       * Always resolve the actual database plan.
+       *
+       * Custom Plan uses the database row created
+       * in membership_plans with name = "Custom Plan".
+       */
+      const { data: planData, error: planError } =
+        await supabase
+          .from("membership_plans")
+          .select("id, name")
+          .eq(
+            "name",
+            selectedAddMembershipPlan.name,
+          )
+          .maybeSingle();
 
-      if (planError) {
-        throw planError;
-      }
+      if (planError) throw planError;
 
       if (!planData) {
         throw new Error(
@@ -1378,6 +1267,17 @@ function ReceptionDashboardPage() {
       const endDate =
         addMembershipEndDate;
 
+      if (!endDate) {
+        throw new Error(
+          "Unable to calculate the membership expiry date.",
+        );
+      }
+
+      /*
+       * Create a separate membership.
+       *
+       * Existing memberships are intentionally not touched.
+       */
       const {
         data: membershipData,
         error: membershipError,
@@ -1405,36 +1305,63 @@ function ReceptionDashboardPage() {
         throw membershipError;
       }
 
-      const {
-        error: paymentError,
-      } = await supabase
-        .from("payments")
-        .insert({
-          member_id:
-            selectedMember.id,
-          membership_id:
-            membershipData.id,
-          amount:
-            addMembershipTotal,
-          currency: "NGN",
-          status: "success",
-          payment_method:
-            addMembershipPaymentMethod,
-          provider: "manual",
-          paid_at:
-            new Date().toISOString(),
-          metadata: {
-            plan_name:
-              selectedAddMembershipPlan.name,
-            start_date:
-              addMembershipStartDate,
-            end_date: endDate,
-            concurrent_membership:
-              true,
-          },
-          source:
-            "reception_manual",
-        });
+      /*
+       * Build payment metadata.
+       *
+       * Custom Plan stores the custom details explicitly.
+       */
+      const paymentMetadata =
+        isCustomAddMembership
+          ? {
+              plan_name: "Custom Plan",
+              start_date:
+                addMembershipStartDate,
+              end_date: endDate,
+              concurrent_membership:
+                true,
+              custom_plan: true,
+              custom_days:
+                Number(customMembershipDays),
+              custom_price:
+                Number(customMembershipPrice),
+              registration_fee_included:
+                customIncludeRegistrationFee,
+              registration_fee:
+                customRegistrationAmount,
+              total_amount:
+                addMembershipTotal,
+            }
+          : {
+              plan_name:
+                selectedAddMembershipPlan.name,
+              start_date:
+                addMembershipStartDate,
+              end_date: endDate,
+              concurrent_membership:
+                true,
+            };
+
+      const { error: paymentError } =
+        await supabase
+          .from("payments")
+          .insert({
+            member_id:
+              selectedMember.id,
+            membership_id:
+              membershipData.id,
+            amount:
+              addMembershipTotal,
+            currency: "NGN",
+            status: "success",
+            payment_method:
+              addMembershipPaymentMethod,
+            provider: "manual",
+            paid_at:
+              new Date().toISOString(),
+            metadata: paymentMetadata,
+            source:
+              "reception_manual",
+          });
 
       if (paymentError) {
         throw paymentError;
@@ -1452,8 +1379,7 @@ function ReceptionDashboardPage() {
       setAddMembershipOpen(false);
 
       setAddMembershipPlanId(
-        membershipPlans[2]?.id ||
-          "",
+        membershipPlans[2]?.id || "",
       );
 
       setAddMembershipStartDate(
@@ -1462,6 +1388,15 @@ function ReceptionDashboardPage() {
 
       setAddMembershipPaymentMethod(
         "Cash",
+      );
+
+      /*
+       * Reset Custom Plan fields for the next use.
+       */
+      setCustomMembershipDays("30");
+      setCustomMembershipPrice("");
+      setCustomIncludeRegistrationFee(
+        true,
       );
 
       await loadDashboard();
@@ -1514,10 +1449,8 @@ function ReceptionDashboardPage() {
 
     if (
       addMemberBirthDay &&
-      (Number(addMemberBirthDay) <
-        1 ||
-        Number(addMemberBirthDay) >
-          31)
+      (Number(addMemberBirthDay) < 1 ||
+        Number(addMemberBirthDay) > 31)
     ) {
       setAddMemberError(
         "Please enter a valid birth day.",
@@ -1528,10 +1461,8 @@ function ReceptionDashboardPage() {
 
     if (
       addMemberBirthMonth &&
-      (Number(addMemberBirthMonth) <
-        1 ||
-        Number(addMemberBirthMonth) >
-          12)
+      (Number(addMemberBirthMonth) < 1 ||
+        Number(addMemberBirthMonth) > 12)
     ) {
       setAddMemberError(
         "Please select a valid birth month.",
@@ -1544,75 +1475,52 @@ function ReceptionDashboardPage() {
 
     try {
       const durationDays =
-        planDurationDays[
-          selectedPlan.id
-        ] || 30;
+        planDurationDays[selectedPlan.id] ||
+        30;
 
-      const {
-        data,
-        error,
-      } = await supabase.rpc(
-        "reception_add_member",
-        {
-          p_full_name:
-            addMemberName.trim(),
+      const { data, error } =
+        await supabase.rpc(
+          "reception_add_member",
+          {
+            p_full_name:
+              addMemberName.trim(),
+            p_email:
+              addMemberEmail.trim() || null,
+            p_phone:
+              addMemberPhone.trim() || null,
+            p_address:
+              addMemberAddress.trim() || null,
+            p_birth_day:
+              addMemberBirthDay
+                ? Number(addMemberBirthDay)
+                : null,
+            p_birth_month:
+              addMemberBirthMonth
+                ? Number(addMemberBirthMonth)
+                : null,
+            p_plan_name:
+              selectedPlan.name,
+            p_start_date:
+              addMemberStartDate,
+            p_duration_days:
+              durationDays,
+            p_amount:
+              totalAmount,
+            p_payment_method:
+              paymentMethod,
+          },
+        );
 
-          p_email:
-            addMemberEmail.trim() ||
-            null,
+      if (error) throw error;
 
-          p_phone:
-            addMemberPhone.trim() ||
-            null,
-
-          p_address:
-            addMemberAddress.trim() ||
-            null,
-
-          p_birth_day:
-            addMemberBirthDay
-              ? Number(
-                  addMemberBirthDay,
-                )
-              : null,
-
-          p_birth_month:
-            addMemberBirthMonth
-              ? Number(
-                  addMemberBirthMonth,
-                )
-              : null,
-
-          p_plan_name:
-            selectedPlan.name,
-
-          p_start_date:
-            addMemberStartDate,
-
-          p_duration_days:
-            durationDays,
-
-          p_amount:
-            totalAmount,
-
-          p_payment_method:
-            paymentMethod,
-        },
-      );
-
-      if (error) {
-        throw error;
-      }
-
-      const result =
-        data as {
-          success?: boolean;
-          member_id?: string;
-          membership_id?: string;
-          plan_name?: string;
-          start_date?: string;
-          end_date?: string;
-        };
+      const result = data as {
+        success?: boolean;
+        member_id?: string;
+        membership_id?: string;
+        plan_name?: string;
+        start_date?: string;
+        end_date?: string;
+      };
 
       if (!result?.success) {
         throw new Error(
@@ -1622,11 +1530,9 @@ function ReceptionDashboardPage() {
 
       setAddMemberSuccess({
         memberId:
-          result.member_id ||
-          "",
+          result.member_id || "",
         membershipId:
-          result.membership_id ||
-          "",
+          result.membership_id || "",
         planName:
           result.plan_name ||
           selectedPlan.name,
@@ -1647,18 +1553,14 @@ function ReceptionDashboardPage() {
       setAddMemberBirthMonth("");
 
       setSelectedPlanId(
-        membershipPlans[2]?.id ||
-          "",
+        membershipPlans[2]?.id || "",
       );
 
       setAddMemberStartDate(
         getLocalDateString(),
       );
 
-      setIncludeRegistrationFee(
-        true,
-      );
-
+      setIncludeRegistrationFee(true);
       setPaymentMethod("Cash");
 
       await loadDashboard();
@@ -1700,10 +1602,7 @@ function ReceptionDashboardPage() {
     );
   }
 
-  if (
-    !authorized ||
-    loading
-  ) {
+  if (!authorized || loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-wider">
@@ -1776,8 +1675,7 @@ function ReceptionDashboardPage() {
             />
           </div>
 
-          {searchResults.length >
-            0 && (
+          {searchResults.length > 0 && (
             <div className="mt-2 border border-border bg-background shadow-sm">
               {searchResults.map(
                 (member) => (
@@ -1785,21 +1683,11 @@ function ReceptionDashboardPage() {
                     key={member.id}
                     type="button"
                     onClick={() => {
-                      setSelectedMember(
-                        member,
-                      );
-
+                      setSelectedMember(member);
                       setSearch("");
-
                       resetMembershipManagement();
-
-                      setAddMembershipError(
-                        "",
-                      );
-
-                      setAddMembershipSuccess(
-                        "",
-                      );
+                      setAddMembershipError("");
+                      setAddMembershipSuccess("");
                     }}
                     className="flex w-full items-center justify-between border-b border-border px-4 py-4 text-left last:border-b-0 hover:bg-muted"
                   >
@@ -1828,61 +1716,44 @@ function ReceptionDashboardPage() {
 
         {/* OVERVIEW */}
         <section className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="border border-border bg-background p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Currently Inside
+          {[
+            {
+              label: "Currently Inside",
+              value: currentlyInside.length,
+              icon: <LogIn className="size-5 text-primary" />,
+            },
+            {
+              label: "Visits Today",
+              value: visitsToday,
+              icon: <Activity className="size-5 text-primary" />,
+            },
+            {
+              label: "Birthdays Today",
+              value: birthdaysToday.length,
+              icon: <Cake className="size-5 text-primary" />,
+            },
+            {
+              label: "Expiring Soon",
+              value: expiringSoon.length,
+              icon: <Clock3 className="size-5 text-primary" />,
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="border border-border bg-background p-5 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+                  {item.label}
+                </p>
+                {item.icon}
+              </div>
+
+              <p className="mt-4 font-display text-4xl font-bold">
+                {item.value}
               </p>
-
-              <LogIn className="size-5 text-primary" />
             </div>
-
-            <p className="mt-4 font-display text-4xl font-bold">
-              {currentlyInside.length}
-            </p>
-          </div>
-
-          <div className="border border-border bg-background p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Visits Today
-              </p>
-
-              <Activity className="size-5 text-primary" />
-            </div>
-
-            <p className="mt-4 font-display text-4xl font-bold">
-              {visitsToday}
-            </p>
-          </div>
-
-          <div className="border border-border bg-background p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Birthdays Today
-              </p>
-
-              <Cake className="size-5 text-primary" />
-            </div>
-
-            <p className="mt-4 font-display text-4xl font-bold">
-              {birthdaysToday.length}
-            </p>
-          </div>
-
-          <div className="border border-border bg-background p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-                Expiring Soon
-              </p>
-
-              <Clock3 className="size-5 text-primary" />
-            </div>
-
-            <p className="mt-4 font-display text-4xl font-bold">
-              {expiringSoon.length}
-            </p>
-          </div>
+          ))}
         </section>
 
         {/* ADD A MEMBER */}
@@ -1933,9 +1804,7 @@ function ReceptionDashboardPage() {
             </div>
 
             <form
-              onSubmit={
-                handleAddMember
-              }
+              onSubmit={handleAddMember}
               className="space-y-8 p-6 sm:p-8"
             >
               <div>
@@ -1950,15 +1819,10 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <input
-                      value={
-                        addMemberName
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberName}
+                      onChange={(event) =>
                         setAddMemberName(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       placeholder="Member full name"
@@ -1973,15 +1837,10 @@ function ReceptionDashboardPage() {
 
                     <input
                       type="email"
-                      value={
-                        addMemberEmail
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberEmail}
+                      onChange={(event) =>
                         setAddMemberEmail(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       placeholder="member@email.com"
@@ -1995,15 +1854,10 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <input
-                      value={
-                        addMemberPhone
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberPhone}
+                      onChange={(event) =>
                         setAddMemberPhone(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       placeholder="080..."
@@ -2017,15 +1871,10 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <textarea
-                      value={
-                        addMemberAddress
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberAddress}
+                      onChange={(event) =>
                         setAddMemberAddress(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       placeholder="Member address"
@@ -2055,15 +1904,10 @@ function ReceptionDashboardPage() {
                       type="number"
                       min="1"
                       max="31"
-                      value={
-                        addMemberBirthDay
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberBirthDay}
+                      onChange={(event) =>
                         setAddMemberBirthDay(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       placeholder="1–31"
@@ -2077,15 +1921,10 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <select
-                      value={
-                        addMemberBirthMonth
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberBirthMonth}
+                      onChange={(event) =>
                         setAddMemberBirthMonth(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -2093,54 +1932,29 @@ function ReceptionDashboardPage() {
                       <option value="">
                         Select month
                       </option>
-
-                      <option value="1">
-                        January
-                      </option>
-
-                      <option value="2">
-                        February
-                      </option>
-
-                      <option value="3">
-                        March
-                      </option>
-
-                      <option value="4">
-                        April
-                      </option>
-
-                      <option value="5">
-                        May
-                      </option>
-
-                      <option value="6">
-                        June
-                      </option>
-
-                      <option value="7">
-                        July
-                      </option>
-
-                      <option value="8">
-                        August
-                      </option>
-
-                      <option value="9">
-                        September
-                      </option>
-
-                      <option value="10">
-                        October
-                      </option>
-
-                      <option value="11">
-                        November
-                      </option>
-
-                      <option value="12">
-                        December
-                      </option>
+                      {[
+                        "January",
+                        "February",
+                        "March",
+                        "April",
+                        "May",
+                        "June",
+                        "July",
+                        "August",
+                        "September",
+                        "October",
+                        "November",
+                        "December",
+                      ].map(
+                        (month, index) => (
+                          <option
+                            key={month}
+                            value={index + 1}
+                          >
+                            {month}
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
                 </div>
@@ -2158,44 +1972,32 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <select
-                      value={
-                        selectedPlanId
-                      }
-                      onChange={(
-                        event,
-                      ) => {
+                      value={selectedPlanId}
+                      onChange={(event) => {
                         const nextPlanId =
-                          event.target
-                            .value;
+                          event.target.value;
 
                         setSelectedPlanId(
                           nextPlanId,
                         );
 
-                        if (
-                          nextPlanId ===
-                          "personal-training-only"
-                        ) {
-                          setIncludeRegistrationFee(
-                            false,
-                          );
-                        } else {
-                          setIncludeRegistrationFee(
-                            true,
-                          );
-                        }
+                        setIncludeRegistrationFee(
+                          nextPlanId !==
+                            "personal-training-only",
+                        );
                       }}
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
-                      {receptionPlans.map(
-                        (plan) => (
+                      {receptionPlans
+                        .filter(
+                          (plan) =>
+                            plan.id !==
+                            "custom-plan",
+                        )
+                        .map((plan) => (
                           <option
-                            key={
-                              plan.id
-                            }
-                            value={
-                              plan.id
-                            }
+                            key={plan.id}
+                            value={plan.id}
                           >
                             {plan.name} —{" "}
                             {formatNaira(
@@ -2206,8 +2008,7 @@ function ReceptionDashboardPage() {
                               ? " (No registration fee)"
                               : ""}
                           </option>
-                        ),
-                      )}
+                        ))}
                     </select>
                   </div>
 
@@ -2218,15 +2019,10 @@ function ReceptionDashboardPage() {
 
                     <input
                       type="date"
-                      value={
-                        addMemberStartDate
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={addMemberStartDate}
+                      onChange={(event) =>
                         setAddMemberStartDate(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -2254,9 +2050,7 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-2 text-xl font-bold">
-                        {
-                          selectedPlan.duration
-                        }
+                        {selectedPlan.duration}
                       </p>
                     </div>
 
@@ -2287,15 +2081,10 @@ function ReceptionDashboardPage() {
                     </label>
 
                     <select
-                      value={
-                        paymentMethod
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={paymentMethod}
+                      onChange={(event) =>
                         setPaymentMethod(
-                          event.target
-                            .value,
+                          event.target.value,
                         )
                       }
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -2303,15 +2092,12 @@ function ReceptionDashboardPage() {
                       <option value="Cash">
                         Cash
                       </option>
-
                       <option value="POS">
                         POS
                       </option>
-
                       <option value="Bank Transfer">
                         Bank Transfer
                       </option>
-
                       <option value="Other">
                         Other
                       </option>
@@ -2327,12 +2113,9 @@ function ReceptionDashboardPage() {
                             ? false
                             : includeRegistrationFee
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           setIncludeRegistrationFee(
-                            event.target
-                              .checked,
+                            event.target.checked,
                           )
                         }
                         disabled={
@@ -2365,10 +2148,7 @@ function ReceptionDashboardPage() {
 
                   {selectedPlan && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {
-                        selectedPlan.name
-                      }
-                      :{" "}
+                      {selectedPlan.name}:{" "}
                       {formatNaira(
                         selectedPlan.price,
                       )}
@@ -2394,9 +2174,7 @@ function ReceptionDashboardPage() {
                     </p>
 
                     <p className="mt-1 text-muted-foreground">
-                      {
-                        addMemberError
-                      }
+                      {addMemberError}
                     </p>
                   </div>
                 </div>
@@ -2413,9 +2191,7 @@ function ReceptionDashboardPage() {
                       </p>
 
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {
-                          addMemberSuccess.planName
-                        }{" "}
+                        {addMemberSuccess.planName}{" "}
                         has been activated.
                       </p>
                     </div>
@@ -2465,9 +2241,7 @@ function ReceptionDashboardPage() {
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={
-                    addingMember
-                  }
+                  disabled={addingMember}
                   className="min-w-48"
                 >
                   {addingMember ? (
@@ -2493,9 +2267,7 @@ function ReceptionDashboardPage() {
             eyebrow="Analytics"
             title="Attendance Analytics"
             description="A quick view of today's and this month's activity."
-            icon={
-              <BarChart3 className="size-5" />
-            }
+            icon={<BarChart3 className="size-5" />}
           />
 
           <div className="border-t border-border p-5 sm:p-6">
@@ -2548,9 +2320,7 @@ function ReceptionDashboardPage() {
                 </p>
 
                 <p className="mt-2 font-display text-3xl font-bold">
-                  {
-                    currentlyInside.length
-                  }
+                  {currentlyInside.length}
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -2567,72 +2337,63 @@ function ReceptionDashboardPage() {
             eyebrow="Today"
             title="Today's Attendance"
             description="Every check-in and check-out recorded today."
-            count={
-              attendance.length
-            }
-            icon={
-              <Clock3 className="size-5" />
-            }
+            count={attendance.length}
+            icon={<Clock3 className="size-5" />}
           />
 
           <div className="border-t border-border">
-            {attendance.length ===
-            0 ? (
+            {attendance.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">
                 No attendance has been recorded today.
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {attendance.map(
-                  (item) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
-                    >
+                {attendance.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div>
+                      <p className="font-bold">
+                        {item.member?.full_name ||
+                          "Unknown member"}
+                      </p>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.member?.phone ||
+                          "No phone"}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 text-sm">
                       <div>
-                        <p className="font-bold">
-                          {item.member
-                            ?.full_name ||
-                            "Unknown member"}
+                        <p className="text-xs font-bold uppercase text-muted-foreground">
+                          In
                         </p>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {item.member
-                            ?.phone ||
-                            "No phone"}
+                        <p className="font-bold">
+                          {formatTime(
+                            item.checked_in_at,
+                          )}
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div>
-                          <p className="text-xs font-bold uppercase text-muted-foreground">
-                            In
-                          </p>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-muted-foreground">
+                          Out
+                        </p>
 
-                          <p className="font-bold">
-                            {formatTime(
-                              item.checked_in_at,
-                            )}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-xs font-bold uppercase text-muted-foreground">
-                            Out
-                          </p>
-
-                          <p className="font-bold">
-                            {item.checked_out_at
-                              ? formatTime(
-                                  item.checked_out_at,
-                                )
-                              : "Inside"}
-                          </p>
-                        </div>
+                        <p className="font-bold">
+                          {item.checked_out_at
+                            ? formatTime(
+                                item.checked_out_at,
+                              )
+                            : "Inside"}
+                        </p>
                       </div>
                     </div>
-                  ),
-                )}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -2644,17 +2405,12 @@ function ReceptionDashboardPage() {
             eyebrow="Live"
             title="Currently Inside"
             description="Members who are currently checked into the gym."
-            count={
-              currentlyInside.length
-            }
-            icon={
-              <Users className="size-5" />
-            }
+            count={currentlyInside.length}
+            icon={<Users className="size-5" />}
           />
 
           <div className="border-t border-border">
-            {currentlyInside.length ===
-            0 ? (
+            {currentlyInside.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">
                 Nobody is currently inside the gym.
               </div>
@@ -2673,9 +2429,7 @@ function ReceptionDashboardPage() {
 
                         <div>
                           <p className="font-bold">
-                            {
-                              member.full_name
-                            }
+                            {member.full_name}
                           </p>
 
                           <p className="mt-1 text-sm text-muted-foreground">
@@ -2703,27 +2457,19 @@ function ReceptionDashboardPage() {
             eyebrow="Membership"
             title="Expiring Soon"
             description="Memberships expiring within the next 7 days."
-            count={
-              expiringSoon.length
-            }
-            icon={
-              <TrendingUp className="size-5" />
-            }
+            count={expiringSoon.length}
+            icon={<TrendingUp className="size-5" />}
           />
 
           <div className="border-t border-border">
-            {expiringSoon.length ===
-            0 ? (
+            {expiringSoon.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">
                 No memberships are expiring within the next 7 days.
               </div>
             ) : (
               <div className="divide-y divide-border">
                 {expiringSoon.map(
-                  ({
-                    member,
-                    membership,
-                  }) => {
+                  ({ member, membership }) => {
                     const daysRemaining =
                       getDaysRemaining(
                         membership.end_date,
@@ -2731,16 +2477,12 @@ function ReceptionDashboardPage() {
 
                     return (
                       <div
-                        key={
-                          membership.id
-                        }
+                        key={membership.id}
                         className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between"
                       >
                         <div>
                           <p className="font-bold">
-                            {
-                              member.full_name
-                            }
+                            {member.full_name}
                           </p>
 
                           <p className="mt-1 text-sm text-muted-foreground">
@@ -2755,8 +2497,7 @@ function ReceptionDashboardPage() {
 
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="bg-muted px-3 py-2 text-xs font-bold">
-                            {daysRemaining ===
-                            0
+                            {daysRemaining === 0
                               ? "Expires today"
                               : `${daysRemaining} ${
                                   daysRemaining ===
@@ -2783,9 +2524,7 @@ function ReceptionDashboardPage() {
                                 member.phone,
                               )
                             }
-                            disabled={
-                              !member.phone
-                            }
+                            disabled={!member.phone}
                           >
                             <Phone className="size-4" />
                             WhatsApp
@@ -2806,17 +2545,12 @@ function ReceptionDashboardPage() {
             eyebrow="Members"
             title="Today's Birthdays"
             description="Members celebrating their birthday today."
-            count={
-              birthdaysToday.length
-            }
-            icon={
-              <Cake className="size-5" />
-            }
+            count={birthdaysToday.length}
+            icon={<Cake className="size-5" />}
           />
 
           <div className="border-t border-border">
-            {birthdaysToday.length ===
-            0 ? (
+            {birthdaysToday.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">
                 No member birthdays today.
               </div>
@@ -2830,9 +2564,7 @@ function ReceptionDashboardPage() {
                     >
                       <div>
                         <p className="font-bold">
-                          {
-                            member.full_name
-                          }
+                          {member.full_name}
                         </p>
 
                         <p className="mt-1 text-sm text-muted-foreground">
@@ -2854,9 +2586,7 @@ function ReceptionDashboardPage() {
                             member.phone,
                           )
                         }
-                        disabled={
-                          !member.phone
-                        }
+                        disabled={!member.phone}
                       >
                         <Phone className="size-4" />
                         Send Birthday Message
@@ -2875,74 +2605,59 @@ function ReceptionDashboardPage() {
             eyebrow="Members"
             title="Birthdays This Month"
             description="All members with birthdays during the current month."
-            count={
-              birthdaysThisMonth.length
-            }
-            icon={
-              <Cake className="size-5" />
-            }
+            count={birthdaysThisMonth.length}
+            icon={<Cake className="size-5" />}
           />
 
           <div className="border-t border-border">
-            {birthdaysThisMonth.length ===
-            0 ? (
+            {birthdaysThisMonth.length === 0 ? (
               <div className="p-6 text-sm text-muted-foreground">
                 No birthdays recorded for this month.
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {birthdaysThisMonth
+                {[...birthdaysThisMonth]
                   .sort(
                     (a, b) =>
-                      (a.birth_day ||
-                        0) -
-                      (b.birth_day ||
-                        0),
+                      (a.birth_day || 0) -
+                      (b.birth_day || 0),
                   )
-                  .map(
-                    (member) => (
-                      <div
-                        key={
-                          member.id
-                        }
-                        className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div>
-                          <p className="font-bold">
-                            {
-                              member.full_name
-                            }
-                          </p>
+                  .map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div>
+                        <p className="font-bold">
+                          {member.full_name}
+                        </p>
 
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {getBirthdayLabel(
-                              member,
-                            )}
-                          </p>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            sendWhatsApp(
-                              `Hello ${
-                                member.full_name ||
-                                "there"
-                              }, Super Plus Fitness & Spa is wishing you an early happy birthday! 🎉 We look forward to celebrating you.`,
-                              member.phone,
-                            )
-                          }
-                          disabled={
-                            !member.phone
-                          }
-                        >
-                          <Phone className="size-4" />
-                          WhatsApp
-                        </Button>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {getBirthdayLabel(
+                            member,
+                          )}
+                        </p>
                       </div>
-                    ),
-                  )}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          sendWhatsApp(
+                            `Hello ${
+                              member.full_name ||
+                              "there"
+                            }, Super Plus Fitness & Spa is wishing you an early happy birthday! 🎉 We look forward to celebrating you.`,
+                            member.phone,
+                          )
+                        }
+                        disabled={!member.phone}
+                      >
+                        <Phone className="size-4" />
+                        WhatsApp
+                      </Button>
+                    </div>
+                  ))}
               </div>
             )}
           </div>
@@ -2986,9 +2701,7 @@ function ReceptionDashboardPage() {
 
             <button
               type="button"
-              onClick={
-                loadDashboard
-              }
+              onClick={loadDashboard}
               className="flex items-center justify-between border border-border bg-background p-5 text-left shadow-sm transition hover:border-primary"
             >
               <div className="flex items-center gap-4">
@@ -3026,33 +2739,19 @@ function ReceptionDashboardPage() {
                 </p>
 
                 <h2 className="mt-1 font-display text-2xl font-bold uppercase">
-                  {
-                    selectedMember.full_name ||
-                    "Unnamed Member"
-                  }
+                  {selectedMember.full_name ||
+                    "Unnamed Member"}
                 </h2>
               </div>
 
               <button
                 type="button"
                 onClick={() => {
-                  setSelectedMember(
-                    null,
-                  );
-
+                  setSelectedMember(null);
                   resetMembershipManagement();
-
-                  setAddMembershipOpen(
-                    false,
-                  );
-
-                  setAddMembershipError(
-                    "",
-                  );
-
-                  setAddMembershipSuccess(
-                    "",
-                  );
+                  setAddMembershipOpen(false);
+                  setAddMembershipError("");
+                  setAddMembershipSuccess("");
                 }}
                 className="flex size-10 items-center justify-center border border-border hover:bg-muted"
                 aria-label="Close"
@@ -3147,9 +2846,7 @@ function ReceptionDashboardPage() {
                     </div>
                   ) : (
                     selectedMemberMemberships.map(
-                      (
-                        membership,
-                      ) => {
+                      (membership) => {
                         const valid =
                           isMembershipValidToday(
                             membership,
@@ -3163,9 +2860,7 @@ function ReceptionDashboardPage() {
 
                         return (
                           <div
-                            key={
-                              membership.id
-                            }
+                            key={membership.id}
                             className="p-5"
                           >
                             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -3234,17 +2929,9 @@ function ReceptionDashboardPage() {
                                     membership.id,
                                   );
 
-                                  setMembershipAction(
-                                    null,
-                                  );
-
-                                  setMembershipActionError(
-                                    "",
-                                  );
-
-                                  setMembershipActionSuccess(
-                                    "",
-                                  );
+                                  setMembershipAction(null);
+                                  setMembershipActionError("");
+                                  setMembershipActionSuccess("");
 
                                   setPauseUntilDate(
                                     addDaysToDateString(
@@ -3277,13 +2964,8 @@ function ReceptionDashboardPage() {
                       !addMembershipOpen,
                     );
 
-                    setAddMembershipError(
-                      "",
-                    );
-
-                    setAddMembershipSuccess(
-                      "",
-                    );
+                    setAddMembershipError("");
+                    setAddMembershipSuccess("");
                   }}
                   className="flex w-full items-center justify-between gap-4 p-5 text-left"
                 >
@@ -3318,8 +3000,9 @@ function ReceptionDashboardPage() {
 
                 {addMembershipOpen && (
                   <div className="border-t border-primary/20 p-5">
-                    <div className="grid gap-5 md:grid-cols-2">
 
+                    {/* PLAN / DATE / PAYMENT */}
+                    <div className="grid gap-5 md:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-bold">
                           Membership Plan
@@ -3329,30 +3012,35 @@ function ReceptionDashboardPage() {
                           value={
                             addMembershipPlanId
                           }
-                          onChange={(
-                            event,
-                          ) =>
+                          onChange={(event) => {
+                            const nextPlanId =
+                              event.target.value;
+
                             setAddMembershipPlanId(
-                              event.target
-                                .value,
-                            )
-                          }
+                              nextPlanId,
+                            );
+
+                            /*
+                             * When switching away from Custom Plan,
+                             * clear its previous validation error.
+                             */
+                            setAddMembershipError("");
+                          }}
                           className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                         >
                           {receptionPlans.map(
                             (plan) => (
                               <option
-                                key={
-                                  plan.id
-                                }
-                                value={
-                                  plan.id
-                                }
+                                key={plan.id}
+                                value={plan.id}
                               >
-                                {plan.name} —{" "}
-                                {formatNaira(
-                                  plan.price,
-                                )}
+                                {plan.name}
+                                {plan.id ===
+                                "custom-plan"
+                                  ? " — Set custom price"
+                                  : ` — ${formatNaira(
+                                      plan.price,
+                                    )}`}
                                 {plan.id ===
                                 "personal-training-only"
                                   ? " (No registration fee)"
@@ -3373,12 +3061,9 @@ function ReceptionDashboardPage() {
                           value={
                             addMembershipStartDate
                           }
-                          onChange={(
-                            event,
-                          ) =>
+                          onChange={(event) =>
                             setAddMembershipStartDate(
-                              event.target
-                                .value,
+                              event.target.value,
                             )
                           }
                           className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -3394,12 +3079,9 @@ function ReceptionDashboardPage() {
                           value={
                             addMembershipPaymentMethod
                           }
-                          onChange={(
-                            event,
-                          ) =>
+                          onChange={(event) =>
                             setAddMembershipPaymentMethod(
-                              event.target
-                                .value,
+                              event.target.value,
                             )
                           }
                           className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -3407,50 +3089,256 @@ function ReceptionDashboardPage() {
                           <option value="Cash">
                             Cash
                           </option>
-
                           <option value="POS">
                             POS
                           </option>
-
                           <option value="Bank Transfer">
                             Bank Transfer
                           </option>
-
                           <option value="Other">
                             Other
                           </option>
                         </select>
                       </div>
 
-                      <div className="border border-border bg-background p-4">
-                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                          New Membership
-                        </p>
+                      {!isCustomAddMembership && (
+                        <div className="border border-border bg-background p-4">
+                          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                            New Membership
+                          </p>
 
-                        <p className="mt-1 font-bold">
-                          {
-                            selectedAddMembershipPlan.name
-                          }
-                        </p>
+                          <p className="mt-1 font-bold">
+                            {
+                              selectedAddMembershipPlan.name
+                            }
+                          </p>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {formatDate(
-                            addMembershipStartDate,
-                          )}{" "}
-                          –{" "}
-                          {formatDate(
-                            addMembershipEndDate,
-                          )}
-                        </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {formatDate(
+                              addMembershipStartDate,
+                            )}{" "}
+                            –{" "}
+                            {formatDate(
+                              addMembershipEndDate,
+                            )}
+                          </p>
 
-                        <p className="mt-3 text-lg font-bold">
-                          {formatNaira(
-                            addMembershipTotal,
-                          )}
-                        </p>
-                      </div>
+                          <p className="mt-3 text-lg font-bold">
+                            {formatNaira(
+                              addMembershipTotal,
+                            )}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
+                    {/* CUSTOM PLAN */}
+                    {isCustomAddMembership && (
+                      <div className="mt-5 border border-primary/30 bg-background p-5">
+                        <div className="mb-5">
+                          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                            Custom Membership
+                          </p>
+
+                          <h4 className="mt-1 font-display text-2xl font-bold uppercase">
+                            Set Your Own Plan
+                          </h4>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Enter the number of days and the membership price. The expiry date and total payment are calculated automatically.
+                          </p>
+                        </div>
+
+                        <div className="grid gap-5 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-bold">
+                              Number of Days *
+                            </label>
+
+                            <input
+                              type="number"
+                              min="1"
+                              max="3650"
+                              step="1"
+                              value={
+                                customMembershipDays
+                              }
+                              onChange={(event) => {
+                                setCustomMembershipDays(
+                                  event.target.value,
+                                );
+
+                                setAddMembershipError(
+                                  "",
+                                );
+                              }}
+                              placeholder="e.g. 14"
+                              className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                            />
+
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              Enter between 1 and 3650 days.
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="mb-2 block text-sm font-bold">
+                              Custom Plan Price *
+                            </label>
+
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
+                                ₦
+                              </span>
+
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={
+                                  customMembershipPrice
+                                }
+                                onChange={(event) => {
+                                  setCustomMembershipPrice(
+                                    event.target.value,
+                                  );
+
+                                  setAddMembershipError(
+                                    "",
+                                  );
+                                }}
+                                placeholder="e.g. 18000"
+                                className="h-12 w-full border border-border bg-background pl-9 pr-4 text-sm outline-none focus:border-primary"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* REGISTRATION FEE */}
+                        <div className="mt-5">
+                          <label className="flex min-h-12 cursor-pointer items-center gap-3 border border-border bg-background px-4">
+                            <input
+                              type="checkbox"
+                              checked={
+                                customIncludeRegistrationFee
+                              }
+                              onChange={(event) =>
+                                setCustomIncludeRegistrationFee(
+                                  event.target.checked,
+                                )
+                              }
+                              className="size-4"
+                            />
+
+                            <span className="text-sm font-bold">
+                              Include ₦7,000 registration fee
+                            </span>
+                          </label>
+
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Uncheck this if the member should not pay the registration fee.
+                          </p>
+                        </div>
+
+                        {/* CUSTOM PLAN SUMMARY */}
+                        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                          <div className="border border-border bg-muted/40 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              Plan Price
+                            </p>
+
+                            <p className="mt-2 text-xl font-bold">
+                              {customPriceNumber >
+                              0
+                                ? formatNaira(
+                                    customPriceNumber,
+                                  )
+                                : "₦0"}
+                            </p>
+                          </div>
+
+                          <div className="border border-border bg-muted/40 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              Duration
+                            </p>
+
+                            <p className="mt-2 text-xl font-bold">
+                              {Number.isInteger(
+                                customDaysNumber,
+                              ) &&
+                              customDaysNumber >=
+                                1 &&
+                              customDaysNumber <=
+                                3650
+                                ? `${customDaysNumber} ${
+                                    customDaysNumber ===
+                                    1
+                                      ? "day"
+                                      : "days"
+                                  }`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div className="border border-border bg-muted/40 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              Registration
+                            </p>
+
+                            <p className="mt-2 text-xl font-bold">
+                              {formatNaira(
+                                customRegistrationAmount,
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="border border-primary/30 bg-primary/5 p-4">
+                            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                              Membership Ends
+                            </p>
+
+                            <p className="mt-2 text-xl font-bold text-primary">
+                              {formatDate(
+                                customAddMembershipEndDate,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* CUSTOM TOTAL */}
+                        <div className="mt-5 border border-primary bg-primary/5 p-5">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                                Total Payment
+                              </p>
+
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Custom Plan{" "}
+                                {customPriceNumber >
+                                  0 &&
+                                  `(${formatNaira(
+                                    customPriceNumber,
+                                  )})`}
+                                {customRegistrationAmount >
+                                  0 &&
+                                  ` + ${formatNaira(
+                                    customRegistrationAmount,
+                                  )} registration`}
+                              </p>
+                            </div>
+
+                            <p className="font-display text-3xl font-bold">
+                              {formatNaira(
+                                customMembershipTotal,
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PERSONAL TRAINING NOTICE */}
                     {isAddMembershipPersonalTrainingOnly && (
                       <div className="mt-4 border border-primary/30 bg-primary/10 p-4 text-sm">
                         <p className="font-bold text-primary">
@@ -3463,19 +3351,17 @@ function ReceptionDashboardPage() {
                       </div>
                     )}
 
+                    {/* ERROR */}
                     {addMembershipError && (
                       <div className="mt-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
-                        {
-                          addMembershipError
-                        }
+                        {addMembershipError}
                       </div>
                     )}
 
+                    {/* SUCCESS */}
                     {addMembershipSuccess && (
                       <div className="mt-4 border border-primary/30 bg-primary/10 p-4 text-sm font-semibold text-primary">
-                        {
-                          addMembershipSuccess
-                        }
+                        {addMembershipSuccess}
                       </div>
                     )}
 
@@ -3509,7 +3395,6 @@ function ReceptionDashboardPage() {
               {/* SELECTED MEMBERSHIP MANAGEMENT */}
               {selectedMembership && (
                 <div className="border border-border bg-muted/20">
-
                   <div className="border-b border-border p-5">
                     <div className="flex items-center gap-3">
                       <CalendarPlus className="size-5 text-primary" />
@@ -3528,29 +3413,22 @@ function ReceptionDashboardPage() {
                     <p className="mt-2 text-sm text-muted-foreground">
                       Managing:{" "}
                       <span className="font-bold text-foreground">
-                        {
-                          selectedMembership.plan_name ||
-                          "Membership"
-                        }
+                        {selectedMembership.plan_name ||
+                          "Membership"}
                       </span>
                     </p>
                   </div>
 
                   <div className="p-5">
-
                     {membershipActionError && (
                       <div className="mb-4 border border-destructive/30 bg-destructive/10 p-4 text-sm font-semibold text-destructive">
-                        {
-                          membershipActionError
-                        }
+                        {membershipActionError}
                       </div>
                     )}
 
                     {membershipActionSuccess && (
                       <div className="mb-4 border border-primary/30 bg-primary/10 p-4 text-sm font-semibold text-primary">
-                        {
-                          membershipActionSuccess
-                        }
+                        {membershipActionSuccess}
                       </div>
                     )}
 
@@ -3567,15 +3445,10 @@ function ReceptionDashboardPage() {
                             type="number"
                             min="1"
                             max="3650"
-                            value={
-                              extensionDays
-                            }
-                            onChange={(
-                              event,
-                            ) =>
+                            value={extensionDays}
+                            onChange={(event) =>
                               setExtensionDays(
-                                event.target
-                                  .value,
+                                event.target.value,
                               )
                             }
                             className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
@@ -3602,13 +3475,8 @@ function ReceptionDashboardPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            setMembershipAction(
-                              null,
-                            );
-
-                            setMembershipActionError(
-                              "",
-                            );
+                            setMembershipAction(null);
+                            setMembershipActionError("");
                           }}
                           className="mt-3 text-xs font-bold uppercase text-muted-foreground hover:text-foreground"
                         >
@@ -3620,7 +3488,6 @@ function ReceptionDashboardPage() {
                     ) : membershipAction ===
                       "pause" ? (
                       <div>
-
                         <p className="text-sm font-semibold">
                           Pause this membership?
                         </p>
@@ -3629,7 +3496,6 @@ function ReceptionDashboardPage() {
                           Choose the date when the pause should end. The paused period will be restored to the membership.
                         </p>
 
-                        {/* PAUSE DATE */}
                         <div className="mt-5 border border-orange-500/30 bg-orange-500/5 p-5">
                           <label className="mb-2 block text-sm font-bold">
                             Pause Until
@@ -3637,25 +3503,16 @@ function ReceptionDashboardPage() {
 
                           <input
                             type="date"
-                            value={
-                              pauseUntilDate
-                            }
+                            value={pauseUntilDate}
                             min={addDaysToDateString(
                               getLocalDateString(),
                               1,
                             )}
-                            onChange={(
-                              event,
-                            ) => {
+                            onChange={(event) => {
                               setPauseUntilDate(
-                                event.target
-                                  .value,
+                                event.target.value,
                               );
 
-                              /*
-                               * Clear the old error immediately
-                               * when reception changes the date.
-                               */
                               setMembershipActionError(
                                 "",
                               );
@@ -3668,10 +3525,8 @@ function ReceptionDashboardPage() {
                           </p>
                         </div>
 
-                        {/* PAUSE PREVIEW */}
                         {pauseUntilDate && (
                           <div className="mt-4 grid gap-4 sm:grid-cols-3">
-
                             <div className="border border-border bg-background p-4">
                               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                                 Current Expiry
@@ -3690,9 +3545,7 @@ function ReceptionDashboardPage() {
                               </p>
 
                               <p className="mt-2 font-bold">
-                                {
-                                  pauseDaysPreview
-                                }{" "}
+                                {pauseDaysPreview}{" "}
                                 day
                                 {pauseDaysPreview ===
                                 1
@@ -3712,7 +3565,6 @@ function ReceptionDashboardPage() {
                                 )}
                               </p>
                             </div>
-
                           </div>
                         )}
 
@@ -3737,9 +3589,7 @@ function ReceptionDashboardPage() {
                           <Button
                             variant="outline"
                             onClick={() =>
-                              setMembershipAction(
-                                null,
-                              )
+                              setMembershipAction(null)
                             }
                             disabled={
                               membershipActionLoading
@@ -3754,7 +3604,6 @@ function ReceptionDashboardPage() {
                     ) : membershipAction ===
                       "resume" ? (
                       <div>
-
                         <p className="text-sm font-semibold">
                           Resume this membership?
                         </p>
@@ -3798,9 +3647,7 @@ function ReceptionDashboardPage() {
                           <Button
                             variant="outline"
                             onClick={() =>
-                              setMembershipAction(
-                                null,
-                              )
+                              setMembershipAction(null)
                             }
                             disabled={
                               membershipActionLoading
@@ -3815,7 +3662,6 @@ function ReceptionDashboardPage() {
                     ) : membershipAction ===
                       "cancel" ? (
                       <div>
-
                         <p className="text-sm font-semibold">
                           Cancel this membership?
                         </p>
@@ -3846,9 +3692,7 @@ function ReceptionDashboardPage() {
                           <Button
                             variant="outline"
                             onClick={() =>
-                              setMembershipAction(
-                                null,
-                              )
+                              setMembershipAction(null)
                             }
                             disabled={
                               membershipActionLoading
@@ -3862,21 +3706,12 @@ function ReceptionDashboardPage() {
                     /* NORMAL ACTION BUTTONS */
                     ) : (
                       <div className="grid gap-3 sm:grid-cols-2">
-
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setMembershipAction(
-                              "extend",
-                            );
-
-                            setMembershipActionError(
-                              "",
-                            );
-
-                            setMembershipActionSuccess(
-                              "",
-                            );
+                            setMembershipAction("extend");
+                            setMembershipActionError("");
+                            setMembershipActionSuccess("");
                           }}
                         >
                           <CalendarPlus className="size-4" />
@@ -3890,17 +3725,9 @@ function ReceptionDashboardPage() {
                         "paused" ? (
                           <Button
                             onClick={() => {
-                              setMembershipAction(
-                                "resume",
-                              );
-
-                              setMembershipActionError(
-                                "",
-                              );
-
-                              setMembershipActionSuccess(
-                                "",
-                              );
+                              setMembershipAction("resume");
+                              setMembershipActionError("");
+                              setMembershipActionSuccess("");
                             }}
                           >
                             <Play className="size-4" />
@@ -3917,17 +3744,9 @@ function ReceptionDashboardPage() {
                                 ),
                               );
 
-                              setMembershipAction(
-                                "pause",
-                              );
-
-                              setMembershipActionError(
-                                "",
-                              );
-
-                              setMembershipActionSuccess(
-                                "",
-                              );
+                              setMembershipAction("pause");
+                              setMembershipActionError("");
+                              setMembershipActionSuccess("");
                             }}
                             disabled={
                               String(
@@ -3945,17 +3764,9 @@ function ReceptionDashboardPage() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            setMembershipAction(
-                              "cancel",
-                            );
-
-                            setMembershipActionError(
-                              "",
-                            );
-
-                            setMembershipActionSuccess(
-                              "",
-                            );
+                            setMembershipAction("cancel");
+                            setMembershipActionError("");
+                            setMembershipActionSuccess("");
                           }}
                           disabled={
                             String(
@@ -3969,7 +3780,6 @@ function ReceptionDashboardPage() {
                           <Ban className="size-4" />
                           Cancel Membership
                         </Button>
-
                       </div>
                     )}
                   </div>
@@ -3994,8 +3804,7 @@ function ReceptionDashboardPage() {
                     <div
                       key={`status-${membership.id}`}
                       className={`border p-4 ${
-                        status ===
-                        "paused"
+                        status === "paused"
                           ? "border-orange-500/30 bg-orange-500/10"
                           : status ===
                               "cancelled"
@@ -4020,13 +3829,10 @@ function ReceptionDashboardPage() {
 
                         <div>
                           <p className="font-bold">
-                            {
-                              membership.plan_name ||
-                              "Membership"
-                            }{" "}
+                            {membership.plan_name ||
+                              "Membership"}{" "}
                             —{" "}
-                            {status ===
-                            "paused"
+                            {status === "paused"
                               ? "Paused"
                               : status ===
                                   "cancelled"
@@ -4094,29 +3900,16 @@ function ReceptionDashboardPage() {
                   variant="outline"
                   className="flex-1"
                   onClick={() => {
-                    setSelectedMember(
-                      null,
-                    );
-
+                    setSelectedMember(null);
                     resetMembershipManagement();
-
-                    setAddMembershipOpen(
-                      false,
-                    );
-
-                    setAddMembershipError(
-                      "",
-                    );
-
-                    setAddMembershipSuccess(
-                      "",
-                    );
+                    setAddMembershipOpen(false);
+                    setAddMembershipError("");
+                    setAddMembershipSuccess("");
                   }}
                 >
                   Close
                 </Button>
               </div>
-
             </div>
           </div>
         </div>
