@@ -90,6 +90,13 @@ type RevenuePaymentRow = RevenuePayment & {
   membership: RevenueMembership | null;
 };
 
+type PaymentSource =
+  | "all"
+  | "website"
+  | "cash"
+  | "pos"
+  | "bank_transfer";
+
 const roles = [
   { value: "staff", label: "Staff" },
   { value: "reception", label: "Reception" },
@@ -207,6 +214,104 @@ function getPaymentDate(payment: RevenuePaymentRow) {
   return payment.paid_at || payment.created_at;
 }
 
+function normalizePaymentValue(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+function getPaymentSource(
+  payment: RevenuePaymentRow,
+): Exclude<PaymentSource, "all"> | "other" {
+  const method = normalizePaymentValue(
+    payment.payment_method,
+  );
+
+  const provider = normalizePaymentValue(payment.provider);
+
+  const metadataMethod = normalizePaymentValue(
+    payment.metadata?.payment_method,
+  );
+
+  const metadataSource = normalizePaymentValue(
+    payment.metadata?.payment_source,
+  );
+
+  const metadataProvider = normalizePaymentValue(
+    payment.metadata?.provider,
+  );
+
+  const candidates = [
+    method,
+    provider,
+    metadataMethod,
+    metadataSource,
+    metadataProvider,
+  ];
+
+  // Website / online payments.
+  // Paystack is treated as a website payment regardless of whether
+  // the payment_method says card, online, Paystack, etc.
+  if (
+    candidates.some((value) =>
+      [
+        "paystack",
+        "online",
+        "online payment",
+        "website",
+        "card",
+        "card payment",
+      ].includes(value),
+    )
+  ) {
+    return "website";
+  }
+
+  // Manual payment methods.
+  if (candidates.includes("cash")) {
+    return "cash";
+  }
+
+  if (
+    candidates.includes("pos") ||
+    candidates.includes("point of sale")
+  ) {
+    return "pos";
+  }
+
+  if (
+    candidates.includes("bank transfer") ||
+    candidates.includes("bank")
+  ) {
+    return "bank_transfer";
+  }
+
+  return "other";
+}
+
+function getPaymentSourceLabel(
+  payment: RevenuePaymentRow,
+) {
+  const source = getPaymentSource(payment);
+
+  switch (source) {
+    case "website":
+      return "Website";
+    case "cash":
+      return "Cash";
+    case "pos":
+      return "POS";
+    case "bank_transfer":
+      return "Bank Transfer";
+    default:
+      return "Other";
+  }
+}
+
 function startOfDay(date: Date) {
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -254,6 +359,9 @@ function RevenueReport({
     "today" | "week" | "month" | "all"
   >("month");
 
+  const [paymentSource, setPaymentSource] =
+    useState<PaymentSource>("all");
+
   const [paymentSearch, setPaymentSearch] = useState("");
 
   const now = new Date();
@@ -271,17 +379,29 @@ function RevenueReport({
     }
   }, [period]);
 
-  const periodPayments = useMemo(() => {
+  const sourcePayments = useMemo(() => {
     return payments.filter((payment) => {
       if (payment.status.toLowerCase() !== "success") {
         return false;
       }
 
+      if (paymentSource === "all") {
+        return true;
+      }
+
+      return getPaymentSource(payment) === paymentSource;
+    });
+  }, [payments, paymentSource]);
+
+  const periodPayments = useMemo(() => {
+    return sourcePayments.filter((payment) => {
       if (!periodStart) return true;
 
-      return new Date(getPaymentDate(payment)) >= periodStart;
+      return (
+        new Date(getPaymentDate(payment)) >= periodStart
+      );
     });
-  }, [payments, periodStart]);
+  }, [sourcePayments, periodStart]);
 
   const totalRevenue = useMemo(
     () =>
@@ -295,30 +415,27 @@ function RevenueReport({
 
   const todayRevenue = useMemo(
     () =>
-      payments
-        .filter(
-          (payment) =>
-            payment.status.toLowerCase() === "success" &&
-            isSameDay(
-              new Date(getPaymentDate(payment)),
-              now,
-            ),
+      sourcePayments
+        .filter((payment) =>
+          isSameDay(
+            new Date(getPaymentDate(payment)),
+            now,
+          ),
         )
         .reduce(
           (total, payment) =>
             total + Number(payment.amount || 0),
           0,
         ),
-    [payments, now],
+    [sourcePayments, now],
   );
 
   const monthRevenue = useMemo(() => {
     const monthStart = startOfMonth(now);
 
-    return payments
+    return sourcePayments
       .filter(
         (payment) =>
-          payment.status.toLowerCase() === "success" &&
           new Date(getPaymentDate(payment)) >= monthStart,
       )
       .reduce(
@@ -326,7 +443,7 @@ function RevenueReport({
           total + Number(payment.amount || 0),
         0,
       );
-  }, [payments, now]);
+  }, [sourcePayments, now]);
 
   const averagePayment =
     periodPayments.length > 0
@@ -385,12 +502,20 @@ function RevenueReport({
 
         const plan = getPaymentPlan(payment).toLowerCase();
 
+        const source =
+          getPaymentSourceLabel(payment).toLowerCase();
+
+        const method =
+          payment.payment_method?.toLowerCase() || "";
+
         return (
           memberName.includes(query) ||
           email.includes(query) ||
           phone.includes(query) ||
           reference.includes(query) ||
-          plan.includes(query)
+          plan.includes(query) ||
+          source.includes(query) ||
+          method.includes(query)
         );
       })
       .sort(
@@ -462,7 +587,7 @@ function RevenueReport({
             </Button>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:flex sm:flex-wrap">
+          <div className="mt-5 grid min-w-0 gap-2 sm:mt-6 sm:flex sm:flex-wrap">
             {[
               ["today", "Today"],
               ["week", "This Week"],
@@ -490,6 +615,45 @@ function RevenueReport({
                 {label}
               </button>
             ))}
+          </div>
+
+          <div className="mt-5 border-t border-border pt-5">
+            <div className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Payment Source
+              </p>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                Filter revenue by how the payment was received.
+              </p>
+            </div>
+
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+              {[
+                ["all", "All Payments"],
+                ["website", "Website"],
+                ["cash", "Cash"],
+                ["pos", "POS"],
+                ["bank_transfer", "Bank Transfer"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() =>
+                    setPaymentSource(
+                      value as PaymentSource,
+                    )
+                  }
+                  className={`min-w-0 border px-3 py-2.5 text-xs font-semibold uppercase sm:px-4 sm:py-2 ${
+                    paymentSource === value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-background"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -698,6 +862,16 @@ function RevenueReport({
 
                             <div className="min-w-0">
                               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                Source
+                              </p>
+
+                              <p className="mt-1 break-words text-sm font-medium">
+                                {getPaymentSourceLabel(payment)}
+                              </p>
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                                 Method
                               </p>
 
@@ -718,7 +892,7 @@ function RevenueReport({
                               </p>
                             </div>
 
-                            <div className="min-w-0">
+                            <div className="min-w-0 col-span-2">
                               <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                                 Reference
                               </p>
@@ -733,12 +907,13 @@ function RevenueReport({
                     </div>
 
                     <div className="hidden min-w-0 overflow-x-auto md:block">
-                      <table className="w-full min-w-[850px] text-left text-sm">
+                      <table className="w-full min-w-[950px] text-left text-sm">
                         <thead>
                           <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
                             <th className="px-3 py-3">Member</th>
                             <th className="px-3 py-3">Plan</th>
                             <th className="px-3 py-3">Amount</th>
+                            <th className="px-3 py-3">Source</th>
                             <th className="px-3 py-3">Method</th>
                             <th className="px-3 py-3">Date</th>
                             <th className="px-3 py-3">Reference</th>
@@ -772,6 +947,10 @@ function RevenueReport({
                                   Number(payment.amount || 0),
                                   payment.currency || "NGN",
                                 )}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 py-4 font-medium">
+                                {getPaymentSourceLabel(payment)}
                               </td>
 
                               <td className="px-3 py-4 capitalize">
