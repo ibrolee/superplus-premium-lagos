@@ -1165,6 +1165,63 @@ function ReceptionDashboardPage() {
       setMembershipActionLoading(false);
     }
   }
+  async function handleDeleteMembership(
+    membership: Membership,
+  ) {
+    if (!selectedMember) return;
+
+    const memberName =
+      selectedMember.full_name || "this member";
+
+    const membershipName =
+      membership.plan_name || "this membership";
+
+    const confirmed = window.confirm(
+      `Permanently delete ${membershipName} for ${memberName}?\n\nThis will remove ONLY this membership.\n\nOther memberships will remain untouched, and the payment record/history will be preserved.\n\nThis action cannot be undone.`,
+    );
+
+    if (!confirmed) return;
+
+    setMembershipActionError("");
+    setMembershipActionSuccess("");
+    setDeletingMembershipId(membership.id);
+
+    try {
+      const { error } = await supabase
+        .from("memberships")
+        .delete()
+        .eq("id", membership.id)
+        .eq("member_id", selectedMember.id);
+
+      if (error) throw error;
+
+      if (
+        selectedMembershipId ===
+        membership.id
+      ) {
+        setSelectedMembershipId(null);
+        setMembershipAction(null);
+      }
+
+      setMembershipActionSuccess(
+        `${membershipName} was deleted successfully. Other memberships and payment history were not affected.`,
+      );
+
+      await loadDashboard();
+    } catch (error: any) {
+      console.error(
+        "Delete membership error:",
+        error,
+      );
+
+      setMembershipActionError(
+        error?.message ||
+          "Unable to delete this membership. Please try again.",
+      );
+    } finally {
+      setDeletingMembershipId(null);
+    }
+  }
 
   async function handleAddMembershipToExistingMember() {
     if (!selectedMember) return;
