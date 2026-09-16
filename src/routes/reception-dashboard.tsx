@@ -1,3 +1,5 @@
+reception-dashboard.tsx — Full Replacement Code
+Replace the entire contents of src/routes/reception-dashboard.tsx with the code below.
 import {
   createFileRoute,
   Link,
@@ -447,6 +449,20 @@ function ReceptionDashboardPage() {
   const [selectedPlanId, setSelectedPlanId] =
     useState(membershipPlans[2]?.id || "");
 
+  /*
+   * Custom Plan fields for NEW MEMBER registration.
+   * These are separate from the fields used by
+   * Member Profile → Add Another Membership.
+   */
+  const [newMemberCustomDays, setNewMemberCustomDays] =
+    useState("30");
+
+  const [newMemberCustomPrice, setNewMemberCustomPrice] =
+    useState("");
+
+  const [newMemberCustomIncludeRegistrationFee, setNewMemberCustomIncludeRegistrationFee] =
+    useState(true);
+
   const [addMemberStartDate, setAddMemberStartDate] =
     useState(getLocalDateString());
 
@@ -499,6 +515,9 @@ function ReceptionDashboardPage() {
     selectedPlan?.id ===
     "personal-training-only";
 
+  const isCustomNewMemberPlan =
+    selectedPlan?.id === "custom-plan";
+
   const isAddMembershipPersonalTrainingOnly =
     selectedAddMembershipPlan?.id ===
     "personal-training-only";
@@ -512,6 +531,24 @@ function ReceptionDashboardPage() {
       ? planDurationDays[selectedPlan.id] || 30
       : 30;
 
+  const newMemberCustomDaysNumber =
+    Number(newMemberCustomDays);
+
+  const newMemberCustomPriceNumber =
+    Number(newMemberCustomPrice);
+
+  const newMemberCustomRegistrationAmount =
+    isCustomNewMemberPlan &&
+    newMemberCustomIncludeRegistrationFee
+      ? 7000
+      : 0;
+
+  const newMemberCustomTotal =
+    newMemberCustomPriceNumber > 0
+      ? newMemberCustomPriceNumber +
+        newMemberCustomRegistrationAmount
+      : newMemberCustomRegistrationAmount;
+
   const addMembershipDuration =
     selectedAddMembershipPlan
       ? planDurationDays[
@@ -522,13 +559,16 @@ function ReceptionDashboardPage() {
   const registrationAmount =
     selectedPlan &&
     !isPersonalTrainingOnly &&
+    !isCustomNewMemberPlan &&
     includeRegistrationFee
       ? selectedPlan.registration
       : 0;
 
-  const totalAmount = selectedPlan
-    ? selectedPlan.price + registrationAmount
-    : 0;
+  const totalAmount = isCustomNewMemberPlan
+    ? newMemberCustomTotal
+    : selectedPlan
+      ? selectedPlan.price + registrationAmount
+      : 0;
 
   /*
    * Custom Plan registration fee is always exactly ₦7,000.
@@ -552,10 +592,18 @@ function ReceptionDashboardPage() {
       : customRegistrationAmount;
 
   const calculatedEndDate =
-    addMemberStartDate && selectedPlan
+    addMemberStartDate &&
+    selectedPlan &&
+    (!isCustomNewMemberPlan
+      ? true
+      : Number.isInteger(newMemberCustomDaysNumber) &&
+        newMemberCustomDaysNumber >= 1 &&
+        newMemberCustomDaysNumber <= 3650)
       ? addDaysToDateString(
           addMemberStartDate,
-          selectedPlanDuration - 1,
+          isCustomNewMemberPlan
+            ? newMemberCustomDaysNumber - 1
+            : selectedPlanDuration - 1,
         )
       : "";
 
@@ -1507,6 +1555,31 @@ function ReceptionDashboardPage() {
       return;
     }
 
+    if (isCustomNewMemberPlan) {
+      if (
+        !Number.isInteger(newMemberCustomDaysNumber) ||
+        newMemberCustomDaysNumber < 1 ||
+        newMemberCustomDaysNumber > 3650
+      ) {
+        setAddMemberError(
+          "Custom Plan duration must be between 1 and 3650 days.",
+        );
+
+        return;
+      }
+
+      if (
+        !Number.isFinite(newMemberCustomPriceNumber) ||
+        newMemberCustomPriceNumber <= 0
+      ) {
+        setAddMemberError(
+          "Custom Plan price must be greater than ₦0.",
+        );
+
+        return;
+      }
+    }
+
     if (
       addMemberBirthDay &&
       (Number(addMemberBirthDay) < 1 ||
@@ -1534,9 +1607,10 @@ function ReceptionDashboardPage() {
     setAddingMember(true);
 
     try {
-      const durationDays =
-        planDurationDays[selectedPlan.id] ||
-        30;
+      const durationDays = isCustomNewMemberPlan
+        ? newMemberCustomDaysNumber
+        : planDurationDays[selectedPlan.id] ||
+          30;
 
       const { data, error } =
         await supabase.rpc(
@@ -1614,6 +1688,12 @@ function ReceptionDashboardPage() {
 
       setSelectedPlanId(
         membershipPlans[2]?.id || "",
+      );
+
+      setNewMemberCustomDays("30");
+      setNewMemberCustomPrice("");
+      setNewMemberCustomIncludeRegistrationFee(
+        true,
       );
 
       setAddMemberStartDate(
@@ -2043,32 +2123,44 @@ function ReceptionDashboardPage() {
 
                         setIncludeRegistrationFee(
                           nextPlanId !==
-                            "personal-training-only",
+                            "personal-training-only" &&
+                            nextPlanId !==
+                              "custom-plan",
                         );
+
+                        if (
+                          nextPlanId ===
+                          "custom-plan"
+                        ) {
+                          setNewMemberCustomIncludeRegistrationFee(
+                            true,
+                          );
+                        }
+
+                        setAddMemberError("");
                       }}
                       className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
                     >
-                      {receptionPlans
-                        .filter(
-                          (plan) =>
-                            plan.id !==
-                            "custom-plan",
-                        )
-                        .map((plan) => (
+                      {receptionPlans.map(
+                        (plan) => (
                           <option
                             key={plan.id}
                             value={plan.id}
                           >
-                            {plan.name} —{" "}
-                            {formatNaira(
-                              plan.price,
-                            )}
+                            {plan.name}
+                            {plan.id ===
+                            "custom-plan"
+                              ? " — Set custom price"
+                              : ` — ${formatNaira(
+                                  plan.price,
+                                )}`}
                             {plan.id ===
                             "personal-training-only"
                               ? " (No registration fee)"
                               : ""}
                           </option>
-                        ))}
+                        ),
+                      )}
                     </select>
                   </div>
 
@@ -2090,40 +2182,237 @@ function ReceptionDashboardPage() {
                   </div>
                 </div>
 
-                {selectedPlan && (
-                  <div className="mt-5 grid gap-4 sm:grid-cols-3">
-                    <div className="border border-border bg-muted/40 p-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Plan Price
+                {selectedPlan &&
+                  !isCustomNewMemberPlan && (
+                    <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                      <div className="border border-border bg-muted/40 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Plan Price
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold">
+                          {formatNaira(
+                            selectedPlan.price,
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-muted/40 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Duration
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold">
+                          {selectedPlan.duration}
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-muted/40 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Membership Ends
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold">
+                          {formatDate(
+                            calculatedEndDate,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                {isCustomNewMemberPlan && (
+                  <div className="mt-5 border border-primary/30 bg-primary/5 p-5">
+                    <div className="mb-5">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                        Custom Membership
                       </p>
 
-                      <p className="mt-2 text-xl font-bold">
-                        {formatNaira(
-                          selectedPlan.price,
-                        )}
+                      <h4 className="mt-1 font-display text-2xl font-bold uppercase">
+                        Set Your Own Plan
+                      </h4>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Enter the number of days and membership price. The expiry date and total payment are calculated automatically.
                       </p>
                     </div>
 
-                    <div className="border border-border bg-muted/40 p-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Duration
-                      </p>
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className="mb-2 block text-sm font-bold">
+                          Number of Days *
+                        </label>
 
-                      <p className="mt-2 text-xl font-bold">
-                        {selectedPlan.duration}
+                        <input
+                          type="number"
+                          min="1"
+                          max="3650"
+                          step="1"
+                          value={
+                            newMemberCustomDays
+                          }
+                          onChange={(event) => {
+                            setNewMemberCustomDays(
+                              event.target.value,
+                            );
+                            setAddMemberError("");
+                          }}
+                          placeholder="e.g. 14"
+                          className="h-12 w-full border border-border bg-background px-4 text-sm outline-none focus:border-primary"
+                        />
+
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Enter between 1 and 3650 days.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-bold">
+                          Custom Plan Price *
+                        </label>
+
+                        <div className="relative">
+                          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">
+                            ₦
+                          </span>
+
+                          <input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={
+                              newMemberCustomPrice
+                            }
+                            onChange={(event) => {
+                              setNewMemberCustomPrice(
+                                event.target.value,
+                              );
+                              setAddMemberError("");
+                            }}
+                            placeholder="e.g. 18000"
+                            className="h-12 w-full border border-border bg-background pl-9 pr-4 text-sm outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-5">
+                      <label className="flex min-h-12 cursor-pointer items-center gap-3 border border-border bg-background px-4">
+                        <input
+                          type="checkbox"
+                          checked={
+                            newMemberCustomIncludeRegistrationFee
+                          }
+                          onChange={(event) =>
+                            setNewMemberCustomIncludeRegistrationFee(
+                              event.target.checked,
+                            )
+                          }
+                          className="size-4"
+                        />
+
+                        <span className="text-sm font-bold">
+                          Include ₦7,000 registration fee
+                        </span>
+                      </label>
+
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Uncheck this if the new member should not pay the registration fee.
                       </p>
                     </div>
 
-                    <div className="border border-border bg-muted/40 p-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                        Membership Ends
-                      </p>
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="border border-border bg-background p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Plan Price
+                        </p>
 
-                      <p className="mt-2 text-xl font-bold">
-                        {formatDate(
-                          calculatedEndDate,
-                        )}
-                      </p>
+                        <p className="mt-2 text-xl font-bold">
+                          {newMemberCustomPriceNumber >
+                          0
+                            ? formatNaira(
+                                newMemberCustomPriceNumber,
+                              )
+                            : "₦0"}
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-background p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Duration
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold">
+                          {Number.isInteger(
+                            newMemberCustomDaysNumber,
+                          ) &&
+                          newMemberCustomDaysNumber >=
+                            1 &&
+                          newMemberCustomDaysNumber <=
+                            3650
+                            ? `${newMemberCustomDaysNumber} ${
+                                newMemberCustomDaysNumber ===
+                                1
+                                  ? "day"
+                                  : "days"
+                              }`
+                            : "—"}
+                        </p>
+                      </div>
+
+                      <div className="border border-border bg-background p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Registration
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold">
+                          {formatNaira(
+                            newMemberCustomRegistrationAmount,
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="border border-primary/30 bg-primary/5 p-4">
+                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                          Membership Ends
+                        </p>
+
+                        <p className="mt-2 text-xl font-bold text-primary">
+                          {formatDate(
+                            calculatedEndDate,
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 border border-primary bg-primary/5 p-5">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
+                            Total Payment
+                          </p>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Custom Plan{" "}
+                            {newMemberCustomPriceNumber >
+                              0 &&
+                              `(${formatNaira(
+                                newMemberCustomPriceNumber,
+                              )})`}
+                            {newMemberCustomRegistrationAmount >
+                              0 &&
+                              ` + ${formatNaira(
+                                newMemberCustomRegistrationAmount,
+                              )} registration`}
+                          </p>
+                        </div>
+
+                        <p className="font-display text-3xl font-bold">
+                          {formatNaira(
+                            newMemberCustomTotal,
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2169,7 +2458,8 @@ function ReceptionDashboardPage() {
                       <input
                         type="checkbox"
                         checked={
-                          isPersonalTrainingOnly
+                          isPersonalTrainingOnly ||
+                          isCustomNewMemberPlan
                             ? false
                             : includeRegistrationFee
                         }
@@ -2179,7 +2469,8 @@ function ReceptionDashboardPage() {
                           )
                         }
                         disabled={
-                          isPersonalTrainingOnly
+                          isPersonalTrainingOnly ||
+                          isCustomNewMemberPlan
                         }
                         className="size-4"
                       />
@@ -2187,7 +2478,9 @@ function ReceptionDashboardPage() {
                       <span className="text-sm font-bold">
                         {isPersonalTrainingOnly
                           ? "No registration fee for this plan"
-                          : "Include registration fee"}
+                          : isCustomNewMemberPlan
+                            ? "Registration fee is set in Custom Plan"
+                            : "Include registration fee"}
                       </span>
                     </label>
                   </div>
@@ -2206,19 +2499,51 @@ function ReceptionDashboardPage() {
                     </span>
                   </div>
 
-                  {selectedPlan && (
+                  {selectedPlan &&
+                    !isCustomNewMemberPlan && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {selectedPlan.name}:{" "}
+                        {formatNaira(
+                          selectedPlan.price,
+                        )}
+                        {!isPersonalTrainingOnly &&
+                          includeRegistrationFee &&
+                          selectedPlan.registration >
+                            0 &&
+                          ` + ${formatNaira(
+                            selectedPlan.registration,
+                          )} registration`}
+                      </p>
+                    )}
+
+                  {isCustomNewMemberPlan && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                      {selectedPlan.name}:{" "}
+                      Custom Plan:{" "}
+                      {newMemberCustomPriceNumber >
+                        0
+                        ? formatNaira(
+                            newMemberCustomPriceNumber,
+                          )
+                        : "Set your price"}{" "}
+                      ·{" "}
+                      {Number.isInteger(
+                        newMemberCustomDaysNumber,
+                      ) &&
+                      newMemberCustomDaysNumber >=
+                        1 &&
+                      newMemberCustomDaysNumber <=
+                        3650
+                        ? `${newMemberCustomDaysNumber} ${
+                            newMemberCustomDaysNumber ===
+                            1
+                              ? "day"
+                              : "days"
+                          }`
+                        : "Set duration"}{" "}
+                      · Registration:{" "}
                       {formatNaira(
-                        selectedPlan.price,
+                        newMemberCustomRegistrationAmount,
                       )}
-                      {!isPersonalTrainingOnly &&
-                        includeRegistrationFee &&
-                        selectedPlan.registration >
-                          0 &&
-                        ` + ${formatNaira(
-                          selectedPlan.registration,
-                        )} registration`}
                     </p>
                   )}
                 </div>
