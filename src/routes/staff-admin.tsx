@@ -433,7 +433,6 @@ function RevenueReport({
       </summary>
 
       <div className="min-w-0 border-t border-border">
-        {/* Revenue Report Header */}
         <div className="min-w-0 border-b border-border p-4 sm:p-6">
           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
@@ -463,7 +462,6 @@ function RevenueReport({
             </Button>
           </div>
 
-          {/* Period Filters */}
           <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:flex sm:flex-wrap">
             {[
               ["today", "Today"],
@@ -495,9 +493,7 @@ function RevenueReport({
           </div>
         </div>
 
-        {/* Revenue Content */}
         <div className="min-w-0 p-4 sm:p-6">
-          {/* Revenue Summary */}
           <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -556,9 +552,7 @@ function RevenueReport({
             </div>
           </div>
 
-          {/* Revenue by Plan + Transactions */}
           <div className="mt-4 grid min-w-0 gap-4 lg:mt-6 lg:grid-cols-[1fr_1.4fr] lg:gap-6">
-            {/* Revenue By Plan */}
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <h3 className="font-display text-lg font-bold uppercase sm:text-xl">
                 Revenue by Plan
@@ -630,7 +624,6 @@ function RevenueReport({
               </div>
             </div>
 
-            {/* Payment Transactions */}
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <div className="flex min-w-0 flex-col gap-4">
                 <div className="min-w-0">
@@ -665,7 +658,6 @@ function RevenueReport({
                   </p>
                 ) : (
                   <>
-                    {/* MOBILE PAYMENT CARDS */}
                     <div className="space-y-3 md:hidden">
                       {filteredPayments.map((payment) => (
                         <div
@@ -740,7 +732,6 @@ function RevenueReport({
                       ))}
                     </div>
 
-                    {/* TABLE ON TABLET / DESKTOP */}
                     <div className="hidden min-w-0 overflow-x-auto md:block">
                       <table className="w-full min-w-[850px] text-left text-sm">
                         <thead>
@@ -906,6 +897,13 @@ function StaffAdminPage() {
     return true;
   }
 
+  // Revenue reporting starts from this exact reset point.
+  // Existing payment records before this timestamp remain in the
+  // database but are excluded from the Revenue Report.
+  const REVENUE_START = new Date(
+    "2026-09-16T12:01:18.000Z",
+  );
+
   async function loadRevenue() {
     setRevenueLoading(true);
 
@@ -942,7 +940,20 @@ function StaffAdminPage() {
         return;
       }
 
-      const payments = (paymentData || []) as RevenuePayment[];
+      // Only successful payments from the revenue reset point onward
+      // are included in the Revenue Report.
+      //
+      // getPaymentDate() falls back to created_at when paid_at is null.
+      // This is important for manual POS/Cash/Bank Transfer payments
+      // that may not have a paid_at value.
+      const payments = (
+        (paymentData || []) as RevenuePayment[]
+      ).filter(
+        (payment) =>
+          new Date(
+            payment.paid_at || payment.created_at,
+          ) >= REVENUE_START,
+      );
 
       if (payments.length === 0) {
         setRevenuePayments([]);
