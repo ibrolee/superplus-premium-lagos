@@ -9,10 +9,7 @@ import {
   ShieldCheck,
   UserRound,
   XCircle,
-  CreditCard,
   TrendingUp,
-  Users,
-  CalendarDays,
   ChevronDown,
   Pencil,
   Save,
@@ -404,10 +401,10 @@ function RevenueReport({
   }, [periodPayments, paymentSearch]);
 
   return (
-    <details className="group mb-8 border border-border bg-card">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 [&::-webkit-details-marker]:hidden sm:p-6">
-        <div className="flex min-w-0 items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted">
+    <details className="group mb-8 min-w-0 overflow-hidden border border-border bg-card">
+      <summary className="flex min-w-0 cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:gap-4 sm:p-6">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted sm:h-11 sm:w-11">
             <TrendingUp className="h-5 w-5" />
           </div>
 
@@ -416,11 +413,11 @@ function RevenueReport({
               Admin
             </p>
 
-            <h2 className="mt-1 font-display text-2xl font-bold uppercase">
+            <h2 className="mt-1 truncate font-display text-xl font-bold uppercase sm:text-2xl">
               Revenue Report
             </h2>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground sm:text-sm">
               Track successful membership payments and revenue.
             </p>
           </div>
@@ -435,19 +432,20 @@ function RevenueReport({
         </div>
       </summary>
 
-      <div className="border-t border-border">
-        <div className="border-b border-border p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-5 w-5" />
+      <div className="min-w-0 border-t border-border">
+        {/* Revenue Report Header */}
+        <div className="min-w-0 border-b border-border p-4 sm:p-6">
+          <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-3">
+                <TrendingUp className="h-5 w-5 shrink-0" />
 
-                <div>
-                  <h2 className="font-display text-2xl font-bold uppercase">
+                <div className="min-w-0">
+                  <h2 className="font-display text-xl font-bold uppercase sm:text-2xl">
                     Revenue Report
                   </h2>
 
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                     Track successful membership payments and revenue.
                   </p>
                 </div>
@@ -458,13 +456,15 @@ function RevenueReport({
               variant="outline"
               onClick={onRefresh}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               <RefreshCw className="h-4 w-4" />
               Refresh Revenue
             </Button>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-2">
+          {/* Period Filters */}
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:mt-6 sm:flex sm:flex-wrap">
             {[
               ["today", "Today"],
               ["week", "This Week"],
@@ -483,7 +483,7 @@ function RevenueReport({
                       | "all",
                   )
                 }
-                className={`border px-4 py-2 text-xs font-semibold uppercase ${
+                className={`min-w-0 border px-3 py-2.5 text-xs font-semibold uppercase sm:px-4 sm:py-2 ${
                   period === value
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-background"
@@ -495,14 +495,16 @@ function RevenueReport({
           </div>
         </div>
 
-        <div className="p-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="border border-border bg-background p-5">
+        {/* Revenue Content */}
+        <div className="min-w-0 p-4 sm:p-6">
+          {/* Revenue Summary */}
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Revenue
               </p>
 
-              <p className="mt-3 break-words text-3xl font-bold">
+              <p className="mt-3 break-all text-2xl font-bold sm:text-3xl">
                 {formatMoney(totalRevenue)}
               </p>
 
@@ -511,12 +513,12 @@ function RevenueReport({
               </p>
             </div>
 
-            <div className="border border-border bg-background p-5">
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Today
               </p>
 
-              <p className="mt-3 break-words text-3xl font-bold">
+              <p className="mt-3 break-all text-2xl font-bold sm:text-3xl">
                 {formatMoney(todayRevenue)}
               </p>
 
@@ -525,12 +527,12 @@ function RevenueReport({
               </p>
             </div>
 
-            <div className="border border-border bg-background p-5">
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Payments
               </p>
 
-              <p className="mt-3 text-3xl font-bold">
+              <p className="mt-3 text-2xl font-bold sm:text-3xl">
                 {periodPayments.length}
               </p>
 
@@ -539,12 +541,12 @@ function RevenueReport({
               </p>
             </div>
 
-            <div className="border border-border bg-background p-5">
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Average Payment
               </p>
 
-              <p className="mt-3 break-words text-3xl font-bold">
+              <p className="mt-3 break-all text-2xl font-bold sm:text-3xl">
                 {formatMoney(averagePayment)}
               </p>
 
@@ -554,19 +556,21 @@ function RevenueReport({
             </div>
           </div>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
-            <div className="border border-border bg-background p-5">
-              <h3 className="font-display text-xl font-bold uppercase">
+          {/* Revenue by Plan + Transactions */}
+          <div className="mt-4 grid min-w-0 gap-4 lg:mt-6 lg:grid-cols-[1fr_1.4fr] lg:gap-6">
+            {/* Revenue By Plan */}
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
+              <h3 className="font-display text-lg font-bold uppercase sm:text-xl">
                 Revenue by Plan
               </h3>
 
-              <div className="mt-5">
+              <div className="mt-5 min-w-0">
                 {revenueByPlan.length === 0 ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">
                     No successful payments in this period.
                   </p>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="min-w-0 space-y-3">
                     {revenueByPlan.map((item) => {
                       const percentage =
                         totalRevenue > 0
@@ -576,11 +580,11 @@ function RevenueReport({
                       return (
                         <div
                           key={item.plan}
-                          className="border-b border-border pb-3 last:border-0"
+                          className="min-w-0 border-b border-border pb-3 last:border-0"
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div>
-                              <p className="font-semibold">
+                          <div className="flex min-w-0 items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="break-words font-semibold">
                                 {item.plan}
                               </p>
 
@@ -590,7 +594,7 @@ function RevenueReport({
                               </p>
                             </div>
 
-                            <p className="font-bold">
+                            <p className="shrink-0 break-all text-right text-sm font-bold sm:text-base">
                               {formatMoney(item.amount)}
                             </p>
                           </div>
@@ -614,22 +618,23 @@ function RevenueReport({
               </div>
 
               <div className="mt-6 border-t border-border pt-5">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                     This Month
                   </span>
 
-                  <span className="font-bold">
+                  <span className="shrink-0 text-sm font-bold sm:text-base">
                     {formatMoney(monthRevenue)}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="border border-border bg-background p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="font-display text-xl font-bold uppercase">
+            {/* Payment Transactions */}
+            <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
+              <div className="flex min-w-0 flex-col gap-4">
+                <div className="min-w-0">
+                  <h3 className="font-display text-lg font-bold uppercase sm:text-xl">
                     Payment Transactions
                   </h3>
 
@@ -645,11 +650,11 @@ function RevenueReport({
                     setPaymentSearch(event.target.value)
                   }
                   placeholder="Search payments..."
-                  className="h-10 w-full border border-border bg-background px-3 text-sm outline-none sm:w-64"
+                  className="h-10 w-full min-w-0 border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
                 />
               </div>
 
-              <div className="mt-5 overflow-x-auto">
+              <div className="mt-5 min-w-0">
                 {loading ? (
                   <p className="py-8 text-center text-sm text-muted-foreground">
                     Loading payment records...
@@ -659,66 +664,146 @@ function RevenueReport({
                     No successful payment records found.
                   </p>
                 ) : (
-                  <table className="w-full min-w-[850px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                        <th className="px-3 py-3">Member</th>
-                        <th className="px-3 py-3">Plan</th>
-                        <th className="px-3 py-3">Amount</th>
-                        <th className="px-3 py-3">Method</th>
-                        <th className="px-3 py-3">Date</th>
-                        <th className="px-3 py-3">Reference</th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
+                  <>
+                    {/* MOBILE PAYMENT CARDS */}
+                    <div className="space-y-3 md:hidden">
                       {filteredPayments.map((payment) => (
-                        <tr
+                        <div
                           key={payment.id}
-                          className="border-b border-border"
+                          className="min-w-0 overflow-hidden border border-border bg-card p-4"
                         >
-                          <td className="px-3 py-4">
-                            <p className="font-semibold">
-                              {getPaymentMemberName(payment)}
-                            </p>
-
-                            {payment.member?.email && (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {payment.member.email}
+                          <div className="flex min-w-0 items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="break-words font-semibold">
+                                {getPaymentMemberName(payment)}
                               </p>
-                            )}
-                          </td>
 
-                          <td className="px-3 py-4">
-                            {getPaymentPlan(payment)}
-                          </td>
+                              {payment.member?.email && (
+                                <p className="mt-1 break-all text-xs text-muted-foreground">
+                                  {payment.member.email}
+                                </p>
+                              )}
+                            </div>
 
-                          <td className="px-3 py-4 font-bold">
-                            {formatMoney(
-                              Number(payment.amount || 0),
-                              payment.currency || "NGN",
-                            )}
-                          </td>
+                            <p className="shrink-0 text-right text-sm font-bold">
+                              {formatMoney(
+                                Number(payment.amount || 0),
+                                payment.currency || "NGN",
+                              )}
+                            </p>
+                          </div>
 
-                          <td className="px-3 py-4 capitalize">
-                            {payment.payment_method || "Paystack"}
-                          </td>
+                          <div className="mt-4 grid min-w-0 grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4">
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                Plan
+                              </p>
 
-                          <td className="whitespace-nowrap px-3 py-4">
-                            {formatDateTime(
-                              getPaymentDate(payment),
-                            )}
-                          </td>
+                              <p className="mt-1 break-words text-sm font-medium">
+                                {getPaymentPlan(payment)}
+                              </p>
+                            </div>
 
-                          <td className="px-3 py-4">
-                            <span className="font-mono text-xs">
-                              {payment.paystack_reference || "—"}
-                            </span>
-                          </td>
-                        </tr>
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                Method
+                              </p>
+
+                              <p className="mt-1 break-words text-sm capitalize">
+                                {payment.payment_method || "Paystack"}
+                              </p>
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                Date
+                              </p>
+
+                              <p className="mt-1 break-words text-sm">
+                                {formatDateTime(
+                                  getPaymentDate(payment),
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="min-w-0">
+                              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                                Reference
+                              </p>
+
+                              <p className="mt-1 break-all font-mono text-[10px] text-muted-foreground">
+                                {payment.paystack_reference || "—"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+
+                    {/* TABLE ON TABLET / DESKTOP */}
+                    <div className="hidden min-w-0 overflow-x-auto md:block">
+                      <table className="w-full min-w-[850px] text-left text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                            <th className="px-3 py-3">Member</th>
+                            <th className="px-3 py-3">Plan</th>
+                            <th className="px-3 py-3">Amount</th>
+                            <th className="px-3 py-3">Method</th>
+                            <th className="px-3 py-3">Date</th>
+                            <th className="px-3 py-3">Reference</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {filteredPayments.map((payment) => (
+                            <tr
+                              key={payment.id}
+                              className="border-b border-border"
+                            >
+                              <td className="max-w-[220px] px-3 py-4">
+                                <p className="break-words font-semibold">
+                                  {getPaymentMemberName(payment)}
+                                </p>
+
+                                {payment.member?.email && (
+                                  <p className="mt-1 break-all text-xs text-muted-foreground">
+                                    {payment.member.email}
+                                  </p>
+                                )}
+                              </td>
+
+                              <td className="max-w-[160px] break-words px-3 py-4">
+                                {getPaymentPlan(payment)}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 py-4 font-bold">
+                                {formatMoney(
+                                  Number(payment.amount || 0),
+                                  payment.currency || "NGN",
+                                )}
+                              </td>
+
+                              <td className="px-3 py-4 capitalize">
+                                {payment.payment_method || "Paystack"}
+                              </td>
+
+                              <td className="whitespace-nowrap px-3 py-4">
+                                {formatDateTime(
+                                  getPaymentDate(payment),
+                                )}
+                              </td>
+
+                              <td className="max-w-[180px] px-3 py-4">
+                                <span className="break-all font-mono text-xs">
+                                  {payment.paystack_reference || "—"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -891,9 +976,7 @@ function StaffAdminPage() {
       if (memberIds.length > 0) {
         const { data: memberData } = await supabase
           .from("members")
-          .select(
-            "id, full_name, email, phone",
-          )
+          .select("id, full_name, email, phone")
           .in("id", memberIds);
 
         members = (memberData || []) as RevenueMember[];
@@ -1450,30 +1533,30 @@ function StaffAdminPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-8">
-          <div>
+    <main className="min-h-screen min-w-0 overflow-x-hidden bg-background">
+      <header className="min-w-0 border-b border-border bg-card">
+        <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" />
+              <ShieldCheck className="h-5 w-5 shrink-0" />
 
-              <span className="text-sm font-semibold uppercase tracking-[0.2em]">
+              <span className="truncate text-sm font-semibold uppercase tracking-[0.2em]">
                 Super Plus Fitness
               </span>
             </div>
 
-            <h1 className="font-display text-3xl font-bold uppercase">
+            <h1 className="font-display text-2xl font-bold uppercase sm:text-3xl">
               Admin Staff Portal
             </h1>
 
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 max-w-2xl text-xs text-muted-foreground sm:text-sm">
               Manage staff, salaries, attendance and business administration.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link to="/staff-blog">
-              <Button variant="outline">
+          <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+            <Link to="/staff-blog" className="flex-1 sm:flex-none">
+              <Button variant="outline" className="w-full">
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">
                   Blog Management
@@ -1488,6 +1571,7 @@ function StaffAdminPage() {
               variant="outline"
               onClick={() => void refreshAll()}
               disabled={loading || saving || revenueLoading}
+              className="flex-1 sm:flex-none"
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -1499,6 +1583,7 @@ function StaffAdminPage() {
               variant="outline"
               onClick={logout}
               disabled={saving}
+              className="flex-1 sm:flex-none"
             >
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">
@@ -1509,15 +1594,15 @@ function StaffAdminPage() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl min-w-0 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {error && (
-          <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
+          <div className="mb-6 break-words rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
+          <div className="mb-6 break-words rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
             {success}
           </div>
         )}
@@ -1536,8 +1621,8 @@ function StaffAdminPage() {
           </div>
         ) : (
           <>
-            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="border border-border bg-card p-5">
+            <div className="mb-8 grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Pending
                 </p>
@@ -1546,7 +1631,7 @@ function StaffAdminPage() {
                 </p>
               </div>
 
-              <div className="border border-border bg-card p-5">
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Approved
                 </p>
@@ -1555,7 +1640,7 @@ function StaffAdminPage() {
                 </p>
               </div>
 
-              <div className="border border-border bg-card p-5">
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Suspended
                 </p>
@@ -1564,7 +1649,7 @@ function StaffAdminPage() {
                 </p>
               </div>
 
-              <div className="border border-border bg-card p-5">
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                   Inactive
                 </p>
@@ -1574,23 +1659,23 @@ function StaffAdminPage() {
               </div>
             </div>
 
-            <div className="mb-6">
+            <div className="mb-6 min-w-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
                 Staff Management
               </p>
 
-              <h2 className="mt-1 font-display text-3xl font-bold uppercase">
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">
                 Staff Administration
               </h2>
 
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
                 Manage staff applications, employment information,
                 salaries and attendance.
               </p>
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
-              <section className="border border-border bg-card">
+            <div className="grid min-w-0 gap-8 lg:grid-cols-[380px_1fr]">
+              <section className="min-w-0 border border-border bg-card">
                 <div className="border-b border-border p-5">
                   <h2 className="font-display text-xl font-bold uppercase">
                     Staff
@@ -1602,7 +1687,7 @@ function StaffAdminPage() {
                       setSearch(event.target.value)
                     }
                     placeholder="Search staff..."
-                    className="mt-4 h-11 w-full border border-border bg-background px-3 outline-none focus:border-foreground"
+                    className="mt-4 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none focus:border-foreground"
                   />
 
                   <div className="mt-3 grid grid-cols-2 gap-2">
@@ -1688,7 +1773,7 @@ function StaffAdminPage() {
                 </div>
               </section>
 
-              <section>
+              <section className="min-w-0">
                 {!selectedStaff ? (
                   <div className="flex min-h-[500px] items-center justify-center border border-border bg-card p-8 text-center">
                     <div>
@@ -1707,15 +1792,15 @@ function StaffAdminPage() {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    <div className="border border-border bg-card p-6">
-                      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                    <div className="border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
                             <UserRound className="h-6 w-6" />
                           </div>
 
-                          <div>
-                            <h2 className="font-display text-3xl font-bold uppercase">
+                          <div className="min-w-0">
+                            <h2 className="break-words font-display text-2xl font-bold uppercase sm:text-3xl">
                               {selectedStaff.full_name}
                             </h2>
 
@@ -1726,7 +1811,7 @@ function StaffAdminPage() {
                         </div>
 
                         <span
-                          className={`w-fit rounded-full border px-3 py-2 text-xs font-bold uppercase ${statusClass(
+                          className={`w-fit shrink-0 rounded-full border px-3 py-2 text-xs font-bold uppercase ${statusClass(
                             selectedStaff.status,
                           )}`}
                         >
@@ -1755,9 +1840,9 @@ function StaffAdminPage() {
                       )}
                     </div>
 
-                    <div className="border border-border bg-card p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
                           <h3 className="font-display text-xl font-bold uppercase">
                             Personal Information
                           </h3>
@@ -1799,6 +1884,7 @@ function StaffAdminPage() {
                               setEditingPersonalInfo(true);
                             }}
                             disabled={saving}
+                            className="w-full sm:w-auto"
                           >
                             <Pencil className="h-4 w-4" />
                             Edit Personal Information
@@ -1833,16 +1919,16 @@ function StaffAdminPage() {
 
                       {!editingPersonalInfo ? (
                         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Full Name
                             </p>
-                            <p className="mt-1 font-medium">
+                            <p className="mt-1 break-words font-medium">
                               {selectedStaff.full_name}
                             </p>
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Email
                             </p>
@@ -1851,16 +1937,16 @@ function StaffAdminPage() {
                             </p>
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Phone
                             </p>
-                            <p className="mt-1 font-medium">
+                            <p className="mt-1 break-words font-medium">
                               {selectedStaff.phone || "—"}
                             </p>
                           </div>
 
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Birthday
                             </p>
@@ -1872,18 +1958,18 @@ function StaffAdminPage() {
                             </p>
                           </div>
 
-                          <div className="sm:col-span-2">
+                          <div className="min-w-0 sm:col-span-2">
                             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Address
                             </p>
-                            <p className="mt-1 font-medium">
+                            <p className="mt-1 break-words font-medium">
                               {selectedStaff.address || "—"}
                             </p>
                           </div>
                         </div>
                       ) : (
                         <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                          <label>
+                          <label className="min-w-0">
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Full Name
                             </span>
@@ -1895,11 +1981,11 @@ function StaffAdminPage() {
                                   event.target.value,
                                 )
                               }
-                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
                             />
                           </label>
 
-                          <label>
+                          <label className="min-w-0">
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Email
                             </span>
@@ -1908,11 +1994,11 @@ function StaffAdminPage() {
                               value={selectedStaff.email || ""}
                               disabled
                               readOnly
-                              className="mt-2 h-11 w-full cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
+                              className="mt-2 h-11 w-full min-w-0 cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
                             />
                           </label>
 
-                          <label>
+                          <label className="min-w-0">
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Phone
                             </span>
@@ -1925,12 +2011,12 @@ function StaffAdminPage() {
                                   event.target.value,
                                 )
                               }
-                              className="mt-2 h-11 w-full border border-border bg-background px-3 outline-none"
+                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
                             />
                           </label>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <label>
+                          <div className="grid min-w-0 grid-cols-2 gap-3">
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Birth Day
                               </span>
@@ -1942,7 +2028,7 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               >
                                 <option value="">
                                   Day
@@ -1962,7 +2048,7 @@ function StaffAdminPage() {
                               </select>
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Birth Month
                               </span>
@@ -1974,7 +2060,7 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               >
                                 <option value="">
                                   Month
@@ -2005,7 +2091,7 @@ function StaffAdminPage() {
                             </label>
                           </div>
 
-                          <label className="sm:col-span-2">
+                          <label className="min-w-0 sm:col-span-2">
                             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                               Address
                             </span>
@@ -2018,14 +2104,14 @@ function StaffAdminPage() {
                                 )
                               }
                               rows={3}
-                              className="mt-2 w-full border border-border bg-background px-3 py-3 outline-none"
+                              className="mt-2 w-full min-w-0 border border-border bg-background px-3 py-3 outline-none"
                             />
                           </label>
                         </div>
                       )}
                     </div>
 
-                    <div className="border border-border bg-card p-6">
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
                       <h3 className="font-display text-xl font-bold uppercase">
                         Employment Information
                       </h3>
@@ -2035,7 +2121,7 @@ function StaffAdminPage() {
                       </p>
 
                       <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                        <label>
+                        <label className="min-w-0">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Position
                           </span>
@@ -2045,11 +2131,11 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setPosition(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3"
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                           />
                         </label>
 
-                        <label>
+                        <label className="min-w-0">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Department
                           </span>
@@ -2059,7 +2145,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setDepartment(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3"
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                           >
                             <option value="">
                               Select department
@@ -2073,7 +2159,7 @@ function StaffAdminPage() {
                           </select>
                         </label>
 
-                        <label>
+                        <label className="min-w-0">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Employment Type
                           </span>
@@ -2083,7 +2169,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setEmploymentType(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3"
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                           >
                             {employmentTypes.map((item) => (
                               <option key={item} value={item}>
@@ -2093,7 +2179,7 @@ function StaffAdminPage() {
                           </select>
                         </label>
 
-                        <label>
+                        <label className="min-w-0">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Employment Date
                           </span>
@@ -2104,11 +2190,11 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setEmploymentDate(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3"
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                           />
                         </label>
 
-                        <label className="sm:col-span-2">
+                        <label className="min-w-0 sm:col-span-2">
                           <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                             Staff Role / System Access
                           </span>
@@ -2118,7 +2204,7 @@ function StaffAdminPage() {
                             onChange={(event) =>
                               setRole(event.target.value)
                             }
-                            className="mt-2 h-11 w-full border border-border bg-background px-3"
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                           >
                             {roles.map((item) => (
                               <option
@@ -2196,9 +2282,9 @@ function StaffAdminPage() {
                       </div>
                     </div>
 
-                    <div className="border border-border bg-card p-6">
-                      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
                           <h3 className="font-display text-xl font-bold uppercase">
                             Salary
                           </h3>
@@ -2213,6 +2299,7 @@ function StaffAdminPage() {
                           onClick={() =>
                             setShowSalaryForm((current) => !current)
                           }
+                          className="w-full sm:w-auto"
                         >
                           <DollarSign className="h-4 w-4" />
 
@@ -2223,9 +2310,9 @@ function StaffAdminPage() {
                       </div>
 
                       {showSalaryForm && (
-                        <div className="mt-6 border border-border bg-muted/30 p-5">
+                        <div className="mt-6 min-w-0 border border-border bg-muted/30 p-4 sm:p-5">
                           <div className="grid gap-5 sm:grid-cols-2">
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Amount
                               </span>
@@ -2237,11 +2324,11 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryAmount(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Status
                               </span>
@@ -2256,7 +2343,7 @@ function StaffAdminPage() {
                                       | "cancelled",
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               >
                                 <option value="pending">
                                   Pending
@@ -2270,7 +2357,7 @@ function StaffAdminPage() {
                               </select>
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Pay Period Start
                               </span>
@@ -2281,11 +2368,11 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryStart(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Pay Period End
                               </span>
@@ -2296,11 +2383,11 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryEnd(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Payment Date
                               </span>
@@ -2313,11 +2400,11 @@ function StaffAdminPage() {
                                     event.target.value,
                                   )
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
-                            <label>
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                                 Notes
                               </span>
@@ -2327,7 +2414,7 @@ function StaffAdminPage() {
                                 onChange={(event) =>
                                   setSalaryNotes(event.target.value)
                                 }
-                                className="mt-2 h-11 w-full border border-border bg-background px-3"
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
                           </div>
@@ -2420,7 +2507,7 @@ function StaffAdminPage() {
                       </div>
                     </div>
 
-                    <div className="border border-border bg-card p-6">
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
                       <div>
                         <h3 className="font-display text-xl font-bold uppercase">
                           Attendance
