@@ -1,5 +1,3 @@
-reception-dashboard.tsx — Full Replacement Code
-Replace the entire contents of src/routes/reception-dashboard.tsx with the code below.
 import {
   createFileRoute,
   Link,
