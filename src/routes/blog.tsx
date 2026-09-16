@@ -73,7 +73,7 @@ function getReadingTime(content: string) {
 }
 
 function articleUrl(slug: string) {
-  return `/blog/${encodeURIComponent(slug)}`;
+  return `/blog/article?slug=${encodeURIComponent(slug)}`;
 }
 
 function BlogPage() {
@@ -534,3 +534,4 @@ function BlogPage() {
     </div>
   );
 }
+
