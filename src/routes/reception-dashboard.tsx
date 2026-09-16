@@ -387,6 +387,8 @@ function ReceptionDashboardPage() {
 
   const [membershipActionSuccess, setMembershipActionSuccess] =
     useState("");
+  const [deletingMembershipId, setDeletingMembershipId] =
+    useState<string | null>(null);
 
   const [addMembershipOpen, setAddMembershipOpen] =
     useState(false);
