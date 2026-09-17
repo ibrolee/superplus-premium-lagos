@@ -84,6 +84,8 @@ function formatDateTime(value: string | null | undefined) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
+    timeZone: "Africa/Lagos",
   }).format(new Date(value));
 }
 
