@@ -19,6 +19,7 @@ import {
   Users,
   CalendarDays,
   LayoutDashboard,
+  Menu,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -536,7 +537,7 @@ function RevenueReport({
   }, [periodPayments, paymentSearch]);
 
   return (
-    <details className="group mb-8 min-w-0 overflow-hidden border border-border bg-card">
+    <details id="revenue-panel" className="group min-w-0 overflow-hidden border border-border bg-card">
       <summary className="flex min-w-0 cursor-pointer list-none items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden sm:gap-4 sm:p-6">
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted sm:h-11 sm:w-11">
@@ -1295,14 +1296,17 @@ function StaffAdminPage() {
               <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 shrink-0" /><span className="truncate text-xs font-semibold uppercase tracking-[0.2em]">Super Plus Fitness</span></div>
               <h1 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">Admin Staff Portal</h1>
             </div>
-            <nav className="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-1">
-              <a href="#staff" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><Users className="mr-1 inline h-4 w-4" />Staff</a>
-              <a href="#attendance" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><CalendarDays className="mr-1 inline h-4 w-4" />Attendance</a>
-              <a href="#revenue" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><TrendingUp className="mr-1 inline h-4 w-4" />Revenue</a>
-              <Link to="/staff-blog" className="shrink-0"><Button variant="outline"><FileText className="h-4 w-4" /><span className="hidden sm:inline">Blog</span></Button></Link>
-              <Button variant="outline" onClick={() => void refreshAll()} disabled={loading || saving || revenueLoading}><RefreshCw className="h-4 w-4" /><span className="hidden sm:inline">Refresh</span></Button>
-              <Button variant="outline" onClick={logout} disabled={saving}><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Logout</span></Button>
-            </nav>
+            <details className="group/nav relative w-full max-w-full border border-border bg-card lg:w-auto">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold uppercase [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><Menu className="h-5 w-5" /> Navigation</span><ChevronDown className="h-4 w-4 transition-transform group-open/nav:rotate-180" /></summary>
+              <nav className="grid gap-2 border-t border-border p-3 sm:grid-cols-2 lg:min-w-64 lg:grid-cols-1">
+                <a href="#revenue" onClick={() => document.getElementById("revenue-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><TrendingUp className="h-4 w-4" /> Revenue Report</a>
+                <a href="#attendance" onClick={() => document.getElementById("attendance-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><CalendarDays className="h-4 w-4" /> Staff Attendance</a>
+                <a href="#staff" onClick={() => document.getElementById("staff-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><Users className="h-4 w-4" /> Staff Directory</a>
+                <Link to="/staff-blog" className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><FileText className="h-4 w-4" /> Blog</Link>
+                <Button variant="outline" onClick={() => void refreshAll()} disabled={loading || saving || revenueLoading}><RefreshCw className="h-4 w-4" /> Refresh</Button>
+                <Button variant="outline" onClick={logout} disabled={saving}><LogOut className="h-4 w-4" /> Log Out</Button>
+              </nav>
+            </details>
           </div>
         </div>
       </header>
@@ -1313,8 +1317,17 @@ function StaffAdminPage() {
 
         {loading ? <div className="py-20 text-center text-muted-foreground">Loading staff management...</div> : (
           <>
-            <section id="staff" className="scroll-mt-28">
-              <details className="group overflow-hidden border border-border bg-card" open={false}>
+            <section id="revenue" className="scroll-mt-28">
+              <RevenueReport payments={revenuePayments} loading={revenueLoading} onRefresh={() => void loadRevenue()} />
+            </section>
+            <section id="attendance" className="mt-6 scroll-mt-28">
+              <details id="attendance-panel" className="group overflow-hidden border border-border bg-card" open={false}>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5"><div className="flex min-w-0 items-center gap-3"><LayoutDashboard className="h-5 w-5 shrink-0" /><div className="min-w-0"><h2 className="font-display text-xl font-bold uppercase sm:text-2xl">Staff Attendance</h2><p className="mt-1 text-xs text-muted-foreground">All staff attendance for a selected Lagos date. Clock-ins after 7:30 AM are highlighted red.</p></div></div><ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" /></summary>
+                <div className="border-t border-border p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><label className="w-full sm:max-w-xs"><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Attendance Date</span><input type="date" value={attendanceDate} onChange={(e)=>setAttendanceDate(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><Button variant="outline" onClick={()=>void loadAllAttendance(attendanceDate)}><RefreshCw className="h-4 w-4" />Refresh Attendance</Button></div><div className="mt-5 grid min-w-0 gap-3">{staff.length===0?<p className="p-4 text-center text-muted-foreground">No staff records.</p>:staff.map((member)=>{const record=allAttendance.find((r)=>r.staff_profile_id===member.id);const late=record?isLateClockIn(record.checked_in_at):false;const start=record?new Date(record.checked_in_at).getTime():0;const end=record?(record.checked_out_at?new Date(record.checked_out_at).getTime():Date.now()):0;const mins=Math.max(0,Math.floor((end-start)/60000));return <div key={member.id} className="min-w-0 border border-border p-3 sm:p-4"><div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><div className="min-w-0"><p className="break-words font-semibold">{member.full_name}</p><p className="text-xs text-muted-foreground">{member.staff_id}</p></div><span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(member.status)}`}>{statusLabel(member.status)}</span></div><div className="mt-3 grid min-w-0 grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3"><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Clock In</p><p className={`break-words font-semibold ${late ? "text-red-600" : ""}`}>{record?<>{formatTimeOnly(record.checked_in_at)}{late&&<span className="ml-1">(Late)</span>}</>:"Not clocked in"}</p></div><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Clock Out</p><p className="break-words font-semibold">{record?(record.checked_out_at?formatTimeOnly(record.checked_out_at):"Still inside"):"—"}</p></div><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Duration</p><p className="font-semibold">{record?(Math.floor(mins/60)>0?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins%60}m`):"—"}</p></div></div></div>})}</div></div>
+              </details>
+            </section>
+            <section id="staff" className="mt-6 scroll-mt-28">
+              <details id="staff-panel" className="group overflow-hidden border border-border bg-card" open={false}>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
                   <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Staff Management</p><h2 className="mt-1 font-display text-xl font-bold uppercase sm:text-2xl">Staff Directory</h2><p className="mt-1 text-xs text-muted-foreground">Status groups are collapsed by default. Open a group to manage staff.</p></div>
                   <ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" />
@@ -1364,12 +1377,7 @@ function StaffAdminPage() {
               </details>
             </section>
 
-            <section id="attendance" className="mt-6 scroll-mt-28">
-              <details className="group overflow-hidden border border-border bg-card" open={false}>
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5"><div className="flex min-w-0 items-center gap-3"><LayoutDashboard className="h-5 w-5 shrink-0" /><div className="min-w-0"><h2 className="font-display text-xl font-bold uppercase sm:text-2xl">Staff Attendance</h2><p className="mt-1 text-xs text-muted-foreground">All staff attendance for a selected Lagos date. Clock-ins after 7:30 AM are highlighted red.</p></div></div><ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" /></summary>
-                <div className="border-t border-border p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><label className="w-full sm:max-w-xs"><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Attendance Date</span><input type="date" value={attendanceDate} onChange={(e)=>setAttendanceDate(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><Button variant="outline" onClick={()=>void loadAllAttendance(attendanceDate)}><RefreshCw className="h-4 w-4" />Refresh Attendance</Button></div><div className="mt-5 grid min-w-0 gap-3">{staff.length===0?<p className="p-4 text-center text-muted-foreground">No staff records.</p>:staff.map((member)=>{const record=allAttendance.find((r)=>r.staff_profile_id===member.id);const late=record?isLateClockIn(record.checked_in_at):false;const start=record?new Date(record.checked_in_at).getTime():0;const end=record?(record.checked_out_at?new Date(record.checked_out_at).getTime():Date.now()):0;const mins=Math.max(0,Math.floor((end-start)/60000));return <div key={member.id} className="min-w-0 border border-border p-3 sm:p-4"><div className="flex min-w-0 flex-wrap items-center justify-between gap-2"><div className="min-w-0"><p className="break-words font-semibold">{member.full_name}</p><p className="text-xs text-muted-foreground">{member.staff_id}</p></div><span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(member.status)}`}>{statusLabel(member.status)}</span></div><div className="mt-3 grid min-w-0 grid-cols-1 gap-3 border-t border-border pt-3 text-sm sm:grid-cols-3"><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Clock In</p><p className={`break-words font-semibold ${late ? "text-red-600" : ""}`}>{record?<>{formatTimeOnly(record.checked_in_at)}{late&&<span className="ml-1">(Late)</span>}</>:"Not clocked in"}</p></div><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Clock Out</p><p className="break-words font-semibold">{record?(record.checked_out_at?formatTimeOnly(record.checked_out_at):"Still inside"):"—"}</p></div><div className="min-w-0"><p className="text-xs uppercase text-muted-foreground">Duration</p><p className="font-semibold">{record?(Math.floor(mins/60)>0?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins%60}m`):"—"}</p></div></div></div>})}</div></div>
-              </details>
-            </section>
+
           </>
         )}
       </div>
