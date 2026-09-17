@@ -41,6 +41,7 @@ function formatTime(value?: string) {
 
   return new Date(value).toLocaleTimeString("en-NG", {
     hour: "numeric",
+    hour12: true,
     minute: "2-digit",
     second: "2-digit",
   });

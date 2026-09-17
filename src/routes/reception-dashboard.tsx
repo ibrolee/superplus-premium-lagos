@@ -228,6 +228,7 @@ function formatTime(value: string | null) {
 
   return new Date(value).toLocaleTimeString("en-NG", {
     hour: "numeric",
+    hour12: true,
     minute: "2-digit",
   });
 }

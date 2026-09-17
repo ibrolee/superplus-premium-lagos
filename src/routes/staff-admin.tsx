@@ -15,6 +15,10 @@ import {
   Save,
   X,
   FileText,
+  Trash2,
+  Users,
+  CalendarDays,
+  LayoutDashboard,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
@@ -145,6 +149,7 @@ function formatDateTime(value: string | null | undefined) {
     year: "numeric",
     hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   }).format(new Date(value));
 }
 
@@ -987,231 +992,92 @@ function RevenueReport({
 function StaffAdminPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [revenueLoading, setRevenueLoading] = useState(true);
-  const [revenuePayments, setRevenuePayments] = useState<
-    RevenuePaymentRow[]
-  >([]);
-
+  const [revenuePayments, setRevenuePayments] = useState<RevenuePaymentRow[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-
   const [staff, setStaff] = useState<StaffProfile[]>([]);
-  const [selectedStaff, setSelectedStaff] =
-    useState<StaffProfile | null>(null);
-
+  const [selectedStaff, setSelectedStaff] = useState<StaffProfile | null>(null);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<
-    AttendanceRecord[]
-  >([]);
-
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [allAttendance, setAllAttendance] = useState<Array<AttendanceRecord & { staff_profile_id: string }>>([]);
+  const [attendanceDate, setAttendanceDate] = useState(() => {
+    const now = new Date();
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  });
   const [search, setSearch] = useState("");
-
-  const [filter, setFilter] = useState<
-    "all" | "pending" | "approved" | "suspended" | "inactive"
-  >("all");
-
+  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "suspended" | "inactive">("all");
   const [showSalaryForm, setShowSalaryForm] = useState(false);
-
   const [position, setPosition] = useState("");
   const [department, setDepartment] = useState("");
   const [employmentType, setEmploymentType] = useState("Full Time");
   const [employmentDate, setEmploymentDate] = useState("");
   const [role, setRole] = useState("staff");
-
-  const [editingPersonalInfo, setEditingPersonalInfo] =
-    useState(false);
-
+  const [editingPersonalInfo, setEditingPersonalInfo] = useState(false);
   const [personalFullName, setPersonalFullName] = useState("");
   const [personalPhone, setPersonalPhone] = useState("");
   const [personalBirthDay, setPersonalBirthDay] = useState("");
   const [personalBirthMonth, setPersonalBirthMonth] = useState("");
   const [personalAddress, setPersonalAddress] = useState("");
-
   const [salaryAmount, setSalaryAmount] = useState("");
   const [salaryStart, setSalaryStart] = useState("");
   const [salaryEnd, setSalaryEnd] = useState("");
   const [salaryPaymentDate, setSalaryPaymentDate] = useState("");
-
-  const [salaryStatus, setSalaryStatus] = useState<
-    "pending" | "paid" | "cancelled"
-  >("pending");
-
+  const [salaryStatus, setSalaryStatus] = useState<"pending" | "paid" | "cancelled">("pending");
   const [salaryNotes, setSalaryNotes] = useState("");
 
   async function verifyAdmin() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       window.location.href = "/staff";
       return false;
     }
-
-    const { data, error: adminError } = await supabase
-      .from("staff_users")
-      .select("id, role, active")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-
+    const { data, error: adminError } = await supabase.from("staff_users").select("id, role, active").eq("auth_user_id", user.id).maybeSingle();
     if (adminError) {
       setError(adminError.message);
       return false;
     }
-
-    const isAdmin =
-      data?.active === true &&
-      ["admin", "owner", "manager"].includes(
-        String(data.role).toLowerCase(),
-      );
-
+    const isAdmin = data?.active === true && ["admin", "owner", "manager"].includes(String(data.role).toLowerCase());
     if (!isAdmin) {
-      setError(
-        "You do not have permission to access staff management.",
-      );
+      setError("You do not have permission to access staff management.");
       return false;
     }
-
     return true;
   }
 
-  // Revenue reporting starts from this exact reset point.
-  // Existing payment records before this timestamp remain in the
-  // database but are excluded from the Revenue Report.
-  const REVENUE_START = new Date(
-    "2026-09-16T12:01:18.000Z",
-  );
+  const REVENUE_START = new Date("2026-09-16T12:01:18.000Z");
 
   async function loadRevenue() {
     setRevenueLoading(true);
-
     try {
-      const { data: paymentData, error: paymentError } =
-        await supabase
-          .from("payments")
-          .select(
-            `
-            id,
-            member_id,
-            membership_id,
-            amount,
-            currency,
-            status,
-            payment_method,
-            provider,
-            paystack_reference,
-            paid_at,
-            created_at,
-            metadata
-          `,
-          )
-          .eq("status", "success")
-          .order("paid_at", {
-            ascending: false,
-            nullsFirst: false,
-          })
-          .limit(2000);
-
+      const { data: paymentData, error: paymentError } = await supabase.from("payments").select(`id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at, metadata`).eq("status", "success").order("paid_at", { ascending: false, nullsFirst: false }).limit(2000);
       if (paymentError) {
         setError(paymentError.message);
         setRevenuePayments([]);
         return;
       }
-
-      // Only successful payments from the revenue reset point onward
-      // are included in the Revenue Report.
-      //
-      // getPaymentDate() falls back to created_at when paid_at is null.
-      // This is important for manual POS/Cash/Bank Transfer payments
-      // that may not have a paid_at value.
-      const payments = (
-        (paymentData || []) as RevenuePayment[]
-      ).filter(
-        (payment) =>
-          new Date(
-            payment.paid_at || payment.created_at,
-          ) >= REVENUE_START,
-      );
-
-      if (payments.length === 0) {
+      const payments = ((paymentData || []) as RevenuePayment[]).filter((payment) => new Date(payment.paid_at || payment.created_at) >= REVENUE_START);
+      if (!payments.length) {
         setRevenuePayments([]);
         return;
       }
-
-      const memberIds = Array.from(
-        new Set(
-          payments
-            .map((payment) => payment.member_id)
-            .filter(
-              (id): id is string =>
-                typeof id === "string" && id.length > 0,
-            ),
-        ),
-      );
-
-      const membershipIds = Array.from(
-        new Set(
-          payments
-            .map((payment) => payment.membership_id)
-            .filter(
-              (id): id is string =>
-                typeof id === "string" && id.length > 0,
-            ),
-        ),
-      );
-
+      const memberIds = Array.from(new Set(payments.map((p) => p.member_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
+      const membershipIds = Array.from(new Set(payments.map((p) => p.membership_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
       let members: RevenueMember[] = [];
-
-      if (memberIds.length > 0) {
-        const { data: memberData } = await supabase
-          .from("members")
-          .select("id, full_name, email, phone")
-          .in("id", memberIds);
-
-        members = (memberData || []) as RevenueMember[];
-      }
-
       let memberships: RevenueMembership[] = [];
-
-      if (membershipIds.length > 0) {
-        const { data: membershipData } = await supabase
-          .from("memberships")
-          .select("id, plan_name")
-          .in("id", membershipIds);
-
-        memberships =
-          (membershipData || []) as RevenueMembership[];
+      if (memberIds.length) {
+        const { data } = await supabase.from("members").select("id, full_name, email, phone").in("id", memberIds);
+        members = (data || []) as RevenueMember[];
       }
-
-      const memberMap = new Map(
-        members.map((member) => [member.id, member]),
-      );
-
-      const membershipMap = new Map(
-        memberships.map((membership) => [
-          membership.id,
-          membership,
-        ]),
-      );
-
-      setRevenuePayments(
-        payments.map((payment) => ({
-          ...payment,
-          member: payment.member_id
-            ? memberMap.get(payment.member_id) || null
-            : null,
-          membership: payment.membership_id
-            ? membershipMap.get(payment.membership_id) || null
-            : null,
-        })),
-      );
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to load revenue records.",
-      );
+      if (membershipIds.length) {
+        const { data } = await supabase.from("memberships").select("id, plan_name").in("id", membershipIds);
+        memberships = (data || []) as RevenueMembership[];
+      }
+      const memberMap = new Map(members.map((m) => [m.id, m]));
+      const membershipMap = new Map(memberships.map((m) => [m.id, m]));
+      setRevenuePayments(payments.map((payment) => ({ ...payment, member: payment.member_id ? memberMap.get(payment.member_id) || null : null, membership: payment.membership_id ? membershipMap.get(payment.membership_id) || null : null })));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load revenue records.");
       setRevenuePayments([]);
     } finally {
       setRevenueLoading(false);
@@ -1221,460 +1087,158 @@ function StaffAdminPage() {
   async function loadStaff() {
     setLoading(true);
     setError("");
-
     const allowed = await verifyAdmin();
-
     if (!allowed) {
       setLoading(false);
       return;
     }
-
-    const { data, error: staffError } = await supabase
-      .from("staff_profiles")
-      .select(
-        `
-        id,
-        auth_user_id,
-        staff_id,
-        full_name,
-        email,
-        phone,
-        birth_day,
-        birth_month,
-        address,
-        position,
-        department,
-        employment_type,
-        employment_date,
-        role,
-        status,
-        created_at
-      `,
-      )
-      .order("created_at", { ascending: false });
-
+    const { data, error: staffError } = await supabase.from("staff_profiles").select(`id, auth_user_id, staff_id, full_name, email, phone, birth_day, birth_month, address, position, department, employment_type, employment_date, role, status, created_at`).order("created_at", { ascending: false });
     if (staffError) {
       setError(staffError.message);
       setLoading(false);
       return;
     }
-
     setStaff((data || []) as StaffProfile[]);
     setLoading(false);
   }
 
+  function lagosDateBounds(date: string) {
+    const start = new Date(`${date}T00:00:00+01:00`);
+    const end = new Date(`${date}T00:00:00+01:00`);
+    end.setDate(end.getDate() + 1);
+    return { start, end };
+  }
+
+  async function loadAllAttendance(date = attendanceDate) {
+    const { start, end } = lagosDateBounds(date);
+    const { data, error: attendanceError } = await supabase.from("staff_attendance").select("id, staff_profile_id, checked_in_at, checked_out_at, notes").gte("checked_in_at", start.toISOString()).lt("checked_in_at", end.toISOString()).order("checked_in_at", { ascending: false }).limit(2000);
+    if (attendanceError) {
+      setError(attendanceError.message);
+      return;
+    }
+    setAllAttendance((data || []) as Array<AttendanceRecord & { staff_profile_id: string }>);
+  }
+
   async function refreshAll() {
     setError("");
-
-    await Promise.all([
-      loadStaff(),
-      loadRevenue(),
-    ]);
+    await Promise.all([loadStaff(), loadRevenue(), loadAllAttendance()]);
   }
 
   async function loadStaffDetails(profile: StaffProfile) {
     setSelectedStaff(profile);
-
     setError("");
     setSuccess("");
-
     setPosition(profile.position || "");
     setDepartment(profile.department || "");
     setEmploymentType(profile.employment_type || "Full Time");
     setEmploymentDate(profile.employment_date || "");
     setRole(profile.role || "staff");
-
     setPersonalFullName(profile.full_name || "");
     setPersonalPhone(profile.phone || "");
-    setPersonalBirthDay(
-      profile.birth_day ? String(profile.birth_day) : "",
-    );
-    setPersonalBirthMonth(
-      profile.birth_month ? String(profile.birth_month) : "",
-    );
+    setPersonalBirthDay(profile.birth_day ? String(profile.birth_day) : "");
+    setPersonalBirthMonth(profile.birth_month ? String(profile.birth_month) : "");
     setPersonalAddress(profile.address || "");
-
     setEditingPersonalInfo(false);
     setShowSalaryForm(false);
-
-    const [salaryResult, attendanceResult] =
-      await Promise.all([
-        supabase
-          .from("staff_salary_records")
-          .select(
-            `
-            id,
-            staff_profile_id,
-            amount,
-            currency,
-            pay_period_start,
-            pay_period_end,
-            payment_date,
-            status,
-            notes,
-            created_at
-          `,
-          )
-          .eq("staff_profile_id", profile.id)
-          .order("created_at", { ascending: false }),
-
-        supabase
-          .from("staff_attendance")
-          .select(
-            `
-            id,
-            checked_in_at,
-            checked_out_at,
-            notes
-          `,
-          )
-          .eq("staff_profile_id", profile.id)
-          .order("checked_in_at", { ascending: false })
-          .limit(50),
-      ]);
-
-    if (salaryResult.error) {
-      setError(salaryResult.error.message);
-      return;
-    }
-
-    if (attendanceResult.error) {
-      setError(attendanceResult.error.message);
-      return;
-    }
-
-    setSalaryRecords(
-      (salaryResult.data || []) as SalaryRecord[],
-    );
-
-    setAttendanceRecords(
-      (attendanceResult.data || []) as AttendanceRecord[],
-    );
+    const [salaryResult, attendanceResult] = await Promise.all([
+      supabase.from("staff_salary_records").select("id, staff_profile_id, amount, currency, pay_period_start, pay_period_end, payment_date, status, notes, created_at").eq("staff_profile_id", profile.id).order("created_at", { ascending: false }),
+      supabase.from("staff_attendance").select("id, checked_in_at, checked_out_at, notes").eq("staff_profile_id", profile.id).order("checked_in_at", { ascending: false }).limit(50),
+    ]);
+    if (salaryResult.error) { setError(salaryResult.error.message); return; }
+    if (attendanceResult.error) { setError(attendanceResult.error.message); return; }
+    setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
+    setAttendanceRecords((attendanceResult.data || []) as AttendanceRecord[]);
   }
 
   async function savePersonalInformation() {
     if (!selectedStaff) return;
-
     const cleanName = personalFullName.trim();
     const cleanPhone = personalPhone.trim();
     const cleanAddress = personalAddress.trim();
-
-    const birthDayValue = personalBirthDay
-      ? Number(personalBirthDay)
-      : null;
-
-    const birthMonthValue = personalBirthMonth
-      ? Number(personalBirthMonth)
-      : null;
-
-    if (!cleanName) {
-      setError("Full name cannot be empty.");
-      return;
-    }
-
-    if (
-      birthDayValue !== null &&
-      (birthDayValue < 1 || birthDayValue > 31)
-    ) {
-      setError("Birthday must be between 1 and 31.");
-      return;
-    }
-
-    if (
-      birthMonthValue !== null &&
-      (birthMonthValue < 1 || birthMonthValue > 12)
-    ) {
-      setError("Birth month must be between 1 and 12.");
-      return;
-    }
-
-    if (
-      (birthDayValue === null) !==
-      (birthMonthValue === null)
-    ) {
-      setError("Enter both birthday and birth month.");
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const { error: profileError } = await supabase
-      .from("staff_profiles")
-      .update({
-        full_name: cleanName,
-        phone: cleanPhone || null,
-        birth_day: birthDayValue,
-        birth_month: birthMonthValue,
-        address: cleanAddress || null,
-      })
-      .eq("id", selectedStaff.id);
-
-    if (profileError) {
-      setError(profileError.message);
-      setSaving(false);
-      return;
-    }
-
-    const { data: existingStaffUser } = await supabase
-      .from("staff_users")
-      .select("id")
-      .eq("auth_user_id", selectedStaff.auth_user_id)
-      .maybeSingle();
-
+    const birthDayValue = personalBirthDay ? Number(personalBirthDay) : null;
+    const birthMonthValue = personalBirthMonth ? Number(personalBirthMonth) : null;
+    if (!cleanName) { setError("Full name cannot be empty."); return; }
+    if (birthDayValue !== null && (birthDayValue < 1 || birthDayValue > 31)) { setError("Birthday must be between 1 and 31."); return; }
+    if (birthMonthValue !== null && (birthMonthValue < 1 || birthMonthValue > 12)) { setError("Birth month must be between 1 and 12."); return; }
+    if ((birthDayValue === null) !== (birthMonthValue === null)) { setError("Enter both birthday and birth month."); return; }
+    setSaving(true); setError(""); setSuccess("");
+    const { error: profileError } = await supabase.from("staff_profiles").update({ full_name: cleanName, phone: cleanPhone || null, birth_day: birthDayValue, birth_month: birthMonthValue, address: cleanAddress || null }).eq("id", selectedStaff.id);
+    if (profileError) { setError(profileError.message); setSaving(false); return; }
+    const { data: existingStaffUser } = await supabase.from("staff_users").select("id").eq("auth_user_id", selectedStaff.auth_user_id).maybeSingle();
     if (existingStaffUser?.id) {
-      const { error: updateError } = await supabase
-        .from("staff_users")
-        .update({
-          full_name: cleanName,
-        })
-        .eq("id", existingStaffUser.id);
-
-      if (updateError) {
-        setError(updateError.message);
-        setSaving(false);
-        return;
-      }
+      const { error } = await supabase.from("staff_users").update({ full_name: cleanName }).eq("id", existingStaffUser.id);
+      if (error) { setError(error.message); setSaving(false); return; }
     }
-
-    const updatedProfile: StaffProfile = {
-      ...selectedStaff,
-      full_name: cleanName,
-      phone: cleanPhone || null,
-      birth_day: birthDayValue,
-      birth_month: birthMonthValue,
-      address: cleanAddress || null,
-    };
-
-    setSelectedStaff(updatedProfile);
-
-    setStaff((current) =>
-      current.map((member) =>
-        member.id === updatedProfile.id
-          ? updatedProfile
-          : member,
-      ),
-    );
-
-    setEditingPersonalInfo(false);
-    setSuccess("Personal information updated successfully.");
-    setSaving(false);
+    const updated = { ...selectedStaff, full_name: cleanName, phone: cleanPhone || null, birth_day: birthDayValue, birth_month: birthMonthValue, address: cleanAddress || null };
+    setSelectedStaff(updated); setStaff((current) => current.map((m) => m.id === updated.id ? updated : m)); setEditingPersonalInfo(false); setSuccess("Personal information updated successfully."); setSaving(false);
   }
 
   async function saveStaffDetails() {
     if (!selectedStaff) return;
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const { error: profileError } = await supabase
-      .from("staff_profiles")
-      .update({
-        position: position.trim() || null,
-        department: department || null,
-        employment_type: employmentType,
-        employment_date: employmentDate || null,
-        role,
-        status:
-          selectedStaff.status === "pending"
-            ? "approved"
-            : selectedStaff.status,
-      })
-      .eq("id", selectedStaff.id);
-
-    if (profileError) {
-      setError(profileError.message);
-      setSaving(false);
-      return;
-    }
-
-    const { data: existingStaffUser } = await supabase
-      .from("staff_users")
-      .select("id")
-      .eq("auth_user_id", selectedStaff.auth_user_id)
-      .maybeSingle();
-
+    setSaving(true); setError(""); setSuccess("");
+    const newStatus = selectedStaff.status === "pending" ? "approved" : selectedStaff.status;
+    const { error: profileError } = await supabase.from("staff_profiles").update({ position: position.trim() || null, department: department || null, employment_type: employmentType, employment_date: employmentDate || null, role, status: newStatus }).eq("id", selectedStaff.id);
+    if (profileError) { setError(profileError.message); setSaving(false); return; }
+    const { data: existingStaffUser } = await supabase.from("staff_users").select("id").eq("auth_user_id", selectedStaff.auth_user_id).maybeSingle();
     if (existingStaffUser?.id) {
-      const { error: updateError } = await supabase
-        .from("staff_users")
-        .update({
-          role,
-          active: true,
-          full_name: selectedStaff.full_name,
-        })
-        .eq("id", existingStaffUser.id);
-
-      if (updateError) {
-        setError(updateError.message);
-        setSaving(false);
-        return;
-      }
+      const { error } = await supabase.from("staff_users").update({ role, active: true, full_name: selectedStaff.full_name }).eq("id", existingStaffUser.id);
+      if (error) { setError(error.message); setSaving(false); return; }
     } else {
-      const { error: insertError } = await supabase
-        .from("staff_users")
-        .insert({
-          id: crypto.randomUUID(),
-          auth_user_id: selectedStaff.auth_user_id,
-          role,
-          full_name: selectedStaff.full_name,
-          active: true,
-        });
-
-      if (insertError) {
-        setError(insertError.message);
-        setSaving(false);
-        return;
-      }
+      const { error } = await supabase.from("staff_users").insert({ id: crypto.randomUUID(), auth_user_id: selectedStaff.auth_user_id, role, full_name: selectedStaff.full_name, active: true });
+      if (error) { setError(error.message); setSaving(false); return; }
     }
-
-    const updatedProfile: StaffProfile = {
-      ...selectedStaff,
-      position: position.trim() || null,
-      department: department || null,
-      employment_type: employmentType,
-      employment_date: employmentDate || null,
-      role,
-      status:
-        selectedStaff.status === "pending"
-          ? "approved"
-          : selectedStaff.status,
-    };
-
-    setSelectedStaff(updatedProfile);
-
-    setStaff((current) =>
-      current.map((member) =>
-        member.id === updatedProfile.id
-          ? updatedProfile
-          : member,
-      ),
-    );
-
-    setSuccess(
-      selectedStaff.status === "pending"
-        ? "Staff member approved successfully."
-        : "Staff details saved successfully.",
-    );
-
-    setSaving(false);
+    const updated = { ...selectedStaff, position: position.trim() || null, department: department || null, employment_type: employmentType, employment_date: employmentDate || null, role, status: newStatus as StaffProfile["status"] };
+    setSelectedStaff(updated); setStaff((current) => current.map((m) => m.id === updated.id ? updated : m)); setSuccess(selectedStaff.status === "pending" ? "Staff member approved successfully." : "Staff details saved successfully."); setSaving(false);
   }
 
-  async function changeStaffStatus(
-    profile: StaffProfile,
-    newStatus: StaffProfile["status"],
-  ) {
-    setSaving(true);
-    setError("");
-    setSuccess("");
+  async function changeStaffStatus(profile: StaffProfile, newStatus: StaffProfile["status"]) {
+    setSaving(true); setError(""); setSuccess("");
+    const { error: profileError } = await supabase.from("staff_profiles").update({ status: newStatus }).eq("id", profile.id);
+    if (profileError) { setError(profileError.message); setSaving(false); return; }
+    const { data: existingStaffUser } = await supabase.from("staff_users").select("id").eq("auth_user_id", profile.auth_user_id).maybeSingle();
+    if (existingStaffUser?.id) {
+      const { error } = await supabase.from("staff_users").update({ active: newStatus === "approved" }).eq("id", existingStaffUser.id);
+      if (error) { setError(error.message); setSaving(false); return; }
+    }
+    const updated = { ...profile, status: newStatus };
+    setStaff((current) => current.map((m) => m.id === profile.id ? updated : m));
+    if (selectedStaff?.id === profile.id) setSelectedStaff(updated);
+    setSuccess(`${profile.full_name} is now ${statusLabel(newStatus).toLowerCase()}.`); setSaving(false);
+  }
 
-    const { error: profileError } = await supabase
-      .from("staff_profiles")
-      .update({
-        status: newStatus,
-      })
-      .eq("id", profile.id);
-
-    if (profileError) {
-      setError(profileError.message);
+  async function deleteStaff(profile: StaffProfile) {
+    if (profile.auth_user_id === (await supabase.auth.getUser()).data.user?.id) {
+      setError("You cannot delete your own account.");
+      return;
+    }
+    const confirmed = window.confirm(`Delete ${profile.full_name} permanently? This removes the staff profile, attendance, salary records and login account. This cannot be undone.`);
+    if (!confirmed) return;
+    setSaving(true); setError(""); setSuccess("");
+    const { error: deleteError } = await supabase.rpc("delete_staff_member", { p_staff_profile_id: profile.id });
+    if (deleteError) {
+      setError(deleteError.message);
       setSaving(false);
       return;
     }
-
-    const { data: existingStaffUser } = await supabase
-      .from("staff_users")
-      .select("id")
-      .eq("auth_user_id", profile.auth_user_id)
-      .maybeSingle();
-
-    if (existingStaffUser?.id) {
-      const { error: staffUserError } = await supabase
-        .from("staff_users")
-        .update({
-          active: newStatus === "approved",
-        })
-        .eq("id", existingStaffUser.id);
-
-      if (staffUserError) {
-        setError(staffUserError.message);
-        setSaving(false);
-        return;
-      }
-    }
-
-    const updatedProfile = {
-      ...profile,
-      status: newStatus,
-    };
-
-    setStaff((current) =>
-      current.map((member) =>
-        member.id === profile.id
-          ? updatedProfile
-          : member,
-      ),
-    );
-
+    setStaff((current) => current.filter((m) => m.id !== profile.id));
+    setAllAttendance((current) => current.filter((m) => m.staff_profile_id !== profile.id));
     if (selectedStaff?.id === profile.id) {
-      setSelectedStaff(updatedProfile);
+      setSelectedStaff(null);
+      setSalaryRecords([]);
+      setAttendanceRecords([]);
     }
-
-    setSuccess(
-      `${profile.full_name} is now ${statusLabel(
-        newStatus,
-      ).toLowerCase()}.`,
-    );
-
+    setSuccess(`${profile.full_name} was deleted successfully.`);
     setSaving(false);
   }
 
   async function addSalaryRecord() {
     if (!selectedStaff) return;
-
     const amount = Number(salaryAmount);
-
-    if (!amount || amount <= 0) {
-      setError("Enter a valid salary amount.");
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const { error: salaryError } = await supabase
-      .from("staff_salary_records")
-      .insert({
-        staff_profile_id: selectedStaff.id,
-        amount,
-        currency: "NGN",
-        pay_period_start: salaryStart || null,
-        pay_period_end: salaryEnd || null,
-        payment_date: salaryPaymentDate || null,
-        status: salaryStatus,
-        notes: salaryNotes.trim() || null,
-      });
-
-    if (salaryError) {
-      setError(salaryError.message);
-      setSaving(false);
-      return;
-    }
-
-    setSalaryAmount("");
-    setSalaryStart("");
-    setSalaryEnd("");
-    setSalaryPaymentDate("");
-    setSalaryStatus("pending");
-    setSalaryNotes("");
-    setShowSalaryForm(false);
-
-    setSuccess("Salary record added successfully.");
-
-    setSaving(false);
-
-    await loadStaffDetails(selectedStaff);
+    if (!amount || amount <= 0) { setError("Enter a valid salary amount."); return; }
+    setSaving(true); setError(""); setSuccess("");
+    const { error: salaryError } = await supabase.from("staff_salary_records").insert({ staff_profile_id: selectedStaff.id, amount, currency: "NGN", pay_period_start: salaryStart || null, pay_period_end: salaryEnd || null, payment_date: salaryPaymentDate || null, status: salaryStatus, notes: salaryNotes.trim() || null });
+    if (salaryError) { setError(salaryError.message); setSaving(false); return; }
+    setSalaryAmount(""); setSalaryStart(""); setSalaryEnd(""); setSalaryPaymentDate(""); setSalaryStatus("pending"); setSalaryNotes(""); setShowSalaryForm(false); setSuccess("Salary record added successfully."); setSaving(false); await loadStaffDetails(selectedStaff);
   }
 
   async function logout() {
@@ -1684,1120 +1248,131 @@ function StaffAdminPage() {
 
   const filteredStaff = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return staff.filter((member) => {
-      const matchesFilter =
-        filter === "all" || member.status === filter;
-
+      const matchesFilter = filter === "all" || member.status === filter;
       if (!matchesFilter) return false;
-
       if (!query) return true;
-
-      return (
-        member.full_name?.toLowerCase().includes(query) ||
-        member.email?.toLowerCase().includes(query) ||
-        member.phone?.toLowerCase().includes(query) ||
-        member.staff_id?.toLowerCase().includes(query)
-      );
+      return member.full_name?.toLowerCase().includes(query) || member.email?.toLowerCase().includes(query) || member.phone?.toLowerCase().includes(query) || member.staff_id?.toLowerCase().includes(query);
     });
   }, [staff, search, filter]);
 
-  const pendingCount = staff.filter(
-    (member) => member.status === "pending",
-  ).length;
+  const counts = useMemo(() => ({
+    all: staff.length,
+    pending: staff.filter((m) => m.status === "pending").length,
+    approved: staff.filter((m) => m.status === "approved").length,
+    suspended: staff.filter((m) => m.status === "suspended").length,
+    inactive: staff.filter((m) => m.status === "inactive").length,
+  }), [staff]);
 
-  const approvedCount = staff.filter(
-    (member) => member.status === "approved",
-  ).length;
+  const groupedStaff = useMemo(() => {
+    const statuses: Array<StaffProfile["status"]> = ["pending", "approved", "suspended", "inactive"];
+    return statuses.map((status) => ({ status, members: filteredStaff.filter((m) => m.status === status) })).filter((group) => group.members.length > 0);
+  }, [filteredStaff]);
 
-  const suspendedCount = staff.filter(
-    (member) => member.status === "suspended",
-  ).length;
+  const staffById = useMemo(() => new Map(staff.map((member) => [member.id, member])), [staff]);
 
-  const inactiveCount = staff.filter(
-    (member) => member.status === "inactive",
-  ).length;
+  function isLateClockIn(value: string) {
+    const parts = new Intl.DateTimeFormat("en-NG", { timeZone: "Africa/Lagos", hour: "numeric", minute: "numeric", hour12: false }).formatToParts(new Date(value));
+    const hour = Number(parts.find((p) => p.type === "hour")?.value || 0);
+    const minute = Number(parts.find((p) => p.type === "minute")?.value || 0);
+    return hour > 7 || (hour === 7 && minute > 30);
+  }
 
-  useEffect(() => {
-    void refreshAll();
-  }, []);
+  useEffect(() => { void refreshAll(); }, []);
+  useEffect(() => { if (!loading) void loadAllAttendance(attendanceDate); }, [attendanceDate]);
 
   return (
     <main className="min-h-screen min-w-0 overflow-x-hidden bg-background">
-      <header className="min-w-0 border-b border-border bg-card">
-        <div className="mx-auto flex max-w-7xl min-w-0 flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <div className="min-w-0">
-            <div className="mb-1 flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5 shrink-0" />
-
-              <span className="truncate text-sm font-semibold uppercase tracking-[0.2em]">
-                Super Plus Fitness
-              </span>
+      <header className="sticky top-0 z-30 min-w-0 border-b border-border bg-card/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 shrink-0" /><span className="truncate text-xs font-semibold uppercase tracking-[0.2em]">Super Plus Fitness</span></div>
+              <h1 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">Admin Staff Portal</h1>
             </div>
-
-            <h1 className="font-display text-2xl font-bold uppercase sm:text-3xl">
-              Admin Staff Portal
-            </h1>
-
-            <p className="mt-1 max-w-2xl text-xs text-muted-foreground sm:text-sm">
-              Manage staff, salaries, attendance and business administration.
-            </p>
-          </div>
-
-          <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
-            <Link to="/staff-blog" className="flex-1 sm:flex-none">
-              <Button variant="outline" className="w-full">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">
-                  Blog Management
-                </span>
-                <span className="sm:hidden">
-                  Blog
-                </span>
-              </Button>
-            </Link>
-
-            <Button
-              variant="outline"
-              onClick={() => void refreshAll()}
-              disabled={loading || saving || revenueLoading}
-              className="flex-1 sm:flex-none"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                Refresh
-              </span>
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={logout}
-              disabled={saving}
-              className="flex-1 sm:flex-none"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">
-                Logout
-              </span>
-            </Button>
+            <nav className="flex min-w-0 flex-wrap gap-2 overflow-x-auto pb-1">
+              <a href="#staff" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><Users className="mr-1 inline h-4 w-4" />Staff</a>
+              <a href="#attendance" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><CalendarDays className="mr-1 inline h-4 w-4" />Attendance</a>
+              <a href="#revenue" className="shrink-0 border border-border px-3 py-2 text-xs font-semibold uppercase"><TrendingUp className="mr-1 inline h-4 w-4" />Revenue</a>
+              <Link to="/staff-blog" className="shrink-0"><Button variant="outline"><FileText className="h-4 w-4" /><span className="hidden sm:inline">Blog</span></Button></Link>
+              <Button variant="outline" onClick={() => void refreshAll()} disabled={loading || saving || revenueLoading}><RefreshCw className="h-4 w-4" /><span className="hidden sm:inline">Refresh</span></Button>
+              <Button variant="outline" onClick={logout} disabled={saving}><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Logout</span></Button>
+            </nav>
           </div>
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl min-w-0 overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {error && (
-          <div className="mb-6 break-words rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+      <div className="mx-auto max-w-7xl min-w-0 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        {error && <div className="mb-5 break-words border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">{error}</div>}
+        {success && <div className="mb-5 break-words border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">{success}</div>}
 
-        {success && (
-          <div className="mb-6 break-words rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
-            {success}
-          </div>
-        )}
+        {!loading && <div id="revenue"><RevenueReport payments={revenuePayments} loading={revenueLoading} onRefresh={() => void loadRevenue()} /></div>}
 
-        {!loading && (
-          <RevenueReport
-            payments={revenuePayments}
-            loading={revenueLoading}
-            onRefresh={() => void loadRevenue()}
-          />
-        )}
-
-        {loading ? (
-          <div className="py-20 text-center text-muted-foreground">
-            Loading staff management...
-          </div>
-        ) : (
+        {loading ? <div className="py-20 text-center text-muted-foreground">Loading staff management...</div> : (
           <>
-            <div className="mb-8 grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Pending
-                </p>
-                <p className="mt-2 text-4xl font-bold">
-                  {pendingCount}
-                </p>
+            <section id="staff" className="scroll-mt-28">
+              <div className="mb-5 grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-5">
+                {(["all", "pending", "approved", "suspended", "inactive"] as const).map((key) => (
+                  <button key={key} type="button" onClick={() => setFilter(key)} className={`min-w-0 border p-4 text-left ${filter === key ? "border-foreground bg-foreground text-background" : "border-border bg-card"}`}>
+                    <p className="truncate text-[10px] font-bold uppercase tracking-widest opacity-80">{key === "all" ? "Total Staff" : statusLabel(key)}</p>
+                    <p className="mt-2 text-3xl font-bold">{counts[key]}</p>
+                  </button>
+                ))}
               </div>
 
-              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Approved
-                </p>
-                <p className="mt-2 text-4xl font-bold">
-                  {approvedCount}
-                </p>
-              </div>
-
-              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Suspended
-                </p>
-                <p className="mt-2 text-4xl font-bold">
-                  {suspendedCount}
-                </p>
-              </div>
-
-              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                  Inactive
-                </p>
-                <p className="mt-2 text-4xl font-bold">
-                  {inactiveCount}
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-6 min-w-0">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
-                Staff Management
-              </p>
-
-              <h2 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">
-                Staff Administration
-              </h2>
-
-              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                Manage staff applications, employment information,
-                salaries and attendance.
-              </p>
-            </div>
-
-            <div className="grid min-w-0 gap-8 lg:grid-cols-[380px_1fr]">
-              <section className="min-w-0 border border-border bg-card">
-                <div className="border-b border-border p-5">
-                  <h2 className="font-display text-xl font-bold uppercase">
-                    Staff
-                  </h2>
-
-                  <input
-                    value={search}
-                    onChange={(event) =>
-                      setSearch(event.target.value)
-                    }
-                    placeholder="Search staff..."
-                    className="mt-4 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none focus:border-foreground"
-                  />
-
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[
-                      ["all", "All"],
-                      ["pending", "Pending"],
-                      ["approved", "Approved"],
-                      ["suspended", "Suspended"],
-                      ["inactive", "Inactive"],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() =>
-                          setFilter(
-                            value as
-                              | "all"
-                              | "pending"
-                              | "approved"
-                              | "suspended"
-                              | "inactive",
-                          )
-                        }
-                        className={`border px-3 py-2 text-xs font-semibold uppercase ${
-                          filter === value
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-border bg-background"
-                        }`}
-                      >
-                        {label}
-                      </button>
+              <details className="group overflow-hidden border border-border bg-card" open={false}>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5">
+                  <div className="min-w-0"><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Staff Management</p><h2 className="mt-1 font-display text-xl font-bold uppercase sm:text-2xl">Staff Directory</h2><p className="mt-1 text-xs text-muted-foreground">Status groups are collapsed by default. Open a group to manage staff.</p></div>
+                  <ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="border-t border-border p-4 sm:p-5">
+                  <div className="mb-5 flex min-w-0 flex-col gap-3 sm:flex-row">
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search staff..." className="h-11 min-w-0 flex-1 border border-border bg-background px-3 outline-none focus:border-foreground" />
+                    <select value={filter} onChange={(e) => setFilter(e.target.value as typeof filter)} className="h-11 border border-border bg-background px-3 text-sm sm:w-48"><option value="all">All Statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="suspended">Suspended</option><option value="inactive">Inactive</option></select>
+                  </div>
+                  {groupedStaff.length === 0 ? <div className="border border-border p-8 text-center text-sm text-muted-foreground">No staff found.</div> : <div className="space-y-3">
+                    {groupedStaff.map((group) => (
+                      <details key={group.status} className="group/status overflow-hidden border border-border" open={false}>
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 bg-background p-4 [&::-webkit-details-marker]:hidden">
+                          <div className="flex min-w-0 items-center gap-3"><span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(group.status)}`}>{statusLabel(group.status)}</span><span className="text-sm font-semibold">{group.members.length} staff</span></div><ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open/status:rotate-180" />
+                        </summary>
+                        <div className="border-t border-border">
+                          {group.members.map((member) => <button key={member.id} type="button" onClick={() => void loadStaffDetails(member)} className={`w-full border-b border-border p-4 text-left last:border-b-0 ${selectedStaff?.id === member.id ? "bg-muted" : "hover:bg-muted/50"}`}>
+                            <div className="flex min-w-0 items-start justify-between gap-3"><div className="min-w-0"><h3 className="truncate font-display text-base font-bold uppercase sm:text-lg">{member.full_name}</h3><p className="mt-1 text-xs text-muted-foreground">{member.staff_id}{member.position ? ` • ${member.position}` : ""}</p></div><span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(member.status)}`}>{statusLabel(member.status)}</span></div>
+                          </button>)}
+                        </div>
+                      </details>
                     ))}
-                  </div>
+                  </div>}
                 </div>
+              </details>
+            </section>
 
-                <div className="max-h-[700px] overflow-y-auto">
-                  {filteredStaff.length === 0 ? (
-                    <div className="p-6 text-center text-sm text-muted-foreground">
-                      No staff found.
-                    </div>
-                  ) : (
-                    filteredStaff.map((member) => (
-                      <button
-                        key={member.id}
-                        type="button"
-                        onClick={() =>
-                          void loadStaffDetails(member)
-                        }
-                        className={`w-full border-b border-border p-5 text-left transition ${
-                          selectedStaff?.id === member.id
-                            ? "bg-muted"
-                            : "hover:bg-muted/50"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h3 className="truncate font-display text-lg font-bold uppercase">
-                              {member.full_name}
-                            </h3>
+            {selectedStaff && <section className="mt-6 scroll-mt-28">
+              <details className="group overflow-hidden border border-border bg-card" open={false}>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5"><div className="flex min-w-0 items-center gap-3"><UserRound className="h-6 w-6 shrink-0" /><div className="min-w-0"><h2 className="truncate font-display text-xl font-bold uppercase sm:text-2xl">{selectedStaff.full_name}</h2><p className="text-xs text-muted-foreground">{selectedStaff.staff_id} • Staff Profile</p></div></div><div className="flex shrink-0 items-center gap-3"><span className={`hidden rounded-full border px-2 py-1 text-[10px] font-bold uppercase sm:inline ${statusClass(selectedStaff.status)}`}>{statusLabel(selectedStaff.status)}</span><ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" /></div></summary>
+                <div className="space-y-4 border-t border-border p-4 sm:p-6">
+                  <details className="group/section border border-border" open={false}><summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden"><span className="font-display text-lg font-bold uppercase">Personal Information</span><ChevronDown className="h-4 w-4 transition-transform group-open/section:rotate-180" /></summary><div className="border-t border-border p-4 sm:p-5">
+                    {!editingPersonalInfo ? <div className="grid gap-4 sm:grid-cols-2"><div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Full Name</p><p className="mt-1 break-words font-medium">{selectedStaff.full_name}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email</p><p className="mt-1 break-all font-medium">{selectedStaff.email || "—"}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Phone</p><p className="mt-1 font-medium">{selectedStaff.phone || "—"}</p></div><div><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Birthday</p><p className="mt-1 font-medium">{selectedStaff.birth_day && selectedStaff.birth_month ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}` : "—"}</p></div><div className="sm:col-span-2"><p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Address</p><p className="mt-1 break-words font-medium">{selectedStaff.address || "—"}</p></div><div className="sm:col-span-2"><Button variant="outline" onClick={() => setEditingPersonalInfo(true)}><Pencil className="h-4 w-4" />Edit Personal Information</Button></div></div> : <div className="grid gap-4 sm:grid-cols-2"><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Full Name</span><input value={personalFullName} onChange={(e) => setPersonalFullName(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Phone</span><input value={personalPhone} onChange={(e) => setPersonalPhone(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Birth Day</span><select value={personalBirthDay} onChange={(e) => setPersonalBirthDay(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3"><option value="">Day</option>{Array.from({length:31},(_,i)=>i+1).map((d)=><option key={d} value={d}>{d}</option>)}</select></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Birth Month</span><select value={personalBirthMonth} onChange={(e) => setPersonalBirthMonth(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3"><option value="">Month</option>{["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=><option key={m} value={i+1}>{m}</option>)}</select></label><label className="sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Address</span><textarea value={personalAddress} onChange={(e) => setPersonalAddress(e.target.value)} rows={3} className="mt-2 w-full border border-border bg-background px-3 py-3" /></label><div className="flex flex-wrap gap-2 sm:col-span-2"><Button onClick={() => void savePersonalInformation()} disabled={saving}><Save className="h-4 w-4" />Save</Button><Button variant="outline" onClick={() => setEditingPersonalInfo(false)} disabled={saving}><X className="h-4 w-4" />Cancel</Button></div></div>}
+                  </div></details>
 
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {member.staff_id}
-                            </p>
+                  <details className="group/section border border-border" open={false}><summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden"><div><span className="font-display text-lg font-bold uppercase">Employment & Access</span><p className="mt-1 text-xs text-muted-foreground">Job information, role and account status.</p></div><ChevronDown className="h-4 w-4 transition-transform group-open/section:rotate-180" /></summary><div className="border-t border-border p-4 sm:p-5"><div className="grid gap-4 sm:grid-cols-2"><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Position</span><input value={position} onChange={(e) => setPosition(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Department</span><select value={department} onChange={(e) => setDepartment(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3"><option value="">Select department</option>{departments.map((d)=><option key={d} value={d}>{d}</option>)}</select></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Employment Type</span><select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3">{employmentTypes.map((d)=><option key={d}>{d}</option>)}</select></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Employment Date</span><input type="date" value={employmentDate} onChange={(e) => setEmploymentDate(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label className="sm:col-span-2"><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Staff Role / System Access</span><select value={role} onChange={(e) => setRole(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3">{roles.map((r)=><option key={r.value} value={r.value}>{r.label}</option>)}</select></label></div><div className="mt-5 flex flex-wrap gap-2"><Button onClick={() => void saveStaffDetails()} disabled={saving}><CheckCircle2 className="h-4 w-4" />{selectedStaff.status === "pending" ? "Save & Approve" : "Save Changes"}</Button>{selectedStaff.status === "approved" && <><Button variant="outline" onClick={() => void changeStaffStatus(selectedStaff,"suspended")} disabled={saving}><XCircle className="h-4 w-4" />Suspend</Button><Button variant="outline" onClick={() => void changeStaffStatus(selectedStaff,"inactive")} disabled={saving}>Mark Inactive</Button></>}{(selectedStaff.status === "suspended" || selectedStaff.status === "inactive") && <Button variant="outline" onClick={() => void changeStaffStatus(selectedStaff,"approved")} disabled={saving}><CheckCircle2 className="h-4 w-4" />Reactivate</Button>}</div></div></details>
 
-                            {member.position && (
-                              <p className="mt-2 text-sm">
-                                {member.position}
-                              </p>
-                            )}
-                          </div>
+                  <details className="group/section border border-border" open={false}><summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden"><div><span className="font-display text-lg font-bold uppercase">Salary</span><p className="mt-1 text-xs text-muted-foreground">Salary records and payment history.</p></div><ChevronDown className="h-4 w-4 transition-transform group-open/section:rotate-180" /></summary><div className="border-t border-border p-4 sm:p-5"><Button variant="outline" onClick={() => setShowSalaryForm((v) => !v)}><DollarSign className="h-4 w-4" />{showSalaryForm ? "Close Salary Form" : "Add Salary"}</Button>{showSalaryForm && <div className="mt-4 grid gap-4 border border-border p-4 sm:grid-cols-2"><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Amount (₦)</span><input type="number" min="0" value={salaryAmount} onChange={(e)=>setSalaryAmount(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Status</span><select value={salaryStatus} onChange={(e)=>setSalaryStatus(e.target.value as typeof salaryStatus)} className="mt-2 h-11 w-full border border-border bg-background px-3"><option value="pending">Pending</option><option value="paid">Paid</option><option value="cancelled">Cancelled</option></select></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Period Start</span><input type="date" value={salaryStart} onChange={(e)=>setSalaryStart(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Period End</span><input type="date" value={salaryEnd} onChange={(e)=>setSalaryEnd(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Payment Date</span><input type="date" value={salaryPaymentDate} onChange={(e)=>setSalaryPaymentDate(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><label><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Notes</span><input value={salaryNotes} onChange={(e)=>setSalaryNotes(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><div className="sm:col-span-2"><Button onClick={() => void addSalaryRecord()} disabled={saving}><Save className="h-4 w-4" />Save Salary Record</Button></div></div>}<div className="mt-5 overflow-x-auto">{salaryRecords.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No salary records yet.</p> : <table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground"><th className="px-3 py-3">Amount</th><th className="px-3 py-3">Period</th><th className="px-3 py-3">Payment Date</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Notes</th></tr></thead><tbody>{salaryRecords.map((record)=><tr key={record.id} className="border-b border-border"><td className="px-3 py-4 font-semibold">{formatMoney(record.amount, record.currency)}</td><td className="px-3 py-4">{record.pay_period_start || record.pay_period_end ? `${formatDate(record.pay_period_start)} – ${formatDate(record.pay_period_end)}` : "—"}</td><td className="px-3 py-4">{formatDate(record.payment_date)}</td><td className="px-3 py-4 uppercase">{record.status}</td><td className="px-3 py-4">{record.notes || "—"}</td></tr>)}</tbody></table>}</div></div></details>
 
-                          <span
-                            className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(
-                              member.status,
-                            )}`}
-                          >
-                            {statusLabel(member.status)}
-                          </span>
-                        </div>
-                      </button>
-                    ))
-                  )}
+                  <details className="group/section border border-red-500/30" open={false}><summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden"><div><span className="font-display text-lg font-bold uppercase text-red-700">Danger Zone</span><p className="mt-1 text-xs text-muted-foreground">Permanently delete this staff member and their account.</p></div><ChevronDown className="h-4 w-4 transition-transform group-open/section:rotate-180" /></summary><div className="border-t border-red-500/30 p-4"><Button variant="outline" onClick={() => void deleteStaff(selectedStaff)} disabled={saving} className="border-red-500/40 text-red-700 hover:bg-red-500/10"><Trash2 className="h-4 w-4" />Delete Staff Member</Button></div></details>
+
+                  <details className="group/section border border-border" open={false}><summary className="flex cursor-pointer list-none items-center justify-between p-4 [&::-webkit-details-marker]:hidden"><div><span className="font-display text-lg font-bold uppercase">Attendance History</span><p className="mt-1 text-xs text-muted-foreground">Recent attendance for this staff member.</p></div><ChevronDown className="h-4 w-4 transition-transform group-open/section:rotate-180" /></summary><div className="border-t border-border p-4 sm:p-5"><div className="overflow-x-auto">{attendanceRecords.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No attendance records yet.</p> : <table className="w-full min-w-[650px] text-left text-sm"><thead><tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground"><th className="px-3 py-3">Check-in</th><th className="px-3 py-3">Check-out</th><th className="px-3 py-3">Duration</th><th className="px-3 py-3">Notes</th></tr></thead><tbody>{attendanceRecords.map((record)=>{const start=new Date(record.checked_in_at).getTime();const end=record.checked_out_at?new Date(record.checked_out_at).getTime():Date.now();const mins=Math.max(0,Math.floor((end-start)/60000));return <tr key={record.id} className="border-b border-border"><td className={`px-3 py-4 ${isLateClockIn(record.checked_in_at)?"font-bold text-red-600":""}`}>{formatDateTime(record.checked_in_at)}{isLateClockIn(record.checked_in_at)&&<span className="ml-2 text-[10px] uppercase">Late</span>}</td><td className="px-3 py-4">{record.checked_out_at?formatDateTime(record.checked_out_at):"Still inside"}</td><td className="px-3 py-4 font-semibold">{Math.floor(mins/60)>0?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins%60}m`}</td><td className="px-3 py-4">{record.notes||"—"}</td></tr>})}</tbody></table>}</div></div></details>
                 </div>
-              </section>
-
-              <section className="min-w-0">
-                {!selectedStaff ? (
-                  <div className="flex min-h-[500px] items-center justify-center border border-border bg-card p-8 text-center">
-                    <div>
-                      <UserRound className="mx-auto h-12 w-12 text-muted-foreground" />
-
-                      <h2 className="mt-4 font-display text-2xl font-bold uppercase">
-                        Select a Staff Member
-                      </h2>
-
-                      <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                        Select a staff member from the list to review
-                        their application, employment information,
-                        salary and attendance.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="border border-border bg-card p-5 sm:p-6">
-                      <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
-                            <UserRound className="h-6 w-6" />
-                          </div>
-
-                          <div className="min-w-0">
-                            <h2 className="break-words font-display text-2xl font-bold uppercase sm:text-3xl">
-                              {selectedStaff.full_name}
-                            </h2>
-
-                            <p className="text-sm text-muted-foreground">
-                              {selectedStaff.staff_id}
-                            </p>
-                          </div>
-                        </div>
-
-                        <span
-                          className={`w-fit shrink-0 rounded-full border px-3 py-2 text-xs font-bold uppercase ${statusClass(
-                            selectedStaff.status,
-                          )}`}
-                        >
-                          {statusLabel(selectedStaff.status)}
-                        </span>
-                      </div>
-
-                      {selectedStaff.status === "pending" && (
-                        <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4">
-                          <div className="flex gap-3">
-                            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
-
-                            <div>
-                              <p className="font-semibold">
-                                Pending Staff Application
-                              </p>
-
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Review the applicant's information,
-                                assign their employment details and
-                                click Save & Approve.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="min-w-0">
-                          <h3 className="font-display text-xl font-bold uppercase">
-                            Personal Information
-                          </h3>
-
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Personal details for this staff member.
-                          </p>
-                        </div>
-
-                        {!editingPersonalInfo ? (
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setError("");
-                              setSuccess("");
-                              setPersonalFullName(
-                                selectedStaff.full_name || "",
-                              );
-                              setPersonalPhone(
-                                selectedStaff.phone || "",
-                              );
-                              setPersonalBirthDay(
-                                selectedStaff.birth_day
-                                  ? String(
-                                      selectedStaff.birth_day,
-                                    )
-                                  : "",
-                              );
-                              setPersonalBirthMonth(
-                                selectedStaff.birth_month
-                                  ? String(
-                                      selectedStaff.birth_month,
-                                    )
-                                  : "",
-                              );
-                              setPersonalAddress(
-                                selectedStaff.address || "",
-                              );
-                              setEditingPersonalInfo(true);
-                            }}
-                            disabled={saving}
-                            className="w-full sm:w-auto"
-                          >
-                            <Pencil className="h-4 w-4" />
-                            Edit Personal Information
-                          </Button>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                setEditingPersonalInfo(false)
-                              }
-                              disabled={saving}
-                            >
-                              <X className="h-4 w-4" />
-                              Cancel
-                            </Button>
-
-                            <Button
-                              onClick={() =>
-                                void savePersonalInformation()
-                              }
-                              disabled={saving}
-                            >
-                              <Save className="h-4 w-4" />
-                              {saving
-                                ? "Saving..."
-                                : "Save Personal Information"}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      {!editingPersonalInfo ? (
-                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Full Name
-                            </p>
-                            <p className="mt-1 break-words font-medium">
-                              {selectedStaff.full_name}
-                            </p>
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Email
-                            </p>
-                            <p className="mt-1 break-all font-medium">
-                              {selectedStaff.email || "—"}
-                            </p>
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Phone
-                            </p>
-                            <p className="mt-1 break-words font-medium">
-                              {selectedStaff.phone || "—"}
-                            </p>
-                          </div>
-
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Birthday
-                            </p>
-                            <p className="mt-1 font-medium">
-                              {selectedStaff.birth_day &&
-                              selectedStaff.birth_month
-                                ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}`
-                                : "—"}
-                            </p>
-                          </div>
-
-                          <div className="min-w-0 sm:col-span-2">
-                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Address
-                            </p>
-                            <p className="mt-1 break-words font-medium">
-                              {selectedStaff.address || "—"}
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                          <label className="min-w-0">
-                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Full Name
-                            </span>
-
-                            <input
-                              value={personalFullName}
-                              onChange={(event) =>
-                                setPersonalFullName(
-                                  event.target.value,
-                                )
-                              }
-                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
-                            />
-                          </label>
-
-                          <label className="min-w-0">
-                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Email
-                            </span>
-
-                            <input
-                              value={selectedStaff.email || ""}
-                              disabled
-                              readOnly
-                              className="mt-2 h-11 w-full min-w-0 cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
-                            />
-                          </label>
-
-                          <label className="min-w-0">
-                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Phone
-                            </span>
-
-                            <input
-                              type="tel"
-                              value={personalPhone}
-                              onChange={(event) =>
-                                setPersonalPhone(
-                                  event.target.value,
-                                )
-                              }
-                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
-                            />
-                          </label>
-
-                          <div className="grid min-w-0 grid-cols-2 gap-3">
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Birth Day
-                              </span>
-
-                              <select
-                                value={personalBirthDay}
-                                onChange={(event) =>
-                                  setPersonalBirthDay(
-                                    event.target.value,
-                                  )
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              >
-                                <option value="">
-                                  Day
-                                </option>
-
-                                {Array.from(
-                                  { length: 31 },
-                                  (_, index) => index + 1,
-                                ).map((day) => (
-                                  <option
-                                    key={day}
-                                    value={day}
-                                  >
-                                    {day}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Birth Month
-                              </span>
-
-                              <select
-                                value={personalBirthMonth}
-                                onChange={(event) =>
-                                  setPersonalBirthMonth(
-                                    event.target.value,
-                                  )
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              >
-                                <option value="">
-                                  Month
-                                </option>
-
-                                {[
-                                  "January",
-                                  "February",
-                                  "March",
-                                  "April",
-                                  "May",
-                                  "June",
-                                  "July",
-                                  "August",
-                                  "September",
-                                  "October",
-                                  "November",
-                                  "December",
-                                ].map((month, index) => (
-                                  <option
-                                    key={month}
-                                    value={index + 1}
-                                  >
-                                    {month}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
-
-                          <label className="min-w-0 sm:col-span-2">
-                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                              Address
-                            </span>
-
-                            <textarea
-                              value={personalAddress}
-                              onChange={(event) =>
-                                setPersonalAddress(
-                                  event.target.value,
-                                )
-                              }
-                              rows={3}
-                              className="mt-2 w-full min-w-0 border border-border bg-background px-3 py-3 outline-none"
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                      <h3 className="font-display text-xl font-bold uppercase">
-                        Employment Information
-                      </h3>
-
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Assign the staff member's job and access level.
-                      </p>
-
-                      <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                        <label className="min-w-0">
-                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Position
-                          </span>
-
-                          <input
-                            value={position}
-                            onChange={(event) =>
-                              setPosition(event.target.value)
-                            }
-                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                          />
-                        </label>
-
-                        <label className="min-w-0">
-                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Department
-                          </span>
-
-                          <select
-                            value={department}
-                            onChange={(event) =>
-                              setDepartment(event.target.value)
-                            }
-                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                          >
-                            <option value="">
-                              Select department
-                            </option>
-
-                            {departments.map((item) => (
-                              <option key={item} value={item}>
-                                {item}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="min-w-0">
-                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Employment Type
-                          </span>
-
-                          <select
-                            value={employmentType}
-                            onChange={(event) =>
-                              setEmploymentType(event.target.value)
-                            }
-                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                          >
-                            {employmentTypes.map((item) => (
-                              <option key={item} value={item}>
-                                {item}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-
-                        <label className="min-w-0">
-                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Employment Date
-                          </span>
-
-                          <input
-                            type="date"
-                            value={employmentDate}
-                            onChange={(event) =>
-                              setEmploymentDate(event.target.value)
-                            }
-                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                          />
-                        </label>
-
-                        <label className="min-w-0 sm:col-span-2">
-                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                            Staff Role / System Access
-                          </span>
-
-                          <select
-                            value={role}
-                            onChange={(event) =>
-                              setRole(event.target.value)
-                            }
-                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                          >
-                            {roles.map((item) => (
-                              <option
-                                key={item.value}
-                                value={item.value}
-                              >
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-
-                      <div className="mt-6 flex flex-wrap gap-3">
-                        <Button
-                          onClick={() =>
-                            void saveStaffDetails()
-                          }
-                          disabled={saving}
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-
-                          {selectedStaff.status === "pending"
-                            ? "Save & Approve"
-                            : "Save Changes"}
-                        </Button>
-
-                        {selectedStaff.status === "approved" && (
-                          <>
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                void changeStaffStatus(
-                                  selectedStaff,
-                                  "suspended",
-                                )
-                              }
-                              disabled={saving}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Suspend Staff
-                            </Button>
-
-                            <Button
-                              variant="outline"
-                              onClick={() =>
-                                void changeStaffStatus(
-                                  selectedStaff,
-                                  "inactive",
-                                )
-                              }
-                              disabled={saving}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Mark Inactive
-                            </Button>
-                          </>
-                        )}
-
-                        {(selectedStaff.status === "suspended" ||
-                          selectedStaff.status === "inactive") && (
-                          <Button
-                            onClick={() =>
-                              void changeStaffStatus(
-                                selectedStaff,
-                                "approved",
-                              )
-                            }
-                            disabled={saving}
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Reactivate Staff
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <h3 className="font-display text-xl font-bold uppercase">
-                            Salary
-                          </h3>
-
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Salary records for this staff member.
-                          </p>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            setShowSalaryForm((current) => !current)
-                          }
-                          className="w-full sm:w-auto"
-                        >
-                          <DollarSign className="h-4 w-4" />
-
-                          {showSalaryForm
-                            ? "Close"
-                            : "Add Salary"}
-                        </Button>
-                      </div>
-
-                      {showSalaryForm && (
-                        <div className="mt-6 min-w-0 border border-border bg-muted/30 p-4 sm:p-5">
-                          <div className="grid gap-5 sm:grid-cols-2">
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Amount
-                              </span>
-
-                              <input
-                                type="number"
-                                min="0"
-                                value={salaryAmount}
-                                onChange={(event) =>
-                                  setSalaryAmount(event.target.value)
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              />
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Status
-                              </span>
-
-                              <select
-                                value={salaryStatus}
-                                onChange={(event) =>
-                                  setSalaryStatus(
-                                    event.target.value as
-                                      | "pending"
-                                      | "paid"
-                                      | "cancelled",
-                                  )
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              >
-                                <option value="pending">
-                                  Pending
-                                </option>
-                                <option value="paid">
-                                  Paid
-                                </option>
-                                <option value="cancelled">
-                                  Cancelled
-                                </option>
-                              </select>
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Pay Period Start
-                              </span>
-
-                              <input
-                                type="date"
-                                value={salaryStart}
-                                onChange={(event) =>
-                                  setSalaryStart(event.target.value)
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              />
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Pay Period End
-                              </span>
-
-                              <input
-                                type="date"
-                                value={salaryEnd}
-                                onChange={(event) =>
-                                  setSalaryEnd(event.target.value)
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              />
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Payment Date
-                              </span>
-
-                              <input
-                                type="date"
-                                value={salaryPaymentDate}
-                                onChange={(event) =>
-                                  setSalaryPaymentDate(
-                                    event.target.value,
-                                  )
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              />
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Notes
-                              </span>
-
-                              <input
-                                value={salaryNotes}
-                                onChange={(event) =>
-                                  setSalaryNotes(event.target.value)
-                                }
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              />
-                            </label>
-                          </div>
-
-                          <div className="mt-5">
-                            <Button
-                              onClick={() =>
-                                void addSalaryRecord()
-                              }
-                              disabled={saving}
-                            >
-                              <DollarSign className="h-4 w-4" />
-                              Save Salary Record
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="mt-6 overflow-x-auto">
-                        {salaryRecords.length === 0 ? (
-                          <p className="py-8 text-center text-sm text-muted-foreground">
-                            No salary records yet.
-                          </p>
-                        ) : (
-                          <table className="w-full min-w-[700px] text-left text-sm">
-                            <thead>
-                              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                                <th className="px-3 py-3">
-                                  Amount
-                                </th>
-                                <th className="px-3 py-3">
-                                  Period
-                                </th>
-                                <th className="px-3 py-3">
-                                  Payment Date
-                                </th>
-                                <th className="px-3 py-3">
-                                  Status
-                                </th>
-                                <th className="px-3 py-3">
-                                  Notes
-                                </th>
-                              </tr>
-                            </thead>
-
-                            <tbody>
-                              {salaryRecords.map((record) => (
-                                <tr
-                                  key={record.id}
-                                  className="border-b border-border"
-                                >
-                                  <td className="px-3 py-4 font-semibold">
-                                    {formatMoney(
-                                      record.amount,
-                                      record.currency,
-                                    )}
-                                  </td>
-
-                                  <td className="px-3 py-4">
-                                    {record.pay_period_start ||
-                                    record.pay_period_end
-                                      ? `${formatDate(
-                                          record.pay_period_start,
-                                        )} – ${formatDate(
-                                          record.pay_period_end,
-                                        )}`
-                                      : "—"}
-                                  </td>
-
-                                  <td className="px-3 py-4">
-                                    {formatDate(
-                                      record.payment_date,
-                                    )}
-                                  </td>
-
-                                  <td className="px-3 py-4">
-                                    <span className="rounded-full border border-border px-2 py-1 text-xs font-semibold uppercase">
-                                      {record.status}
-                                    </span>
-                                  </td>
-
-                                  <td className="px-3 py-4">
-                                    {record.notes || "—"}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                      <div>
-                        <h3 className="font-display text-xl font-bold uppercase">
-                          Attendance
-                        </h3>
-
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          Recent staff clock-in and clock-out records.
-                        </p>
-                      </div>
-
-                      <div className="mt-6 overflow-x-auto">
-                        {attendanceRecords.length === 0 ? (
-                          <p className="py-8 text-center text-sm text-muted-foreground">
-                            No attendance records yet.
-                          </p>
-                        ) : (
-                          <table className="w-full min-w-[650px] text-left text-sm">
-                            <thead>
-                              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                                <th className="px-3 py-3">
-                                  Check-in
-                                </th>
-                                <th className="px-3 py-3">
-                                  Check-out
-                                </th>
-                                <th className="px-3 py-3">
-                                  Duration
-                                </th>
-                                <th className="px-3 py-3">
-                                  Notes
-                                </th>
-                              </tr>
-                            </thead>
-
-                            <tbody>
-                              {attendanceRecords.map((record) => {
-                                const start = new Date(
-                                  record.checked_in_at,
-                                ).getTime();
-
-                                const end = record.checked_out_at
-                                  ? new Date(
-                                      record.checked_out_at,
-                                    ).getTime()
-                                  : Date.now();
-
-                                const minutes = Math.max(
-                                  0,
-                                  Math.floor(
-                                    (end - start) / 60000,
-                                  ),
-                                );
-
-                                const hours = Math.floor(
-                                  minutes / 60,
-                                );
-
-                                const remainingMinutes =
-                                  minutes % 60;
-
-                                return (
-                                  <tr
-                                    key={record.id}
-                                    className="border-b border-border"
-                                  >
-                                    <td className="px-3 py-4">
-                                      {formatDateTime(
-                                        record.checked_in_at,
-                                      )}
-                                    </td>
-
-                                    <td className="px-3 py-4">
-                                      {record.checked_out_at
-                                        ? formatDateTime(
-                                            record.checked_out_at,
-                                          )
-                                        : "Still inside"}
-                                    </td>
-
-                                    <td className="px-3 py-4 font-semibold">
-                                      {hours > 0
-                                        ? `${hours}h ${remainingMinutes}m`
-                                        : `${remainingMinutes}m`}
-                                    </td>
-
-                                    <td className="px-3 py-4">
-                                      {record.notes || "—"}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </section>
-            </div>
+              </details>
+            </section>}
+
+            <section id="attendance" className="mt-6 scroll-mt-28">
+              <details className="group overflow-hidden border border-border bg-card" open={false}>
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5"><div className="flex min-w-0 items-center gap-3"><LayoutDashboard className="h-5 w-5 shrink-0" /><div className="min-w-0"><h2 className="font-display text-xl font-bold uppercase sm:text-2xl">Staff Attendance</h2><p className="mt-1 text-xs text-muted-foreground">All staff attendance for a selected Lagos date. Clock-ins after 7:30 AM are highlighted red.</p></div></div><ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" /></summary>
+                <div className="border-t border-border p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><label className="w-full sm:max-w-xs"><span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Attendance Date</span><input type="date" value={attendanceDate} onChange={(e)=>setAttendanceDate(e.target.value)} className="mt-2 h-11 w-full border border-border bg-background px-3" /></label><Button variant="outline" onClick={()=>void loadAllAttendance(attendanceDate)}><RefreshCw className="h-4 w-4" />Refresh Attendance</Button></div><div className="mt-5 overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead><tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground"><th className="px-3 py-3">Staff</th><th className="px-3 py-3">Status</th><th className="px-3 py-3">Clock In</th><th className="px-3 py-3">Clock Out</th><th className="px-3 py-3">Duration</th></tr></thead><tbody>{staff.length===0?<tr><td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">No staff records.</td></tr>:staff.map((member)=>{const records=allAttendance.filter((r)=>r.staff_profile_id===member.id);const record=records[0];if(!record)return <tr key={member.id} className="border-b border-border"><td className="px-3 py-4 font-semibold">{member.full_name}</td><td className="px-3 py-4"><span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(member.status)}`}>{statusLabel(member.status)}</span></td><td className="px-3 py-4 text-muted-foreground">Not clocked in</td><td className="px-3 py-4">—</td><td className="px-3 py-4">—</td></tr>;const start=new Date(record.checked_in_at).getTime();const end=record.checked_out_at?new Date(record.checked_out_at).getTime():Date.now();const mins=Math.max(0,Math.floor((end-start)/60000));const late=isLateClockIn(record.checked_in_at);return <tr key={member.id} className={`border-b border-border ${late?"bg-red-500/10":""}`}><td className="px-3 py-4 font-semibold">{member.full_name}<div className="text-xs font-normal text-muted-foreground">{member.staff_id}</div></td><td className="px-3 py-4"><span className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(member.status)}`}>{statusLabel(member.status)}</span></td><td className={`px-3 py-4 ${late?"font-bold text-red-600":""}`}>{formatDateTime(record.checked_in_at)}{late&&<div className="mt-1 text-[10px] font-bold uppercase text-red-600">After 7:30 AM</div>}</td><td className="px-3 py-4">{record.checked_out_at?formatDateTime(record.checked_out_at):<span className="font-semibold">Still inside</span>}</td><td className="px-3 py-4 font-semibold">{Math.floor(mins/60)>0?`${Math.floor(mins/60)}h ${mins%60}m`:`${mins%60}m`}</td></tr>})}</tbody></table></div></div>
+              </details>
+            </section>
           </>
         )}
       </div>
@@ -2805,6 +1380,4 @@ function StaffAdminPage() {
   );
 }
 
-export const Route = createFileRoute("/staff-admin")({
-  component: StaffAdminPage,
-});
+export const Route = createFileRoute("/staff-admin")({ component: StaffAdminPage });

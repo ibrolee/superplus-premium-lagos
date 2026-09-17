@@ -113,6 +113,7 @@ function formatDateTime(value: unknown) {
     month: "short",
     year: "numeric",
     hour: "numeric",
+    hour12: true,
     minute: "2-digit",
   }).format(date);
 }
