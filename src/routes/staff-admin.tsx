@@ -1284,11 +1284,43 @@ function StaffAdminPage() {
     return hour > 7 || (hour === 7 && minute > 30);
   }
 
+  const dashboardPayments = useMemo(() => revenuePayments.filter(p => p.status.toLowerCase() === "success"), [revenuePayments]);
+  const dashboardToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const dashboardTotal = dashboardPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const dashboardTodayPayments = dashboardPayments.filter(p => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(getPaymentDate(p))) === dashboardToday);
+  const dashboardMonths = useMemo(() => Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(); date.setUTCDate(1); date.setUTCMonth(date.getUTCMonth() - (5 - index));
+    const key = new Intl.DateTimeFormat("en-CA", { timeZone: "UTC", year: "numeric", month: "2-digit" }).format(date).slice(0, 7);
+    const amount = dashboardPayments.filter(p => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit" }).format(new Date(getPaymentDate(p))).slice(0, 7) === key).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    return { key, label: new Intl.DateTimeFormat("en-NG", { month: "short", timeZone: "UTC" }).format(date), amount };
+  }), [dashboardPayments]);
+  const dashboardMax = Math.max(1, ...dashboardMonths.map(m => m.amount));
+  const dashboardPlans = useMemo(() => {
+    const result = new Map<string, number>();
+    dashboardPayments.forEach(p => result.set(getPaymentPlan(p), (result.get(getPaymentPlan(p)) || 0) + 1));
+    return [...result.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+  }, [dashboardPayments]);
+  const jumpTo = (id: string) => {
+    document.getElementById(`${id}-panel`)?.setAttribute("open", "");
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   useEffect(() => { void refreshAll(); }, []);
   useEffect(() => { if (!loading) void loadAllAttendance(attendanceDate); }, [attendanceDate]);
 
   return (
-    <main className="spf-admin min-h-screen min-w-0 overflow-x-hidden bg-background">
+    <main className="spf-admin spf-dashboard min-h-screen min-w-0 overflow-x-hidden bg-background">
+      <aside className="spf-side-nav" aria-label="Dashboard navigation">
+        <div className="spf-side-brand"><span className="spf-brand-mark">S+</span><span>SUPER PLUS<small>FITNESS & SPA</small></span></div>
+        <p className="spf-side-caption">WORKSPACE</p>
+        <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><LayoutDashboard size={18}/> Overview</button>
+        <button type="button" onClick={() => jumpTo("revenue")}><TrendingUp size={18}/> Revenue report</button>
+        <button type="button" onClick={() => jumpTo("attendance")}><CalendarDays size={18}/> Staff attendance</button>
+        <button type="button" onClick={() => jumpTo("staff")}><Users size={18}/> Staff directory</button>
+        <Link to="/staff-blog"><FileText size={18}/> Blog</Link>
+        <div className="spf-side-bottom"><button type="button" onClick={() => void refreshAll()}><RefreshCw size={18}/> Refresh data</button><button type="button" onClick={() => void logout()}><LogOut size={18}/> Log out</button></div>
+      </aside>
+      <div className="spf-main-content">
       <header className="sticky top-0 z-30 min-w-0 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1317,6 +1349,20 @@ function StaffAdminPage() {
 
         {loading ? <div className="py-20 text-center text-muted-foreground">Loading staff management...</div> : (
           <>
+            <section className="spf-overview" aria-label="Dashboard overview">
+              <div className="spf-welcome"><div><span className="spf-eyebrow"><span className="spf-live-dot"/> LIVE WORKSPACE</span><h2>Good day, Administrator <span>✳</span></h2><p>Your Super Plus Fitness operations at a glance. Figures below reflect available payment and staff records.</p></div><button type="button" onClick={() => void refreshAll()} disabled={loading || revenueLoading} className="spf-refresh"><RefreshCw size={16}/> Refresh dashboard</button></div>
+              <div className="spf-metric-grid">
+                <article className="spf-metric spf-metric-green"><div className="spf-metric-top"><span>Revenue today</span><TrendingUp size={19}/></div><strong>{formatMoney(dashboardTodayPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0))}</strong><small>{dashboardTodayPayments.length} successful payment(s) today</small></article>
+                <article className="spf-metric spf-metric-purple"><div className="spf-metric-top"><span>Recorded revenue</span><DollarSign size={19}/></div><strong>{formatMoney(dashboardTotal)}</strong><small>Since the revenue tracking start date</small></article>
+                <article className="spf-metric spf-metric-blue"><div className="spf-metric-top"><span>Approved staff</span><Users size={19}/></div><strong>{counts.approved}</strong><small>{counts.all} total staff profiles</small></article>
+                <article className="spf-metric spf-metric-orange"><div className="spf-metric-top"><span>Pending approval</span><Clock3 size={19}/></div><strong>{counts.pending}</strong><small>Staff profiles needing review</small></article>
+              </div>
+              <div className="spf-insights-grid">
+                <article className="spf-insight"><div className="spf-insight-heading"><div><h3>Revenue trend</h3><p>Recorded successful payments · last 6 months</p></div><span className="spf-chart-pill">₦ NGN</span></div><div className="spf-bars">{dashboardMonths.map(m => <div className="spf-bar-column" key={m.key} title={`${m.label}: ${formatMoney(m.amount)}`}><span className="spf-bar-value">{m.amount ? formatMoney(m.amount) : "—"}</span><div className="spf-bar-track"><div className="spf-bar-fill" style={{ height: `${Math.max(m.amount ? 7 : 0, m.amount / dashboardMax * 100)}%` }}/></div><span className="spf-bar-month">{m.label}</span></div>)}</div></article>
+                <article className="spf-insight"><div className="spf-insight-heading"><div><h3>Plan popularity</h3><p>Recorded successful payments by plan</p></div><Users size={18}/></div>{dashboardPlans.length ? <div className="spf-plan-list">{dashboardPlans.map(([name, count], index) => <div className="spf-plan-item" key={name}><div><span className={`spf-plan-dot spf-dot-${index}`}/><span>{name}</span><strong>{count}</strong></div><div className="spf-plan-track"><div style={{ width: `${count / dashboardPayments.length * 100}%` }}/></div></div>)}</div> : <p className="spf-empty">No recorded payments yet.</p>}<button type="button" className="spf-text-action" onClick={() => jumpTo("revenue")}>Explore revenue report →</button></article>
+              </div>
+              <div className="spf-insights-grid spf-insights-bottom"><article className="spf-insight"><div className="spf-insight-heading"><div><h3>Recent activity</h3><p>Latest successful payment records</p></div><button type="button" className="spf-text-action" onClick={() => jumpTo("revenue")}>View all →</button></div>{dashboardPayments.length ? [...dashboardPayments].sort((a,b) => new Date(getPaymentDate(b)).getTime()-new Date(getPaymentDate(a)).getTime()).slice(0,5).map(p => <div className="spf-activity" key={p.id}><span className="spf-activity-icon">₦</span><div><strong>{getPaymentMemberName(p)}</strong><small>{getPaymentPlan(p)} · {getPaymentSourceLabel(p)}</small></div><span className="spf-activity-amount">{formatMoney(Number(p.amount), p.currency || "NGN")}</span></div>) : <p className="spf-empty">No recent payment activity.</p>}</article><article className="spf-insight"><div className="spf-insight-heading"><div><h3>Staff overview</h3><p>Quick access to team management</p></div><ShieldCheck size={18}/></div>{(["approved", "pending", "suspended", "inactive"] as const).map(status => <button type="button" className="spf-staff-row" key={status} onClick={() => { setFilter(status); jumpTo("staff"); }}><span className={`spf-staff-status spf-status-${status}`}/><span>{statusLabel(status)}</span><strong>{counts[status]}</strong><span>→</span></button>)}<button type="button" className="spf-text-action" onClick={() => jumpTo("attendance")}>View staff attendance →</button></article></div>
+            </section>
             <section id="revenue" className="scroll-mt-28">
               <RevenueReport payments={revenuePayments} loading={revenueLoading} onRefresh={() => void loadRevenue()} />
             </section>
@@ -1380,6 +1426,7 @@ function StaffAdminPage() {
 
           </>
         )}
+      </div>
       </div>
     </main>
   );
