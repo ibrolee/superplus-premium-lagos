@@ -1288,13 +1288,13 @@ function StaffAdminPage() {
   useEffect(() => { if (!loading) void loadAllAttendance(attendanceDate); }, [attendanceDate]);
 
   return (
-    <main className="min-h-screen min-w-0 overflow-x-hidden bg-background">
+    <main className="spf-admin min-h-screen min-w-0 overflow-x-hidden bg-background">
       <header className="sticky top-0 z-30 min-w-0 border-b border-border bg-card/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 shrink-0" /><span className="truncate text-xs font-semibold uppercase tracking-[0.2em]">Super Plus Fitness</span></div>
-              <h1 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">Admin Staff Portal</h1>
+              <h1 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">Staff Management</h1>
             </div>
             <details className="group/nav relative w-full max-w-full border border-border bg-card lg:w-auto">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold uppercase [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><Menu className="h-5 w-5" /> Navigation</span><ChevronDown className="h-4 w-4 transition-transform group-open/nav:rotate-180" /></summary>

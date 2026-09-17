@@ -179,3 +179,51 @@ html { scroll-behavior: smooth; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+
+/* Super Plus visual refresh: progressive enhancement, no changes to business logic. */
+@keyframes spf-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spf-shine { from { transform: translateX(-130%) skewX(-18deg); } to { transform: translateX(260%) skewX(-18deg); } }
+@keyframes spf-pulse { 0%, 100% { opacity: .45; } 50% { opacity: .8; } }
+:root { --radius: .85rem; --background: oklch(.985 .009 65); --muted: oklch(.952 .015 70); --border: oklch(.89 .014 55); --primary: oklch(.61 .225 28); }
+html { scroll-behavior: smooth; }
+body { background-image: radial-gradient(ellipse at 95% 0%, oklch(.94 .045 45 / .45), transparent 42%); background-attachment: fixed; }
+main > section, main > div > section { animation: spf-enter .55s ease-out both; }
+main > section:nth-child(2), main > div > section:nth-child(2) { animation-delay: 65ms; }
+main > section:nth-child(3), main > div > section:nth-child(3) { animation-delay: 110ms; }
+button, a, input, select, textarea, summary { transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .2s ease; }
+button:not(:disabled):active, a:active { transform: scale(.985); }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.section-shell img { transition: transform .35s ease; }
+.section-shell a:hover img { transform: scale(1.035); }
+.spf-admin { background: linear-gradient(145deg, #f7f8fc, #fff8f5 60%, #f3f8f5); color: #20242b; }
+.spf-admin > header { background: #fff; border-color: #e8eaf0; box-shadow: 0 3px 22px #20242b08; }
+.spf-admin > header h1 { letter-spacing: -.025em; }
+.spf-admin > div > section > details { border: 1px solid #e6e9ef; border-radius: 20px; background: #fff; box-shadow: 0 12px 35px #252b4010; transition: box-shadow .25s ease, transform .25s ease; }
+.spf-admin > div > section > details:hover { box-shadow: 0 16px 45px #252b4019; }
+.spf-admin > div > section > details > summary { min-height: 112px; background: linear-gradient(105deg, #fff 58%, #fff2eb); }
+.spf-admin > div > section:nth-of-type(2) > details > summary { background: linear-gradient(105deg, #fff 58%, #ecf9f0); }
+.spf-admin > div > section:nth-of-type(3) > details > summary { background: linear-gradient(105deg, #fff 58%, #f0efff); }
+.spf-admin > div > section > details > summary:hover { background-color: #faf9ff; }
+.spf-admin > div > section > details > summary svg { color: #e54b32; }
+.spf-admin > div > section:nth-of-type(2) > details > summary svg { color: #188451; }
+.spf-admin > div > section:nth-of-type(3) > details > summary svg { color: #7154cb; }
+.spf-admin [class*="border-border"][class*="bg-background"] { border-radius: 12px; }
+.spf-admin button:not(:disabled):hover, .spf-admin nav a:hover { box-shadow: 0 4px 14px #e54b3217; }
+.spf-admin nav a { border-radius: 10px; }
+.spf-admin nav a:hover { background: #fff0e9; color: #b53625; }
+.spf-admin input:focus, .spf-admin select:focus, .spf-admin textarea:focus { outline: 2px solid #f4a58b; outline-offset: 1px; }
+@media (min-width: 1100px) {
+  .spf-admin > header { position: fixed; inset: 0 auto 0 0; width: 245px; z-index: 30; overflow-y: auto; border-right: 1px solid #e8eaf0; border-bottom: 0; }
+  .spf-admin > header > div, .spf-admin > header > div > div { display: flex; flex-direction: column; align-items: stretch; }
+  .spf-admin > header > div { padding: 30px 16px; }
+  .spf-admin > header h1 { font-size: 1.55rem; line-height: 1.2; }
+  .spf-admin > header details { width: 100%; border: 0; }
+  .spf-admin > header details > summary { display: none; }
+  .spf-admin > header details > nav { display: grid; grid-template-columns: 1fr; border: 0; padding: 8px 0; }
+  .spf-admin > div { margin-left: 245px; max-width: 1600px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
