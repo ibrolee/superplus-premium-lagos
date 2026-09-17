@@ -25,6 +25,8 @@ export const Route = createFileRoute("/staff")({
   component: StaffPage,
 });
 
+type LoginType = "staff" | "admin";
+
 type StaffProfile = {
   id: string;
   auth_user_id: string;
@@ -141,11 +143,9 @@ function durationLabel(
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
-  if (hours > 0) {
-    return `${hours}h ${remainingMinutes}m`;
-  }
-
-  return `${remainingMinutes}m`;
+  return hours > 0
+    ? `${hours}h ${remainingMinutes}m`
+    : `${remainingMinutes}m`;
 }
 
 function getRoleLabel(role: string) {
@@ -174,8 +174,7 @@ function StaffPage() {
   const [attendanceRecords, setAttendanceRecords] =
     useState<AttendanceRecord[]>([]);
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
+  const [loginType, setLoginType] = useState<LoginType>("staff");
   const [loginMode, setLoginMode] = useState(true);
 
   const [email, setEmail] = useState("");
@@ -204,28 +203,40 @@ function StaffPage() {
 
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (userError || !user) {
       setProfile(null);
-      setIsAdmin(false);
+      setSalaryRecords([]);
+      setAttendanceRecords([]);
       setLoading(false);
       return;
     }
 
-    const { data: staffUser } = await supabase
+    const { data: staffUser, error: roleError } = await supabase
       .from("staff_users")
       .select("id, role, active")
       .eq("auth_user_id", user.id)
       .maybeSingle();
 
-    const managementAccess =
-      staffUser?.active === true &&
-      ["admin", "owner", "manager"].includes(
-        String(staffUser.role || "").toLowerCase(),
-      );
+    if (roleError) {
+      setError(roleError.message);
+      setLoading(false);
+      return;
+    }
 
-    setIsAdmin(managementAccess);
+    const role = String(staffUser?.role || "").toLowerCase();
+
+    if (
+      staffUser?.active === true &&
+      ["admin", "owner", "manager"].includes(role)
+    ) {
+      setProfile(null);
+      setLoading(false);
+      window.location.replace("/staff-admin");
+      return;
+    }
 
     const { data: staffProfile, error: profileError } =
       await supabase
@@ -261,7 +272,10 @@ function StaffPage() {
     }
 
     if (!staffProfile) {
-      setError("No staff profile was found for this account.");
+      setProfile(null);
+      setError(
+        "No staff profile was found for this account. Please contact management.",
+      );
       setLoading(false);
       return;
     }
@@ -334,7 +348,7 @@ function StaffPage() {
     const cleanEmail = resetEmail.trim().toLowerCase();
 
     if (!cleanEmail) {
-      setError("Enter your staff email address.");
+      setError("Enter your email address.");
       return;
     }
 
@@ -376,21 +390,61 @@ function StaffPage() {
     setError("");
     setSuccess("");
 
-    const { error: loginError } =
+    const { data, error: loginError } =
       await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
 
-    if (loginError) {
-      setError(loginError.message);
+    if (loginError || !data.user) {
+      setError(loginError?.message || "Unable to sign in.");
       setSaving(false);
+      return;
+    }
+
+    const { data: staffUser, error: roleError } = await supabase
+      .from("staff_users")
+      .select("role, active")
+      .eq("auth_user_id", data.user.id)
+      .maybeSingle();
+
+    if (roleError) {
+      setError(roleError.message);
+      setSaving(false);
+      return;
+    }
+
+    const role = String(staffUser?.role || "").toLowerCase();
+
+    const isAdmin =
+      staffUser?.active === true &&
+      ["admin", "owner", "manager"].includes(role);
+
+    if (loginType === "admin") {
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+
+        setError(
+          "This account does not have administrator access. Please use Staff Login.",
+        );
+
+        setSaving(false);
+        return;
+      }
+
+      setPassword("");
+      window.location.replace("/staff-admin");
+      return;
+    }
+
+    if (isAdmin) {
+      setPassword("");
+      window.location.replace("/staff-admin");
       return;
     }
 
     setPassword("");
     await loadStaff();
-
     setSaving(false);
   }
 
@@ -419,8 +473,7 @@ function StaffPage() {
     setError("");
     setSuccess("");
 
-    const redirectUrl =
-      `${window.location.origin}/staff`;
+    const redirectUrl = `${window.location.origin}/staff`;
 
     const { data, error: signupError } =
       await supabase.auth.signUp({
@@ -444,15 +497,11 @@ function StaffPage() {
 
     setPassword("");
 
-    if (!data.session) {
-      setSuccess(
-        "Registration submitted successfully. Please confirm your email, then return to the Staff Portal. Your application is waiting for management approval.",
-      );
-    } else {
-      setSuccess(
-        "Registration submitted. Your staff application is waiting for management approval.",
-      );
-    }
+    setSuccess(
+      data.session
+        ? "Registration submitted. Your staff application is waiting for management approval."
+        : "Registration submitted successfully. Please confirm your email, then return to the Staff Portal. Your application is waiting for management approval.",
+    );
 
     setSaving(false);
   }
@@ -463,9 +512,10 @@ function StaffPage() {
     setProfile(null);
     setSalaryRecords([]);
     setAttendanceRecords([]);
-    setIsAdmin(false);
     setError("");
     setSuccess("");
+    setLoginType("staff");
+    setLoginMode(true);
   }
 
   async function updateContactInformation() {
@@ -518,7 +568,6 @@ function StaffPage() {
     });
 
     const url = URL.createObjectURL(svgBlob);
-
     const image = new Image();
 
     image.onload = () => {
@@ -536,7 +585,6 @@ function StaffPage() {
 
       context.fillStyle = "#ffffff";
       context.fillRect(0, 0, 1000, 1000);
-
       context.drawImage(image, 100, 100, 800, 800);
 
       canvas.toBlob((blob) => {
@@ -545,11 +593,8 @@ function StaffPage() {
           return;
         }
 
-        const downloadUrl =
-          URL.createObjectURL(blob);
-
-        const link =
-          document.createElement("a");
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
 
         link.href = downloadUrl;
         link.download = `${profile.staff_id}-QR.png`;
@@ -560,6 +605,7 @@ function StaffPage() {
       }, "image/png");
     };
 
+    image.onerror = () => URL.revokeObjectURL(url);
     image.src = url;
   }
 
@@ -585,33 +631,46 @@ function StaffPage() {
     [attendanceRecords],
   );
 
-  /*
-   * ----------------------------------------------------
-   * LOGIN / REGISTER
-   * ----------------------------------------------------
-   */
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-4xl px-4 py-24 text-center">
+          <p className="text-sm text-muted-foreground">
+            Loading Staff Portal...
+          </p>
+        </div>
+      </main>
+    );
+  }
 
-  if (!profile && !loading) {
+  if (!profile) {
     return (
       <main className="min-h-screen bg-background">
         <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
           <div className="border border-border bg-card p-6 sm:p-10">
             <div className="text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center bg-primary text-primary-foreground">
-                <BriefcaseBusiness className="h-8 w-8" />
+                {loginType === "admin" ? (
+                  <ShieldCheck className="h-8 w-8" />
+                ) : (
+                  <BriefcaseBusiness className="h-8 w-8" />
+                )}
               </div>
 
               <p className="mt-6 text-sm font-bold uppercase tracking-[0.25em] text-primary">
                 Super Plus Fitness
               </p>
 
-              <h1 className="mt-3 font-display text-5xl font-bold uppercase sm:text-7xl">
-                Staff Portal
+              <h1 className="mt-3 font-display text-4xl font-bold uppercase sm:text-7xl">
+                {loginType === "admin"
+                  ? "Admin Login"
+                  : "Staff Portal"}
               </h1>
 
               <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground">
-                Staff members can register and access their employee
-                information here.
+                {loginType === "admin"
+                  ? "Sign in to access the Staff Management Dashboard."
+                  : "Staff members can register and access their employee information here."}
               </p>
             </div>
 
@@ -619,37 +678,81 @@ function StaffPage() {
               <button
                 type="button"
                 onClick={() => {
+                  setLoginType("staff");
                   setLoginMode(true);
                   setForgotPasswordMode(false);
                   setError("");
                   setSuccess("");
+                  setPassword("");
                 }}
-                className={`py-4 text-sm font-bold uppercase ${
-                  loginMode
+                className={`flex items-center justify-center gap-2 px-2 py-4 text-xs font-bold uppercase sm:text-sm ${
+                  loginType === "staff"
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"
                 }`}
               >
-                Login
+                <UserRound className="h-4 w-4" />
+                Staff Login
               </button>
 
               <button
                 type="button"
                 onClick={() => {
-                  setLoginMode(false);
+                  setLoginType("admin");
+                  setLoginMode(true);
                   setForgotPasswordMode(false);
                   setError("");
                   setSuccess("");
+                  setPassword("");
                 }}
-                className={`py-4 text-sm font-bold uppercase ${
-                  !loginMode
+                className={`flex items-center justify-center gap-2 px-2 py-4 text-xs font-bold uppercase sm:text-sm ${
+                  loginType === "admin"
                     ? "bg-primary text-primary-foreground"
                     : "bg-background"
                 }`}
               >
-                Register
+                <ShieldCheck className="h-4 w-4" />
+                Admin Login
               </button>
             </div>
+
+            {loginType === "staff" && (
+              <div className="mt-5 grid grid-cols-2 border border-border">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode(true);
+                    setForgotPasswordMode(false);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className={`py-3 text-xs font-bold uppercase ${
+                    loginMode
+                      ? "bg-foreground text-background"
+                      : "bg-background"
+                  }`}
+                >
+                  Login
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoginMode(false);
+                    setForgotPasswordMode(false);
+                    setError("");
+                    setSuccess("");
+                  }}
+                  className={`py-3 text-xs font-bold uppercase ${
+                    !loginMode
+                      ? "bg-foreground text-background"
+                      : "bg-background"
+                  }`}
+                >
+                  Register
+                </button>
+              </div>
+            )}
 
             {error && (
               <div className="mt-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
@@ -679,9 +782,8 @@ function StaffPage() {
                       </h2>
 
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Enter the email address you used to create
-                        your staff account. We will send you a secure
-                        link to create a new password.
+                        Enter your account email address. We will send
+                        you a link to create a new password.
                       </p>
                     </div>
                   </div>
@@ -695,7 +797,7 @@ function StaffPage() {
                   className="mt-8 grid gap-5"
                 >
                   <label className="grid gap-2 text-sm font-bold">
-                    Staff Email
+                    Email
 
                     <input
                       value={resetEmail}
@@ -703,7 +805,7 @@ function StaffPage() {
                         setResetEmail(event.target.value)
                       }
                       type="email"
-                      placeholder="Enter your staff email"
+                      placeholder="Enter your email"
                       autoComplete="email"
                       className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                     />
@@ -731,7 +833,7 @@ function StaffPage() {
                   }}
                   className="mt-5 w-full text-center text-sm font-bold text-muted-foreground underline underline-offset-4"
                 >
-                  ← Back to Staff Login
+                  ← Back to Login
                 </button>
               </>
             ) : (
@@ -740,15 +842,15 @@ function StaffPage() {
                   onSubmit={(event) => {
                     event.preventDefault();
 
-                    if (loginMode) {
-                      void login();
-                    } else {
+                    if (loginType === "staff" && !loginMode) {
                       void register();
+                    } else {
+                      void login();
                     }
                   }}
                   className="mt-8 grid gap-5"
                 >
-                  {!loginMode && (
+                  {loginType === "staff" && !loginMode && (
                     <>
                       <label className="grid gap-2 text-sm font-bold">
                         Full Name
@@ -804,16 +906,16 @@ function StaffPage() {
                       onChange={(event) =>
                         setPassword(event.target.value)
                       }
-                      type="password"
+                      type="text"
                       placeholder={
-                        loginMode
-                          ? "Enter your password"
-                          : "Create a password"
+                        loginType === "staff" && !loginMode
+                          ? "Create a password"
+                          : "Enter your password"
                       }
                       autoComplete={
-                        loginMode
-                          ? "current-password"
-                          : "new-password"
+                        loginType === "staff" && !loginMode
+                          ? "new-password"
+                          : "current-password"
                       }
                       className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                     />
@@ -825,21 +927,32 @@ function StaffPage() {
                     disabled={saving}
                     className="mt-2"
                   >
-                    {loginMode ? (
+                    {loginType === "admin" ? (
+                      <>
+                        <ShieldCheck />
+                        {saving
+                          ? "Signing In..."
+                          : "Admin Login"}
+                      </>
+                    ) : loginMode ? (
                       <>
                         <LogIn />
-                        Staff Login
+                        {saving
+                          ? "Signing In..."
+                          : "Staff Login"}
                       </>
                     ) : (
                       <>
                         <BriefcaseBusiness />
-                        Submit Staff Application
+                        {saving
+                          ? "Submitting..."
+                          : "Submit Staff Application"}
                       </>
                     )}
                   </Button>
                 </form>
 
-                {loginMode && (
+                {(loginType === "admin" || loginMode) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -856,7 +969,7 @@ function StaffPage() {
               </>
             )}
 
-            {!loginMode && (
+            {loginType === "staff" && !loginMode && (
               <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-800">
                 <strong className="block">
                   Staff approval required
@@ -875,28 +988,6 @@ function StaffPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-24 text-center">
-          <p className="text-sm text-muted-foreground">
-            Loading Staff Portal...
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  if (!profile) {
-    return null;
-  }
-
-  /*
-   * ----------------------------------------------------
-   * PENDING / SUSPENDED / INACTIVE
-   * ----------------------------------------------------
-   */
-
   if (profile.status !== "approved") {
     return (
       <main className="min-h-screen bg-background">
@@ -905,10 +996,8 @@ function StaffPage() {
             <div className="text-center">
               {profile.status === "pending" ? (
                 <Clock3 className="mx-auto h-14 w-14 text-primary" />
-              ) : profile.status === "suspended" ? (
-                <XCircle className="mx-auto h-14 w-14 text-red-600" />
               ) : (
-                <XCircle className="mx-auto h-14 w-14 text-muted-foreground" />
+                <XCircle className="mx-auto h-14 w-14 text-red-600" />
               )}
 
               <p className="mt-6 text-xs font-bold uppercase tracking-[0.25em] text-primary">
@@ -938,9 +1027,7 @@ function StaffPage() {
               <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
                 {profile.status === "pending"
                   ? "Your staff application has been received. Management needs to review and approve your application before you can access staff features."
-                  : profile.status === "suspended"
-                    ? "Your staff account is currently suspended. Please contact Super Plus Fitness management."
-                    : "Your staff account is currently inactive. Please contact Super Plus Fitness management."}
+                  : "Your staff account is currently unavailable. Please contact Super Plus Fitness management."}
               </p>
 
               <div className="mt-8 border border-border bg-muted p-5 text-left">
@@ -968,16 +1055,9 @@ function StaffPage() {
     );
   }
 
-  /*
-   * ----------------------------------------------------
-   * APPROVED STAFF DASHBOARD
-   * ----------------------------------------------------
-   */
-
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-
         {error && (
           <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
             {error}
@@ -990,7 +1070,6 @@ function StaffPage() {
           </div>
         )}
 
-        {/* HEADER */}
         <header className="border border-border bg-card p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1007,28 +1086,16 @@ function StaffPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {isAdmin && (
-                <Button asChild>
-                  <Link to="/staff-admin">
-                    <ShieldCheck />
-                    Staff Management
-                  </Link>
-                </Button>
-              )}
-
-              <Button
-                variant="outline"
-                onClick={() => void logout()}
-              >
-                <LogOut />
-                Logout
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => void logout()}
+            >
+              <LogOut />
+              Logout
+            </Button>
           </div>
         </header>
 
-        {/* STAFF SUMMARY */}
         <section className="mt-6 border border-border bg-card p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center bg-primary text-primary-foreground">
@@ -1064,7 +1131,6 @@ function StaffPage() {
           </div>
         </section>
 
-        {/* QR ATTENDANCE */}
         <section className="mt-4 border-2 border-primary/40 bg-primary/5 p-6">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -1110,7 +1176,6 @@ function StaffPage() {
           </div>
         </section>
 
-        {/* STAFF ID */}
         <section className="mt-4 border border-border bg-card p-6">
           <p className="text-xs font-bold uppercase tracking-widest text-primary">
             Staff ID
@@ -1125,7 +1190,6 @@ function StaffPage() {
           </p>
         </section>
 
-        {/* PERSONAL INFORMATION */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1154,7 +1218,6 @@ function StaffPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Full Name
                   </p>
-
                   <p className="mt-1 font-medium">
                     {profile.full_name}
                   </p>
@@ -1164,7 +1227,6 @@ function StaffPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Email
                   </p>
-
                   <p className="mt-1 break-all font-medium">
                     {profile.email || "—"}
                   </p>
@@ -1174,7 +1236,6 @@ function StaffPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Phone
                   </p>
-
                   <p className="mt-1 font-medium">
                     {profile.phone || "Not available"}
                   </p>
@@ -1184,10 +1245,8 @@ function StaffPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Birthday
                   </p>
-
                   <p className="mt-1 font-medium">
-                    {profile.birth_day &&
-                    profile.birth_month
+                    {profile.birth_day && profile.birth_month
                       ? `${profile.birth_day}/${profile.birth_month}`
                       : "Not available"}
                   </p>
@@ -1197,7 +1256,6 @@ function StaffPage() {
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                     Address
                   </p>
-
                   <p className="mt-1 font-medium">
                     {profile.address || "Not available"}
                   </p>
@@ -1268,7 +1326,6 @@ function StaffPage() {
           )}
         </section>
 
-        {/* EMPLOYMENT */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1293,71 +1350,33 @@ function StaffPage() {
           {showEmployment && (
             <div className="border-t border-border p-5">
               <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Position
-                  </p>
+                {[
+                  ["Position", profile.position || "Not assigned"],
+                  ["Department", profile.department || "Not assigned"],
+                  [
+                    "Employment Type",
+                    profile.employment_type || "Not assigned",
+                  ],
+                  [
+                    "Employment Date",
+                    formatDate(profile.employment_date),
+                  ],
+                  ["System Role", getRoleLabel(profile.role)],
+                  ["Staff Status", statusLabel(profile.status)],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {label}
+                    </p>
 
-                  <p className="mt-1 font-medium">
-                    {profile.position || "Not assigned"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Department
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {profile.department || "Not assigned"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Employment Type
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {profile.employment_type || "Not assigned"}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Employment Date
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {formatDate(profile.employment_date)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    System Role
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {getRoleLabel(profile.role)}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    Staff Status
-                  </p>
-
-                  <p className="mt-1 font-medium">
-                    {statusLabel(profile.status)}
-                  </p>
-                </div>
+                    <p className="mt-1 font-medium">{value}</p>
+                  </div>
+                ))}
               </div>
             </div>
           )}
         </section>
 
-        {/* SALARY */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1435,9 +1454,7 @@ function StaffPage() {
                           </p>
 
                           <p className="mt-1 text-sm">
-                            {formatDate(
-                              record.payment_date,
-                            )}
+                            {formatDate(record.payment_date)}
                           </p>
                         </div>
 
@@ -1459,7 +1476,6 @@ function StaffPage() {
           )}
         </section>
 
-        {/* ATTENDANCE HISTORY */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1488,69 +1504,66 @@ function StaffPage() {
                   No attendance records yet.
                 </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[650px] text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                        <th className="px-3 py-3">
-                          Check-in
-                        </th>
+                <div className="grid gap-3">
+                  {attendanceRecords.map((record) => (
+                    <article
+                      key={record.id}
+                      className="border border-border p-4"
+                    >
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-bold uppercase text-muted-foreground">
+                            Clock In
+                          </p>
 
-                        <th className="px-3 py-3">
-                          Check-out
-                        </th>
+                          <p className="mt-1 text-sm font-semibold">
+                            {formatDateTime(record.checked_in_at)}
+                          </p>
+                        </div>
 
-                        <th className="px-3 py-3">
-                          Duration
-                        </th>
+                        <div>
+                          <p className="text-xs font-bold uppercase text-muted-foreground">
+                            Clock Out
+                          </p>
 
-                        <th className="px-3 py-3">
-                          Notes
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {attendanceRecords.map((record) => (
-                        <tr
-                          key={record.id}
-                          className="border-b border-border"
-                        >
-                          <td className="px-3 py-4">
-                            {formatDateTime(
-                              record.checked_in_at,
-                            )}
-                          </td>
-
-                          <td className="px-3 py-4">
+                          <p className="mt-1 text-sm font-semibold">
                             {record.checked_out_at
-                              ? formatDateTime(
-                                  record.checked_out_at,
-                                )
+                              ? formatDateTime(record.checked_out_at)
                               : "Still inside"}
-                          </td>
+                          </p>
+                        </div>
 
-                          <td className="px-3 py-4 font-semibold">
+                        <div>
+                          <p className="text-xs font-bold uppercase text-muted-foreground">
+                            Duration
+                          </p>
+
+                          <p className="mt-1 text-sm font-semibold">
                             {durationLabel(
                               record.checked_in_at,
                               record.checked_out_at,
                             )}
-                          </td>
+                          </p>
+                        </div>
 
-                          <td className="px-3 py-4">
+                        <div>
+                          <p className="text-xs font-bold uppercase text-muted-foreground">
+                            Notes
+                          </p>
+
+                          <p className="mt-1 text-sm">
                             {record.notes || "—"}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </p>
+                        </div>
+                      </div>
+                    </article>
+                  ))}
                 </div>
               )}
             </div>
           )}
         </section>
 
-        {/* PERSONAL QR */}
         <section className="mt-4 border border-border bg-card">
           <button
             type="button"
@@ -1605,40 +1618,6 @@ function StaffPage() {
             </div>
           )}
         </section>
-
-        {/* MANAGEMENT */}
-        {isAdmin && (
-          <section className="mt-6 border border-primary/30 bg-primary/5 p-6">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-primary" />
-
-                  <p className="text-xs font-bold uppercase tracking-widest text-primary">
-                    Management Access
-                  </p>
-                </div>
-
-                <h2 className="mt-2 font-display text-2xl font-bold uppercase">
-                  Staff Management
-                </h2>
-
-                <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                  Review staff applications, approve staff, assign
-                  employment details, manage salaries and view staff
-                  attendance.
-                </p>
-              </div>
-
-              <Button asChild className="shrink-0">
-                <Link to="/staff-admin">
-                  <ShieldCheck />
-                  Open Staff Management
-                </Link>
-              </Button>
-            </div>
-          </section>
-        )}
 
         <p className="py-8 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} Super Plus Fitness & Spa — Staff
