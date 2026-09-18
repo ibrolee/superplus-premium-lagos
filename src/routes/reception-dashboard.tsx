@@ -1381,38 +1381,10 @@ function ReceptionDashboardPage() {
       }
 
       /*
-       * Create a separate membership.
-       *
-       * Existing memberships are intentionally not touched.
-       */
-      const {
-        data: membershipData,
-        error: membershipError,
-      } = await supabase
-        .from("memberships")
-        .insert({
-          member_id:
-            selectedMember.id,
-          plan_id:
-            planData.id,
-          plan_name:
-            selectedAddMembershipPlan.name,
-          start_date:
-            addMembershipStartDate,
-          end_date: endDate,
-          status: "active",
-          payment_status: "paid",
-          source:
-            "reception_manual",
-        })
-        .select("id")
-        .single();
-
-      if (membershipError) {
-        throw membershipError;
-      }
-
-      /*
+       * The membership and the payment are now created together by one
+       * database transaction, so a failed receipt cannot leave a paid plan.
+       */
+      /*
        * Build payment metadata.
        *
        * Custom Plan stores the custom details explicitly.
@@ -1448,33 +1420,23 @@ function ReceptionDashboardPage() {
                 true,
             };
 
-      const { error: paymentError } =
-        await supabase
-          .from("payments")
-          .insert({
-            member_id:
-              selectedMember.id,
-            membership_id:
-              membershipData.id,
-            amount:
-              addMembershipTotal,
-            currency: "NGN",
-            status: "success",
-            payment_method:
-              addMembershipPaymentMethod,
-            provider: "manual",
-            paid_at:
-              new Date().toISOString(),
-            metadata: paymentMetadata,
-            source:
-              "reception_manual",
-          });
+      const { data: membershipReceipt, error: paymentError } =
+        await supabase.rpc("reception_add_existing_membership", {
+          p_member_id: selectedMember.id,
+          p_plan_id: planData.id,
+          p_start_date: addMembershipStartDate,
+          p_duration_days: addMembershipDuration,
+          p_amount: addMembershipTotal,
+          p_payment_method: addMembershipPaymentMethod,
+          p_metadata: paymentMetadata,
+        });
 
-      if (paymentError) {
-        throw paymentError;
-      }
+      if (paymentError) throw paymentError;
+      if (!membershipReceipt?.success) {
+        throw new Error("Membership and payment were not confirmed.");
+      }
 
-      setAddMembershipSuccess(
+      setAddMembershipSuccess(
         `${
           selectedAddMembershipPlan.name
         } activated successfully for ${

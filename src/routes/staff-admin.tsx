@@ -20,9 +20,11 @@ import {
   CalendarDays,
   LayoutDashboard,
   Menu,
+  UserPlus,
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { Button } from "../components/ui/button";
+import { HistoricalMemberManager } from "../components/admin/HistoricalMemberManager";
 
 type StaffProfile = {
   id: string;
@@ -323,38 +325,22 @@ function getPaymentSourceLabel(
   }
 }
 
-function startOfDay(date: Date) {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
+// Reporting periods are based on Lagos dates, regardless of the admin's device timezone.
+function lagosDay(value: string | Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(typeof value === "string" ? new Date(value) : value);
 }
 
-function startOfWeek(date: Date) {
-  const result = startOfDay(date);
-  const day = result.getDay();
-  const difference = day === 0 ? -6 : 1 - day;
-  result.setDate(result.getDate() + difference);
-  return result;
-}
-
-function startOfMonth(date: Date) {
-  return new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    1,
-    0,
-    0,
-    0,
-    0,
-  );
-}
-
-function isSameDay(first: Date, second: Date) {
-  return (
-    first.getFullYear() === second.getFullYear() &&
-    first.getMonth() === second.getMonth() &&
-    first.getDate() === second.getDate()
-  );
+function lagosPeriodStart(period: "today" | "week" | "month" | "all", now: Date): string | null {
+  const today = lagosDay(now);
+  if (period === "all") return null;
+  if (period === "today") return today;
+  if (period === "month") return `${today.slice(0, 7)}-01`;
+  const monday = new Date(`${today}T12:00:00Z`);
+  const day = monday.getUTCDay();
+  monday.setUTCDate(monday.getUTCDate() - (day === 0 ? 6 : day - 1));
+  return monday.toISOString().slice(0, 10);
 }
 
 function RevenueReport({
@@ -377,18 +363,7 @@ function RevenueReport({
 
   const now = new Date();
 
-  const periodStart = useMemo(() => {
-    switch (period) {
-      case "today":
-        return startOfDay(now);
-      case "week":
-        return startOfWeek(now);
-      case "month":
-        return startOfMonth(now);
-      default:
-        return null;
-    }
-  }, [period]);
+  const periodStart = lagosPeriodStart(period, now);
 
   const sourcePayments = useMemo(() => {
     return payments.filter((payment) => {
@@ -408,9 +383,7 @@ function RevenueReport({
     return sourcePayments.filter((payment) => {
       if (!periodStart) return true;
 
-      return (
-        new Date(getPaymentDate(payment)) >= periodStart
-      );
+      return lagosDay(getPaymentDate(payment)) >= periodStart;
     });
   }, [sourcePayments, periodStart]);
 
@@ -428,10 +401,7 @@ function RevenueReport({
     () =>
       sourcePayments
         .filter((payment) =>
-          isSameDay(
-            new Date(getPaymentDate(payment)),
-            now,
-          ),
+          lagosDay(getPaymentDate(payment)) === lagosDay(now),
         )
         .reduce(
           (total, payment) =>
@@ -442,12 +412,12 @@ function RevenueReport({
   );
 
   const monthRevenue = useMemo(() => {
-    const monthStart = startOfMonth(now);
+    const monthStart = lagosPeriodStart("month", now)!;
 
     return sourcePayments
       .filter(
         (payment) =>
-          new Date(getPaymentDate(payment)) >= monthStart,
+          lagosDay(getPaymentDate(payment)) >= monthStart,
       )
       .reduce(
         (total, payment) =>
@@ -997,6 +967,7 @@ function RevenueReport({
 
 function StaffAdminPage() {
   const [loading, setLoading] = useState(true);
+  const [isStrictAdmin, setIsStrictAdmin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [revenueLoading, setRevenueLoading] = useState(true);
   const [revenuePayments, setRevenuePayments] = useState<RevenuePaymentRow[]>([]);
@@ -1044,6 +1015,7 @@ function StaffAdminPage() {
       return false;
     }
     const isAdmin = data?.active === true && ["admin", "owner", "manager"].includes(String(data.role).toLowerCase());
+    setIsStrictAdmin(data?.active === true && String(data.role).toLowerCase() === "admin");
     if (!isAdmin) {
       setError("You do not have permission to access staff management.");
       return false;
@@ -1051,40 +1023,67 @@ function StaffAdminPage() {
     return true;
   }
 
-  const REVENUE_START = new Date("2026-09-16T12:01:18.000Z");
+  const [revenueBaseline, setRevenueBaseline] = useState<string | null>(null);
+  const [memberRefresh, setMemberRefresh] = useState(0);
 
   async function loadRevenue() {
     setRevenueLoading(true);
     try {
-      const { data: paymentData, error: paymentError } = await supabase.from("payments").select(`id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at, metadata`).eq("status", "success").order("paid_at", { ascending: false, nullsFirst: false }).limit(2000);
-      if (paymentError) {
-        setError(paymentError.message);
-        setRevenuePayments([]);
-        return;
+      // Database-owned reset timestamp: historical payments are preserved, never deleted.
+      const { data: baseline, error: baselineError } = await supabase.rpc("admin_revenue_baseline");
+      if (baselineError) throw baselineError;
+      if (!baseline || typeof baseline !== "string") throw new Error("Revenue baseline is missing. Run the revenue SQL migration first.");
+      setRevenueBaseline(baseline);
+
+      // Paginate every payment. A fixed limit of 2,000 silently undercounts revenue.
+      const payments: RevenuePayment[] = [];
+      const pageSize = 500;
+      let offset = 0;
+      for (;;) {
+        const { data, error: pageError } = await supabase.rpc("admin_revenue_rows")
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        if (pageError) throw pageError;
+        const page = (data || []) as RevenuePayment[];
+        payments.push(...page);
+        if (page.length < pageSize) break;
+        offset += pageSize;
       }
-      const payments = ((paymentData || []) as RevenuePayment[]).filter((payment) => new Date(payment.paid_at || payment.created_at) >= REVENUE_START);
-      if (!payments.length) {
-        setRevenuePayments([]);
-        return;
+
+      const eligible = payments.filter((payment) =>
+        payment.metadata?.revenue_excluded !== true &&
+        payment.metadata?.record_type !== "historical_import",
+      );
+      const memberIds = Array.from(new Set(eligible.map((p) => p.member_id).filter((id): id is string => !!id)));
+      const membershipIds = Array.from(new Set(eligible.map((p) => p.membership_id).filter((id): id is string => !!id)));
+      const members: RevenueMember[] = [];
+      const memberships: RevenueMembership[] = [];
+
+      // Batch linked lookups so a large list cannot exceed URL limits.
+      for (let i = 0; i < memberIds.length; i += 100) {
+        const { data, error } = await supabase.from("members")
+          .select("id, full_name, email, phone").in("id", memberIds.slice(i, i + 100));
+        if (error) throw error;
+        members.push(...((data || []) as RevenueMember[]));
       }
-      const memberIds = Array.from(new Set(payments.map((p) => p.member_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
-      const membershipIds = Array.from(new Set(payments.map((p) => p.membership_id).filter((id): id is string => typeof id === "string" && id.length > 0)));
-      let members: RevenueMember[] = [];
-      let memberships: RevenueMembership[] = [];
-      if (memberIds.length) {
-        const { data } = await supabase.from("members").select("id, full_name, email, phone").in("id", memberIds);
-        members = (data || []) as RevenueMember[];
-      }
-      if (membershipIds.length) {
-        const { data } = await supabase.from("memberships").select("id, plan_name").in("id", membershipIds);
-        memberships = (data || []) as RevenueMembership[];
+      for (let i = 0; i < membershipIds.length; i += 100) {
+        const { data, error } = await supabase.from("memberships")
+          .select("id, plan_name").in("id", membershipIds.slice(i, i + 100));
+        if (error) throw error;
+        memberships.push(...((data || []) as RevenueMembership[]));
       }
       const memberMap = new Map(members.map((m) => [m.id, m]));
       const membershipMap = new Map(memberships.map((m) => [m.id, m]));
-      setRevenuePayments(payments.map((payment) => ({ ...payment, member: payment.member_id ? memberMap.get(payment.member_id) || null : null, membership: payment.membership_id ? membershipMap.get(payment.membership_id) || null : null })));
+      setRevenuePayments(eligible.map((payment) => ({
+        ...payment,
+        member: payment.member_id ? memberMap.get(payment.member_id) || null : null,
+        membership: payment.membership_id ? membershipMap.get(payment.membership_id) || null : null,
+      })));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load revenue records.");
+      setError(err instanceof Error ? err.message : "Unable to load complete revenue records.");
       setRevenuePayments([]);
+      setRevenueBaseline(null);
     } finally {
       setRevenueLoading(false);
     }
@@ -1332,6 +1331,7 @@ function StaffAdminPage() {
               <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold uppercase [&::-webkit-details-marker]:hidden"><span className="flex items-center gap-2"><Menu className="h-5 w-5" /> Navigation</span><ChevronDown className="h-4 w-4 transition-transform group-open/nav:rotate-180" /></summary>
               <nav className="grid gap-2 border-t border-border p-3 sm:grid-cols-2 lg:min-w-64 lg:grid-cols-1">
                 <a href="#revenue" onClick={() => document.getElementById("revenue-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><TrendingUp className="h-4 w-4" /> Revenue Report</a>
+                {isStrictAdmin && <a href="#members" onClick={() => document.getElementById("members-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><UserPlus className="h-4 w-4" /> Manage Members</a>}
                 <a href="#attendance" onClick={() => document.getElementById("attendance-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><CalendarDays className="h-4 w-4" /> Staff Attendance</a>
                 <a href="#staff" onClick={() => document.getElementById("staff-panel")?.setAttribute("open", "")} className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><Users className="h-4 w-4" /> Staff Directory</a>
                 <Link to="/staff-blog" className="flex items-center gap-2 border border-border px-3 py-3 text-sm font-semibold"><FileText className="h-4 w-4" /> Blog</Link>
@@ -1364,8 +1364,17 @@ function StaffAdminPage() {
               <div className="spf-insights-grid spf-insights-bottom"><article className="spf-insight"><div className="spf-insight-heading"><div><h3>Recent activity</h3><p>Latest successful payment records</p></div><button type="button" className="spf-text-action" onClick={() => jumpTo("revenue")}>View all →</button></div>{dashboardPayments.length ? [...dashboardPayments].sort((a,b) => new Date(getPaymentDate(b)).getTime()-new Date(getPaymentDate(a)).getTime()).slice(0,5).map(p => <div className="spf-activity" key={p.id}><span className="spf-activity-icon">₦</span><div><strong>{getPaymentMemberName(p)}</strong><small>{getPaymentPlan(p)} · {getPaymentSourceLabel(p)}</small></div><span className="spf-activity-amount">{formatMoney(Number(p.amount), p.currency || "NGN")}</span></div>) : <p className="spf-empty">No recent payment activity.</p>}</article><article className="spf-insight"><div className="spf-insight-heading"><div><h3>Staff overview</h3><p>Quick access to team management</p></div><ShieldCheck size={18}/></div>{(["approved", "pending", "suspended", "inactive"] as const).map(status => <button type="button" className="spf-staff-row" key={status} onClick={() => { setFilter(status); jumpTo("staff"); }}><span className={`spf-staff-status spf-status-${status}`}/><span>{statusLabel(status)}</span><strong>{counts[status]}</strong><span>→</span></button>)}<button type="button" className="spf-text-action" onClick={() => jumpTo("attendance")}>View staff attendance →</button></article></div>
             </section>
             <section id="revenue" className="scroll-mt-28">
+              <div className="mb-3 rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground">
+                Revenue report starts at {revenueBaseline ? formatDateTime(revenueBaseline) : "—"} (Lagos time). Older transactions and administrator historical imports are excluded; member payment history remains unchanged.
+              </div>
               <RevenueReport payments={revenuePayments} loading={revenueLoading} onRefresh={() => void loadRevenue()} />
             </section>
+            {isStrictAdmin && <section id="members" className="mt-6 scroll-mt-28">
+              <HistoricalMemberManager refreshKey={memberRefresh} onChanged={() => {
+                setMemberRefresh((count) => count + 1);
+                void loadRevenue();
+              }} />
+            </section>}
             <section id="attendance" className="mt-6 scroll-mt-28">
               <details id="attendance-panel" className="group overflow-hidden border border-border bg-card" open={false}>
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 [&::-webkit-details-marker]:hidden sm:p-5"><div className="flex min-w-0 items-center gap-3"><LayoutDashboard className="h-5 w-5 shrink-0" /><div className="min-w-0"><h2 className="font-display text-xl font-bold uppercase sm:text-2xl">Staff Attendance</h2><p className="mt-1 text-xs text-muted-foreground">All staff attendance for a selected Lagos date. Clock-ins after 7:30 AM are highlighted red.</p></div></div><ChevronDown className="h-5 w-5 shrink-0 transition-transform group-open:rotate-180" /></summary>
