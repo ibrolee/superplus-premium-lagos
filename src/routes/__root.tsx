@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/site";
+import { SiteMotion } from "@/components/site-motion";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -83,7 +84,7 @@ function ErrorComponent({
 
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent"
           >
             Go home
           </a>
@@ -187,20 +188,11 @@ export const Route =
             "A modern gym, spa and wellness centre in Shomolu, Lagos offering gym memberships, personal training, spa, massage and recovery services.",
         },
 
-        {
-          property: "og:type",
-          content: "website",
-        },
+        { property: "og:type", content: "website" },
 
-        {
-          property: "og:site_name",
-          content: "Super Plus Fitness & Spa",
-        },
+        { property: "og:site_name", content: "Super Plus Fitness & Spa" },
 
-        {
-          name: "twitter:card",
-          content: "summary_large_image",
-        },
+        { name: "twitter:card", content: "summary_large_image" },
 
         {
           name: "twitter:title",
@@ -216,47 +208,25 @@ export const Route =
       ],
 
       links: [
-        {
-          rel: "canonical",
-          href: "https://www.superplusfitness.com/",
-        },
-
-        {
-          rel: "stylesheet",
-          href: appCss,
-        },
-
-        {
-          rel: "preconnect",
-          href: "https://fonts.googleapis.com",
-        },
-
+        { rel: "canonical", href: "https://www.superplusfitness.com/" },
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
         {
           rel: "preconnect",
           href: "https://fonts.gstatic.com",
           crossOrigin: "anonymous",
         },
-
         {
           rel: "stylesheet",
           href:
             "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
         },
-
-        {
-          rel: "icon",
-          href: "/favicon.svg",
-          type: "image/svg+xml",
-        },
+        { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       ],
     }),
-
     shellComponent: RootShell,
-
     component: RootComponent,
-
     notFoundComponent: NotFoundComponent,
-
     errorComponent: ErrorComponent,
   });
 
@@ -265,18 +235,13 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(structuredData),
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
       </head>
-
       <body>
         {children}
-
         <Scripts />
       </body>
     </html>
@@ -285,21 +250,14 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
   return (
     <QueryClientProvider client={queryClient}>
       <UtilityBar />
-
       <Navbar />
-
+      <SiteMotion />
       <Outlet />
-
       <Footer />
-
-      <Toaster
-        position="top-center"
-        richColors
-      />
+      <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
 }
