@@ -124,8 +124,28 @@ export function HistoricalMemberManager({ refreshKey, onChanged }: { refreshKey:
       setHistoricalAmount(""); setHistoricalDate("");
       onChanged();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Historical import failed.");
-    } finally { setSaving(false); }
+  console.error("Historical member import error:", cause);
+
+  const issue = cause as {
+    message?: string;
+    details?: string;
+    hint?: string;
+    code?: string;
+  } | null;
+
+  const errorMessage = [
+    issue?.message || "Historical import failed.",
+    issue?.details,
+    issue?.hint,
+    issue?.code ? `Error code: ${issue.code}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  setError(errorMessage);
+} finally {
+  setSaving(false);
+}
   }
 
   async function createPlan() {
