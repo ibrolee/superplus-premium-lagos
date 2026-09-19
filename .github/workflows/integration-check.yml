@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      # Build-only placeholders: no real gym credentials or database writes.
+      # Isolated build placeholders: this workflow never connects to the gym database or deploys.
       VITE_SUPABASE_URL: https://example.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-not-a-real-key
     steps:
@@ -26,26 +26,13 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
-      - name: Install dependencies to diagnose existing lockfile drift
-        run: bun install
-      - name: Report lockfile consistency
-        id: lockfile
-        continue-on-error: true
+      - name: Install immutable locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify no dependency lockfile changes
         run: git diff --exit-code -- bun.lock
-      - name: Build application (no deploy)
-        id: build
-        continue-on-error: true
+      - name: Build client, SSR and server without deployment
         run: bun run build
-      - name: TypeScript check
-        id: typescript
-        continue-on-error: true
+      - name: Strict TypeScript check
         run: bunx tsc --noEmit
-      - name: Require all checks to pass
-        if: always()
-        env:
-          LOCK: ${{ steps.lockfile.outcome }}
-          BUILD: ${{ steps.build.outcome }}
-          TYPES: ${{ steps.typescript.outcome }}
-        run: |
-          echo "Lockfile: $LOCK | Build: $BUILD | TypeScript: $TYPES"
-          test "$LOCK" = success && test "$BUILD" = success && test "$TYPES" = success
+      - name: Verify no tracked source changes from the build
+        run: git diff --exit-code -- . ':!bun.lock'
