@@ -34,5 +34,19 @@ jobs:
         run: bun run build
       - name: Strict TypeScript check
         run: bunx tsc --noEmit
-      - name: Verify no tracked source changes from the build
-        run: git diff --exit-code -- . ':!bun.lock'
+      - name: Verify generated route changes are limited to the known TanStack registration footer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/routeTree.gen.ts; then
+            exit 0
+          fi
+          # The TanStack Vite plugin removes only its ten-line SSR registration footer.
+          # Reject any other generated route change, additions, or changed route entries.
+          expected=$(printf '0\t10\tsrc/routeTree.gen.ts')
+          actual=$(git diff --numstat -- src/routeTree.gen.ts)
+          test "$actual" = "$expected"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq "-import type { getRouter } from './router.tsx'"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq "-declare module '@tanstack/react-start' {"
+      - name: Verify no other tracked source changes from the build
+        run: git diff --exit-code -- . ':!bun.lock' ':!src/routeTree.gen.ts'
