@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, useRouter, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
@@ -25,4 +26,4 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }), shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 function RootShell({ children }: { children: ReactNode }) { return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /></head><body>{children}<Scripts /></body></html>; }
-function RootComponent() { const { queryClient } = Route.useRouteContext(); return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate /><Footer /><Toaster position="top-center" richColors /></QueryClientProvider>; }
+function RootComponent() { const { queryClient } = Route.useRouteContext(); return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate /><Footer /><Toaster position="top-center" richColors /><Analytics /></QueryClientProvider>; }
