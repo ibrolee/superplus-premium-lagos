@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ActionSearch } from "./ActionSearch";
 
@@ -9,7 +9,7 @@ export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-dashboard";
   const onStaff = ["/staff", "/staff-attendance", "/staff-admin", "/reception-checkin"].includes(pathname);
-  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
+  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -44,6 +44,7 @@ export function WorkspaceNavigation() {
   if (management) {
     pages.push({ label: "Staff", href: "/management-staff", icon: Users });
     pages.push({ label: "Monthly staff", href: "/management-staff-monthly", icon: CalendarDays });
+    pages.push({ label: "QR review", href: "/management-staff-review", icon: AlertTriangle });
     pages.push({ label: "Export attendance", href: "/management-attendance-export", icon: Download });
     pages.push({ label: "Salary records", href: "/management-payroll", icon: Wallet });
     pages.push({ label: "Export salaries", href: "/management-payroll-export", icon: Download });
