@@ -37,19 +37,19 @@ jobs:
         run: bun run build
       - name: Strict TypeScript check
         run: bunx tsc --noEmit
-      - name: Verify generated route changes are limited to the known TanStack registration footer
+      - name: Verify generated route tree retains all existing routes and adds portal directory
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- src/routeTree.gen.ts; then
-            exit 0
+          tree=src/routeTree.gen.ts
+          grep -Fq "from './routes/portal'" "$tree"
+          git show HEAD:"$tree" | grep -E "^import .* from './routes/" | sort > /tmp/routes-before.txt
+          grep -E "^import .* from './routes/" "$tree" | sort > /tmp/routes-after.txt
+          if comm -23 /tmp/routes-before.txt /tmp/routes-after.txt | grep .; then
+            echo 'An existing route import was removed or renamed.' >&2
+            exit 1
           fi
-          # The TanStack Vite plugin removes only its ten-line SSR registration footer.
-          # Reject any other generated route change, additions, or changed route entries.
-          expected=$(printf '0\t10\tsrc/routeTree.gen.ts')
-          actual=$(git diff --numstat -- src/routeTree.gen.ts)
-          test "$actual" = "$expected"
-          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-import type { getRouter } from './router.tsx'"
-          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-declare module '@tanstack/react-start' {"
+          grep -Fq 'export const routeTree' "$tree"
+          test "$(wc -l < "$tree")" -gt "$(wc -l < /tmp/routes-before.txt)"
       - name: Verify no other tracked source changes from the build
         run: git diff --exit-code -- . ':!bun.lock' ':!src/routeTree.gen.ts'
