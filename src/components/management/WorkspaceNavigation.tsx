@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-dashboard";
-  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications"].includes(pathname);
+  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -47,6 +47,7 @@ export function WorkspaceNavigation() {
     { label: "Custom Plan", href: "/management-custom-plan", icon: CreditCard },
     { label: "Birthdays & reminders", href: "/management-communications", icon: Cake },
   ];
+  if (management) pages.push({ label: "Revenue", href: "/management-revenue", icon: Wallet });
   return (
     <nav aria-label="Super Plus management workspace" className="relative z-20 border-b border-[#263d31] bg-[#152820] px-3 py-3 text-white sm:px-6">
       <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-x-5 gap-y-3">
