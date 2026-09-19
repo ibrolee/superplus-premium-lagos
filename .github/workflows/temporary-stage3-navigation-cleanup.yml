@@ -38,30 +38,32 @@ jobs:
               path.write_text(text, encoding='utf-8')
               print(f'Updated {filename}')
 
-          link = '''            <Link
-              to="/reception-dashboard"
-              onClick={() => setOpen(false)}
-              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
-            >
-              Reception Dashboard
-            </Link>
-
-            <Link
-              to="/staff"
-              onClick={() => setOpen(false)}
-              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
-            >
-              Staff Portal
-            </Link>
-
-'''
-          footer = '''              {
-                label: "Reception Dashboard",
-                to: "/reception-dashboard",
-              },
-              { label: "Staff Portal", to: "/staff" },'''
+          mobile = '\n'.join([
+              '            <Link',
+              '              to="/reception-dashboard"',
+              '              onClick={() => setOpen(false)}',
+              '              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"',
+              '            >',
+              '              Reception Dashboard',
+              '            </Link>',
+              '',
+              '            <Link',
+              '              to="/staff"',
+              '              onClick={() => setOpen(false)}',
+              '              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"',
+              '            >',
+              '              Staff Portal',
+              '            </Link>',
+          ]) + '\n\n'
+          footer = '\n'.join([
+              '              {',
+              '                label: "Reception Dashboard",',
+              '                to: "/reception-dashboard",',
+              '              },',
+              '              { label: "Staff Portal", to: "/staff" },',
+          ])
           edit('src/components/site.tsx', [
-              (link, '', 1),
+              (mobile, '', 1),
               (footer, '              { label: "Portal", to: "/portal" },', 1),
               ('title="Member & Staff"', 'title="Member & Portal"', 1),
           ])
