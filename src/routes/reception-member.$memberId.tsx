@@ -266,13 +266,14 @@ function ReceptionMemberProfile() {
           .eq("member_id", memberId)
           .order("start_date", { ascending: false }),
 
-        supabase
-          .from("payments")
-          .select(
-            "id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at",
-          )
-          .eq("member_id", memberId)
-          .order("created_at", { ascending: false }),
+        (async () => {
+          const scoped = await supabase.rpc("reception_member_payment_history", { p_member_id: memberId });
+          if (!scoped.error || !["PGRST202", "42883"].includes(scoped.error.code)) return scoped;
+          // Before database cutover only: retain the existing member-filtered query.
+          return supabase.from("payments")
+            .select("id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at")
+            .eq("member_id", memberId).order("created_at", { ascending: false });
+        })(),
 
         supabase
           .from("attendance")
@@ -299,6 +300,11 @@ function ReceptionMemberProfile() {
 
       setMember(memberResult.data);
       setMemberships(membershipsResult.data ?? []);
+      if (paymentsResult.error) {
+        setError(`Unable to load payment history: ${paymentsResult.error.message}`);
+        setLoading(false);
+        return;
+      }
       setPayments(paymentsResult.data ?? []);
       setAttendance(attendanceResult.data ?? []);
       setLoading(false);
