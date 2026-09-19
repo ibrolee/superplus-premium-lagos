@@ -27,7 +27,16 @@ jobs:
       - name: Install exact locked dependencies
         run: bun install --frozen-lockfile
       - name: Apply small, asserted source edits
-        run: python3 scripts/integration-type-fixes.py
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/integration-type-fixes.py')
+          content = p.read_text()
+          old = "exact(\"src/routes/reception-dashboard.tsx\", 'selectedAddMembershipPlan.name', 'selectedAddMembershipPlan!.name')"
+          assert content.count(old) == 1
+          p.write_text(content.replace(old, "exact(\"src/routes/reception-dashboard.tsx\", 'selectedAddMembershipPlan.name', 'selectedAddMembershipPlan!.name', 6)"))
+          PY
+          python3 scripts/integration-type-fixes.py
       - name: Full client, SSR and server build without deployment
         run: bun run build
       - name: Strict TypeScript compilation check
