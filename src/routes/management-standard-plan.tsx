@@ -62,7 +62,7 @@ function StandardPlan() {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const busy = useRef(false);
 
-  const plan = receptionPlans.find(item => item.id === planId) || receptionPlans[2];
+  const plan = receptionPlans.find(item => item.id === planId) || receptionPlans[0]!;
   const custom = plan.id === "custom-plan";
   const duration = custom ? Number(customDays) : durations[plan.id] || 30;
   const amount = custom ? (customPrice.trim() ? Number(customPrice) : NaN) : plan.price;
@@ -119,7 +119,7 @@ function StandardPlan() {
       if (mode === "new") {
         const { data: duplicates, error: lookupError } = await supabase.from("members").select("id,full_name").eq("phone", phone.trim()).limit(1);
         if (lookupError) throw lookupError;
-        if (duplicates?.length) throw Error(`This phone already belongs to ${duplicates[0].full_name || "another member"}. Open their existing profile instead of registering twice.`);
+        if (duplicates?.length) throw Error(`This phone already belongs to ${duplicates[0]!.full_name || "another member"}. Open their existing profile instead of registering twice.`);
       }
       const person = mode === "new" ? name.trim() : member?.full_name || "member";
       if (!window.confirm(`${mode === "new" ? "Register new member" : "Add separate membership for"} ${person}?\n${plan.name} · ${duration} days · ${start} to ${end}\nPlan ${money(amount)} · registration ${money(fee)}\nTOTAL PAYMENT RECEIVED: ${money(total)} (${method}).\n\nThis records a real successful payment. Existing memberships will not be replaced.`)) return;

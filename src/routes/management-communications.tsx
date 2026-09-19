@@ -30,7 +30,7 @@ function firstName(member: Member) { return member.full_name?.trim().split(/\s+/
 function message(template: string, member: Member, plan?: Plan, days?: number) {
   const remaining = days === 0 ? "today" : days === 1 ? "in 1 day" : `in ${days ?? 0} days`;
   const values: Record<string, string> = { name: firstName(member), plan: plan?.plan_name || "membership", date: niceDate(plan?.end_date || null), days: remaining };
-  return template.replace(/\{(name|plan|date|days)\}/g, (_match, key: string) => values[key]);
+  return template.replace(/\{(name|plan|date|days)\}/g, (_match, key: string) => values[key] ?? "");
 }
 function whatsappUrl(phone: string | null, text: string) { const number = whatsappNumber(phone); return number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : ""; }
 function eligible(plan: Plan, day: string) {

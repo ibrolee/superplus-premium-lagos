@@ -462,7 +462,7 @@ function MemberDashboard() {
 
     if (!dateOnly) return "Not available";
 
-    const [year, month, day] =
+    const [year = 0, month = 0, day = 0] =
       dateOnly.split("-").map(Number);
 
     const date = new Date(
@@ -495,7 +495,7 @@ function MemberDashboard() {
 
     if (!dateOnly) return null;
 
-    const [year, month, day] =
+    const [year = 0, month = 0, day = 0] =
       dateOnly.split("-").map(Number);
 
     const expiry = new Date(
@@ -510,9 +510,9 @@ function MemberDashboard() {
         .map(Number);
 
     const today = new Date(
-      todayParts[0],
-      todayParts[1] - 1,
-      todayParts[2],
+      (todayParts[0] ?? 0),
+      (todayParts[1] ?? 0) - 1,
+      (todayParts[2] ?? 0),
     );
 
     const difference =

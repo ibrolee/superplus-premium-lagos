@@ -735,19 +735,7 @@ function ReceptionDashboardPage() {
 
         supabase
           .from("attendance")
-          .select(
-            `
-              id,
-              member_id,
-              checked_in_at,
-              checked_out_at,
-              created_at,
-              member:members (
-                full_name,
-                phone
-              )
-            `,
-          )
+          .select("id,member_id,checked_in_at,checked_out_at,created_at,member:members(full_name,phone)")
           .gte(
             "created_at",
             `${today}T00:00:00`,
@@ -762,19 +750,7 @@ function ReceptionDashboardPage() {
 
         supabase
           .from("attendance")
-          .select(
-            `
-              id,
-              member_id,
-              checked_in_at,
-              checked_out_at,
-              created_at,
-              member:members (
-                full_name,
-                phone
-              )
-            `,
-          )
+          .select("id,member_id,checked_in_at,checked_out_at,created_at,member:members(full_name,phone)")
           .gte(
             "created_at",
             `${monthStart}T00:00:00`,
@@ -805,11 +781,11 @@ function ReceptionDashboardPage() {
       );
 
       setAttendance(
-        (attendanceResult.data || []) as Attendance[],
+        (attendanceResult.data || []).map((record) => ({ ...record, member: Array.isArray(record.member) ? record.member[0] ?? null : record.member })) as Attendance[],
       );
 
       setMonthlyAttendance(
-        (monthlyAttendanceResult.data || []) as Attendance[],
+        (monthlyAttendanceResult.data || []).map((record) => ({ ...record, member: Array.isArray(record.member) ? record.member[0] ?? null : record.member })) as Attendance[],
       );
     } catch (error) {
       console.error(
@@ -1329,7 +1305,7 @@ function ReceptionDashboardPage() {
     const confirmed =
       window.confirm(
         `Activate ${
-          selectedAddMembershipPlan.name
+          selectedAddMembershipPlan!.name
         } for ${
           selectedMember.full_name ||
           "this member"
@@ -1359,7 +1335,7 @@ function ReceptionDashboardPage() {
           .select("id, name")
           .eq(
             "name",
-            selectedAddMembershipPlan.name,
+            selectedAddMembershipPlan!.name,
           )
           .maybeSingle();
 
@@ -1367,7 +1343,7 @@ function ReceptionDashboardPage() {
 
       if (!planData) {
         throw new Error(
-          `Membership plan "${selectedAddMembershipPlan.name}" was not found in the database.`,
+          `Membership plan "${selectedAddMembershipPlan!.name}" was not found in the database.`,
         );
       }
 
@@ -1412,7 +1388,7 @@ function ReceptionDashboardPage() {
             }
           : {
               plan_name:
-                selectedAddMembershipPlan.name,
+                selectedAddMembershipPlan!.name,
               start_date:
                 addMembershipStartDate,
               end_date: endDate,
@@ -1438,7 +1414,7 @@ function ReceptionDashboardPage() {
 
       setAddMembershipSuccess(
         `${
-          selectedAddMembershipPlan.name
+          selectedAddMembershipPlan!.name
         } activated successfully for ${
           selectedMember.full_name ||
           "this member"
@@ -3491,7 +3467,7 @@ function ReceptionDashboardPage() {
 
                           <p className="mt-1 font-bold">
                             {
-                              selectedAddMembershipPlan.name
+                              selectedAddMembershipPlan!.name
                             }
                           </p>
 

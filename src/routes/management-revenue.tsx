@@ -37,7 +37,7 @@ function normalize(value: unknown) {
 // Same source priorities as the existing administrator revenue report.
 function sourceOf(payment: Payment): Exclude<Source, "all"> {
   const meta = payment.metadata || {};
-  const candidates = [payment.payment_method, payment.provider, meta.payment_method, meta.payment_source, meta.provider].map(normalize);
+  const candidates = [payment.payment_method, payment.provider, meta["payment_method"], meta["payment_source"], meta["provider"]].map(normalize);
   if (candidates.some((item) => ["paystack", "online", "online payment", "website", "card", "card payment"].includes(item))) return "website";
   if (candidates.includes("cash")) return "cash";
   if (candidates.includes("pos") || candidates.includes("point of sale")) return "pos";
@@ -46,7 +46,7 @@ function sourceOf(payment: Payment): Exclude<Source, "all"> {
 }
 const sourceLabels: Record<Source, string> = { all: "All sources", website: "Website", cash: "Cash", pos: "POS", bank_transfer: "Bank Transfer", other: "Other" };
 function planOf(payment: Payment) {
-  const plan = payment.metadata?.plan_name;
+  const plan = payment.metadata?.["plan_name"];
   return typeof plan === "string" && plan.trim() ? plan : "Membership payment";
 }
 async function loadCanonicalPayments(): Promise<{ baseline: string; payments: Payment[] }> {
@@ -65,8 +65,8 @@ async function loadCanonicalPayments(): Promise<{ baseline: string; payments: Pa
   const cutoff = Date.parse(baseline);
   return { baseline, payments: all.filter((payment) => {
     const date = paymentDate(payment);
-    return payment.status?.toLowerCase() === "success" && payment.metadata?.revenue_excluded !== true &&
-      payment.metadata?.record_type !== "historical_import" && !!date && Date.parse(date) >= cutoff &&
+    return payment.status?.toLowerCase() === "success" && payment.metadata?.["revenue_excluded"] !== true &&
+      payment.metadata?.["record_type"] !== "historical_import" && !!date && Date.parse(date) >= cutoff &&
       Number.isFinite(Number(payment.amount));
   }) };
 }

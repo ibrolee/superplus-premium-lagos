@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
+import { Activity, AlertTriangle, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { ActionSearch } from "./ActionSearch";
 
 /** Shared management navigation, including role-aware search on staff and reception pages. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const onReception = pathname === "/reception-dashboard";
-  const onStaff = ["/staff", "/staff-attendance", "/staff-admin", "/reception-checkin"].includes(pathname);
-  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
+  const onReception = ["/reception-dashboard", "/reception-workspace"].includes(pathname);
+  const onStaff = ["/staff", "/staff-attendance", "/staff-admin", "/reception-checkin", "/staff-missed-scans"].includes(pathname);
+  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -20,19 +20,20 @@ export function WorkspaceNavigation() {
       if (authError || !auth.user) return;
       const { data: staff, error: staffError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
       if (staffError || !staff?.active || cancelled) return;
-      const nextRole = String(staff.role || "").toLowerCase();
-      setRole(nextRole);
+      setRole(String(staff.role || "").toLowerCase());
     }
     void loadRole();
     return () => { cancelled = true; };
   }, [inWorkspace]);
-  if (!inWorkspace || !role) return null;
-  const management = ["admin", "owner", "manager"].includes(role);
+  if (!inWorkspace) return null;
+  const management = ["admin", "owner", "manager"].includes(role || "");
+  const admin = role === "admin";
   const reception = management || role === "reception";
-  if (onReception || onStaff) return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">Find an action</span><ActionSearch role={role}/></div><div className="flex flex-wrap gap-2 text-xs font-bold"><a href="/staff-attendance" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Clock in / out</a>{reception && <a href="/management-operations" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Operations</a>}{reception && <a href="/management-communications" className="inline-flex items-center gap-1 rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326] hover:bg-[#c9f69c]"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></a>}</div></div></nav>;
-  if (!reception) return null;
+  if (onReception || onStaff) return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">Staff tools</span>{role && <ActionSearch role={role}/>}</div><div className="flex flex-wrap gap-2 text-xs font-bold">{reception && <a href="/reception-workspace" aria-current={pathname === "/reception-workspace" ? "page" : undefined} className={`rounded-lg border px-3 py-2 ${pathname === "/reception-workspace" ? "border-[#b8ee73] bg-[#b8ee73] text-[#173326]" : "border-white/25 hover:bg-white/10"}`}>Reception 2.0</a>}{reception && <a href="/reception-dashboard" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Original reception</a>}<a href="/staff-attendance" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Clock in / out</a><a href="/staff-missed-scans" aria-current={pathname === "/staff-missed-scans" ? "page" : undefined} className={`rounded-lg border px-3 py-2 ${pathname === "/staff-missed-scans" ? "border-[#b8ee73] bg-[#b8ee73] text-[#173326]" : "border-white/25 hover:bg-white/10"}`}>Missed scan / requests</a>{admin && <a href="/management-staff-review" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">QR review</a>}{reception && <a href="/management-operations" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Operations</a>}{reception && <a href="/management-communications" className="inline-flex items-center gap-1 rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326] hover:bg-[#c9f69c]"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></a>}</div></div></nav>;
+  if (!reception || !role) return null;
   const pages = [
     { label: "Overview", href: "/management-preview", icon: LayoutDashboard },
+    { label: "Reception 2.0", href: "/reception-workspace", icon: UserPlus },
     { label: "Members", href: "/management-members", icon: Users },
     { label: "Profiles", href: "/management-profiles", icon: UserRound },
     { label: "Attendance", href: "/management-attendance", icon: Activity },
@@ -44,6 +45,8 @@ export function WorkspaceNavigation() {
   if (management) {
     pages.push({ label: "Staff", href: "/management-staff", icon: Users });
     pages.push({ label: "Monthly staff", href: "/management-staff-monthly", icon: CalendarDays });
+    pages.push({ label: "QR review", href: "/management-staff-review", icon: AlertTriangle });
+    if (admin) pages.push({ label: "Missed-scan requests", href: "/staff-missed-scans", icon: ClipboardList });
     pages.push({ label: "Export attendance", href: "/management-attendance-export", icon: Download });
     pages.push({ label: "Salary records", href: "/management-payroll", icon: Wallet });
     pages.push({ label: "Export salaries", href: "/management-payroll-export", icon: Download });

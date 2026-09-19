@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
@@ -11,6 +10,7 @@ import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/site";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
+import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -211,7 +211,7 @@ function RootComponent() {
       <Navbar />
       <SiteMotion />
       <WorkspaceNavigation />
-      <Outlet />
+      <ReceptionRouteGate />
       <Footer />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>

@@ -236,6 +236,7 @@ function StaffAttendancePage() {
 
       return () => window.clearTimeout(timer);
     }
+    return undefined;
   }, [authorized]);
 
   if (loading) {

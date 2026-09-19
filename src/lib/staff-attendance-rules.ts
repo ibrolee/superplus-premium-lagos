@@ -36,23 +36,49 @@ export function isLateArrival(name: string | null, date: string, firstClockIn: s
   }).formatToParts(instant);
   const part = (kind: string) => Number(parts.find((entry) => entry.type === kind)?.value ?? NaN);
   const hour = part("hour"), minute = part("minute"), second = part("second");
-  return Number.isFinite(hour) && Number.isFinite(minute) && Number.isFinite(second) &&
-    hour * 60 + minute > CUTOFF_MINUTES ||
-    (Number.isFinite(hour) && Number.isFinite(minute) && Number.isFinite(second) && hour * 60 + minute === CUTOFF_MINUTES && second > 0);
+  if (![hour, minute, second].every(Number.isFinite)) return false;
+  const clockMinutes = hour * 60 + minute;
+  return clockMinutes > CUTOFF_MINUTES || (clockMinutes === CUTOFF_MINUTES && second > 0);
 }
 
-/** Only completed QR sessions count; an open session is not an invented clock-out. */
-export function recordedWorkMinutes(scans: StaffScan[]): { minutes: number; completed: number; open: number; invalid: number } {
-  let milliseconds = 0, completed = 0, open = 0, invalid = 0;
+/**
+ * Read-only time from one staff member's completed QR sessions. Merge overlapping
+ * intervals so a duplicated/overlapping scan cannot double-count worked minutes.
+ * Open and invalid sessions are excluded, never assigned an invented clock-out.
+ * `overlapping` counts completed sessions intersecting an earlier interval and
+ * signals that management should check the source QR records.
+ */
+export function recordedWorkMinutes(scans: StaffScan[]): {
+  minutes: number; completed: number; open: number; invalid: number; overlapping: number;
+} {
+  const intervals: Array<{ start: number; end: number }> = [];
+  let open = 0, invalid = 0;
   for (const scan of scans) {
-    if (!scan.checked_out_at) { open += 1; continue; }
     const start = Date.parse(scan.checked_in_at);
+    if (!Number.isFinite(start)) { invalid += 1; continue; }
+    if (!scan.checked_out_at) { open += 1; continue; }
     const end = Date.parse(scan.checked_out_at);
-    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) { invalid += 1; continue; }
-    milliseconds += end - start;
-    completed += 1;
+    if (!Number.isFinite(end) || end < start) { invalid += 1; continue; }
+    intervals.push({ start, end });
   }
-  return { minutes: Math.floor(milliseconds / 60000), completed, open, invalid };
+  intervals.sort((a, b) => a.start - b.start || a.end - b.end);
+  let milliseconds = 0, overlapping = 0;
+  let currentStart: number | null = null, currentEnd = 0;
+  for (const interval of intervals) {
+    if (currentStart === null) {
+      currentStart = interval.start;
+      currentEnd = interval.end;
+    } else if (interval.start <= currentEnd) {
+      if (interval.start < currentEnd) overlapping += 1;
+      currentEnd = Math.max(currentEnd, interval.end);
+    } else {
+      milliseconds += currentEnd - currentStart;
+      currentStart = interval.start;
+      currentEnd = interval.end;
+    }
+  }
+  if (currentStart !== null) milliseconds += currentEnd - currentStart;
+  return { minutes: Math.floor(milliseconds / 60000), completed: intervals.length, open, invalid, overlapping };
 }
 
 export function workDuration(minutes: number): string {

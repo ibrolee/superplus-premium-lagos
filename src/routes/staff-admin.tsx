@@ -200,7 +200,7 @@ function getPaymentPlan(payment: RevenuePaymentRow) {
 
   if (membershipPlan) return membershipPlan;
 
-  const metadataPlan = payment.metadata?.plan_name;
+  const metadataPlan = payment.metadata?.["plan_name"];
 
   if (typeof metadataPlan === "string" && metadataPlan.trim()) {
     return metadataPlan;
@@ -214,7 +214,7 @@ function getPaymentMemberName(payment: RevenuePaymentRow) {
     return payment.member.full_name;
   }
 
-  const metadataName = payment.metadata?.full_name;
+  const metadataName = payment.metadata?.["full_name"];
 
   if (typeof metadataName === "string" && metadataName.trim()) {
     return metadataName;
@@ -247,15 +247,15 @@ function getPaymentSource(
   const provider = normalizePaymentValue(payment.provider);
 
   const metadataMethod = normalizePaymentValue(
-    payment.metadata?.payment_method,
+    payment.metadata?.["payment_method"],
   );
 
   const metadataSource = normalizePaymentValue(
-    payment.metadata?.payment_source,
+    payment.metadata?.["payment_source"],
   );
 
   const metadataProvider = normalizePaymentValue(
-    payment.metadata?.provider,
+    payment.metadata?.["provider"],
   );
 
   const candidates = [
@@ -1052,8 +1052,8 @@ function StaffAdminPage() {
       }
 
       const eligible = payments.filter((payment) =>
-        payment.metadata?.revenue_excluded !== true &&
-        payment.metadata?.record_type !== "historical_import",
+        payment.metadata?.["revenue_excluded"] !== true &&
+        payment.metadata?.["record_type"] !== "historical_import",
       );
       const memberIds = Array.from(new Set(eligible.map((p) => p.member_id).filter((id): id is string => !!id)));
       const membershipIds = Array.from(new Set(eligible.map((p) => p.membership_id).filter((id): id is string => !!id)));

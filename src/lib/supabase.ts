@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
+// Vite replaces statically named import.meta.env properties during builds.
+// Bracket notation is not reliably substituted in production SSR/client bundles.
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;

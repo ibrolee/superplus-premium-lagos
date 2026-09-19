@@ -1,0 +1,52 @@
+name: Integration build and type check
+
+on:
+  push:
+    branches:
+      - integration/september-attendance-missed-scans
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Isolated build placeholders: this workflow never connects to the gym database or deploys.
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-not-a-real-key
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install immutable locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify no dependency lockfile changes
+        run: git diff --exit-code -- bun.lock
+      - name: Build client, SSR and server without deployment
+        run: bun run build
+      - name: Strict TypeScript check
+        run: bunx tsc --noEmit
+      - name: Verify generated route changes are limited to the known TanStack registration footer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/routeTree.gen.ts; then
+            exit 0
+          fi
+          # The TanStack Vite plugin removes only its ten-line SSR registration footer.
+          # Reject any other generated route change, additions, or changed route entries.
+          expected=$(printf '0\t10\tsrc/routeTree.gen.ts')
+          actual=$(git diff --numstat -- src/routeTree.gen.ts)
+          test "$actual" = "$expected"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-import type { getRouter } from './router.tsx'"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-declare module '@tanstack/react-start' {"
+      - name: Verify no other tracked source changes from the build
+        run: git diff --exit-code -- . ':!bun.lock' ':!src/routeTree.gen.ts'

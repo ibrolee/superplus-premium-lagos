@@ -40,7 +40,7 @@ function JoinPage() {
     () =>
       membershipPlans.find(
         (plan) => plan.id === selectedPlanId,
-      ) || membershipPlans[0],
+      ) || membershipPlans[0]!,
     [selectedPlanId],
   );
 

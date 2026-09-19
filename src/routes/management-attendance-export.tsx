@@ -26,6 +26,18 @@ function lagosTime(iso: string | null) {
   if (!iso || !Number.isFinite(Date.parse(iso))) return "Not recorded";
   return new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 }
+/** Select the latest valid completed check-out by timestamp, not by clock-in order. */
+function latestCompletedClockOut(records: StaffScan[]): string | null {
+  let latest: string | null = null;
+  let latestTime = Number.NEGATIVE_INFINITY;
+  for (const scan of records) {
+    const start = Date.parse(scan.checked_in_at);
+    const end = scan.checked_out_at ? Date.parse(scan.checked_out_at) : NaN;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) continue;
+    if (end > latestTime) { latestTime = end; latest = scan.checked_out_at; }
+  }
+  return latest;
+}
 async function fetchPages<T>(table: "staff_profiles" | "staff_attendance", select: string, month?: string): Promise<T[]> {
   const rows: T[] = [];
   for (let offset = 0; ; offset += BATCH) {
@@ -115,9 +127,9 @@ function AttendanceExport() {
     const rows: unknown[][] = [["Date (Lagos)", "Staff ID", "Staff name", "First clock-in (Lagos)", "Last completed clock-out (Lagos)", "Punctuality (recorded)", "Completed sessions", "Worked minutes (completed only)", "Worked time", "Open sessions", "Invalid sessions", "Review note"]];
     summaries.forEach(({ person, days }) => days.forEach(({ date, scans: records }) => {
       const stats = recordedWorkMinutes(records);
-      const lastCompleted = [...records].reverse().find((scan) => scan.checked_out_at && Number.isFinite(Date.parse(scan.checked_out_at)) && Date.parse(scan.checked_out_at) >= Date.parse(scan.checked_in_at));
+      const lastCompletedClockOut = latestCompletedClockOut(records);
       const punctuality = !lateRuleApplies(person.full_name, date) ? "Exempt / Sunday" : isLateArrival(person.full_name, date, records[0]?.checked_in_at || null) ? "Late" : "On time";
-      rows.push([date, person.staff_id || "", person.full_name || "", lagosTime(records[0]?.checked_in_at || null), lagosTime(lastCompleted?.checked_out_at || null), punctuality, stats.completed, stats.minutes, workDuration(stats.minutes), stats.open, stats.invalid, stats.open || stats.invalid ? "Review open/invalid sessions; not a payroll determination" : "Recorded QR sessions only"]);
+      rows.push([date, person.staff_id || "", person.full_name || "", lagosTime(records[0]?.checked_in_at || null), lagosTime(lastCompletedClockOut), punctuality, stats.completed, stats.minutes, workDuration(stats.minutes), stats.open, stats.invalid, stats.open || stats.invalid || stats.overlapping ? "Review open/invalid/overlapping sessions; not a payroll determination" : "Recorded QR sessions only"]);
     }));
     saveCsv(`superplus-staff-daily-breakdown-${month}.csv`, rows);
   }
