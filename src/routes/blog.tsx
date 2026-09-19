@@ -91,23 +91,7 @@ function BlogPage() {
 
     const { data, error } = await supabase
       .from("blog_posts")
-      .select(
-        `
-          id,
-          title,
-          slug,
-          excerpt,
-          content,
-          featured_image,
-          category,
-          author_name,
-          status,
-          featured,
-          published_at,
-          created_at,
-          updated_at
-        `,
-      )
+      .select("id,title,slug,excerpt,content,featured_image,category,author_name,status,featured,published_at,created_at,updated_at")
       .eq("status", "published")
       .not("published_at", "is", null)
       .lte("published_at", new Date().toISOString())

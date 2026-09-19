@@ -353,9 +353,9 @@ export function MembershipCard({
         size="lg"
         className="mt-auto"
       >
-        <Link to={`/join?plan=${plan.id}`}>
+        <a href={`/join?plan=${encodeURIComponent(plan.id)}`}>
           Choose plan <ArrowRight />
-        </Link>
+        </a>
       </Button>
     </article>
   );

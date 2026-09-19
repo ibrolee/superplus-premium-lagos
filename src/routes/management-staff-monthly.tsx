@@ -87,7 +87,7 @@ function MonthlyStaffAttendance() {
     }
     return staff.map((person) => {
       const dates = grouped.get(person.id) || new Map<string, StaffScan[]>();
-      const days: Day[] = Array.from(dates, ([date, rows]) => ({ date, firstIn: rows[0].checked_in_at, scans: rows, late: isLateArrival(person.full_name, date, rows[0].checked_in_at) })).sort((a, b) => b.date.localeCompare(a.date));
+      const days: Day[] = Array.from(dates, ([date, rows]) => ({ date, firstIn: rows[0]!.checked_in_at, scans: rows, late: isLateArrival(person.full_name, date, rows[0]!.checked_in_at) })).sort((a, b) => b.date.localeCompare(a.date));
       const total = recordedWorkMinutes(days.flatMap((day) => day.scans));
       return { staff: person, days, late: days.filter((day) => day.late).length, minutes: total.minutes, completed: total.completed, open: total.open, invalid: total.invalid, overlapping: total.overlapping };
     }).sort((a, b) => (a.staff.full_name || "").localeCompare(b.staff.full_name || ""));

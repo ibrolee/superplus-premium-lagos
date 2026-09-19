@@ -60,7 +60,7 @@ async function fetchRevenue(today: string): Promise<Revenue> {
     const batch = (data || []) as Payment[];
     for (const payment of batch) {
       const when = payment.paid_at || payment.created_at;
-      if (payment.status?.toLowerCase() !== "success" || payment.metadata?.revenue_excluded === true || payment.metadata?.record_type === "historical_import" || !when || Date.parse(when) < cutoff) continue;
+      if (payment.status?.toLowerCase() !== "success" || payment.metadata?.["revenue_excluded"] === true || payment.metadata?.["record_type"] === "historical_import" || !when || Date.parse(when) < cutoff) continue;
       const amount = Number(payment.amount);
       if (!Number.isFinite(amount)) continue;
       total += amount;

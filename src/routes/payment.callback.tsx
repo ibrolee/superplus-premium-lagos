@@ -161,9 +161,9 @@ function PaymentCallback() {
     if (parts.length !== 3) return value;
 
     const date = new Date(
-      parts[0],
-      parts[1] - 1,
-      parts[2],
+      parts[0]!,
+      parts[1]! - 1,
+      parts[2]!,
     );
 
     if (Number.isNaN(date.getTime())) {

@@ -74,8 +74,8 @@ function StaffAttendanceReview() {
       const rows = groups.get(person.id);
       if (!rows?.length) return [];
       const work = recordedWorkMinutes(rows);
-      const result: Review = { staff: person, scans: rows, firstIn: rows[0].checked_in_at, minutes: work.minutes,
-        late: isLateArrival(person.full_name, date, rows[0].checked_in_at), open: work.open, invalid: work.invalid,
+      const result: Review = { staff: person, scans: rows, firstIn: rows[0]!.checked_in_at, minutes: work.minutes,
+        late: isLateArrival(person.full_name, date, rows[0]!.checked_in_at), open: work.open, invalid: work.invalid,
         overlapping: work.overlapping, completed: work.completed };
       return [result];
     }).filter((item) => item.late || item.open || item.invalid || item.overlapping)
