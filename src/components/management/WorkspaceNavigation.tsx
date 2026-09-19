@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 /** Shared management navigation and a prominent shortcut on the original reception dashboard. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-dashboard";
-  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-payroll"].includes(pathname);
+  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-payroll", "/management-attendance-export"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +50,7 @@ export function WorkspaceNavigation() {
   if (management) {
     pages.push({ label: "Staff", href: "/management-staff", icon: Users });
     pages.push({ label: "Monthly staff", href: "/management-staff-monthly", icon: CalendarDays });
+    pages.push({ label: "Export attendance", href: "/management-attendance-export", icon: Download });
     pages.push({ label: "Salary records", href: "/management-payroll", icon: Wallet });
     pages.push({ label: "Revenue", href: "/management-revenue", icon: Wallet });
   }
