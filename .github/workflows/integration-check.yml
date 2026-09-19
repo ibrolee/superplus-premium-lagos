@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: integration-check-${{ github.ref }}
@@ -22,74 +22,8 @@ jobs:
       VITE_SUPABASE_URL: https://example.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-not-a-real-key
     steps:
-      - name: Checkout development branch only
+      - name: Checkout exact branch commit
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - name: One-time guarded receptionist payment-history source edit
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('src/routes/reception-member.$memberId.tsx')
-          source = path.read_text()
-          old = '''        supabase
-          .from("payments")
-          .select(
-            "id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at",
-          )
-          .eq("member_id", memberId)
-          .order("created_at", { ascending: false }),'''
-          new = '''        (async () => {
-          // Before the database cutover, the scoped function is absent.
-          // Fall back only for function-not-found; never mask permission errors.
-          const scoped = await supabase.rpc("reception_member_payment_history", {
-            p_member_id: memberId,
-          });
-
-          if (!scoped.error || !["PGRST202", "42883"].includes(scoped.error.code)) {
-            return scoped;
-          }
-
-          return supabase
-            .from("payments")
-            .select(
-              "id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at",
-            )
-            .eq("member_id", memberId)
-            .order("created_at", { ascending: false });
-        })(),'''
-          marker = '''      setMember(memberResult.data);
-      setMemberships(membershipsResult.data ?? []);
-      setPayments(paymentsResult.data ?? []);'''
-          guarded = '''      // Never silently show permission or query failures as zero payments.
-      if (paymentsResult.error) {
-        setError(`Unable to load payment history: ${paymentsResult.error.message}`);
-        setLoading(false);
-        return;
-      }
-
-      setMember(memberResult.data);
-      setMemberships(membershipsResult.data ?? []);
-      setPayments(paymentsResult.data ?? []);'''
-          if source.count(old) == 1 and source.count(marker) == 1 and 'reception_member_payment_history' not in source:
-              source = source.replace(old, new, 1).replace(marker, guarded, 1)
-              path.write_text(source)
-              print('Guarded frontend change prepared. No database accessed.')
-          elif source.count(old) == 0 and source.count(new) == 1 and source.count(guarded) == 1:
-              print('Frontend already updated; no modification needed.')
-          else:
-              raise SystemExit('Unexpected source state; no commit attempted.')
-          PY
-          git diff --check
-          git add -- 'src/routes/reception-member.$memberId.tsx'
-          if ! git diff --cached --quiet; then
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m 'Use scoped member payment history with safe pre-cutover fallback'
-            git push origin HEAD:refs/heads/integration/september-attendance-missed-scans
-          fi
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
       - name: Install immutable locked dependencies
@@ -107,6 +41,8 @@ jobs:
           if git diff --quiet -- src/routeTree.gen.ts; then
             exit 0
           fi
+          # The TanStack Vite plugin removes only its ten-line SSR registration footer.
+          # Reject any other generated route change, additions, or changed route entries.
           expected=$(printf '0\t10\tsrc/routeTree.gen.ts')
           actual=$(git diff --numstat -- src/routeTree.gen.ts)
           test "$actual" = "$expected"
