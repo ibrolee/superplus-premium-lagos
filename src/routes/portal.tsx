@@ -1,13 +1,21 @@
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, BriefcaseBusiness, ShieldCheck, UserRoundCheck } from "lucide-react";
 
-export const Route = createFileRoute("/portal")({ component: PortalDirectory });
+export const Route = createFileRoute("/portal")({ component: PortalLayout });
 
 const entries = [
   { name: "Staff", description: "Your employee login, application and individual staff profile.", to: "/portal/staff", icon: BriefcaseBusiness },
   { name: "Reception", description: "Sign in using the dedicated front-desk account to open Reception 2.0.", to: "/portal/reception", icon: UserRoundCheck },
   { name: "Admin", description: "Sign in using the dedicated administrator account for management tools.", to: "/portal/admin", icon: ShieldCheck },
 ] as const;
+
+function PortalLayout() {
+  const pathname = useRouterState({ select: state => state.location.pathname });
+  // TanStack's /portal/staff, /portal/reception and /portal/admin are nested under
+  // /portal. Without Outlet they match but the sign-in forms cannot render.
+  if (pathname.startsWith("/portal/")) return <Outlet />;
+  return <PortalDirectory />;
+}
 
 function PortalDirectory() {
   return <main className="min-h-[70vh] bg-[#f4f6f1] px-4 py-12 text-[#183125] sm:px-7 sm:py-20">
