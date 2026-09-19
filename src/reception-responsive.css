@@ -1,0 +1,48 @@
+/* Scoped to Reception 2.0 and its member/operations screens only. */
+html[data-spf-reception="true"] main,
+html[data-spf-reception="true"] main :is(section, article, aside, div, form, label) {
+  min-width: 0;
+}
+html[data-spf-reception="true"] main :is(input, select, textarea, img, svg) {
+  max-width: 100%;
+}
+html[data-spf-reception="true"] main :is(h1, h2, h3, p, span, strong, a, button, label) {
+  overflow-wrap: anywhere;
+}
+html[data-spf-reception="true"] main :is(a, button, input, select, textarea) {
+  box-sizing: border-box;
+}
+html[data-spf-reception="true"] main #member-profile-qr {
+  display: block;
+  width: min(260px, calc(100vw - 130px));
+  height: auto;
+  aspect-ratio: 1;
+}
+@media (max-width: 767px) {
+  /* Reception's prior horizontal tab strips hid actions off-screen. */
+  html[data-spf-reception="true"] nav[aria-label="Management navigation"],
+  html[data-spf-reception="true"] [aria-label="Filter members"],
+  html[data-spf-reception="true"] [aria-label="Attendance filters"] {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    white-space: normal;
+  }
+  html[data-spf-reception="true"] nav[aria-label="Management navigation"] > a,
+  html[data-spf-reception="true"] [aria-label="Filter members"] > button,
+  html[data-spf-reception="true"] [aria-label="Attendance filters"] > button {
+    flex-shrink: 1;
+  }
+  html[data-spf-reception="true"] main .truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+  }
+  html[data-spf-reception="true"] main .tracking-\[\.2em\] {
+    letter-spacing: 0.08em;
+  }
+}
+@media (min-width: 768px) {
+  html[data-spf-reception="true"] main #member-profile-qr {
+    width: 260px;
+  }
+}
