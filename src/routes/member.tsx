@@ -56,7 +56,7 @@ function addDays(value: string, days: number) {
   date.setDate(date.getDate() + days);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
-function getContinuousMembership(memberships: Membership[]) {
+function getContinuousMembership(memberships: Membership[]): Membership | null {
   if (!memberships.length) return null;
   const today = getLocalDateString();
   const normalized = memberships.map(item => ({ ...item, normalizedStart: dateOnly(item.start_date), normalizedEnd: dateOnly(item.end_date) }))
@@ -65,11 +65,11 @@ function getContinuousMembership(memberships: Membership[]) {
   if (!normalized.length) return null;
   const index = normalized.findIndex(item => String(item.normalizedStart) <= today && today <= String(item.normalizedEnd));
   if (index < 0) return [...normalized].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))[0] || null;
-  const current = normalized[index];
+  const current = normalized[index]!;
   let start = String(current.normalizedStart);
   let end = String(current.normalizedEnd);
   for (let i = index + 1; i < normalized.length; i++) {
-    const next = normalized[i];
+    const next = normalized[i]!;
     if (String(next.normalizedStart) <= addDays(end, 1)) {
       if (String(next.normalizedEnd) > end) end = String(next.normalizedEnd);
     } else break;
@@ -79,7 +79,7 @@ function getContinuousMembership(memberships: Membership[]) {
 function formatDate(value: string | null | undefined) {
   const date = dateOnly(value);
   if (!date) return "Not available";
-  const [year, month, day] = date.split("-").map(Number);
+  const [year = 0, month = 0, day = 0] = date.split("-").map(Number);
   const parsed = new Date(Date.UTC(year, month - 1, day, 12));
   return Number.isNaN(parsed.getTime()) ? "Not available" : new Intl.DateTimeFormat("en-NG", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(parsed);
 }
