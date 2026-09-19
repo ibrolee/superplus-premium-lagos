@@ -2,6 +2,9 @@
 -- Target Supabase project: sytcvezkryjcxwqdimuz ONLY.
 -- Never infer message delivery from a WhatsApp link click: a staff member must
 -- explicitly confirm after sending. This table does not alter existing records.
+-- Applied to production as member_reminder_send_status_20260919, followed by
+-- restrict_reminder_confirmations_to_insert_select_20260919 to override
+-- Supabase's existing default ALL grant on new tables.
 BEGIN;
 
 CREATE TABLE public.member_reminder_send_status (
@@ -29,7 +32,7 @@ CREATE POLICY "Reception can mark reminders sent"
   FOR INSERT TO authenticated
   WITH CHECK ((SELECT public.is_staff()) AND confirmed_by = (SELECT auth.uid()));
 
-REVOKE ALL ON public.member_reminder_send_status FROM PUBLIC, anon;
+REVOKE ALL ON public.member_reminder_send_status FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON public.member_reminder_send_status TO authenticated;
 
 COMMIT;
