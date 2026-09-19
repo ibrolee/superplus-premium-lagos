@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, ClipboardList, LayoutDashboard, ScanLine, Users, UserPlus, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 /** Shared navigation for the new workspace only; does not alter the legacy tools. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const inWorkspace = pathname === "/management-preview" || pathname === "/management-members" || pathname === "/management-attendance" || pathname === "/management-operations";
+  const inWorkspace = pathname === "/management-preview" || pathname === "/management-members" || pathname === "/management-attendance" || pathname === "/management-operations" || pathname === "/management-custom-plan";
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export function WorkspaceNavigation() {
     { label: "Members", href: "/management-members", icon: Users },
     { label: "Attendance", href: "/management-attendance", icon: Activity },
     { label: "Operations", href: "/management-operations", icon: ClipboardList },
+    { label: "Custom Plan", href: "/management-custom-plan", icon: CreditCard },
   ];
   return (
     <nav aria-label="Super Plus management workspace" className="relative z-20 border-b border-[#263d31] bg-[#152820] px-3 py-3 text-white sm:px-6">
