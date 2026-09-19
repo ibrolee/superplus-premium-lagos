@@ -46,7 +46,7 @@ jobs:
           expected=$(printf '0\t10\tsrc/routeTree.gen.ts')
           actual=$(git diff --numstat -- src/routeTree.gen.ts)
           test "$actual" = "$expected"
-          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq "-import type { getRouter } from './router.tsx'"
-          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq "-declare module '@tanstack/react-start' {"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-import type { getRouter } from './router.tsx'"
+          git diff --unified=0 -- src/routeTree.gen.ts | grep -Fq -- "-declare module '@tanstack/react-start' {"
       - name: Verify no other tracked source changes from the build
         run: git diff --exit-code -- . ':!bun.lock' ':!src/routeTree.gen.ts'
