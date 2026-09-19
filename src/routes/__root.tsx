@@ -10,6 +10,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/site";
 import { SiteMotion } from "@/components/site-motion";
+import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { Toaster } from "@/components/ui/sonner";
 
 import appCss from "../styles.css?url";
@@ -161,66 +162,23 @@ export const Route =
             "Super Plus Fitness & Spa is a modern gym, spa and wellness centre in Shomolu, Lagos. Gym memberships, personal training, spa, massage and recovery services.",
         },
 
-        {
-          name: "author",
-          content: "Super Plus Fitness & Spa",
-        },
-
-        {
-          name: "robots",
-          content: "index, follow",
-        },
-
-        {
-          name: "google-site-verification",
-          content: "dvLoiUjionw-0ABS1gIa7Fd0cPzWNVOPn4SiPTT8dfw",
-        },
-
-        {
-          property: "og:title",
-          content:
-            "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
-        },
-
-        {
-          property: "og:description",
-          content:
-            "A modern gym, spa and wellness centre in Shomolu, Lagos offering gym memberships, personal training, spa, massage and recovery services.",
-        },
-
+        { name: "author", content: "Super Plus Fitness & Spa" },
+        { name: "robots", content: "index, follow" },
+        { name: "google-site-verification", content: "dvLoiUjionw-0ABS1gIa7Fd0cPzWNVOPn4SiPTT8dfw" },
+        { property: "og:title", content: "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos" },
+        { property: "og:description", content: "A modern gym, spa and wellness centre in Shomolu, Lagos offering gym memberships, personal training, spa, massage and recovery services." },
         { property: "og:type", content: "website" },
-
         { property: "og:site_name", content: "Super Plus Fitness & Spa" },
-
         { name: "twitter:card", content: "summary_large_image" },
-
-        {
-          name: "twitter:title",
-          content:
-            "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos",
-        },
-
-        {
-          name: "twitter:description",
-          content:
-            "Modern gym, spa and wellness centre in Shomolu, Lagos. Memberships, personal training, massage and recovery services.",
-        },
+        { name: "twitter:title", content: "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos" },
+        { name: "twitter:description", content: "Modern gym, spa and wellness centre in Shomolu, Lagos. Memberships, personal training, massage and recovery services." },
       ],
-
       links: [
         { rel: "canonical", href: "https://www.superplusfitness.com/" },
         { rel: "stylesheet", href: appCss },
         { rel: "preconnect", href: "https://fonts.googleapis.com" },
-        {
-          rel: "preconnect",
-          href: "https://fonts.gstatic.com",
-          crossOrigin: "anonymous",
-        },
-        {
-          rel: "stylesheet",
-          href:
-            "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap",
-        },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" },
         { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
       ],
     }),
@@ -235,10 +193,7 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       </head>
       <body>
         {children}
@@ -255,6 +210,7 @@ function RootComponent() {
       <UtilityBar />
       <Navbar />
       <SiteMotion />
+      <WorkspaceNavigation />
       <Outlet />
       <Footer />
       <Toaster position="top-center" richColors />
