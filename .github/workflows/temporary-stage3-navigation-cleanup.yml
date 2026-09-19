@@ -1,60 +1,47 @@
 name: One-time Stage 3 reception navigation cleanup
-
 on:
   push:
-    branches:
-      - fix/stage3-retired-reception-links
-
+    branches: [fix/stage3-retired-reception-links]
 permissions:
   contents: write
-
 jobs:
   update-navigation:
     if: github.repository == 'ibrolee/superplus-premium-lagos'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout exact cleanup branch
+      - name: Checkout cleanup branch
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - name: Apply strictly scoped replacements and verify no stale UI destinations
+      - name: Update only retired navigation links
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
 
-          def edit(filename, replacements):
-              path = Path(filename)
-              text = path.read_text(encoding='utf-8')
-              for old, new, expected in replacements:
-                  actual = text.count(old)
-                  if actual != expected:
-                      raise RuntimeError(f'{filename}: expected {expected} occurrence(s) of {old!r}, got {actual}; refusing to modify')
-                  text = text.replace(old, new)
-              if '/reception-dashboard' in text:
-                  raise RuntimeError(f'{filename}: old dashboard URL still occurs; refusing to commit')
-              path.write_text(text, encoding='utf-8')
-              print(f'Updated {filename}')
+          def edit(file, changes):
+              p = Path(file)
+              s = p.read_text(encoding='utf-8')
+              for old, new, n in changes:
+                  if s.count(old) != n:
+                      raise RuntimeError(f'{file}: expected {n} matches, found {s.count(old)} for {old!r}')
+                  s = s.replace(old, new)
+              if '/reception-dashboard' in s:
+                  raise RuntimeError(f'{file}: stale URL remains')
+              p.write_text(s, encoding='utf-8')
+              print(f'Updated {file}')
 
-          mobile = '\n'.join([
-              '            <Link',
-              '              to="/reception-dashboard"',
-              '              onClick={() => setOpen(false)}',
-              '              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"',
-              '            >',
-              '              Reception Dashboard',
-              '            </Link>',
-              '',
-              '            <Link',
-              '              to="/staff"',
-              '              onClick={() => setOpen(false)}',
-              '              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"',
-              '            >',
-              '              Staff Portal',
-              '            </Link>',
-          ]) + '\n\n'
+          site = Path('src/components/site.tsx')
+          text = site.read_text(encoding='utf-8')
+          start = '            <Link\n              to="/reception-dashboard"'
+          stop = '            <Button\n              asChild'
+          if text.count(start) != 1:
+              raise RuntimeError('Expected exactly one old mobile reception link')
+          a = text.index(start)
+          b = text.index(stop, a)
+          if text[a:b].count('to="/staff"') != 1:
+              raise RuntimeError('Mobile staff link mismatch')
+          text = text[:a] + text[b:]
           footer = '\n'.join([
               '              {',
               '                label: "Reception Dashboard",',
@@ -62,11 +49,26 @@ jobs:
               '              },',
               '              { label: "Staff Portal", to: "/staff" },',
           ])
-          edit('src/components/site.tsx', [
-              (mobile, '', 1),
-              (footer, '              { label: "Portal", to: "/portal" },', 1),
-              ('title="Member & Staff"', 'title="Member & Portal"', 1),
+          if text.count(footer) != 1:
+              raise RuntimeError('Footer legacy links changed unexpectedly')
+          text = text.replace(footer, '              { label: "Portal", to: "/portal" },')
+          utility = '\n'.join([
+              '        <Link to="/reception-dashboard">',
+              '          Reception Dashboard',
+              '        </Link>',
+              '        <Link to="/staff">Staff Portal</Link>',
           ])
+          if text.count(utility) != 1:
+              raise RuntimeError('Utility-bar legacy links changed unexpectedly')
+          text = text.replace(utility, '        <Link to="/portal">Portal</Link>')
+          if text.count('title="Member & Staff"') != 1:
+              raise RuntimeError('Footer title changed unexpectedly')
+          text = text.replace('title="Member & Staff"', 'title="Member & Portal"')
+          if '/reception-dashboard' in text:
+              raise RuntimeError('Additional legacy URL remains in site component')
+          site.write_text(text, encoding='utf-8')
+          print('Updated src/components/site.tsx')
+
           edit('src/routes/management-members.tsx', [
               ('href="/reception-dashboard">Open full member tools', 'href="/reception-workspace">Open Reception 2.0', 1),
               ('href="/reception-dashboard"', 'href="/management-standard-plan"', 2),
@@ -90,21 +92,18 @@ jobs:
               ('href="/reception-dashboard"', 'href="/reception-workspace"', 1),
               ('/> Reception Dashboard</a>', '/> Reception 2.0</a>', 1),
           ])
-
           excluded = {'src/routes/reception-dashboard.tsx', 'src/routeTree.gen.ts', 'src/components/reception/ReceptionRouteGate.tsx'}
           for path in Path('src').rglob('*.tsx'):
-              if str(path) in excluded:
-                  continue
-              if '/reception-dashboard' in path.read_text(encoding='utf-8'):
-                  raise RuntimeError(f'Old dashboard link remains in {path}; refusing to commit')
-          print('All retired reception links removed from active TSX source; legacy redirect and route guard retained.')
+              if str(path) not in excluded and '/reception-dashboard' in path.read_text(encoding='utf-8'):
+                  raise RuntimeError(f'Unexpected stale link in {path}')
+          print('Verified: only legacy redirect and access gate retain retired URL')
           PY
-      - name: Commit only six navigation files; remove one-time workflow from branch
+      - name: Commit six files and remove temporary workflow
         shell: bash
         run: |
           set -euo pipefail
           git add -- src/components/site.tsx src/routes/management-members.tsx src/routes/management-preview.tsx src/routes/reception-checkin.tsx 'src/routes/reception-member.$memberId.tsx' src/routes/management-communications.tsx
           git rm -- .github/workflows/temporary-stage3-navigation-cleanup.yml
           git diff --cached --check
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Clean all retired reception links and preserve legacy redirect'
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Clean retired reception links and preserve legacy redirect'
           git push origin HEAD:refs/heads/fix/stage3-retired-reception-links
