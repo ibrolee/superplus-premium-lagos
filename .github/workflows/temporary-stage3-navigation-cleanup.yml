@@ -94,17 +94,23 @@ jobs:
               ('href="/reception-dashboard"', 'href="/reception-workspace"', 1),
               ('/> Reception Dashboard</a>', '/> Reception 2.0</a>', 1),
           ])
+          edit('src/routes/management-standard-plan.tsx', [
+              ('href="/reception-dashboard"', 'href="/reception-workspace"', 1),
+              ('Original Reception Dashboard →', 'Reception 2.0 →', 1),
+              ('Use the existing Reception Dashboard.', 'Ask management to check the plan setup.', 1),
+              ('Match their names and prices to the existing reception dashboard.', 'Match their names and prices to the approved reception configuration.', 1),
+          ])
           excluded = {'src/routes/reception-dashboard.tsx', 'src/routeTree.gen.ts', 'src/components/reception/ReceptionRouteGate.tsx'}
-          for path in Path('src').rglob('*.tsx'):
-              if str(path) not in excluded and '/reception-dashboard' in path.read_text(encoding='utf-8'):
-                  raise RuntimeError(f'Unexpected stale link in {path}')
+          remaining = [str(path) for path in Path('src').rglob('*.tsx') if str(path) not in excluded and '/reception-dashboard' in path.read_text(encoding='utf-8')]
+          if remaining:
+              raise RuntimeError(f'Unexpected stale links remain in: {remaining}')
           print('Verified: only legacy redirect and access gate retain retired URL')
           PY
-      - name: Commit six files and remove temporary workflow
+      - name: Commit seven files and remove temporary workflow
         shell: bash
         run: |
           set -euo pipefail
-          git add -- src/components/site.tsx src/routes/management-members.tsx src/routes/management-preview.tsx src/routes/reception-checkin.tsx 'src/routes/reception-member.$memberId.tsx' src/routes/management-communications.tsx
+          git add -- src/components/site.tsx src/routes/management-members.tsx src/routes/management-preview.tsx src/routes/reception-checkin.tsx 'src/routes/reception-member.$memberId.tsx' src/routes/management-communications.tsx src/routes/management-standard-plan.tsx
           git rm -- .github/workflows/temporary-stage3-navigation-cleanup.yml
           git diff --cached --check
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Clean retired reception links and preserve legacy redirect'
