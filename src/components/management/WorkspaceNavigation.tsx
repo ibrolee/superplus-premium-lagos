@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, Cake, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 /** Shared management navigation and a prominent shortcut on the original reception dashboard. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-dashboard";
-  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff"].includes(pathname);
+  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,6 +49,7 @@ export function WorkspaceNavigation() {
   ];
   if (management) {
     pages.push({ label: "Staff", href: "/management-staff", icon: Users });
+    pages.push({ label: "Monthly staff", href: "/management-staff-monthly", icon: CalendarDays });
     pages.push({ label: "Revenue", href: "/management-revenue", icon: Wallet });
   }
   return (
