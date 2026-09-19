@@ -9,7 +9,7 @@ type Member = { id: string; full_name: string | null; phone: string | null };
 type Receipt = { id: string; name: string; plan: string; total: number; end: string };
 
 // These two plans are for reception only, never for the public pricing page.
-// Match their names and prices to the existing reception dashboard.
+// Match their names and prices to the approved reception configuration.
 const receptionPlans = [
   ...membershipPlans,
   { id: "personal-training-only", name: "Personal Training Only", price: 30000, registration: 0 },
@@ -138,7 +138,7 @@ function StandardPlan() {
         if (!member) throw Error("Choose a member first.");
         const { data: dbPlan, error: planError } = await supabase.from("membership_plans").select("id,name").eq("name", plan.name).maybeSingle();
         if (planError) throw planError;
-        if (!dbPlan) throw Error(`${plan.name} was not found in the database. Use the existing Reception Dashboard.`);
+        if (!dbPlan) throw Error(`${plan.name} was not found in the database. Ask management to check the plan setup.`);
         const metadata = custom ? {
           plan_name: "Custom Plan", start_date: start, end_date: end, concurrent_membership: true,
           custom_plan: true, custom_days: duration, custom_price: amount,
@@ -194,7 +194,7 @@ function StandardPlan() {
           <p className="mt-3 text-xs text-[#637469]">If an error occurs after confirmation, check records before retrying to avoid duplicates. Never submit a test payment.</p>
         </form>
       </div>
-      <aside className="h-fit rounded-[24px] bg-[#1a3226] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.2em] text-[#b8ee73]">Transaction summary</p><h2 className="mt-3 text-2xl font-black">{plan.name}</h2><p className="mt-2 text-sm text-[#c2d0c4]">{end ? `${duration} days · expires ${end}` : "Enter a valid duration"}</p><div className="mt-6 space-y-4 border-t border-white/20 pt-5 text-sm"><p className="flex justify-between"><span>Membership</span><strong>{priceValid ? money(amount) : "Enter price"}</strong></p>{(mode === "new" || custom) && <p className="flex justify-between"><span>Registration</span><strong>{money(fee)}</strong></p>}<p className="flex justify-between border-t border-white/20 pt-4 text-lg font-black"><span>Total</span><span className="text-[#b8ee73]">{priceValid ? money(total) : "—"}</span></p></div><p className="mt-6 text-xs leading-6 text-[#c2d0c4]"><ShieldCheck className="mb-2 text-[#b8ee73]" size={19}/>Standard prices and reception-only options match the existing reception configuration. Custom amounts are entered by staff.</p><a href="/reception-dashboard" className="mt-4 inline-block text-xs font-bold text-[#b8ee73]">Original Reception Dashboard →</a></aside>
+      <aside className="h-fit rounded-[24px] bg-[#1a3226] p-6 text-white"><p className="text-xs font-black uppercase tracking-[.2em] text-[#b8ee73]">Transaction summary</p><h2 className="mt-3 text-2xl font-black">{plan.name}</h2><p className="mt-2 text-sm text-[#c2d0c4]">{end ? `${duration} days · expires ${end}` : "Enter a valid duration"}</p><div className="mt-6 space-y-4 border-t border-white/20 pt-5 text-sm"><p className="flex justify-between"><span>Membership</span><strong>{priceValid ? money(amount) : "Enter price"}</strong></p>{(mode === "new" || custom) && <p className="flex justify-between"><span>Registration</span><strong>{money(fee)}</strong></p>}<p className="flex justify-between border-t border-white/20 pt-4 text-lg font-black"><span>Total</span><span className="text-[#b8ee73]">{priceValid ? money(total) : "—"}</span></p></div><p className="mt-6 text-xs leading-6 text-[#c2d0c4]"><ShieldCheck className="mb-2 text-[#b8ee73]" size={19}/>Standard prices and reception-only options match the existing reception configuration. Custom amounts are entered by staff.</p><a href="/reception-workspace" className="mt-4 inline-block text-xs font-bold text-[#b8ee73]">Reception 2.0 →</a></aside>
       </div>
     </>}
     {authorized && receipt && <section role="status" className="mt-8 rounded-[24px] bg-white p-8"><CheckCircle2 size={40} className="text-[#378246]"/><h2 className="mt-4 text-2xl font-black">Membership and payment recorded</h2><p className="mt-2 text-sm text-[#637469]">{receipt.name} · {receipt.plan} · expiry {receipt.end}</p><p className="mt-4 text-3xl font-black">{money(receipt.total)}</p><p className="mt-3 text-xs text-[#637469]">Do not repeat this payment.</p><a href={`/reception-member/${receipt.id}`} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#193d2b] px-5 py-3 text-sm font-bold text-white">Open member profile <ArrowRight size={16}/></a></section>}

@@ -623,7 +623,7 @@ function ReceptionCheckInPage() {
 
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Link
-                to="/reception-dashboard"
+                to="/reception-workspace"
                 className="w-full sm:w-auto"
               >
                 <Button
@@ -631,7 +631,7 @@ function ReceptionCheckInPage() {
                   className="w-full"
                 >
                   <BarChart3 />
-                  Dashboard
+                  Reception 2.0
                 </Button>
               </Link>
 
