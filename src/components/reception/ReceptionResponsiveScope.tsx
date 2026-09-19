@@ -1,5 +1,7 @@
 import { useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
+import "@/reception-responsive.css";
+
 const routes = new Set([
   "/reception-workspace", "/reception-checkin", "/management-members", "/management-profiles", "/management-attendance", "/management-operations", "/management-standard-plan", "/management-custom-plan", "/management-communications", "/management-preview",
 ]);
