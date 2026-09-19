@@ -37,6 +37,17 @@ jobs:
           p.write_text(content.replace(old, "exact(\"src/routes/reception-dashboard.tsx\", 'selectedAddMembershipPlan.name', 'selectedAddMembershipPlan!.name', 6)"))
           PY
           python3 scripts/integration-type-fixes.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/routes/reception-dashboard.tsx')
+          s = p.read_text()
+          for result in ('attendanceResult', 'monthlyAttendanceResult'):
+              old = f'({result}.data || []) as Attendance[]'
+              new = f'({result}.data || []).map((record) => ({{ ...record, member: Array.isArray(record.member) ? record.member[0] ?? null : record.member }})) as Attendance[]'
+              assert s.count(old) == 1, (result, s.count(old))
+              s = s.replace(old, new)
+          p.write_text(s)
+          PY
       - name: Full client, SSR and server build without deployment
         run: bun run build
       - name: Strict TypeScript compilation check
