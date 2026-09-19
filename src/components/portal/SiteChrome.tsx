@@ -7,6 +7,7 @@ import { Logo } from "@/components/site";
 import { contact, navItems } from "@/lib/site-data";
 
 const links = [...navItems, { label: "Portal", to: "/portal" }] as const;
+const headerLogo = "/header-logo-colour.svg";
 
 export function UtilityBar() {
   return <div className="hidden bg-secondary py-2 text-secondary-foreground md:block"><div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase"><Link to="/login">Member login</Link><Link to="/my-qr">My QR Code</Link><Link to="/portal">Portal</Link></div></div>;
@@ -15,10 +16,52 @@ export function UtilityBar() {
 export function Navbar() {
   const pathname = useRouterState({ select: state => state.location.pathname });
   const [open, setOpen] = useState(false);
-  return <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur"><div className="section-shell grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_1fr_auto]"><Logo />
-    <nav className="hidden justify-center gap-5 lg:flex" aria-label="Main navigation">{links.map(item => <Link key={item.to} to={item.to} className={`text-[11px] font-bold uppercase transition-colors hover:text-primary ${pathname === item.to ? "text-primary" : "text-foreground"}`}>{item.label}</Link>)}</nav>
-    <div className="flex items-center gap-2"><Button asChild size="lg" className="hidden sm:inline-flex"><Link to="/join">Join now</Link></Button><Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Open menu"><Menu /></Button></SheetTrigger><SheetContent side="right" className="h-[100dvh] w-[82vw] max-w-sm overflow-y-auto bg-secondary p-0 text-secondary-foreground"><SheetTitle className="sr-only">Navigation</SheetTitle><div className="flex min-h-[100dvh] flex-col px-5 py-4"><div className="flex items-center justify-between"><Link to="/" onClick={() => setOpen(false)}><img src="/header-logo.png" alt="Super Plus Fitness" className="h-9 w-auto" /></Link><Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close menu"><X /></Button></div><nav aria-label="Mobile navigation" className="mt-5 flex flex-col">{links.map(item => <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className={`border-b border-primary-foreground/15 py-2 font-display text-[21px] font-bold uppercase leading-tight ${pathname === item.to ? "text-primary" : "hover:text-primary"}`}>{item.label}</Link>)}</nav><div className="mt-5 grid gap-3 text-sm font-bold uppercase"><Link to="/login" onClick={() => setOpen(false)}>Member login</Link><Link to="/my-qr" onClick={() => setOpen(false)}>My QR Code</Link><Button asChild size="lg"><Link to="/join" onClick={() => setOpen(false)}>Join now</Link></Button></div></div></SheetContent></Sheet></div>
-  </div></header>;
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur">
+      <div className="section-shell grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:h-16 xl:grid-cols-[auto_minmax(0,1fr)_auto]">
+        <Link to="/" aria-label="Super Plus Fitness home" className="flex min-w-0 items-center">
+          <img
+            src={headerLogo}
+            alt="Super Plus Fitness"
+            width={1030}
+            height={255}
+            className="block h-10 w-auto max-w-[min(52vw,190px)] object-contain sm:h-11 xl:h-12"
+          />
+        </Link>
+        <nav className="hidden min-w-0 justify-center gap-4 xl:flex" aria-label="Main navigation">
+          {links.map(item => <Link key={item.to} to={item.to} className={`whitespace-nowrap text-[11px] font-bold uppercase transition-colors hover:text-primary ${pathname === item.to ? "text-primary" : "text-foreground"}`}>{item.label}</Link>)}
+        </nav>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button asChild size="lg" className="hidden sm:inline-flex"><Link to="/join">Join now</Link></Button>
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="size-10 shrink-0 xl:hidden" aria-label="Open menu"><Menu /></Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="h-[100dvh] w-[82vw] max-w-sm overflow-y-auto bg-secondary p-0 text-secondary-foreground">
+              <SheetTitle className="sr-only">Navigation</SheetTitle>
+              <div className="flex min-h-[100dvh] flex-col px-5 py-4">
+                <div className="flex items-center justify-between gap-2">
+                  <Link to="/" onClick={() => setOpen(false)} aria-label="Super Plus Fitness home" className="rounded-sm bg-white px-2 py-1">
+                    <img src={headerLogo} alt="Super Plus Fitness" width={1030} height={255} className="block h-8 w-auto max-w-[44vw] object-contain" />
+                  </Link>
+                  <Button variant="ghost" size="icon" onClick={() => setOpen(false)} aria-label="Close menu"><X /></Button>
+                </div>
+                <nav aria-label="Mobile navigation" className="mt-5 flex flex-col">
+                  {links.map(item => <Link key={item.to} to={item.to} onClick={() => setOpen(false)} className={`border-b border-primary-foreground/15 py-2 font-display text-[21px] font-bold uppercase leading-tight ${pathname === item.to ? "text-primary" : "hover:text-primary"}`}>{item.label}</Link>)}
+                </nav>
+                <div className="mt-5 grid gap-3 text-sm font-bold uppercase">
+                  <Link to="/login" onClick={() => setOpen(false)}>Member login</Link>
+                  <Link to="/my-qr" onClick={() => setOpen(false)}>My QR Code</Link>
+                  <Button asChild size="lg"><Link to="/join" onClick={() => setOpen(false)}>Join now</Link></Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+  );
 }
 
 export function Footer() {
