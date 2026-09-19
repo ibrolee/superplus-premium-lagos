@@ -17,6 +17,7 @@ const actions: Action[] = [
   { label: "Birthdays and reminders", href: "/management-communications", description: "Send WhatsApp birthday and expiry messages", keywords: "birthday reminder whatsapp", reception: true },
   { label: "Staff directory", href: "/management-staff", description: "Staff profiles", keywords: "team employees", management: true },
   { label: "Monthly staff report", href: "/management-staff-monthly", description: "Attendance and work hours", keywords: "late shift punctuality", management: true },
+  { label: "Review QR exceptions", href: "/management-staff-review", description: "Find late, open, overlapping and invalid staff clock-ins", keywords: "attendance anomaly duplicates missing checkout clockout correction review", management: true },
   { label: "Export attendance", href: "/management-attendance-export", description: "Download attendance CSV", keywords: "staff spreadsheet", management: true },
   { label: "Salary records", href: "/management-payroll", description: "Recorded payroll entries", keywords: "salary wages payment", management: true },
   { label: "Export salaries", href: "/management-payroll-export", description: "Download salary CSV", keywords: "payroll spreadsheet", management: true },
