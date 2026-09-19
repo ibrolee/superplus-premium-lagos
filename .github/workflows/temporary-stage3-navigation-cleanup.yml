@@ -1,0 +1,108 @@
+name: One-time Stage 3 reception navigation cleanup
+
+on:
+  push:
+    branches:
+      - fix/stage3-retired-reception-links
+
+permissions:
+  contents: write
+
+jobs:
+  update-navigation:
+    if: github.repository == 'ibrolee/superplus-premium-lagos'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact cleanup branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Apply strictly scoped replacements and verify no stale UI destinations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def edit(filename, replacements):
+              path = Path(filename)
+              text = path.read_text(encoding='utf-8')
+              for old, new, expected in replacements:
+                  actual = text.count(old)
+                  if actual != expected:
+                      raise RuntimeError(f'{filename}: expected {expected} occurrence(s) of {old!r}, got {actual}; refusing to modify')
+                  text = text.replace(old, new)
+              if '/reception-dashboard' in text:
+                  raise RuntimeError(f'{filename}: old dashboard URL still occurs; refusing to commit')
+              path.write_text(text, encoding='utf-8')
+              print(f'Updated {filename}')
+
+          link = '''            <Link
+              to="/reception-dashboard"
+              onClick={() => setOpen(false)}
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
+            >
+              Reception Dashboard
+            </Link>
+
+            <Link
+              to="/staff"
+              onClick={() => setOpen(false)}
+              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
+            >
+              Staff Portal
+            </Link>
+
+'''
+          footer = '''              {
+                label: "Reception Dashboard",
+                to: "/reception-dashboard",
+              },
+              { label: "Staff Portal", to: "/staff" },'''
+          edit('src/components/site.tsx', [
+              (link, '', 1),
+              (footer, '              { label: "Portal", to: "/portal" },', 1),
+              ('title="Member & Staff"', 'title="Member & Portal"', 1),
+          ])
+          edit('src/routes/management-members.tsx', [
+              ('href="/reception-dashboard">Open full member tools', 'href="/reception-workspace">Open Reception 2.0', 1),
+              ('href="/reception-dashboard"', 'href="/management-standard-plan"', 2),
+              ('Registration and payment changes remain in the existing dashboard.', 'Registration and payment changes use dedicated protected forms.', 1),
+              ('Read-only directory · edits and payments use the existing member tools.', 'Read-only directory · registrations and payments use dedicated protected tools.', 1),
+          ])
+          edit('src/routes/management-preview.tsx', [
+              ('href="/reception-dashboard" className="mt-8', 'href="/management-members" className="mt-8', 1),
+              ('href="/reception-dashboard" className="inline-flex', 'href="/reception-workspace" className="inline-flex', 1),
+              ('{ label: "Reception dashboard", desc: "Register & renew members", href: "/reception-dashboard", icon: UserPlus }', '{ label: "Register & renew", desc: "Register & renew members", href: "/management-standard-plan", icon: UserPlus }', 1),
+              ('Registration, scanning and payroll remain in your existing tools.', 'Registration, scanning and payroll are available through dedicated protected tools.', 1),
+          ])
+          edit('src/routes/reception-checkin.tsx', [
+              ('to="/reception-dashboard"', 'to="/reception-workspace"', 1),
+              ('\n                  Dashboard\n', '\n                  Reception 2.0\n', 1),
+          ])
+          edit('src/routes/reception-member.$memberId.tsx', [
+              ('window.location.href = "/reception-dashboard";', 'window.location.href = "/portal/reception";', 1),
+          ])
+          edit('src/routes/management-communications.tsx', [
+              ('href="/reception-dashboard"', 'href="/reception-workspace"', 1),
+              ('/> Reception Dashboard</a>', '/> Reception 2.0</a>', 1),
+          ])
+
+          excluded = {'src/routes/reception-dashboard.tsx', 'src/routeTree.gen.ts', 'src/components/reception/ReceptionRouteGate.tsx'}
+          for path in Path('src').rglob('*.tsx'):
+              if str(path) in excluded:
+                  continue
+              if '/reception-dashboard' in path.read_text(encoding='utf-8'):
+                  raise RuntimeError(f'Old dashboard link remains in {path}; refusing to commit')
+          print('All retired reception links removed from active TSX source; legacy redirect and route guard retained.')
+          PY
+      - name: Commit only six navigation files; remove one-time workflow from branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- src/components/site.tsx src/routes/management-members.tsx src/routes/management-preview.tsx src/routes/reception-checkin.tsx 'src/routes/reception-member.$memberId.tsx' src/routes/management-communications.tsx
+          git rm -- .github/workflows/temporary-stage3-navigation-cleanup.yml
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Clean all retired reception links and preserve legacy redirect'
+          git push origin HEAD:refs/heads/fix/stage3-retired-reception-links
