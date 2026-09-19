@@ -1,3 +1,4 @@
+import "@/components/reception/reception-responsive.css";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -498,7 +499,7 @@ function ReceptionCheckInPage() {
 
   if (checkingAccess) {
     return (
-      <main className="min-h-[75vh] bg-muted py-20">
+      <main className="reception-responsive min-h-[75vh] bg-muted py-20">
         <div className="section-shell flex min-h-[50vh] items-center justify-center">
           <div className="flex items-center gap-3 text-sm font-bold uppercase">
             <Loader2 className="size-5 animate-spin" />
@@ -511,7 +512,7 @@ function ReceptionCheckInPage() {
 
   if (!staffName) {
     return (
-      <main className="min-h-[75vh] bg-muted py-16 sm:py-24">
+      <main className="reception-responsive min-h-[75vh] bg-muted py-16 sm:py-24">
         <div className="section-shell flex min-h-[60vh] items-center justify-center">
           <div className="w-full max-w-md border border-border bg-background p-7 shadow-sm sm:p-10">
             <div className="mx-auto flex size-12 items-center justify-center bg-primary text-primary-foreground">
@@ -603,7 +604,7 @@ function ReceptionCheckInPage() {
   }
 
   return (
-    <main className="min-h-[75vh] bg-muted py-10 sm:py-16">
+    <main className="reception-responsive min-h-[75vh] bg-muted py-10 sm:py-16">
       <div className="section-shell">
         <div className="mx-auto max-w-3xl">
           <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -688,7 +689,7 @@ function ReceptionCheckInPage() {
               <>
                 <div
                   id="reception-qr-reader"
-                  className="overflow-hidden border border-border bg-white"
+                  className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-white"
                 />
 
                 {startingScanner && (
@@ -766,7 +767,7 @@ function ReceptionCheckInPage() {
                         : "Checked Out"}
                   </p>
 
-                  <h2 className="mt-2 font-display text-3xl font-bold uppercase">
+                  <h2 className="mt-2 break-words font-display text-3xl font-bold uppercase">
                     {result.memberName}
                   </h2>
 

@@ -1,3 +1,4 @@
+import "@/components/reception/reception-responsive.css";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Activity, ArrowLeft, ArrowRight, CalendarClock, CheckCircle2, ChevronLeft, ChevronRight, Loader2, RefreshCw, Search, ShieldCheck, UserPlus, Users, Wallet } from "lucide-react";
@@ -123,9 +124,9 @@ function ManagementMembers() {
   const visible = filtered.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
   const management = ["admin", "owner", "manager"].includes(role || "");
 
-  return <div className="min-h-screen bg-[#f4f6f1] text-[#16221c]">
-    <div className="mx-auto flex min-h-screen max-w-[1680px] flex-col lg:flex-row">
-      <aside className="border-b border-[#243b32] bg-[#152820] px-5 py-5 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:px-6 lg:py-8">
+  return <div className="reception-responsive min-h-screen bg-[#f4f6f1] text-[#16221c]">
+    <div className="mx-auto flex min-h-screen min-w-0 max-w-[1680px] flex-col lg:flex-row">
+      <aside className="min-w-0 border-b border-[#243b32] bg-[#152820] px-5 py-5 text-white lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-64 lg:flex-col lg:border-b-0 lg:px-6 lg:py-8">
         <a href="/management-preview" className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#b8ee73] font-black text-[#193327]">S+</div><div><p className="text-sm font-black tracking-wide">SUPER PLUS</p><p className="text-[10px] uppercase tracking-[.26em] text-[#b9c9be]">Fitness management</p></div></a>
         <p className="mt-7 hidden text-[10px] font-bold uppercase tracking-[.2em] text-[#96ad9b] lg:block">Workspace</p>
         <nav aria-label="Management navigation" className="mt-4 flex gap-2 overflow-x-auto pb-1 lg:flex-col lg:overflow-visible">
