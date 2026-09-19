@@ -9,7 +9,7 @@ export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-dashboard";
   const onStaff = ["/staff", "/staff-attendance", "/staff-admin", "/reception-checkin", "/staff-missed-scans"].includes(pathname);
-  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
+  const inWorkspace = onReception || onStaff || ["/reception-workspace", "/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -20,8 +20,7 @@ export function WorkspaceNavigation() {
       if (authError || !auth.user) return;
       const { data: staff, error: staffError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
       if (staffError || !staff?.active || cancelled) return;
-      const nextRole = String(staff.role || "").toLowerCase();
-      setRole(nextRole);
+      setRole(String(staff.role || "").toLowerCase());
     }
     void loadRole();
     return () => { cancelled = true; };
@@ -29,9 +28,10 @@ export function WorkspaceNavigation() {
   if (!inWorkspace) return null;
   const management = role === "admin";
   const reception = management || role === "reception";
-  if (onReception || onStaff) return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">Staff tools</span>{role && <ActionSearch role={role}/>}</div><div className="flex flex-wrap gap-2 text-xs font-bold"><a href="/staff-attendance" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Clock in / out</a><a href="/staff-missed-scans" aria-current={pathname === "/staff-missed-scans" ? "page" : undefined} className={`rounded-lg border px-3 py-2 ${pathname === "/staff-missed-scans" ? "border-[#b8ee73] bg-[#b8ee73] text-[#173326]" : "border-white/25 hover:bg-white/10"}`}>Missed scan / requests</a>{management && <a href="/management-staff-review" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">QR review</a>}{reception && <a href="/management-operations" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Operations</a>}{reception && <a href="/management-communications" className="inline-flex items-center gap-1 rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326] hover:bg-[#c9f69c]"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></a>}</div></div></nav>;
+  if (onReception || onStaff) return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">Staff tools</span>{role && <ActionSearch role={role}/>}</div><div className="flex flex-wrap gap-2 text-xs font-bold"><a href="/staff-attendance" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Clock in / out</a><a href="/staff-missed-scans" aria-current={pathname === "/staff-missed-scans" ? "page" : undefined} className={`rounded-lg border px-3 py-2 ${pathname === "/staff-missed-scans" ? "border-[#b8ee73] bg-[#b8ee73] text-[#173326]" : "border-white/25 hover:bg-white/10"}`}>Missed scan / requests</a>{management && <a href="/management-staff-review" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">QR review</a>}{reception && <a href="/reception-workspace" className="rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326] hover:bg-[#c9f69c]">Reception 2.0</a>}{reception && <a href="/management-operations" className="rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10">Operations</a>}{reception && <a href="/management-communications" className="inline-flex items-center gap-1 rounded-lg border border-white/25 px-3 py-2 hover:bg-white/10"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></a>}</div></div></nav>;
   if (!reception) return null;
   const pages = [
+    { label: "Reception 2.0", href: "/reception-workspace", icon: LayoutDashboard },
     { label: "Overview", href: "/management-preview", icon: LayoutDashboard },
     { label: "Members", href: "/management-members", icon: Users },
     { label: "Profiles", href: "/management-profiles", icon: UserRound },
