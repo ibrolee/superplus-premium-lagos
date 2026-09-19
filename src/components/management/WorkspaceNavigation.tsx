@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 /** Shared navigation for the new workspace only; legacy tools remain available. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const inWorkspace = ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan"].includes(pathname);
+  const inWorkspace = ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,6 +31,7 @@ export function WorkspaceNavigation() {
   const pages = [
     { label: "Overview", href: "/management-preview", icon: LayoutDashboard },
     { label: "Members", href: "/management-members", icon: Users },
+    { label: "Profiles", href: "/management-profiles", icon: UserRound },
     { label: "Attendance", href: "/management-attendance", icon: Activity },
     { label: "Operations", href: "/management-operations", icon: ClipboardList },
     { label: "Register / renew", href: "/management-standard-plan", icon: UserPlus },
