@@ -16,7 +16,6 @@ const actions: Action[] = [
   { label: "Staff clock in / out", href: "/staff-attendance", description: "Record your work attendance", keywords: "shift qr scan work time" },
   { label: "Report a missed scan", href: "/staff-missed-scans", description: "Explain a forgotten clock-in or clock-out and track management's decision", keywords: "missed scan forgotten correction request attendance" },
   { label: "Reception 2.0", href: "/reception-workspace", description: "Open the reception workspace and member search", keywords: "reception front desk member dashboard", reception: true },
-  { label: "Original reception dashboard", href: "/reception-dashboard", description: "Original reception and member tools", keywords: "member register renew manage membership", reception: true },
   { label: "Member QR scanner", href: "/reception-checkin", description: "Scan member check-ins", keywords: "camera entry exit attendance", reception: true },
   { label: "Dashboard overview", href: "/management-preview", description: "Gym management overview", keywords: "home statistics", reception: true },
   { label: "Find members", href: "/management-members", description: "Search the member directory", keywords: "member search status expiry", reception: true },
