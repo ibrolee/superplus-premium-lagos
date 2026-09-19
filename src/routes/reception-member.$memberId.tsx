@@ -227,7 +227,7 @@ function ReceptionMemberProfile() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        window.location.href = "/reception-dashboard";
+        window.location.href = "/portal/reception";
         return;
       }
 
@@ -429,10 +429,10 @@ function ReceptionMemberProfile() {
     return (
       <main className="min-h-screen bg-background p-6">
         <div className="mx-auto max-w-3xl">
-          <Link to="/reception-dashboard">
+          <Link to="/reception-workspace">
             <Button variant="ghost">
               <ArrowLeft />
-              Back to Dashboard
+              Back to Reception 2.0
             </Button>
           </Link>
 
@@ -459,10 +459,10 @@ function ReceptionMemberProfile() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
-        <Link to="/reception-dashboard">
+        <Link to="/reception-workspace">
           <Button variant="ghost" className="mb-6">
             <ArrowLeft />
-            Back to Dashboard
+            Back to Reception 2.0
           </Button>
         </Link>
 

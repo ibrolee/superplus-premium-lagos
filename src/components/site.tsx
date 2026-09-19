@@ -172,22 +172,6 @@ export function MobileNavbar() {
               My QR Code
             </Link>
 
-            <Link
-              to="/reception-dashboard"
-              onClick={() => setOpen(false)}
-              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
-            >
-              Reception Dashboard
-            </Link>
-
-            <Link
-              to="/staff"
-              onClick={() => setOpen(false)}
-              className="py-0.5 text-[13px] font-bold uppercase leading-5 hover:text-primary"
-            >
-              Staff Portal
-            </Link>
-
             <Button
               asChild
               size="lg"
@@ -689,15 +673,11 @@ export function Footer() {
           />
 
           <FooterLinks
-            title="Member & Staff"
+            title="Member & Portal"
             links={[
               { label: "Member Login", to: "/login" },
               { label: "My QR Code", to: "/my-qr" },
-              {
-                label: "Reception Dashboard",
-                to: "/reception-dashboard",
-              },
-              { label: "Staff Portal", to: "/staff" },
+              { label: "Portal", to: "/portal" },
             ]}
           />
 
@@ -799,10 +779,7 @@ export function UtilityBar() {
       <div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase">
         <Link to="/login">Member login</Link>
         <Link to="/my-qr">My QR Code</Link>
-        <Link to="/reception-dashboard">
-          Reception Dashboard
-        </Link>
-        <Link to="/staff">Staff Portal</Link>
+        <Link to="/portal">Portal</Link>
       </div>
     </div>
   );
