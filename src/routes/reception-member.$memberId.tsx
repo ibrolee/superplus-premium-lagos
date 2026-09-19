@@ -1,3 +1,4 @@
+import "@/components/reception/reception-responsive.css";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -427,7 +428,7 @@ function ReceptionMemberProfile() {
 
   if (error || !member) {
     return (
-      <main className="min-h-screen bg-background p-6">
+      <main className="reception-responsive min-h-screen bg-background p-4 sm:p-6">
         <div className="mx-auto max-w-3xl">
           <Link to="/reception-workspace">
             <Button variant="ghost">
@@ -457,7 +458,7 @@ function ReceptionMemberProfile() {
     : "Expired / Inactive";
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="reception-responsive min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
         <Link to="/reception-workspace">
           <Button variant="ghost" className="mb-6">
@@ -467,15 +468,15 @@ function ReceptionMemberProfile() {
         </Link>
 
         {/* HEADER */}
-        <section className="mb-6 border border-border bg-card p-6">
+        <section className="reception-profile-header mb-6 border border-border bg-card p-6">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <UserRound className="h-8 w-8" />
               </div>
 
-              <div>
-                <h1 className="font-display text-3xl font-black uppercase sm:text-4xl">
+              <div className="min-w-0 flex-1">
+                <h1 className="break-words font-display text-3xl font-black uppercase sm:text-4xl">
                   {member.full_name || "Member"}
                 </h1>
 
@@ -749,7 +750,7 @@ function ReceptionMemberProfile() {
                   Total Successful Payments
                 </p>
 
-                <p className="mt-1 font-display text-2xl font-black">
+                <p className="reception-money mt-1 break-words font-display text-2xl font-black">
                   {formatNaira(totalPaid)}
                 </p>
               </div>
@@ -906,9 +907,10 @@ function ReceptionMemberProfile() {
             <div className="flex flex-col items-center border-t border-border p-6">
               {member.qr_token ? (
                 <>
-                  <div className="rounded-xl bg-white p-5 shadow-sm">
+                  <div className="reception-profile-qr w-full max-w-[300px] rounded-xl bg-white p-5 shadow-sm">
                     <QRCodeSVG
                       id="member-profile-qr"
+                      className="block h-auto max-w-full"
                       value={member.qr_token}
                       size={260}
                       level="H"
