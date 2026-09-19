@@ -4,7 +4,6 @@ import { Activity, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, Credi
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-operations")({ component: ManagementOperations });
-
 type Access = { role: string; management: boolean };
 type Action = { label: string; description: string; href: string; icon: typeof Users; eyebrow: string };
 
@@ -12,52 +11,45 @@ function ManagementOperations() {
   const [access, setAccess] = useState<Access | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   useEffect(() => {
     let cancelled = false;
     async function checkAccess() {
       try {
         const { data: auth, error: authError } = await supabase.auth.getUser();
         if (authError || !auth.user) throw new Error("Sign in through the Staff Portal to open management operations.");
-        const { data: staff, error: staffError } = await supabase.from("staff_users")
-          .select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
+        const { data: staff, error: staffError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
         if (staffError) throw staffError;
         const role = String(staff?.role || "").toLowerCase();
-        if (!staff?.active || !["reception", "admin", "owner", "manager"].includes(role)) {
-          throw new Error("Only active reception and management accounts can access this workspace.");
-        }
+        if (!staff?.active || !["reception", "admin", "owner", "manager"].includes(role)) throw new Error("Only active reception and management accounts can access this workspace.");
         if (!cancelled) setAccess({ role, management: ["admin", "owner", "manager"].includes(role) });
-      } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to verify staff access.");
-      } finally { if (!cancelled) setLoading(false); }
+      } catch (cause) { if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to verify staff access."); }
+      finally { if (!cancelled) setLoading(false); }
     }
     void checkAccess();
     return () => { cancelled = true; };
   }, []);
-
   const dailyActions: Action[] = [
-    { label: "Register a member", description: "Create a member profile and complete the existing membership/payment flow.", href: "/reception-dashboard", icon: UserPlus, eyebrow: "Front desk" },
-    { label: "Renew or add a standard plan", description: "Open Reception, select a member and use Add Another Membership for the existing plans.", href: "/reception-dashboard", icon: CreditCard, eyebrow: "Memberships" },
-    { label: "Create a Custom Plan", description: "NEW: select an existing member, set days and price, optionally add ₦7,000 registration and confirm received POS or bank payment.", href: "/management-custom-plan", icon: CreditCard, eyebrow: "New membership form" },
+    { label: "Register a new member", description: "New workspace form: create a member and their first standard membership after confirming a real POS or bank transfer.", href: "/management-standard-plan", icon: UserPlus, eyebrow: "New registration" },
+    { label: "Add a standard plan", description: "New workspace form: find an existing member and create a separate standard membership. This does not extend an existing plan.", href: "/management-standard-plan", icon: CreditCard, eyebrow: "Existing members" },
+    { label: "Create a Custom Plan", description: "Choose an existing member, set days and price, optionally add ₦7,000 registration and confirm received payment.", href: "/management-custom-plan", icon: CreditCard, eyebrow: "Flexible membership" },
     { label: "Scan a member", description: "Open the working QR scanner for member check-in and check-out.", href: "/reception-checkin", icon: ScanLine, eyebrow: "Gym entrance" },
     { label: "Review member directory", description: "Search records, review plan status and open individual member profiles.", href: "/management-members", icon: Users, eyebrow: "Members" },
     { label: "View attendance", description: "Check visits, today's open check-ins and historical attendance by date.", href: "/management-attendance", icon: Activity, eyebrow: "Attendance" },
     { label: "Staff clock-in", description: "Open the existing protected staff QR clock-in and clock-out portal.", href: "/staff-attendance", icon: CalendarClock, eyebrow: "Staff" },
+    { label: "Original reception tools", description: "Continue to use the original dashboard for membership management, special plans and fallback registration.", href: "/reception-dashboard", icon: ClipboardList, eyebrow: "Existing system" },
   ];
   const managementActions: Action[] = [
     { label: "Staff and payroll", description: "Open existing administrator tools for staff, salary and attendance oversight.", href: "/staff-admin", icon: ShieldCheck, eyebrow: "Management only" },
-    { label: "Revenue report", description: "View existing revenue reports and their historical-import exclusions. No baseline changes.", href: "/staff-admin#revenue", icon: Wallet, eyebrow: "Management only" },
+    { label: "Revenue report", description: "View existing revenue reports and historical-import exclusions; financial baseline unchanged.", href: "/staff-admin#revenue", icon: Wallet, eyebrow: "Management only" },
   ];
-
   return <div className="min-h-screen bg-[#f4f6f1] text-[#16221c]"><div className="mx-auto max-w-[1440px] px-4 py-9 sm:px-8 lg:px-12 lg:py-12">
     <div className="flex flex-wrap items-start justify-between gap-5"><div><p className="text-xs font-black uppercase tracking-[.22em] text-[#5f7b68]">Super Plus / Management workspace</p><h1 className="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Your operations, in one place.</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#637469]">One clear starting point for reception, memberships, attendance and authorised management tools. Existing workflows stay available throughout the transition.</p></div><a href="/management-preview" className="inline-flex items-center gap-2 rounded-xl border border-[#ccd8cb] bg-white px-4 py-3 text-sm font-bold hover:border-[#72976f]"><LayoutDashboard size={17}/> Back to overview</a></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-7 text-sm text-[#617466]"><Loader2 size={20} className="animate-spin"/> Checking staff access…</div>}
     {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/staff" className="ml-1 font-bold underline">Go to staff login</a></div>}
-    {!loading && access && <>
-      <div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-[#dce9d7] bg-white px-5 py-4 text-sm"><span className="inline-flex items-center gap-2 rounded-full bg-[#edf6e7] px-3 py-1.5 font-bold capitalize text-[#32633c]"><CheckCircle2 size={16}/> {access.role} access</span><span className="text-[#657568]">Choose a tool below. The new Custom Plan form records payment only after staff confirmation.</span></div>
+    {!loading && access && <><div className="mt-8 flex flex-wrap items-center gap-3 rounded-2xl border border-[#dce9d7] bg-white px-5 py-4 text-sm"><span className="inline-flex items-center gap-2 rounded-full bg-[#edf6e7] px-3 py-1.5 font-bold capitalize text-[#32633c]"><CheckCircle2 size={16}/> {access.role} access</span><span className="text-[#657568]">Both standard and Custom Plan forms record payments only after staff confirms receipt.</span></div>
       <section aria-labelledby="daily-heading" className="mt-9"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#65905c]">Reception and operations</p><h2 id="daily-heading" className="mt-2 text-2xl font-black">Daily tools</h2></div><div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{dailyActions.map(({ label, description, href, icon: Icon, eyebrow }) => <a key={label} href={href} className="group flex min-h-48 flex-col rounded-[22px] border border-[#e1e8dd] bg-white p-6 shadow-[0_8px_30px_rgba(20,45,28,.035)] transition hover:-translate-y-0.5 hover:border-[#90b487] hover:shadow-lg"><div className="flex items-start justify-between"><span className="rounded-xl bg-[#edf6e7] p-3 text-[#3b6b38]"><Icon size={22}/></span><ArrowRight size={18} className="text-[#77907c] transition-transform group-hover:translate-x-1"/></div><p className="mt-5 text-[10px] font-black uppercase tracking-[.18em] text-[#65905c]">{eyebrow}</p><h3 className="mt-1 text-lg font-black">{label}</h3><p className="mt-2 text-sm leading-6 text-[#66766a]">{description}</p></a>)}</div></section>
       {access.management && <section aria-labelledby="admin-heading" className="mt-11"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#65905c]">Authorised management</p><h2 id="admin-heading" className="mt-2 text-2xl font-black">Staff and financial tools</h2></div><div className="mt-5 grid gap-4 md:grid-cols-2">{managementActions.map(({ label, description, href, icon: Icon, eyebrow }) => <a key={label} href={href} className="group flex items-start gap-4 rounded-[22px] bg-[#1a3226] p-6 text-white transition hover:bg-[#254332]"><span className="rounded-xl bg-[#b8ee73] p-3 text-[#193327]"><Icon size={21}/></span><span className="min-w-0 flex-1"><span className="text-[10px] font-bold uppercase tracking-[.16em] text-[#b8ee73]">{eyebrow}</span><span className="mt-1 block text-lg font-black">{label}</span><span className="mt-2 block text-sm leading-6 text-[#c2d0c4]">{description}</span></span><ArrowRight size={17} className="shrink-0 text-[#b8ee73] transition-transform group-hover:translate-x-1"/></a>)}</div></section>}
-      <div className="mt-11 rounded-2xl border border-[#dbe5d8] bg-[#eef5e9] p-5 text-sm leading-6 text-[#546c57]"><div className="flex items-start gap-3"><ClipboardList size={20} className="mt-0.5 shrink-0 text-[#32633c]"/><p><strong>About the transition:</strong> The new overview, member directory and attendance history remain read-only. The new Custom Plan form uses the existing payment-and-membership transaction. Standard registration, other plan changes, QR scanning, payroll and revenue reporting remain available in the original tools.</p></div></div>
+      <div className="mt-11 rounded-2xl border border-[#dbe5d8] bg-[#eef5e9] p-5 text-sm leading-6 text-[#546c57]"><div className="flex items-start gap-3"><ClipboardList size={20} className="mt-0.5 shrink-0 text-[#32633c]"/><p><strong>About the transition:</strong> Overview, member directory and attendance history remain read-only. Both new membership forms reuse existing payment/membership functions; the original reception tools, scanning, payroll and revenue reports remain unchanged. Never create a dummy paid membership on the live database.</p></div></div>
     </>}
   </div></div>;
 }
