@@ -5,6 +5,7 @@ import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
+import { ReceptionResponsiveScope } from "@/components/reception/ReceptionResponsiveScope";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -19,4 +20,4 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }), shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 function RootShell({ children }: { children: ReactNode }) { return <html lang="en"><head><HeadContent/><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}/></head><body>{children}<Scripts/></body></html>; }
-function RootComponent() { const { queryClient } = Route.useRouteContext(); return <QueryClientProvider client={queryClient}><UtilityBar/><Navbar/><SiteMotion/><WorkspaceNavigation/><ReceptionRouteGate/><Footer/><Toaster position="top-center" richColors/></QueryClientProvider>; }
+function RootComponent() { const { queryClient } = Route.useRouteContext(); return <QueryClientProvider client={queryClient}><UtilityBar/><Navbar/><SiteMotion/><ReceptionResponsiveScope/><WorkspaceNavigation/><ReceptionRouteGate/><Footer/><Toaster position="top-center" richColors/></QueryClientProvider>; }
