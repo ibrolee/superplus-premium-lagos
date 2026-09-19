@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Instagram, Menu } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/site";
@@ -16,6 +16,22 @@ export function UtilityBar() {
 export function Navbar() {
   const pathname = useRouterState({ select: state => state.location.pathname });
   const [open, setOpen] = useState(false);
+  // The protected reminders sections appear only after data loads; a normal URL hash can scroll too early.
+  useEffect(() => {
+    if (pathname !== "/management-communications") return;
+    const id = window.location.hash.slice(1);
+    if (id !== "birthday-messages" && id !== "renewal-messages") return;
+    const scrollToSection = () => {
+      const section = document.getElementById(id);
+      if (!section) return false;
+      window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top - 80, behavior: "auto" });
+      return true;
+    };
+    if (scrollToSection()) return;
+    const observer = new MutationObserver(() => { if (scrollToSection()) observer.disconnect(); });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pathname]);
   return <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur"><div className="section-shell grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:h-16 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
     <Link to="/" aria-label="Super Plus Fitness home" className="inline-flex min-w-0 items-center"><img src="/header-logo-colour.svg" alt="Super Plus Fitness" width={1030} height={255} className="block h-11 w-auto max-w-[46vw] object-contain sm:h-12 lg:h-10 lg:max-w-40 xl:h-12 xl:max-w-52" /></Link>
     <nav className="hidden justify-center gap-5 lg:flex" aria-label="Main navigation">{links.map(item => <Link key={item.to} to={item.to} className={`text-[11px] font-bold uppercase transition-colors hover:text-primary ${pathname === item.to ? "text-primary" : "text-foreground"}`}>{item.label}</Link>)}</nav>
