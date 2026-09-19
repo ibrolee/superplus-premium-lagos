@@ -4,9 +4,9 @@ import { ArrowRight, BriefcaseBusiness, ShieldCheck, UserRoundCheck } from "luci
 export const Route = createFileRoute("/portal")({ component: PortalDirectory });
 
 const entries = [
-  { name: "Staff", description: "Employee login, registration and staff profile.", to: "/staff", icon: BriefcaseBusiness },
-  { name: "Reception", description: "Front-desk workspace and member operations. Separate sign-in is coming in the next release.", to: "/reception-workspace", icon: UserRoundCheck },
-  { name: "Admin", description: "Management dashboard and staff administration. Separate sign-in is coming in the next release.", to: "/staff-admin", icon: ShieldCheck },
+  { name: "Staff", description: "Your employee login, application and individual staff profile.", to: "/portal/staff", icon: BriefcaseBusiness },
+  { name: "Reception", description: "Sign in using the dedicated front-desk account to open Reception 2.0.", to: "/portal/reception", icon: UserRoundCheck },
+  { name: "Admin", description: "Sign in using the dedicated administrator account for management tools.", to: "/portal/admin", icon: ShieldCheck },
 ] as const;
 
 function PortalDirectory() {
@@ -14,7 +14,7 @@ function PortalDirectory() {
     <div className="mx-auto max-w-5xl">
       <p className="text-xs font-black uppercase tracking-[.2em] text-[#4a7a4a]">Super Plus Fitness &amp; Spa</p>
       <h1 className="mt-3 text-4xl font-black sm:text-6xl">Choose your portal</h1>
-      <p className="mt-4 max-w-2xl text-sm leading-7 text-[#607366]">Choose your workspace. Existing account permissions remain unchanged during this first navigation update.</p>
+      <p className="mt-4 max-w-2xl text-sm leading-7 text-[#607366]">Each portal has its own sign-in page and verifies the account assigned to it. Choose the one that matches your role.</p>
       <div className="mt-9 grid gap-4 md:grid-cols-3">
         {entries.map(({ name, description, to, icon: Icon }) => <Link key={to} to={to} className="group flex min-w-0 flex-col rounded-3xl border border-[#d9e7d5] bg-white p-6 shadow-sm transition hover:border-[#6d9b6b] hover:shadow-md">
           <span className="flex size-12 items-center justify-center rounded-2xl bg-[#193b2a] text-[#b8ee73]"><Icon size={24} /></span>

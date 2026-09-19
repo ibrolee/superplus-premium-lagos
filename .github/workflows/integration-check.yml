@@ -37,12 +37,14 @@ jobs:
         run: bun run build
       - name: Strict TypeScript check
         run: bunx tsc --noEmit
-      - name: Verify generated route tree retains all existing routes and adds portal directory
+      - name: Verify generated route tree retains all existing routes and adds separate portals
         shell: bash
         run: |
           set -euo pipefail
           tree=src/routeTree.gen.ts
-          grep -Fq "from './routes/portal'" "$tree"
+          for route in portal portal.staff portal.reception portal.admin staff-reset-password; do
+            grep -Fq "from './routes/$route'" "$tree"
+          done
           git show HEAD:"$tree" | grep -E "^import .* from './routes/" | sort > /tmp/routes-before.txt
           grep -E "^import .* from './routes/" "$tree" | sort > /tmp/routes-after.txt
           if comm -23 /tmp/routes-before.txt /tmp/routes-after.txt | grep .; then
