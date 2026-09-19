@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useRouterState } from "@tanstack/react-router";
-import { Activity, ArrowUpRight, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, Cake, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-/** Shared navigation for the new workspace only; legacy tools remain available. */
+/** Shared management navigation and a prominent shortcut on the original reception dashboard. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const inWorkspace = ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles"].includes(pathname);
+  const onReception = pathname === "/reception-dashboard";
+  const inWorkspace = onReception || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,6 +28,14 @@ export function WorkspaceNavigation() {
   }, [inWorkspace]);
 
   if (!inWorkspace || !role) return null;
+  if (onReception) return (
+    <nav aria-label="Reception communications shortcut" className="border-b border-[#365139] bg-[#173326] px-4 py-3 text-white">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3"><Cake size={22} className="shrink-0 text-[#b8ee73]"/><div><p className="text-sm font-black">Birthday wishes & expiry reminders</p><p className="text-xs text-[#c4d6c4]">See today's birthdays and open personalised WhatsApp messages for members.</p></div></div>
+        <a href="/management-communications" className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#b8ee73] px-4 py-3 text-sm font-black text-[#173326] hover:bg-[#c9f69c]">Open WhatsApp reminders <ArrowUpRight size={16}/></a>
+      </div>
+    </nav>
+  );
   const management = ["admin", "owner", "manager"].includes(role);
   const pages = [
     { label: "Overview", href: "/management-preview", icon: LayoutDashboard },
@@ -36,6 +45,7 @@ export function WorkspaceNavigation() {
     { label: "Operations", href: "/management-operations", icon: ClipboardList },
     { label: "Register / renew", href: "/management-standard-plan", icon: UserPlus },
     { label: "Custom Plan", href: "/management-custom-plan", icon: CreditCard },
+    { label: "Birthdays & reminders", href: "/management-communications", icon: Cake },
   ];
   return (
     <nav aria-label="Super Plus management workspace" className="relative z-20 border-b border-[#263d31] bg-[#152820] px-3 py-3 text-white sm:px-6">
