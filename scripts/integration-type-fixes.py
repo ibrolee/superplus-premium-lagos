@@ -34,7 +34,7 @@ exact("src/components/site.tsx", '<Link to={`/join?plan=${plan.id}`}>', '<a href
 exact("src/components/site.tsx", 'Choose plan <ArrowRight />\n        </Link>', 'Choose plan <ArrowRight />\n        </a>')
 exact("src/lib/supabase.ts", 'import.meta.env.VITE_SUPABASE_URL', 'import.meta.env["VITE_SUPABASE_URL"]')
 exact("src/lib/supabase.ts", 'import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY', 'import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"]')
-regex("src/routes/blog.tsx", r'\.from\("blog_posts"\)\s*\.select\(\s*`\s*id,\s*title,\s*slug,\s*excerpt,\s*content,\s*featured_image,\s*category,\s*author_name,\s*status,\s*featured,\s*published_at,\s*created_at,\s*updated_at\s*`\s*\)', '.from("blog_posts")\n      .select("id,title,slug,excerpt,content,featured_image,category,author_name,status,featured,published_at,created_at,updated_at")')
+regex("src/routes/blog.tsx", r'\.from\("blog_posts"\)\s*\.select\(\s*`\s*id,\s*title,\s*slug,\s*excerpt,\s*content,\s*featured_image,\s*category,\s*author_name,\s*status,\s*featured,\s*published_at,\s*created_at,\s*updated_at\s*`\s*,?\s*\)', '.from("blog_posts")\n      .select("id,title,slug,excerpt,content,featured_image,category,author_name,status,featured,published_at,created_at,updated_at")')
 exact("src/routes/join.tsx", ') || membershipPlans[0],', ') || membershipPlans[0]!,')
 exact("src/routes/management-communications.tsx", '=> values[key]);', '=> values[key] ?? "");')
 for field in ["revenue_excluded", "record_type"]:
