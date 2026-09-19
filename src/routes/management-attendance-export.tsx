@@ -26,6 +26,18 @@ function lagosTime(iso: string | null) {
   if (!iso || !Number.isFinite(Date.parse(iso))) return "Not recorded";
   return new Intl.DateTimeFormat("en-GB", { timeZone: ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).format(new Date(iso));
 }
+/** Select the latest valid completed check-out by timestamp, not by clock-in order. */
+function latestCompletedClockOut(records: StaffScan[]): string | null {
+  let latest: string | null = null;
+  let latestTime = Number.NEGATIVE_INFINITY;
+  for (const scan of records) {
+    const start = Date.parse(scan.checked_in_at);
+    const end = scan.checked_out_at ? Date.parse(scan.checked_out_at) : NaN;
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) continue;
+    if (end > latestTime) { latestTime = end; latest = scan.checked_out_at; }
+  }
+  return latest;
+}
 async function fetchPages<T>(table: "staff_profiles" | "staff_attendance", select: string, month?: string): Promise<T[]> {
   const rows: T[] = [];
   for (let offset = 0; ; offset += BATCH) {
@@ -115,9 +127,9 @@ function AttendanceExport() {
     const rows: unknown[][] = [["Date (Lagos)", "Staff ID", "Staff name", "First clock-in (Lagos)", "Last completed clock-out (Lagos)", "Punctuality (recorded)", "Completed sessions", "Worked minutes (completed only)", "Worked time", "Open sessions", "Invalid sessions", "Review note"]];
     summaries.forEach(({ person, days }) => days.forEach(({ date, scans: records }) => {
       const stats = recordedWorkMinutes(records);
-      const lastCompleted = [...records].reverse().find((scan) => scan.checked_out_at && Number.isFinite(Date.parse(scan.checked_out_at)) && Date.parse(scan.checked_out_at) >= Date.parse(scan.checked_in_at));
+      const lastCompletedClockOut = latestCompletedClockOut(records);
       const punctuality = !lateRuleApplies(person.full_name, date) ? "Exempt / Sunday" : isLateArrival(person.full_name, date, records[0]?.checked_in_at || null) ? "Late" : "On time";
-      rows.push([date, person.staff_id || "", person.full_name || "", lagosTime(records[0]?.checked_in_at || null), lagosTime(lastCompleted?.checked_out_at || null), punctuality, stats.completed, stats.minutes, workDuration(stats.minutes), stats.open, stats.invalid, stats.open || stats.invalid ? "Review open/invalid sessions; not a payroll determination" : "Recorded QR sessions only"]);
+      rows.push([date, person.staff_id || "", person.full_name || "", lagosTime(records[0]?.checked_in_at || null), lagosTime(lastCompletedClockOut), punctuality, stats.completed, stats.minutes, workDuration(stats.minutes), stats.open, stats.invalid, stats.open || stats.invalid || stats.overlapping ? "Review open/invalid/overlapping sessions; not a payroll determination" : "Recorded QR sessions only"]);
     }));
     saveCsv(`superplus-staff-daily-breakdown-${month}.csv`, rows);
   }
@@ -125,7 +137,7 @@ function AttendanceExport() {
   const late = summaries.reduce((count, summary) => count + summary.late, 0);
   return <main className="min-h-screen bg-[#f4f6f1] px-4 py-9 text-[#16221c] sm:px-8"><div className="mx-auto max-w-5xl">
     <a href="/management-staff-monthly" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={16}/> Monthly attendance report</a>
-    <div className="mt-7 flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Attendance exports</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Download monthly QR attendance summaries and daily work-time details as CSV files for management review.</p></div><button type="button" disabled={loading} onClick={() => setReload((count) => count + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"><RefreshCw size={16}/> Refresh</button></div>
+    <div className="mt-7 flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Attendance exports</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Download monthly QR attendance summaries and daily work-time details as CSV files for management review.</p></div><button type="button" disabled={loading} onClick={() => setReload((count) => count + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white p-6 text-sm text-[#607264]"><RefreshCw size={16}/> Refresh</button></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[#607264]"><Loader2 size={19} className="animate-spin"/> Checking management access and loading complete QR records…</div>}
     {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/staff" className="font-bold underline">Staff login</a></div>}
     {!loading && authorized && <>
