@@ -87,6 +87,8 @@ jobs:
           ])
           edit('src/routes/reception-member.$memberId.tsx', [
               ('window.location.href = "/reception-dashboard";', 'window.location.href = "/portal/reception";', 1),
+              ('<Link to="/reception-dashboard">', '<Link to="/reception-workspace">', 2),
+              ('Back to Dashboard', 'Back to Reception 2.0', 2),
           ])
           edit('src/routes/management-communications.tsx', [
               ('href="/reception-dashboard"', 'href="/reception-workspace"', 1),
