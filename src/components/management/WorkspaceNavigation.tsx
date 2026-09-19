@@ -3,10 +3,10 @@ import { useRouterState } from "@tanstack/react-router";
 import { Activity, ArrowUpRight, ClipboardList, CreditCard, LayoutDashboard, ScanLine, Users, UserPlus, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-/** Shared navigation for the new workspace only; does not alter the legacy tools. */
+/** Shared navigation for the new workspace only; legacy tools remain available. */
 export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const inWorkspace = pathname === "/management-preview" || pathname === "/management-members" || pathname === "/management-attendance" || pathname === "/management-operations" || pathname === "/management-custom-plan";
+  const inWorkspace = ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,6 +33,7 @@ export function WorkspaceNavigation() {
     { label: "Members", href: "/management-members", icon: Users },
     { label: "Attendance", href: "/management-attendance", icon: Activity },
     { label: "Operations", href: "/management-operations", icon: ClipboardList },
+    { label: "Register / renew", href: "/management-standard-plan", icon: UserPlus },
     { label: "Custom Plan", href: "/management-custom-plan", icon: CreditCard },
   ];
   return (
@@ -44,7 +45,7 @@ export function WorkspaceNavigation() {
             className={`inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${pathname === href ? "bg-[#b8ee73] text-[#183125]" : "bg-white/5 text-[#d5e3d8] hover:bg-white/15"}`}><Icon size={15}/>{label}</a>)}
         </div>
         <div className="flex shrink-0 items-center gap-2 overflow-x-auto text-xs">
-          <a href="/reception-dashboard" className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 font-semibold hover:bg-white/10"><UserPlus size={15}/> Register / renew <ArrowUpRight size={13}/></a>
+          <a href="/reception-dashboard" className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 font-semibold hover:bg-white/10"><UserPlus size={15}/> Original reception <ArrowUpRight size={13}/></a>
           <a href="/reception-checkin" className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 font-semibold hover:bg-white/10"><ScanLine size={15}/> Scanner <ArrowUpRight size={13}/></a>
           {management && <a href="/staff-admin" className="inline-flex items-center gap-1.5 rounded-lg border border-white/20 px-3 py-2 font-semibold hover:bg-white/10"><Wallet size={15}/> Admin <ArrowUpRight size={13}/></a>}
         </div>
