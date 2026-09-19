@@ -1,0 +1,34 @@
+name: Integration build and type check
+
+on:
+  push:
+    branches:
+      - integration/september-attendance-missed-scans
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Build-only placeholders: no real gym credentials or database writes.
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-not-a-real-key
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Build application (no deploy)
+        run: bun run build
+      - name: TypeScript check
+        run: bunx tsc --noEmit
