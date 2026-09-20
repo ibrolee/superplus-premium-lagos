@@ -5,25 +5,26 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 
 type GalleryItem = { id: string; title: string; category: string; media_type: 'image' | 'video'; storage_path: string; sort_order: number; created_at: string };
-const categories = ['All', 'Gym', 'Equipment', 'Training', 'Classes', 'Spa & Recovery', 'Events'];
-const previews = [
-  { id: 'strength', title: 'Strength training', category: 'Equipment', media_type: 'image' as const, url: '/strength-training.png' },
-  { id: 'cardio', title: 'Cardio zone', category: 'Gym', media_type: 'image' as const, url: '/cardio.png' },
-  { id: 'classes', title: 'Group classes', category: 'Classes', media_type: 'image' as const, url: '/group-classes.png' },
-  { id: 'functional', title: 'Functional training', category: 'Training', media_type: 'image' as const, url: '/functional-training.png' },
-  { id: 'equipment', title: 'Modern equipment', category: 'Equipment', media_type: 'image' as const, url: '/modern-equipment.png' },
-];
 type DisplayItem = { id: string; title: string; category: string; media_type: 'image' | 'video'; url: string };
+const categories = ['All', 'Gym', 'Equipment', 'Training', 'Classes', 'Spa & Recovery', 'Events'];
+
+/** Show only uploaded, published media. Never fall back to hardcoded facility photos. */
 function useGallery() {
-  const [items, setItems] = useState<DisplayItem[]>(previews);
+  const [items, setItems] = useState<DisplayItem[]>([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;
     void (async () => {
-      const { data, error } = await supabase.from('gallery_media').select('id,title,category,media_type,storage_path,sort_order,created_at').eq('is_published', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
-      if (!alive) return;
-      if (!error && data?.length) setItems((data as GalleryItem[]).map(item => ({ id: item.id, title: item.title, category: item.category, media_type: item.media_type, url: supabase.storage.from('gallery-media').getPublicUrl(item.storage_path).data.publicUrl })));
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.from('gallery_media').select('id,title,category,media_type,storage_path,sort_order,created_at').eq('is_published', true).order('sort_order', { ascending: true }).order('created_at', { ascending: false });
+        if (!alive) return;
+        if (error) console.error('Unable to load gallery media', error);
+        else setItems(((data || []) as GalleryItem[]).map(item => ({ id: item.id, title: item.title, category: item.category, media_type: item.media_type, url: supabase.storage.from('gallery-media').getPublicUrl(item.storage_path).data.publicUrl })));
+      } catch (error) {
+        if (alive) console.error('Unable to load gallery media', error);
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
     return () => { alive = false; };
   }, []);
@@ -45,7 +46,7 @@ function Viewer({ item, close }: { item: DisplayItem; close: () => void }) {
   </div>;
 }
 export function GalleryExperience({ compact = false }: { compact?: boolean }) {
-  const { items } = useGallery();
+  const { items, loading } = useGallery();
   const [filter, setFilter] = useState('All');
   const [selected, setSelected] = useState<DisplayItem | null>(null);
   const visible = (filter === 'All' ? items : items.filter(item => item.category === filter)).slice(0, compact ? 4 : undefined);
@@ -53,7 +54,7 @@ export function GalleryExperience({ compact = false }: { compact?: boolean }) {
     <div className="section-shell">
       <div className="mb-9 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p className="mb-3 text-xs font-bold uppercase tracking-[.23em] text-primary">Inside Super Plus Fitness</p><h1 className="font-display text-5xl font-black uppercase leading-[.92] tracking-tight sm:text-7xl">See the space.<br /><span className="text-primary">Feel the energy.</span></h1><p className="mt-5 max-w-lg text-sm leading-7 text-white/65">Explore our facilities, equipment, classes and moments from the gym.</p></div></div>
       {!compact && <div className="mb-8 flex gap-2 overflow-x-auto pb-3" role="group" aria-label="Filter gallery media">{categories.map(category => <button type="button" key={category} onClick={() => setFilter(category)} aria-pressed={filter === category} className={`shrink-0 rounded-full border px-5 py-2.5 text-xs font-bold transition-colors ${filter === category ? 'border-primary bg-primary text-white' : 'border-white/20 bg-white/5 text-white/80 hover:border-primary'}`}>{category}</button>)}</div>}
-      {visible.length ? <div className={`grid gap-3 sm:gap-4 ${compact ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>{visible.map((item, index) => <MediaTile key={item.id} item={item} priority={index === 0} onOpen={() => setSelected(item)} />)}</div> : <div className="rounded-3xl border border-white/15 bg-white/5 px-6 py-16 text-center"><Images className="mx-auto mb-3 size-9 text-primary" /><p className="text-lg font-semibold">No media in this category yet.</p><p className="mt-2 text-sm text-white/50">Check back as our gallery grows.</p></div>}
+      {loading ? <div className="rounded-3xl border border-white/15 bg-white/5 px-6 py-16 text-center text-sm text-white/65" role="status">Loading gallery…</div> : visible.length ? <div className={`grid gap-3 sm:gap-4 ${compact ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3'}`}>{visible.map((item, index) => <MediaTile key={item.id} item={item} priority={index === 0} onOpen={() => setSelected(item)} />)}</div> : <div className="rounded-3xl border border-white/15 bg-white/5 px-6 py-16 text-center"><Images className="mx-auto mb-3 size-9 text-primary" /><p className="text-lg font-semibold">No photos or videos published yet.</p><p className="mt-2 text-sm text-white/50">Check back as our gallery grows.</p></div>}
       {compact && <Button asChild size="lg" variant="inverse" className="mt-8 w-full sm:w-auto"><Link to="/gallery">View the gallery <ArrowRight /></Link></Button>}
       {!compact && <p className="mt-8 text-xs text-white/45">Gallery media is uploaded and managed by Super Plus Fitness.</p>}
     </div>
