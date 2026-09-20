@@ -34,12 +34,7 @@ import {
 } from "@/lib/site-data";
 
 export function HomePage() {
-  const preview = [
-    membershipPlans[2],
-    membershipPlans[3],
-    membershipPlans[6],
-    membershipPlans[9],
-  ];
+  const preview = [membershipPlans[2], membershipPlans[3], membershipPlans[6], membershipPlans[9]];
 
   return (
     <main>
@@ -67,8 +62,8 @@ export function HomePage() {
           </h1>
 
           <p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/80 sm:text-lg">
-            Modern fitness, personal training, spa and recovery — all under
-            one roof in Shomolu, Lagos.
+            Modern fitness, personal training, spa and recovery — all under one roof in Shomolu,
+            Lagos.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">
@@ -111,19 +106,12 @@ export function HomePage() {
                 text: "Massage, spa and therapy services to help you recover and recharge.",
               },
             ].map((item) => (
-              <article
-                key={item.title}
-                className="bg-background p-7 sm:p-9"
-              >
+              <article key={item.title} className="bg-background p-7 sm:p-9">
                 <item.icon className="size-8 text-primary" />
 
-                <h3 className="mt-16 font-display text-4xl font-bold uppercase">
-                  {item.title}
-                </h3>
+                <h3 className="mt-16 font-display text-4xl font-bold uppercase">{item.title}</h3>
 
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {item.text}
-                </p>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
               </article>
             ))}
           </div>
@@ -173,10 +161,7 @@ export function HomePage() {
           </div>
 
           <div className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {preview.map(
-              (plan) =>
-                plan && <MembershipCard key={plan.id} plan={plan} />,
-            )}
+            {preview.map((plan) => plan && <MembershipCard key={plan.id} plan={plan} />)}
           </div>
         </div>
       </section>
@@ -241,20 +226,14 @@ export function HomePage() {
                 key={item.name}
                 className="border-t-4 border-primary bg-card p-7 shadow-sm"
               >
-                <p className="font-display text-2xl font-semibold leading-tight">
-                  “{item.quote}”
-                </p>
+                <p className="font-display text-2xl font-semibold leading-tight">“{item.quote}”</p>
 
                 <footer className="mt-10 text-sm">
                   <strong>{item.name}</strong>
-                  <span className="block text-muted-foreground">
-                    {item.detail}
-                  </span>
+                  <span className="block text-muted-foreground">{item.detail}</span>
                 </footer>
 
-                <span className="mt-8 block text-xs font-bold text-primary">
-                  0{index + 1}
-                </span>
+                <span className="mt-8 block text-xs font-bold text-primary">0{index + 1}</span>
               </blockquote>
             ))}
           </div>
@@ -276,11 +255,7 @@ export function HomePage() {
             inverse
           />
 
-          <Button
-            asChild
-            size="lg"
-            className="lg:justify-self-end"
-          >
+          <Button asChild size="lg" className="lg:justify-self-end">
             <Link to="/hmo">
               HMO & corporate partnerships <ArrowRight />
             </Link>
@@ -322,12 +297,7 @@ function Split({
 
       <div className="flex items-center px-6 py-16 sm:px-12 lg:px-16">
         <div>
-          <SectionHeader
-            eyebrow={eyebrow}
-            title={title}
-            copy={copy}
-            inverse
-          />
+          <SectionHeader eyebrow={eyebrow} title={title} copy={copy} inverse />
 
           <Button asChild size="lg" className="mt-8">
             <Link to={to}>
@@ -343,19 +313,10 @@ function Split({
 export function MembershipPage() {
   const [filter, setFilter] = useState("All");
 
-  const filters = [
-    "All",
-    "Gym",
-    "VIP",
-    "Family",
-    "Training",
-    "Spa & Recovery",
-  ];
+  const filters = ["All", "Gym", "VIP", "Family", "Training", "Spa & Recovery"];
 
   const plans =
-    filter === "All"
-      ? membershipPlans
-      : membershipPlans.filter((plan) => plan.category === filter);
+    filter === "All" ? membershipPlans : membershipPlans.filter((plan) => plan.category === filter);
 
   return (
     <main>
@@ -389,8 +350,8 @@ export function MembershipPage() {
           {filter === "Spa & Recovery" ? (
             <div className="mt-10">
               <IntegrationNotice>
-                Current spa and recovery prices are being confirmed. Contact
-                our team for today’s rates.
+                Current spa and recovery prices are being confirmed. Contact our team for today’s
+                rates.
               </IntegrationNotice>
 
               <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -427,21 +388,12 @@ export function PersonalTrainingPage() {
       <InfoBand
         title="Why personal training"
         copy="A coach turns effort into a plan. We help you train with safer form, the right progression and accountability that lasts."
-        items={[
-          "Goal-led programming",
-          "Technique and form",
-          "Consistent accountability",
-        ]}
+        items={["Goal-led programming", "Technique and form", "Consistent accountability"]}
       />
 
       <Process
         title="How it works"
-        items={[
-          "Talk goals",
-          "Assess movement",
-          "Build your plan",
-          "Train and progress",
-        ]}
+        items={["Talk goals", "Assess movement", "Build your plan", "Train and progress"]}
       />
 
       <Split
@@ -543,11 +495,7 @@ export function AboutPage() {
       <InfoBand
         title="Who we are"
         copy="Super Plus Fitness is a modern fitness and wellness destination in Shomolu — built for people who want strong training, expert support and better recovery under one roof."
-        items={[
-          "Local and welcoming",
-          "Modern and professional",
-          "Focused on real progress",
-        ]}
+        items={["Local and welcoming", "Modern and professional", "Focused on real progress"]}
       />
 
       <Split
@@ -573,11 +521,7 @@ export function AboutPage() {
       <InfoBand
         title="Why members choose us"
         copy="A complete mix of equipment, coaching, classes, spa and therapy services — backed by a team that knows your progress matters."
-        items={[
-          "Complete facilities",
-          "Personal support",
-          "Recovery included",
-        ]}
+        items={["Complete facilities", "Personal support", "Recovery included"]}
       />
 
       <FinalCTA />
@@ -658,17 +602,11 @@ export function HmoPage() {
           />
 
           <div className="mt-12">
-            <p className="mb-5 text-xs font-extrabold uppercase text-primary">
-              Direct partners
-            </p>
+            <p className="mb-5 text-xs font-extrabold uppercase text-primary">Direct partners</p>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {directPartners.map((partner) => (
-                <HmoPartnerLogo
-                  key={partner.name}
-                  name={partner.name}
-                  logo={partner.logo}
-                />
+                <HmoPartnerLogo key={partner.name} name={partner.name} logo={partner.logo} />
               ))}
             </div>
           </div>
@@ -679,17 +617,12 @@ export function HmoPage() {
             </p>
 
             <p className="mb-5 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Our Bardge partnership also gives members access to participating
-              HMO networks.
+              Our Bardge partnership also gives members access to participating HMO networks.
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
               {bardgeNetworks.map((partner) => (
-                <HmoPartnerLogo
-                  key={partner.name}
-                  name={partner.name}
-                  logo={partner.logo}
-                />
+                <HmoPartnerLogo key={partner.name} name={partner.name} logo={partner.logo} />
               ))}
             </div>
           </div>
@@ -708,12 +641,7 @@ export function HmoPage() {
 
       <Process
         title="How partnership works"
-        items={[
-          "Tell us your needs",
-          "Design access",
-          "Onboard members",
-          "Support participation",
-        ]}
+        items={["Tell us your needs", "Design access", "Onboard members", "Support participation"]}
       />
 
       <section className="bg-muted py-20">
@@ -727,21 +655,11 @@ export function HmoPage() {
 
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {[Dumbbell, Users, HeartPulse, Building2].map((Icon, i) => (
-                <div
-                  key={i}
-                  className="border border-border bg-background p-5"
-                >
+                <div key={i} className="border border-border bg-background p-5">
                   <Icon className="text-primary" />
 
                   <p className="mt-8 font-bold">
-                    {
-                      [
-                        "Gym access",
-                        "Group sessions",
-                        "Recovery services",
-                        "Corporate wellness",
-                      ][i]
-                    }
+                    {["Gym access", "Group sessions", "Recovery services", "Corporate wellness"][i]}
                   </p>
                 </div>
               ))}
@@ -757,13 +675,7 @@ export function HmoPage() {
   );
 }
 
-function HmoPartnerLogo({
-  name,
-  logo,
-}: {
-  name: string;
-  logo: string;
-}) {
+function HmoPartnerLogo({ name, logo }: { name: string; logo: string }) {
   return (
     <div className="flex min-h-[150px] flex-col items-center justify-center border border-border bg-background p-6 transition-transform hover:-translate-y-1">
       <div className="flex h-20 w-full items-center justify-center">
@@ -775,9 +687,7 @@ function HmoPartnerLogo({
         />
       </div>
 
-      <p className="mt-5 text-center text-xs font-extrabold uppercase tracking-wide">
-        {name}
-      </p>
+      <p className="mt-5 text-center text-xs font-extrabold uppercase tracking-wide">{name}</p>
     </div>
   );
 }
@@ -809,15 +719,7 @@ export function ContactPage() {
   );
 }
 
-function InfoBand({
-  title,
-  copy,
-  items,
-}: {
-  title: string;
-  copy: string;
-  items: string[];
-}) {
+function InfoBand({ title, copy, items }: { title: string; copy: string; items: string[] }) {
   return (
     <section className="py-20 sm:py-28">
       <div className="section-shell grid gap-12 lg:grid-cols-2">
@@ -825,13 +727,8 @@ function InfoBand({
 
         <div className="grid gap-px bg-border sm:grid-cols-3 lg:grid-cols-1">
           {items.map((item, index) => (
-            <div
-              key={item}
-              className="flex items-center gap-5 bg-background p-6"
-            >
-              <span className="font-display text-4xl font-bold text-primary">
-                0{index + 1}
-              </span>
+            <div key={item} className="flex items-center gap-5 bg-background p-6">
+              <span className="font-display text-4xl font-bold text-primary">0{index + 1}</span>
 
               <strong className="uppercase">{item}</strong>
             </div>
@@ -842,13 +739,7 @@ function InfoBand({
   );
 }
 
-function Process({
-  title,
-  items,
-}: {
-  title: string;
-  items: string[];
-}) {
+function Process({ title, items }: { title: string; items: string[] }) {
   return (
     <section className="bg-muted py-20">
       <div className="section-shell">
@@ -857,13 +748,9 @@ function Process({
         <div className="mt-12 grid gap-px bg-border md:grid-cols-4">
           {items.map((item, index) => (
             <div key={item} className="bg-muted p-6">
-              <span className="font-display text-5xl font-bold text-primary">
-                0{index + 1}
-              </span>
+              <span className="font-display text-5xl font-bold text-primary">0{index + 1}</span>
 
-              <h3 className="mt-12 font-display text-2xl font-bold uppercase">
-                {item}
-              </h3>
+              <h3 className="mt-12 font-display text-2xl font-bold uppercase">{item}</h3>
             </div>
           ))}
         </div>
@@ -875,23 +762,16 @@ function Process({
 /* MEMBER LOGIN */
 export function LoginPage() {
   return (
-    <UtilityPage
-      title="Member login"
-      copy="Access your Super Plus Fitness membership account."
-    >
+    <UtilityPage title="Member login" copy="Access your Super Plus Fitness membership account.">
       <div className="grid gap-4">
         <Button asChild size="lg">
-          <a
-            href="https://members.superplusfitness.com"
-            rel="noopener noreferrer"
-          >
+          <a href="https://members.superplusfitness.com" rel="noopener noreferrer">
             Continue to member login
           </a>
         </Button>
 
         <p className="text-sm text-muted-foreground">
-          You will be securely redirected to the Super Plus Fitness member
-          system.
+          You will be securely redirected to the Super Plus Fitness member system.
         </p>
       </div>
     </UtilityPage>
@@ -912,19 +792,13 @@ export function MemberPage() {
             Membership status
           </span>
 
-          <p className="mt-2 font-display text-3xl font-bold uppercase">
-            Awaiting connection
-          </p>
+          <p className="mt-2 font-display text-3xl font-bold uppercase">Awaiting connection</p>
         </div>
 
         <div className="bg-muted p-5">
-          <span className="text-xs font-bold uppercase text-muted-foreground">
-            Expiry date
-          </span>
+          <span className="text-xs font-bold uppercase text-muted-foreground">Expiry date</span>
 
-          <p className="mt-2 font-display text-3xl font-bold uppercase">
-            —
-          </p>
+          <p className="mt-2 font-display text-3xl font-bold uppercase">—</p>
         </div>
       </div>
 
@@ -979,10 +853,7 @@ export function MyQrPage() {
 /* RECEPTION CHECK-IN */
 export function ReceptionPage() {
   return (
-    <UtilityPage
-      title="Reception check-in"
-      copy="Scan a member QR code to verify access."
-    >
+    <UtilityPage title="Reception check-in" copy="Scan a member QR code to verify access.">
       <div className="grid gap-4">
         <Button asChild size="lg">
           <a
@@ -994,8 +865,7 @@ export function ReceptionPage() {
         </Button>
 
         <p className="text-sm text-muted-foreground">
-          Reception staff can use the existing Super Plus Fitness check-in
-          system.
+          Reception staff can use the existing Super Plus Fitness check-in system.
         </p>
       </div>
     </UtilityPage>
@@ -1015,21 +885,13 @@ function UtilityPage({
     <main className="min-h-[75vh] bg-secondary py-12 text-secondary-foreground sm:py-20">
       <div className="section-shell">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-bold uppercase text-primary">
-            Super Plus member services
-          </p>
+          <p className="text-xs font-bold uppercase text-primary">Super Plus member services</p>
 
-          <h1 className="display-title mt-4 text-6xl sm:text-8xl">
-            {title}
-          </h1>
+          <h1 className="display-title mt-4 text-6xl sm:text-8xl">{title}</h1>
 
-          <p className="mt-5 max-w-xl text-secondary-foreground/70">
-            {copy}
-          </p>
+          <p className="mt-5 max-w-xl text-secondary-foreground/70">{copy}</p>
 
-          <div className="mt-10 bg-background p-5 text-foreground sm:p-8">
-            {children}
-          </div>
+          <div className="mt-10 bg-background p-5 text-foreground sm:p-8">{children}</div>
         </div>
       </div>
     </main>

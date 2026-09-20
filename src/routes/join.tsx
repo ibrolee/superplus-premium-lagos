@@ -1,11 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Loader2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { membershipPlans, formatNaira } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
@@ -28,28 +23,19 @@ function JoinPage() {
     const params = new URLSearchParams(window.location.search);
     const planFromUrl = params.get("plan");
 
-    if (
-      planFromUrl &&
-      membershipPlans.some((plan) => plan.id === planFromUrl)
-    ) {
+    if (planFromUrl && membershipPlans.some((plan) => plan.id === planFromUrl)) {
       setSelectedPlanId(planFromUrl);
     }
   }, []);
 
   const selectedPlan = useMemo(
-    () =>
-      membershipPlans.find(
-        (plan) => plan.id === selectedPlanId,
-      ) || membershipPlans[0]!,
+    () => membershipPlans.find((plan) => plan.id === selectedPlanId) || membershipPlans[0]!,
     [selectedPlanId],
   );
 
-  const totalAmount =
-    selectedPlan.price + selectedPlan.registration;
+  const totalAmount = selectedPlan.price + selectedPlan.registration;
 
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
@@ -80,12 +66,7 @@ function JoinPage() {
       return;
     }
 
-    if (
-      !birthMonth ||
-      !Number.isInteger(month) ||
-      month < 1 ||
-      month > 12
-    ) {
+    if (!birthMonth || !Number.isInteger(month) || month < 1 || month > 12) {
       setError("Please select a valid birth month.");
       return;
     }
@@ -93,52 +74,35 @@ function JoinPage() {
     setLoading(true);
 
     try {
-      const { data, error: functionError } =
-        await supabase.functions.invoke(
-          "initialize-public-payment",
-          {
-            body: {
-              planId: selectedPlan.id,
-              fullName: trimmedName,
-              email: trimmedEmail,
-              phone: trimmedPhone,
-              birthDay: day,
-              birthMonth: month,
-            },
+      const { data, error: functionError } = await supabase.functions.invoke(
+        "initialize-public-payment",
+        {
+          body: {
+            planId: selectedPlan.id,
+            fullName: trimmedName,
+            email: trimmedEmail,
+            phone: trimmedPhone,
+            birthDay: day,
+            birthMonth: month,
           },
-        );
+        },
+      );
 
       if (functionError) {
-        console.error(
-          "Public payment function error:",
-          functionError,
-        );
+        console.error("Public payment function error:", functionError);
 
-        throw new Error(
-          functionError.message ||
-            "Unable to start payment. Please try again.",
-        );
+        throw new Error(functionError.message || "Unable to start payment. Please try again.");
       }
 
       if (!data?.authorization_url) {
-        throw new Error(
-          data?.error ||
-            "Unable to start payment. Please try again.",
-        );
+        throw new Error(data?.error || "Unable to start payment. Please try again.");
       }
 
       window.location.href = data.authorization_url;
     } catch (err) {
-      console.error(
-        "Public payment initialization error:",
-        err,
-      );
+      console.error("Public payment initialization error:", err);
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to start payment. Please try again.",
-      );
+      setError(err instanceof Error ? err.message : "Unable to start payment. Please try again.");
 
       setLoading(false);
     }
@@ -170,36 +134,29 @@ function JoinPage() {
             </h1>
 
             <p className="mt-4 text-base leading-7 text-muted-foreground sm:text-lg">
-              Choose your membership plan and complete
-              your registration securely through Paystack.
+              Choose your membership plan and complete your registration securely through Paystack.
             </p>
           </div>
 
           <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_420px] lg:items-start">
             <div>
               <div className="mb-4">
-                <h2 className="text-xl font-semibold">
-                  Choose your plan
-                </h2>
+                <h2 className="text-xl font-semibold">Choose your plan</h2>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Select the membership that works best
-                  for you.
+                  Select the membership that works best for you.
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {membershipPlans.map((plan) => {
-                  const isSelected =
-                    selectedPlan.id === plan.id;
+                  const isSelected = selectedPlan.id === plan.id;
 
                   return (
                     <button
                       key={plan.id}
                       type="button"
-                      onClick={() =>
-                        setSelectedPlanId(plan.id)
-                      }
+                      onClick={() => setSelectedPlanId(plan.id)}
                       className={`relative rounded-2xl border p-5 text-left transition-all ${
                         isSelected
                           ? "border-primary ring-2 ring-primary/20"
@@ -213,48 +170,27 @@ function JoinPage() {
                       )}
 
                       <div className="pr-16">
-                        <h3 className="text-lg font-semibold">
-                          {plan.name}
-                        </h3>
+                        <h3 className="text-lg font-semibold">{plan.name}</h3>
 
-                        <p className="mt-1 text-sm text-muted-foreground">
-                          {plan.duration}
-                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">{plan.duration}</p>
                       </div>
 
                       <div className="mt-5">
-                        <span className="text-2xl font-bold">
-                          {formatNaira(plan.price)}
-                        </span>
+                        <span className="text-2xl font-bold">{formatNaira(plan.price)}</span>
                       </div>
 
                       <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                        <p>
-                          Registration:{" "}
-                          {formatNaira(
-                            plan.registration,
-                          )}
-                        </p>
+                        <p>Registration: {formatNaira(plan.registration)}</p>
 
                         <p className="font-medium text-foreground">
-                          Total:{" "}
-                          {formatNaira(
-                            plan.price +
-                              plan.registration,
-                          )}
+                          Total: {formatNaira(plan.price + plan.registration)}
                         </p>
                       </div>
 
                       <div className="mt-5 flex items-center gap-2 text-sm font-semibold">
-                        <span>
-                          {isSelected
-                            ? "Selected"
-                            : "Select plan"}
-                        </span>
+                        <span>{isSelected ? "Selected" : "Select plan"}</span>
 
-                        {isSelected && (
-                          <CheckCircle2 className="h-4 w-4" />
-                        )}
+                        {isSelected && <CheckCircle2 className="h-4 w-4" />}
                       </div>
                     </button>
                   );
@@ -265,64 +201,38 @@ function JoinPage() {
             <div className="lg:sticky lg:top-6">
               <div className="rounded-2xl border bg-card p-6 shadow-sm sm:p-7">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    Selected plan
-                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">Selected plan</p>
 
-                  <h2 className="mt-1 text-2xl font-bold">
-                    {selectedPlan.name}
-                  </h2>
+                  <h2 className="mt-1 text-2xl font-bold">{selectedPlan.name}</h2>
                 </div>
 
                 <div className="my-6 border-t" />
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">
-                      Membership
-                    </span>
+                    <span className="text-muted-foreground">Membership</span>
 
-                    <span className="font-medium">
-                      {formatNaira(
-                        selectedPlan.price,
-                      )}
-                    </span>
+                    <span className="font-medium">{formatNaira(selectedPlan.price)}</span>
                   </div>
 
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">
-                      Registration
-                    </span>
+                    <span className="text-muted-foreground">Registration</span>
 
-                    <span className="font-medium">
-                      {formatNaira(
-                        selectedPlan.registration,
-                      )}
-                    </span>
+                    <span className="font-medium">{formatNaira(selectedPlan.registration)}</span>
                   </div>
 
                   <div className="flex justify-between gap-4 border-t pt-3">
-                    <span className="font-semibold">
-                      Total
-                    </span>
+                    <span className="font-semibold">Total</span>
 
-                    <span className="text-xl font-bold">
-                      {formatNaira(totalAmount)}
-                    </span>
+                    <span className="text-xl font-bold">{formatNaira(totalAmount)}</span>
                   </div>
                 </div>
 
                 <div className="my-6 border-t" />
 
-                <form
-                  onSubmit={handleSubmit}
-                  className="space-y-4"
-                >
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label
-                      htmlFor="fullName"
-                      className="mb-2 block text-sm font-medium"
-                    >
+                    <label htmlFor="fullName" className="mb-2 block text-sm font-medium">
                       Full name
                     </label>
 
@@ -330,9 +240,7 @@ function JoinPage() {
                       id="fullName"
                       type="text"
                       value={fullName}
-                      onChange={(event) =>
-                        setFullName(event.target.value)
-                      }
+                      onChange={(event) => setFullName(event.target.value)}
                       placeholder="Enter your full name"
                       autoComplete="name"
                       disabled={loading}
@@ -341,10 +249,7 @@ function JoinPage() {
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="email"
-                      className="mb-2 block text-sm font-medium"
-                    >
+                    <label htmlFor="email" className="mb-2 block text-sm font-medium">
                       Email address
                     </label>
 
@@ -352,9 +257,7 @@ function JoinPage() {
                       id="email"
                       type="email"
                       value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
+                      onChange={(event) => setEmail(event.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
                       disabled={loading}
@@ -363,10 +266,7 @@ function JoinPage() {
                   </div>
 
                   <div>
-                    <label
-                      htmlFor="phone"
-                      className="mb-2 block text-sm font-medium"
-                    >
+                    <label htmlFor="phone" className="mb-2 block text-sm font-medium">
                       Phone number
                     </label>
 
@@ -374,9 +274,7 @@ function JoinPage() {
                       id="phone"
                       type="tel"
                       value={phone}
-                      onChange={(event) =>
-                        setPhone(event.target.value)
-                      }
+                      onChange={(event) => setPhone(event.target.value)}
                       placeholder="08012345678"
                       autoComplete="tel"
                       disabled={loading}
@@ -385,32 +283,20 @@ function JoinPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium">
-                      Date of birth
-                    </label>
+                    <label className="mb-2 block text-sm font-medium">Date of birth</label>
 
                     <div className="grid grid-cols-2 gap-3">
                       <select
                         id="birthDay"
                         value={birthDay}
-                        onChange={(event) =>
-                          setBirthDay(event.target.value)
-                        }
+                        onChange={(event) => setBirthDay(event.target.value)}
                         disabled={loading}
                         className="h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                       >
-                        <option value="">
-                          Day
-                        </option>
+                        <option value="">Day</option>
 
-                        {Array.from(
-                          { length: 31 },
-                          (_, index) => index + 1,
-                        ).map((day) => (
-                          <option
-                            key={day}
-                            value={day}
-                          >
+                        {Array.from({ length: 31 }, (_, index) => index + 1).map((day) => (
+                          <option key={day} value={day}>
                             {day}
                           </option>
                         ))}
@@ -419,15 +305,11 @@ function JoinPage() {
                       <select
                         id="birthMonth"
                         value={birthMonth}
-                        onChange={(event) =>
-                          setBirthMonth(event.target.value)
-                        }
+                        onChange={(event) => setBirthMonth(event.target.value)}
                         disabled={loading}
                         className="h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
                       >
-                        <option value="">
-                          Month
-                        </option>
+                        <option value="">Month</option>
 
                         <option value="1">January</option>
                         <option value="2">February</option>
@@ -445,8 +327,7 @@ function JoinPage() {
                     </div>
 
                     <p className="mt-2 text-xs text-muted-foreground">
-                      We only need your birth day and month for
-                      birthday offers and member benefits.
+                      We only need your birth day and month for birthday offers and member benefits.
                     </p>
                   </div>
 
@@ -456,12 +337,7 @@ function JoinPage() {
                     </div>
                   )}
 
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="h-12 w-full"
-                    disabled={loading}
-                  >
+                  <Button type="submit" size="lg" className="h-12 w-full" disabled={loading}>
                     {loading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -476,8 +352,7 @@ function JoinPage() {
                   </Button>
 
                   <p className="text-center text-xs leading-5 text-muted-foreground">
-                    Your payment is processed securely by
-                    Paystack. You will be redirected to
+                    Your payment is processed securely by Paystack. You will be redirected to
                     Paystack to complete your payment.
                   </p>
                 </form>

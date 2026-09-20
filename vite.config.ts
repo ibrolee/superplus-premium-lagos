@@ -10,40 +10,26 @@
 
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 
- 
-
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 
- 
-
 export default defineConfig({
+  vite: {
+    plugins: [
+      tanstackRouter({
+        target: "react",
 
- vite: {
+        autoCodeSplitting: true,
+      }),
+    ],
+  },
 
-   plugins: [
+  tanstackStart: {
+    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
 
-     tanstackRouter({
+    // nitro/vite builds from this
 
-       target: "react",
-
-       autoCodeSplitting: true,
-
-     }),
-
-   ],
-
- },
-
- tanstackStart: {
-
-   // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-
-   // nitro/vite builds from this
-
-   server: { entry: "server" },
-
- },
-
+    server: { entry: "server" },
+  },
 });

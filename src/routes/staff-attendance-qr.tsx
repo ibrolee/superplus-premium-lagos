@@ -5,12 +5,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/staff-attendance-qr")({
@@ -50,10 +45,7 @@ function StaffAttendanceQrPage() {
 
         const role = String(staffUser?.role || "").toLowerCase();
 
-        if (
-          !staffUser?.active ||
-          !["admin", "owner", "manager"].includes(role)
-        ) {
+        if (!staffUser?.active || !["admin", "owner", "manager"].includes(role)) {
           setError("You do not have permission to view this QR code.");
           return;
         }
@@ -122,9 +114,7 @@ function StaffAttendanceQrPage() {
     return (
       <main className="min-h-screen bg-background px-4 py-10">
         <div className="mx-auto max-w-md text-center">
-          <p className="text-sm text-muted-foreground">
-            Checking management access...
-          </p>
+          <p className="text-sm text-muted-foreground">Checking management access...</p>
         </div>
       </main>
     );
@@ -138,13 +128,9 @@ function StaffAttendanceQrPage() {
             <CardContent className="py-10 text-center">
               <ShieldCheck className="mx-auto mb-4 size-12" />
 
-              <h1 className="font-display text-2xl font-bold uppercase">
-                Access Restricted
-              </h1>
+              <h1 className="font-display text-2xl font-bold uppercase">Access Restricted</h1>
 
-              <p className="mt-2 text-sm text-muted-foreground">
-                {error}
-              </p>
+              <p className="mt-2 text-sm text-muted-foreground">{error}</p>
 
               <Button asChild className="mt-6">
                 <Link to="/staff">Back to Staff Portal</Link>
@@ -188,18 +174,11 @@ function StaffAttendanceQrPage() {
                   Super Plus Fitness & Spa
                 </h2>
 
-                <p className="mt-1 text-sm font-semibold text-black">
-                  STAFF ATTENDANCE
-                </p>
+                <p className="mt-1 text-sm font-semibold text-black">STAFF ATTENDANCE</p>
               </div>
 
               <div className="mx-auto flex justify-center">
-                <QRCodeSVG
-                  value={ATTENDANCE_CODE}
-                  size={360}
-                  level="H"
-                  includeMargin
-                />
+                <QRCodeSVG value={ATTENDANCE_CODE} size={360} level="H" includeMargin />
               </div>
 
               <div className="mt-6">
@@ -213,18 +192,12 @@ function StaffAttendanceQrPage() {
               </div>
 
               <div className="mt-6 border-t border-black/20 pt-4">
-                <p className="text-xs text-black">
-                  No. 105 Apata Street, Shomolu, Lagos
-                </p>
+                <p className="text-xs text-black">No. 105 Apata Street, Shomolu, Lagos</p>
               </div>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 print:hidden">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={downloadQr}
-              >
+              <Button type="button" variant="outline" onClick={downloadQr}>
                 <Download className="mr-2 size-4" />
                 Download QR
               </Button>
@@ -236,13 +209,11 @@ function StaffAttendanceQrPage() {
             </div>
 
             <div className="mt-6 rounded-lg border bg-muted/40 p-4 text-center text-sm text-muted-foreground print:hidden">
-              <p className="font-semibold text-foreground">
-                Important
-              </p>
+              <p className="font-semibold text-foreground">Important</p>
 
               <p className="mt-1">
-                Keep this QR code at the gym. Staff should not use a
-                personal staff QR code for attendance.
+                Keep this QR code at the gym. Staff should not use a personal staff QR code for
+                attendance.
               </p>
             </div>
           </CardContent>

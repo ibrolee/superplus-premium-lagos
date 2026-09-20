@@ -63,13 +63,9 @@ function AuthConfirmPage() {
       <main className="min-h-[75vh] bg-muted py-20">
         <div className="section-shell flex min-h-[50vh] items-center justify-center">
           <div className="max-w-md border border-border bg-background p-8 text-center shadow-sm">
-            <h1 className="font-display text-3xl font-bold uppercase">
-              Login Problem
-            </h1>
+            <h1 className="font-display text-3xl font-bold uppercase">Login Problem</h1>
 
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              {error}
-            </p>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">{error}</p>
 
             <a
               href="/login"
