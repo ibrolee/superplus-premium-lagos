@@ -9,7 +9,7 @@ export function WorkspaceNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const onReception = pathname === "/reception-workspace";
   const onStaff = ["/staff", "/staff-attendance", "/staff-admin", "/reception-checkin", "/staff-missed-scans"].includes(pathname);
-  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
+  const inWorkspace = onReception || onStaff || ["/management-preview", "/management-members", "/management-attendance", "/management-operations", "/management-custom-plan", "/management-standard-plan", "/management-profiles", "/management-member-cards", "/management-communications", "/management-revenue", "/management-staff", "/management-staff-monthly", "/management-staff-review", "/management-payroll", "/management-attendance-export", "/management-payroll-export"].includes(pathname);
   const [role, setRole] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +42,7 @@ export function WorkspaceNavigation() {
     { label: "Custom Plan", href: "/management-custom-plan", icon: CreditCard },
     { label: "Birthdays & reminders", href: "/management-communications", icon: Cake },
   ];
+  if (admin) pages.push({ label: "Membership ID Cards", href: "/management-member-cards", icon: CreditCard });
   if (management) {
     pages.push({ label: "Staff", href: "/management-staff", icon: Users });
     pages.push({ label: "Monthly staff", href: "/management-staff-monthly", icon: CalendarDays });
