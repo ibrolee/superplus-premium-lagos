@@ -2,6 +2,8 @@
  * Both sides are rasterised at 3x SVG resolution (~760 DPI at finished size).
  * The existing site logo is embedded before rasterisation so it appears offline.
  */
+import { presentMemberCardPdf } from './member-card-file-actions';
+
 const CARD_WIDTH_PT = 85.6 * 72 / 25.4;
 const CARD_HEIGHT_PT = 54 * 72 / 25.4;
 const encoder = new TextEncoder();
@@ -69,8 +71,7 @@ export async function generateMemberCardPdf(front: SVGSVGElement, back: SVGSVGEl
     const id = index + 5;
     offsets[id] = length;
     write(`${id} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`);
-    write(image.bytes);
-    write('\nendstream\nendobj\n');
+    write(image.bytes); write('\nendstream\nendobj\n');
   });
   [7, 8].forEach((id) => {
     const stream = `q\n${CARD_WIDTH_PT.toFixed(4)} 0 0 ${CARD_HEIGHT_PT.toFixed(4)} 0 0 cm\n/Card Do\nQ\n`;
@@ -84,12 +85,5 @@ export async function generateMemberCardPdf(front: SVGSVGElement, back: SVGSVGEl
 }
 
 export function saveMemberCardPdf(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  presentMemberCardPdf(blob, filename);
 }
