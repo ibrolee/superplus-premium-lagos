@@ -28,7 +28,7 @@ function BlogLayout() {
   return <div className="spf-blog-v2">
     {isArticle && <>
       <div className="spf-blog-reading-progress" role="progressbar" aria-label="Article reading progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(readingProgress)}><div style={{ width: `${readingProgress}%` }} /></div>
-      <div className="spf-blog-article-nav"><div><span className="inline-flex items-center gap-2"><BookOpen aria-hidden="true" className="size-4" /> Super Plus / The Journal</span><Link to="/blog"><ArrowLeft aria-hidden="true" className="size-4" /> All stories</Link></div></div>
+      <div className="spf-blog-article-nav"><div><span className="inline-flex items-center gap-2"><BookOpen aria-hidden="true" className="size-4" /> Super Plus Fitness Blog</span><Link to="/blog"><ArrowLeft aria-hidden="true" className="size-4" /> All articles</Link></div></div>
     </>}
     <Outlet />
   </div>;
