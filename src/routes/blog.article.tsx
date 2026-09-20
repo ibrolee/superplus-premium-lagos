@@ -4,7 +4,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // Redirect them to the canonical /blog/$slug reader without touching article data.
 export const Route = createFileRoute("/blog/article")({
   validateSearch: (search: Record<string, unknown>) => ({
-    slug: typeof search.slug === "string" ? search.slug.trim() : "",
+    slug: typeof search["slug"] === "string" ? search["slug"].trim() : "",
   }),
   beforeLoad: ({ search }) => {
     if (!search.slug) {
