@@ -22,6 +22,54 @@ main [data-site-motion-reveal][data-site-motion-visible] {
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
+/* Header 2.0: retain the established branding but give phone screens more room. */
+@media (max-width: 1023px) {
+  header:has(nav[aria-label="Main navigation"]) > .section-shell {
+    height: 4rem;
+    min-height: 4rem;
+  }
+
+  header:has(nav[aria-label="Main navigation"]) a[aria-label="Super Plus Fitness home"] img {
+    max-height: 2.65rem;
+    width: auto;
+  }
+
+  header:has(nav[aria-label="Main navigation"]) button[aria-label="Open menu"] {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.9rem;
+    border-color: rgb(0 0 0 / 12%);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 7%);
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+
+  header:has(nav[aria-label="Main navigation"]) button[aria-label="Open menu"]:active {
+    transform: scale(0.96);
+  }
+
+  /* Short landscape screens and enlarged text must not hide the menu's last links. */
+  [role="dialog"]:has(nav[aria-label="Mobile navigation"]) > div:has(nav[aria-label="Mobile navigation"]) {
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    scrollbar-width: thin;
+  }
+}
+
+nav[aria-label="Mobile navigation"] a[aria-current="page"] {
+  color: var(--primary, #e3342f);
+  border-left: 3px solid currentColor;
+  padding-left: 0.75rem;
+}
+
+nav[aria-label="Main navigation"] a[aria-current="page"] {
+  color: var(--primary, #e3342f);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.5rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   main[data-site-motion-page] { animation: none !important; }
   main [data-site-motion-reveal] {
@@ -29,4 +77,5 @@ main [data-site-motion-reveal][data-site-motion-visible] {
     transform: none !important;
     transition: none !important;
   }
+  header:has(nav[aria-label="Main navigation"]) button[aria-label="Open menu"] { transition: none !important; }
 }
