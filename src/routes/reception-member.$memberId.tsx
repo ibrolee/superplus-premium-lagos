@@ -22,7 +22,9 @@ import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/reception-member/$memberId")({
+export const Route = createFileRoute(
+  "/reception-member/$memberId",
+)({
   component: ReceptionMemberProfile,
 });
 
@@ -73,10 +75,9 @@ type Attendance = {
 function getLocalDateString() {
   const now = new Date();
 
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
-    2,
-    "0",
-  )}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1,
+  ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function getDateOnly(value: unknown) {
@@ -127,7 +128,11 @@ function formatNaira(value: number | null) {
 function getBirthday(member: Member) {
   if (!member.birth_day || !member.birth_month) return "Not provided";
 
-  const date = new Date(2000, member.birth_month - 1, member.birth_day);
+  const date = new Date(
+    2000,
+    member.birth_month - 1,
+    member.birth_day,
+  );
 
   if (Number.isNaN(date.getTime())) return "Not provided";
 
@@ -152,11 +157,17 @@ function daysRemaining(membership: Membership | null) {
   if (!membership?.end_date) return 0;
 
   const today = new Date(`${getLocalDateString()}T00:00:00`);
-  const expiry = new Date(`${getDateOnly(membership.end_date)}T00:00:00`);
+  const expiry = new Date(
+    `${getDateOnly(membership.end_date)}T00:00:00`,
+  );
 
-  const difference = expiry.getTime() - today.getTime();
+  const difference =
+    expiry.getTime() - today.getTime();
 
-  return Math.max(0, Math.ceil(difference / 86400000));
+  return Math.max(
+    0,
+    Math.ceil(difference / 86400000),
+  );
 }
 
 function SectionSummary({
@@ -176,9 +187,15 @@ function SectionSummary({
         </div>
 
         <div className="min-w-0">
-          <h2 className="font-display text-lg font-bold uppercase">{title}</h2>
+          <h2 className="font-display text-lg font-bold uppercase">
+            {title}
+          </h2>
 
-          {summary && <p className="truncate text-sm text-muted-foreground">{summary}</p>}
+          {summary && (
+            <p className="truncate text-sm text-muted-foreground">
+              {summary}
+            </p>
+          )}
         </div>
       </div>
 
@@ -215,56 +232,58 @@ function ReceptionMemberProfile() {
         return;
       }
 
-      const { data: staffUser, error: staffError } = await supabase
-        .from("staff_users")
-        .select("id")
-        .eq("auth_user_id", session.user.id)
-        .eq("active", true)
-        .maybeSingle();
+      const { data: staffUser, error: staffError } =
+        await supabase
+          .from("staff_users")
+          .select("id")
+          .eq("auth_user_id", session.user.id)
+          .eq("active", true)
+          .maybeSingle();
 
       if (staffError || !staffUser) {
         window.location.href = "/";
         return;
       }
 
-      const [memberResult, membershipsResult, paymentsResult, attendanceResult] = await Promise.all(
-        [
-          supabase
-            .from("members")
-            .select("id, full_name, email, phone, birth_day, birth_month, qr_token")
-            .eq("id", memberId)
-            .maybeSingle(),
+      const [
+        memberResult,
+        membershipsResult,
+        paymentsResult,
+        attendanceResult,
+      ] = await Promise.all([
+        supabase
+          .from("members")
+          .select(
+            "id, full_name, email, phone, birth_day, birth_month, qr_token",
+          )
+          .eq("id", memberId)
+          .maybeSingle(),
 
-          supabase
-            .from("memberships")
-            .select(
-              "id, member_id, plan_name, start_date, end_date, status, payment_status, source, created_at",
-            )
-            .eq("member_id", memberId)
-            .order("start_date", { ascending: false }),
+        supabase
+          .from("memberships")
+          .select(
+            "id, member_id, plan_name, start_date, end_date, status, payment_status, source, created_at",
+          )
+          .eq("member_id", memberId)
+          .order("start_date", { ascending: false }),
 
-          (async () => {
-            const scoped = await supabase.rpc("reception_member_payment_history", {
-              p_member_id: memberId,
-            });
-            if (!scoped.error || !["PGRST202", "42883"].includes(scoped.error.code)) return scoped;
-            // Before database cutover only: retain the existing member-filtered query.
-            return supabase
-              .from("payments")
-              .select(
-                "id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at",
-              )
-              .eq("member_id", memberId)
-              .order("created_at", { ascending: false });
-          })(),
+        (async () => {
+          const scoped = await supabase.rpc("reception_member_payment_history", { p_member_id: memberId });
+          if (!scoped.error || !["PGRST202", "42883"].includes(scoped.error.code)) return scoped;
+          // Before database cutover only: retain the existing member-filtered query.
+          return supabase.from("payments")
+            .select("id, member_id, membership_id, amount, currency, status, payment_method, provider, paystack_reference, paid_at, created_at")
+            .eq("member_id", memberId).order("created_at", { ascending: false });
+        })(),
 
-          supabase
-            .from("attendance")
-            .select("id, member_id, checked_in_at, checked_out_at, created_at")
-            .eq("member_id", memberId)
-            .order("checked_in_at", { ascending: false }),
-        ],
-      );
+        supabase
+          .from("attendance")
+          .select(
+            "id, member_id, checked_in_at, checked_out_at, created_at",
+          )
+          .eq("member_id", memberId)
+          .order("checked_in_at", { ascending: false }),
+      ]);
 
       if (!mounted) return;
 
@@ -301,29 +320,37 @@ function ReceptionMemberProfile() {
 
   const currentMembership = useMemo(() => {
     return (
-      memberships.filter(isMembershipValidToday).sort((a, b) => {
-        const aDate = getDateOnly(a.end_date) ?? "";
-        const bDate = getDateOnly(b.end_date) ?? "";
+      memberships
+        .filter(isMembershipValidToday)
+        .sort((a, b) => {
+          const aDate = getDateOnly(a.end_date) ?? "";
+          const bDate = getDateOnly(b.end_date) ?? "";
 
-        return bDate.localeCompare(aDate);
-      })[0] ?? null
+          return bDate.localeCompare(aDate);
+        })[0] ?? null
     );
   }, [memberships]);
 
   const latestMembership = memberships[0] ?? null;
 
-  const isInside = attendance.some((record) => !record.checked_out_at);
+  const isInside = attendance.some(
+    (record) => !record.checked_out_at,
+  );
 
   const successfulPayments = payments.filter(
-    (payment) => String(payment.status).toLowerCase() === "success",
+    (payment) =>
+      String(payment.status).toLowerCase() === "success",
   );
 
   const totalPaid = successfulPayments.reduce(
-    (total, payment) => total + Number(payment.amount || 0),
+    (total, payment) =>
+      total + Number(payment.amount || 0),
     0,
   );
 
-  const remainingDays = daysRemaining(currentMembership);
+  const remainingDays = daysRemaining(
+    currentMembership,
+  );
 
   async function downloadQr() {
     if (!member?.qr_token) return;
@@ -331,7 +358,9 @@ function ReceptionMemberProfile() {
     setDownloadingQr(true);
 
     try {
-      const svg = document.getElementById("member-profile-qr") as SVGElement | null;
+      const svg = document.getElementById(
+        "member-profile-qr",
+      ) as SVGElement | null;
 
       if (!svg) return;
 
@@ -366,7 +395,9 @@ function ReceptionMemberProfile() {
         URL.revokeObjectURL(url);
 
         const link = document.createElement("a");
-        link.download = `${(member.full_name || "member")
+        link.download = `${(
+          member.full_name || "member"
+        )
           .replace(/[^a-z0-9]+/gi, "-")
           .toLowerCase()}-qr.png`;
 
@@ -407,9 +438,13 @@ function ReceptionMemberProfile() {
           </Link>
 
           <div className="mt-8 border border-destructive/30 bg-destructive/5 p-6">
-            <h1 className="font-display text-2xl font-bold uppercase">Unable to Load Member</h1>
+            <h1 className="font-display text-2xl font-bold uppercase">
+              Unable to Load Member
+            </h1>
 
-            <p className="mt-2 text-muted-foreground">{error || "Member not found."}</p>
+            <p className="mt-2 text-muted-foreground">
+              {error || "Member not found."}
+            </p>
           </div>
         </div>
       </main>
@@ -445,7 +480,9 @@ function ReceptionMemberProfile() {
                   {member.full_name || "Member"}
                 </h1>
 
-                <p className="mt-1 text-sm text-muted-foreground">Member Profile</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Member Profile
+                </p>
               </div>
             </div>
 
@@ -470,16 +507,25 @@ function ReceptionMemberProfile() {
         <div className="space-y-4">
           {/* PERSONAL */}
           <details className="group border border-border bg-card">
-            <SectionSummary icon={<UserRound className="h-5 w-5" />} title="Personal Information" />
+            <SectionSummary
+              icon={<UserRound className="h-5 w-5" />}
+              title="Personal Information"
+            />
 
             <div className="grid gap-4 border-t border-border p-5 sm:grid-cols-2">
               <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Full Name</p>
-                <p className="mt-1 font-medium">{member.full_name || "—"}</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Full Name
+                </p>
+                <p className="mt-1 font-medium">
+                  {member.full_name || "—"}
+                </p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Phone</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Phone
+                </p>
 
                 <p className="mt-1 flex items-center gap-2 font-medium">
                   <Phone className="h-4 w-4 text-primary" />
@@ -488,7 +534,9 @@ function ReceptionMemberProfile() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Email</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Email
+                </p>
 
                 <p className="mt-1 flex items-center gap-2 break-all font-medium">
                   <Mail className="h-4 w-4 text-primary" />
@@ -497,7 +545,9 @@ function ReceptionMemberProfile() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Birthday</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Birthday
+                </p>
 
                 <p className="mt-1 flex items-center gap-2 font-medium">
                   <Cake className="h-4 w-4 text-primary" />
@@ -512,14 +562,19 @@ function ReceptionMemberProfile() {
             <SectionSummary
               icon={<CheckCircle2 className="h-5 w-5" />}
               title="Current Membership"
-              summary={currentMembership?.plan_name || "No active membership"}
+              summary={
+                currentMembership?.plan_name ||
+                "No active membership"
+              }
             />
 
             <div className="border-t border-border p-5">
               {currentMembership ? (
                 <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Plan</p>
+                    <p className="text-xs font-semibold uppercase text-muted-foreground">
+                      Plan
+                    </p>
                     <p className="mt-1 font-display text-lg font-bold uppercase">
                       {currentMembership.plan_name || "—"}
                     </p>
@@ -529,14 +584,22 @@ function ReceptionMemberProfile() {
                     <p className="text-xs font-semibold uppercase text-muted-foreground">
                       Start Date
                     </p>
-                    <p className="mt-1 font-medium">{formatDate(currentMembership.start_date)}</p>
+                    <p className="mt-1 font-medium">
+                      {formatDate(
+                        currentMembership.start_date,
+                      )}
+                    </p>
                   </div>
 
                   <div>
                     <p className="text-xs font-semibold uppercase text-muted-foreground">
                       Expiry Date
                     </p>
-                    <p className="mt-1 font-medium">{formatDate(currentMembership.end_date)}</p>
+                    <p className="mt-1 font-medium">
+                      {formatDate(
+                        currentMembership.end_date,
+                      )}
+                    </p>
                   </div>
 
                   <div>
@@ -544,14 +607,19 @@ function ReceptionMemberProfile() {
                       Remaining
                     </p>
                     <p className="mt-1 font-display text-lg font-bold">
-                      {remainingDays} {remainingDays === 1 ? "day" : "days"}
+                      {remainingDays}{" "}
+                      {remainingDays === 1
+                        ? "day"
+                        : "days"}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg bg-destructive/5 p-4 text-destructive">
                   <XCircle className="h-5 w-5" />
-                  <p className="font-medium">This member currently has no valid membership.</p>
+                  <p className="font-medium">
+                    This member currently has no valid membership.
+                  </p>
                 </div>
               )}
             </div>
@@ -562,28 +630,44 @@ function ReceptionMemberProfile() {
             <SectionSummary
               icon={<CreditCard className="h-5 w-5" />}
               title="Membership History"
-              summary={`${memberships.length} record${memberships.length === 1 ? "" : "s"}`}
+              summary={`${memberships.length} record${
+                memberships.length === 1 ? "" : "s"
+              }`}
             />
 
             <div className="border-t border-border">
               {memberships.length === 0 ? (
-                <p className="p-5 text-muted-foreground">No membership history found.</p>
+                <p className="p-5 text-muted-foreground">
+                  No membership history found.
+                </p>
               ) : (
                 <div className="divide-y divide-border">
                   {memberships.map((membership) => {
-                    const active = isMembershipValidToday(membership);
+                    const active =
+                      isMembershipValidToday(
+                        membership,
+                      );
 
                     return (
-                      <div key={membership.id} className="p-5">
+                      <div
+                        key={membership.id}
+                        className="p-5"
+                      >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <h3 className="font-display text-lg font-bold uppercase">
-                              {membership.plan_name || "Membership"}
+                              {membership.plan_name ||
+                                "Membership"}
                             </h3>
 
                             <p className="mt-1 text-sm text-muted-foreground">
-                              {formatDate(membership.start_date)} →{" "}
-                              {formatDate(membership.end_date)}
+                              {formatDate(
+                                membership.start_date,
+                              )}{" "}
+                              →{" "}
+                              {formatDate(
+                                membership.end_date,
+                              )}
                             </p>
                           </div>
 
@@ -595,7 +679,9 @@ function ReceptionMemberProfile() {
                                   : "bg-muted text-muted-foreground"
                               }`}
                             >
-                              {active ? "ACTIVE" : "EXPIRED"}
+                              {active
+                                ? "ACTIVE"
+                                : "EXPIRED"}
                             </span>
 
                             {membership.payment_status && (
@@ -608,18 +694,34 @@ function ReceptionMemberProfile() {
 
                         <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                           <div>
-                            <span className="text-muted-foreground">Status</span>
-                            <p className="font-medium">{membership.status || "—"}</p>
+                            <span className="text-muted-foreground">
+                              Status
+                            </span>
+                            <p className="font-medium">
+                              {membership.status ||
+                                "—"}
+                            </p>
                           </div>
 
                           <div>
-                            <span className="text-muted-foreground">Source</span>
-                            <p className="font-medium">{membership.source || "—"}</p>
+                            <span className="text-muted-foreground">
+                              Source
+                            </span>
+                            <p className="font-medium">
+                              {membership.source ||
+                                "—"}
+                            </p>
                           </div>
 
                           <div>
-                            <span className="text-muted-foreground">Created</span>
-                            <p className="font-medium">{formatDateTime(membership.created_at)}</p>
+                            <span className="text-muted-foreground">
+                              Created
+                            </span>
+                            <p className="font-medium">
+                              {formatDateTime(
+                                membership.created_at,
+                              )}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -636,7 +738,9 @@ function ReceptionMemberProfile() {
               icon={<CreditCard className="h-5 w-5" />}
               title="Payment History"
               summary={`${successfulPayments.length} successful payment${
-                successfulPayments.length === 1 ? "" : "s"
+                successfulPayments.length === 1
+                  ? ""
+                  : "s"
               }`}
             />
 
@@ -652,11 +756,16 @@ function ReceptionMemberProfile() {
               </div>
 
               {payments.length === 0 ? (
-                <p className="text-muted-foreground">No payment history found.</p>
+                <p className="text-muted-foreground">
+                  No payment history found.
+                </p>
               ) : (
                 <div className="space-y-3">
                   {payments.map((payment) => (
-                    <div key={payment.id} className="border border-border p-4">
+                    <div
+                      key={payment.id}
+                      className="border border-border p-4"
+                    >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="font-display text-lg font-bold">
@@ -664,13 +773,17 @@ function ReceptionMemberProfile() {
                           </p>
 
                           <p className="text-sm text-muted-foreground">
-                            {formatDateTime(payment.paid_at || payment.created_at)}
+                            {formatDateTime(
+                              payment.paid_at ||
+                                payment.created_at,
+                            )}
                           </p>
                         </div>
 
                         <span
                           className={`w-fit rounded-full px-3 py-1 text-xs font-bold uppercase ${
-                            String(payment.status).toLowerCase() === "success"
+                            String(payment.status).toLowerCase() ===
+                            "success"
                               ? "bg-green-500/10 text-green-600"
                               : "bg-muted text-muted-foreground"
                           }`}
@@ -681,19 +794,31 @@ function ReceptionMemberProfile() {
 
                       <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                         <div>
-                          <span className="text-muted-foreground">Provider</span>
-                          <p className="font-medium">{payment.provider || "—"}</p>
+                          <span className="text-muted-foreground">
+                            Provider
+                          </span>
+                          <p className="font-medium">
+                            {payment.provider || "—"}
+                          </p>
                         </div>
 
                         <div>
-                          <span className="text-muted-foreground">Method</span>
-                          <p className="font-medium">{payment.payment_method || "—"}</p>
+                          <span className="text-muted-foreground">
+                            Method
+                          </span>
+                          <p className="font-medium">
+                            {payment.payment_method ||
+                              "—"}
+                          </p>
                         </div>
 
                         <div>
-                          <span className="text-muted-foreground">Reference</span>
+                          <span className="text-muted-foreground">
+                            Reference
+                          </span>
                           <p className="break-all font-medium">
-                            {payment.paystack_reference || "—"}
+                            {payment.paystack_reference ||
+                              "—"}
                           </p>
                         </div>
                       </div>
@@ -709,16 +834,23 @@ function ReceptionMemberProfile() {
             <SectionSummary
               icon={<LogIn className="h-5 w-5" />}
               title="Attendance History"
-              summary={`${attendance.length} visit${attendance.length === 1 ? "" : "s"}`}
+              summary={`${attendance.length} visit${
+                attendance.length === 1 ? "" : "s"
+              }`}
             />
 
             <div className="border-t border-border">
               {attendance.length === 0 ? (
-                <p className="p-5 text-muted-foreground">No attendance history found.</p>
+                <p className="p-5 text-muted-foreground">
+                  No attendance history found.
+                </p>
               ) : (
                 <div className="divide-y divide-border">
                   {attendance.map((record) => (
-                    <div key={record.id} className="p-5">
+                    <div
+                      key={record.id}
+                      className="p-5"
+                    >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -726,9 +858,15 @@ function ReceptionMemberProfile() {
                           </div>
 
                           <div>
-                            <p className="font-bold">{formatDateTime(record.checked_in_at)}</p>
+                            <p className="font-bold">
+                              {formatDateTime(
+                                record.checked_in_at,
+                              )}
+                            </p>
 
-                            <p className="text-sm text-muted-foreground">Check-in</p>
+                            <p className="text-sm text-muted-foreground">
+                              Check-in
+                            </p>
                           </div>
                         </div>
 
@@ -740,11 +878,15 @@ function ReceptionMemberProfile() {
                           <div>
                             <p className="font-bold">
                               {record.checked_out_at
-                                ? formatDateTime(record.checked_out_at)
+                                ? formatDateTime(
+                                    record.checked_out_at,
+                                  )
                                 : "Still inside"}
                             </p>
 
-                            <p className="text-sm text-muted-foreground">Check-out</p>
+                            <p className="text-sm text-muted-foreground">
+                              Check-out
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -757,7 +899,10 @@ function ReceptionMemberProfile() {
 
           {/* QR */}
           <details className="group border border-border bg-card">
-            <SectionSummary icon={<QrCode className="h-5 w-5" />} title="QR Code" />
+            <SectionSummary
+              icon={<QrCode className="h-5 w-5" />}
+              title="QR Code"
+            />
 
             <div className="flex flex-col items-center border-t border-border p-6">
               {member.qr_token ? (
@@ -773,13 +918,23 @@ function ReceptionMemberProfile() {
                     />
                   </div>
 
-                  <Button onClick={downloadQr} disabled={downloadingQr} className="mt-5">
-                    {downloadingQr ? <Loader2 className="animate-spin" /> : <Download />}
+                  <Button
+                    onClick={downloadQr}
+                    disabled={downloadingQr}
+                    className="mt-5"
+                  >
+                    {downloadingQr ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Download />
+                    )}
                     Download QR
                   </Button>
                 </>
               ) : (
-                <p className="text-muted-foreground">No QR code is assigned to this member.</p>
+                <p className="text-muted-foreground">
+                  No QR code is assigned to this member.
+                </p>
               )}
             </div>
           </details>
@@ -800,14 +955,20 @@ function ReceptionMemberProfile() {
 
             <div className="grid gap-4 border-t border-border p-5 sm:grid-cols-3">
               <div className="rounded-lg border border-border p-4">
-                <p className="text-xs font-semibold uppercase text-muted-foreground">Membership</p>
+                <p className="text-xs font-semibold uppercase text-muted-foreground">
+                  Membership
+                </p>
 
                 <p
                   className={`mt-1 font-bold ${
-                    currentMembership ? "text-green-600" : "text-destructive"
+                    currentMembership
+                      ? "text-green-600"
+                      : "text-destructive"
                   }`}
                 >
-                  {currentMembership ? "ACTIVE" : "EXPIRED / INACTIVE"}
+                  {currentMembership
+                    ? "ACTIVE"
+                    : "EXPIRED / INACTIVE"}
                 </p>
               </div>
 
@@ -818,10 +979,14 @@ function ReceptionMemberProfile() {
 
                 <p
                   className={`mt-1 font-bold ${
-                    isInside ? "text-green-600" : "text-muted-foreground"
+                    isInside
+                      ? "text-green-600"
+                      : "text-muted-foreground"
                   }`}
                 >
-                  {isInside ? "CURRENTLY INSIDE" : "NOT INSIDE"}
+                  {isInside
+                    ? "CURRENTLY INSIDE"
+                    : "NOT INSIDE"}
                 </p>
               </div>
 
@@ -830,7 +995,10 @@ function ReceptionMemberProfile() {
                   Latest Membership
                 </p>
 
-                <p className="mt-1 font-bold">{latestMembership?.plan_name || "None"}</p>
+                <p className="mt-1 font-bold">
+                  {latestMembership?.plan_name ||
+                    "None"}
+                </p>
               </div>
             </div>
           </details>

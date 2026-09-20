@@ -1,6 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { CheckCircle2, AlertCircle, Loader2, ArrowRight } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -13,7 +18,8 @@ export const Route = createFileRoute("/payment/callback")({
       },
       {
         name: "description",
-        content: "Confirm your Super Plus Fitness membership payment.",
+        content:
+          "Confirm your Super Plus Fitness membership payment.",
       },
     ],
   }),
@@ -23,15 +29,20 @@ export const Route = createFileRoute("/payment/callback")({
 function PaymentCallback() {
   const navigate = useNavigate();
 
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [status, setStatus] = useState<
+    "loading" | "success" | "error"
+  >("loading");
 
-  const [message, setMessage] = useState("Confirming your payment...");
+  const [message, setMessage] = useState(
+    "Confirming your payment..."
+  );
 
-  const [membershipDetails, setMembershipDetails] = useState<{
-    planName?: string;
-    startDate?: string;
-    endDate?: string;
-  } | null>(null);
+  const [membershipDetails, setMembershipDetails] =
+    useState<{
+      planName?: string;
+      startDate?: string;
+      endDate?: string;
+    } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -49,9 +60,13 @@ function PaymentCallback() {
           return;
         }
 
-        const params = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(
+          window.location.search,
+        );
 
-        const reference = params.get("reference") || params.get("trxref");
+        const reference =
+          params.get("reference") ||
+          params.get("trxref");
 
         if (!reference) {
           setStatus("error");
@@ -63,16 +78,23 @@ function PaymentCallback() {
 
         setMessage("Verifying your payment with Paystack...");
 
-        const { data, error } = await supabase.functions.invoke("verify-payment", {
-          body: {
-            reference,
-          },
-        });
+        const { data, error } =
+          await supabase.functions.invoke(
+            "verify-payment",
+            {
+              body: {
+                reference,
+              },
+            },
+          );
 
         if (!active) return;
 
         if (error) {
-          console.error("Payment verification error:", error);
+          console.error(
+            "Payment verification error:",
+            error,
+          );
 
           setStatus("error");
           setMessage(
@@ -84,7 +106,11 @@ function PaymentCallback() {
 
         if (!data?.success) {
           setStatus("error");
-          setMessage(data?.message || data?.error || "Payment was not completed.");
+          setMessage(
+            data?.message ||
+              data?.error ||
+              "Payment was not completed.",
+          );
           return;
         }
 
@@ -101,7 +127,10 @@ function PaymentCallback() {
             : "Your payment has been confirmed and your membership has been updated.",
         );
       } catch (error) {
-        console.error("Payment callback error:", error);
+        console.error(
+          "Payment callback error:",
+          error,
+        );
 
         if (!active) return;
 
@@ -124,11 +153,18 @@ function PaymentCallback() {
   function formatDate(value?: string) {
     if (!value) return "";
 
-    const parts = value.slice(0, 10).split("-").map(Number);
+    const parts = value
+      .slice(0, 10)
+      .split("-")
+      .map(Number);
 
     if (parts.length !== 3) return value;
 
-    const date = new Date(parts[0]!, parts[1]! - 1, parts[2]!);
+    const date = new Date(
+      parts[0]!,
+      parts[1]! - 1,
+      parts[2]!,
+    );
 
     if (Number.isNaN(date.getTime())) {
       return value;
@@ -150,12 +186,17 @@ function PaymentCallback() {
               <Loader2 className="size-8 animate-spin" />
             </div>
 
-            <h1 className="display-title mt-7 text-4xl sm:text-5xl">Confirming Payment</h1>
+            <h1 className="display-title mt-7 text-4xl sm:text-5xl">
+              Confirming Payment
+            </h1>
 
-            <p className="mt-5 text-sm leading-7 text-muted-foreground">{message}</p>
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">
+              {message}
+            </p>
 
             <p className="mt-4 text-xs leading-5 text-muted-foreground">
-              Please don't close this page while we confirm your payment.
+              Please don't close this page while we
+              confirm your payment.
             </p>
           </div>
         </div>
@@ -172,9 +213,13 @@ function PaymentCallback() {
               <AlertCircle className="size-8" />
             </div>
 
-            <h1 className="display-title mt-7 text-4xl sm:text-5xl">Payment Issue</h1>
+            <h1 className="display-title mt-7 text-4xl sm:text-5xl">
+              Payment Issue
+            </h1>
 
-            <p className="mt-5 text-sm leading-7 text-muted-foreground">{message}</p>
+            <p className="mt-5 text-sm leading-7 text-muted-foreground">
+              {message}
+            </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link to="/member" className="flex-1">
@@ -184,7 +229,11 @@ function PaymentCallback() {
               </Link>
 
               <Link to="/" className="flex-1">
-                <Button variant="outline" className="w-full" size="lg">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                >
                   Back to Home
                 </Button>
               </Link>
@@ -203,9 +252,13 @@ function PaymentCallback() {
             <CheckCircle2 className="size-8" />
           </div>
 
-          <h1 className="display-title mt-7 text-4xl sm:text-5xl">Payment Successful</h1>
+          <h1 className="display-title mt-7 text-4xl sm:text-5xl">
+            Payment Successful
+          </h1>
 
-          <p className="mt-5 text-sm leading-7 text-muted-foreground">{message}</p>
+          <p className="mt-5 text-sm leading-7 text-muted-foreground">
+            {message}
+          </p>
 
           {membershipDetails?.planName && (
             <div className="mt-7 border border-border p-5">
@@ -219,24 +272,39 @@ function PaymentCallback() {
 
               {membershipDetails.startDate && (
                 <div className="mt-5 flex justify-between gap-4 border-t border-border pt-4 text-sm">
-                  <span className="text-muted-foreground">Start Date</span>
+                  <span className="text-muted-foreground">
+                    Start Date
+                  </span>
 
-                  <span className="font-bold">{formatDate(membershipDetails.startDate)}</span>
+                  <span className="font-bold">
+                    {formatDate(
+                      membershipDetails.startDate,
+                    )}
+                  </span>
                 </div>
               )}
 
               {membershipDetails.endDate && (
                 <div className="mt-3 flex justify-between gap-4 text-sm">
-                  <span className="text-muted-foreground">Expiry Date</span>
+                  <span className="text-muted-foreground">
+                    Expiry Date
+                  </span>
 
-                  <span className="font-bold">{formatDate(membershipDetails.endDate)}</span>
+                  <span className="font-bold">
+                    {formatDate(
+                      membershipDetails.endDate,
+                    )}
+                  </span>
                 </div>
               )}
             </div>
           )}
 
           <Link to="/member" className="mt-8 block">
-            <Button size="lg" className="w-full">
+            <Button
+              size="lg"
+              className="w-full"
+            >
               Go to My Dashboard
               <ArrowRight />
             </Button>

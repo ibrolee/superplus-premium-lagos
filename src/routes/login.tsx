@@ -1,6 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, CheckCircle2, Loader2, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Loader2,
+  MessageCircle,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
@@ -67,7 +72,9 @@ function LoginRoute() {
     };
   }, [navigate]);
 
-  async function handleSendCode(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSendCode(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const cleanEmail = email.trim().toLowerCase();
@@ -80,9 +87,10 @@ function LoginRoute() {
     setSending(true);
     setError("");
 
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-    });
+    const { error: authError } =
+      await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+      });
 
     setSending(false);
 
@@ -96,30 +104,37 @@ function LoginRoute() {
     setStep("code");
   }
 
-  async function handleVerifyCode(event: React.FormEvent<HTMLFormElement>) {
+  async function handleVerifyCode(
+    event: React.FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanToken = token.replace(/\D/g, "");
 
     if (cleanToken.length !== 8) {
-      setError("Please enter the 8-digit code from your email.");
+      setError(
+        "Please enter the 8-digit code from your email.",
+      );
       return;
     }
 
     setVerifying(true);
     setError("");
 
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: cleanEmail,
-      token: cleanToken,
-      type: "email",
-    });
+    const { error: verifyError } =
+      await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: "email",
+      });
 
     setVerifying(false);
 
     if (verifyError) {
-      setError("That code is invalid or has expired. Please request a new code.");
+      setError(
+        "That code is invalid or has expired. Please request a new code.",
+      );
       return;
     }
 
@@ -150,14 +165,18 @@ function LoginRoute() {
       <div className="section-shell flex min-h-[60vh] items-center justify-center">
         <div className="w-full max-w-md border border-border bg-background p-7 shadow-sm sm:p-10">
           <div className="mb-8">
-            <p className="mb-4 text-xs font-extrabold uppercase text-primary">Super Plus Fitness</p>
+            <p className="mb-4 text-xs font-extrabold uppercase text-primary">
+              Super Plus Fitness
+            </p>
 
-            <h1 className="display-title text-5xl sm:text-6xl">Member Login</h1>
+            <h1 className="display-title text-5xl sm:text-6xl">
+              Member Login
+            </h1>
 
             {step === "email" ? (
               <p className="mt-5 text-sm leading-6 text-muted-foreground">
-                Enter the email address registered with your Super Plus Fitness membership. We'll
-                send you a secure login code.
+                Enter the email address registered with your Super Plus
+                Fitness membership. We'll send you a secure login code.
               </p>
             ) : (
               <p className="mt-5 text-sm leading-6 text-muted-foreground">
@@ -167,13 +186,19 @@ function LoginRoute() {
           </div>
 
           {step === "email" ? (
-            <form onSubmit={handleSendCode} className="grid gap-5">
+            <form
+              onSubmit={handleSendCode}
+              className="grid gap-5"
+            >
               <label className="grid gap-2 text-sm font-bold">
                 Email address
+
                 <input
                   type="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) =>
+                    setEmail(event.target.value)
+                  }
                   placeholder="you@example.com"
                   autoComplete="email"
                   required
@@ -191,7 +216,12 @@ function LoginRoute() {
                 </div>
               )}
 
-              <Button type="submit" size="lg" className="w-full" disabled={sending}>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={sending}
+              >
                 {sending ? (
                   <>
                     <Loader2 className="animate-spin" />
@@ -206,32 +236,45 @@ function LoginRoute() {
               </Button>
 
               <p className="text-center text-xs leading-5 text-muted-foreground">
-                No password required. We'll email you a secure one-time code.
+                No password required. We'll email you a secure one-time
+                code.
               </p>
             </form>
           ) : (
-            <form onSubmit={handleVerifyCode} className="grid gap-5">
+            <form
+              onSubmit={handleVerifyCode}
+              className="grid gap-5"
+            >
               <div className="border border-border bg-muted p-5">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 className="size-5 text-primary" />
 
                   <div>
-                    <p className="text-xs font-extrabold uppercase">Code sent to</p>
+                    <p className="text-xs font-extrabold uppercase">
+                      Code sent to
+                    </p>
 
-                    <p className="mt-1 break-all text-sm font-bold">{email}</p>
+                    <p className="mt-1 break-all text-sm font-bold">
+                      {email}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <label className="grid gap-2 text-sm font-bold">
                 8-digit login code
+
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={8}
                   value={token}
-                  onChange={(event) => setToken(event.target.value.replace(/\D/g, ""))}
+                  onChange={(event) =>
+                    setToken(
+                      event.target.value.replace(/\D/g, ""),
+                    )
+                  }
                   placeholder="00000000"
                   autoComplete="one-time-code"
                   autoFocus
@@ -250,7 +293,12 @@ function LoginRoute() {
                 </div>
               )}
 
-              <Button type="submit" size="lg" className="w-full" disabled={verifying}>
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full"
+                disabled={verifying}
+              >
                 {verifying ? (
                   <>
                     <Loader2 className="animate-spin" />
@@ -278,7 +326,9 @@ function LoginRoute() {
           )}
 
           <div className="mt-8 border-t border-border pt-6 text-center">
-            <p className="text-xs text-muted-foreground">Not a member yet?</p>
+            <p className="text-xs text-muted-foreground">
+              Not a member yet?
+            </p>
 
             <a
               href="https://members.superplusfitness.com/pricing-plans/list"
@@ -308,8 +358,8 @@ function LoginRoute() {
             </a>
 
             <p className="mt-3 text-center text-xs leading-5 text-muted-foreground">
-              Join our official member group for gym updates, announcements, events and important
-              information.
+              Join our official member group for gym updates, announcements,
+              events and important information.
             </p>
           </div>
         </div>

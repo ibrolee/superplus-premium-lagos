@@ -14,7 +14,12 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/staff-attendance")({
@@ -153,9 +158,12 @@ function StaffAttendancePage() {
           await stopScanner();
 
           try {
-            const { data, error: rpcError } = await supabase.rpc("staff_scan_attendance", {
-              p_location_code: decodedText.trim(),
-            });
+            const { data, error: rpcError } = await supabase.rpc(
+              "staff_scan_attendance",
+              {
+                p_location_code: decodedText.trim(),
+              },
+            );
 
             if (rpcError) {
               throw rpcError;
@@ -164,14 +172,19 @@ function StaffAttendancePage() {
             const scanResult = data as ScanResult;
 
             if (!scanResult?.success) {
-              throw new Error(scanResult?.error || "Attendance scan failed.");
+              throw new Error(
+                scanResult?.error || "Attendance scan failed.",
+              );
             }
 
             setResult(scanResult);
           } catch (err) {
             console.error(err);
 
-            const message = err instanceof Error ? err.message : "Unable to record attendance.";
+            const message =
+              err instanceof Error
+                ? err.message
+                : "Unable to record attendance.";
 
             setError(message);
             scanLockedRef.current = false;
@@ -194,7 +207,9 @@ function StaffAttendancePage() {
       setScanning(false);
       scannerRunningRef.current = false;
 
-      setError("Unable to start the camera. Please allow camera access and try again.");
+      setError(
+        "Unable to start the camera. Please allow camera access and try again.",
+      );
 
       try {
         scanner.clear();
@@ -230,7 +245,9 @@ function StaffAttendancePage() {
         <div className="mx-auto flex max-w-md items-center justify-center">
           <div className="text-center">
             <RefreshCw className="mx-auto mb-3 size-8 animate-spin" />
-            <p className="text-sm text-muted-foreground">Checking staff account...</p>
+            <p className="text-sm text-muted-foreground">
+              Checking staff account...
+            </p>
           </div>
         </div>
       </main>
@@ -252,7 +269,9 @@ function StaffAttendancePage() {
             <CardContent className="py-10 text-center">
               <XCircle className="mx-auto mb-4 size-12 text-destructive" />
 
-              <h1 className="font-display text-2xl font-bold uppercase">Attendance Unavailable</h1>
+              <h1 className="font-display text-2xl font-bold uppercase">
+                Attendance Unavailable
+              </h1>
 
               <p className="mt-2 text-sm text-muted-foreground">
                 {error || "Your account cannot use staff attendance yet."}
@@ -288,7 +307,8 @@ function StaffAttendancePage() {
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            Scan the Super Plus Fitness attendance QR code to clock in or clock out.
+            Scan the Super Plus Fitness attendance QR code to clock in or
+            clock out.
           </p>
         </div>
 
@@ -299,9 +319,13 @@ function StaffAttendancePage() {
 
               <Badge
                 className="mb-4"
-                variant={result.action === "clock_in" ? "default" : "secondary"}
+                variant={
+                  result.action === "clock_in" ? "default" : "secondary"
+                }
               >
-                {result.action === "clock_in" ? "CLOCKED IN" : "CLOCKED OUT"}
+                {result.action === "clock_in"
+                  ? "CLOCKED IN"
+                  : "CLOCKED OUT"}
               </Badge>
 
               <h2 className="font-display text-2xl font-bold uppercase">
@@ -313,7 +337,8 @@ function StaffAttendancePage() {
                   <div className="flex items-center justify-center gap-2">
                     <LogIn className="size-4" />
                     <span>
-                      Clock-in: <strong>{formatTime(result.checked_in_at)}</strong>
+                      Clock-in:{" "}
+                      <strong>{formatTime(result.checked_in_at)}</strong>
                     </span>
                   </div>
                 ) : (
@@ -321,14 +346,16 @@ function StaffAttendancePage() {
                     <div className="flex items-center justify-center gap-2">
                       <LogIn className="size-4" />
                       <span>
-                        Clock-in: <strong>{formatTime(result.checked_in_at)}</strong>
+                        Clock-in:{" "}
+                        <strong>{formatTime(result.checked_in_at)}</strong>
                       </span>
                     </div>
 
                     <div className="flex items-center justify-center gap-2">
                       <LogOut className="size-4" />
                       <span>
-                        Clock-out: <strong>{formatTime(result.checked_out_at)}</strong>
+                        Clock-out:{" "}
+                        <strong>{formatTime(result.checked_out_at)}</strong>
                       </span>
                     </div>
                   </>
@@ -347,7 +374,11 @@ function StaffAttendancePage() {
                 Scan Again
               </Button>
 
-              <Button variant="outline" asChild className="mt-3 w-full">
+              <Button
+                variant="outline"
+                asChild
+                className="mt-3 w-full"
+              >
                 <Link to="/staff">Back to Staff Portal</Link>
               </Button>
             </CardContent>
@@ -373,7 +404,10 @@ function StaffAttendancePage() {
                 />
 
                 {!scanning && !processing && (
-                  <Button className="mt-4 w-full" onClick={() => void startScanner()}>
+                  <Button
+                    className="mt-4 w-full"
+                    onClick={() => void startScanner()}
+                  >
                     <Camera className="mr-2 size-4" />
                     Start Camera
                   </Button>

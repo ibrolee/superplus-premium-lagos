@@ -1,6 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Download, Loader2, QrCode, UserRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Loader2,
+  QrCode,
+  UserRound,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
@@ -130,7 +136,13 @@ function MyQrPage() {
         context.fillStyle = "#ffffff";
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        context.drawImage(image, padding, padding, size, size);
+        context.drawImage(
+          image,
+          padding,
+          padding,
+          size,
+          size,
+        );
 
         context.fillStyle = "#000000";
         context.font = "bold 32px Arial";
@@ -196,12 +208,18 @@ function MyQrPage() {
           <div className="mx-auto max-w-md border border-border bg-background p-8 text-center shadow-sm">
             <QrCode className="mx-auto size-12 text-destructive" />
 
-            <h1 className="mt-6 font-display text-3xl font-bold uppercase">QR Code Unavailable</h1>
+            <h1 className="mt-6 font-display text-3xl font-bold uppercase">
+              QR Code Unavailable
+            </h1>
 
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">{error}</p>
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
+              {error}
+            </p>
 
             <Link to="/member" className="mt-7 block">
-              <Button className="w-full">Back to Dashboard</Button>
+              <Button className="w-full">
+                Back to Dashboard
+              </Button>
             </Link>
           </div>
         </div>
@@ -230,17 +248,25 @@ function MyQrPage() {
               Super Plus Fitness
             </p>
 
-            <h1 className="display-title mt-3 text-4xl sm:text-5xl">My Gym QR Code</h1>
+            <h1 className="display-title mt-3 text-4xl sm:text-5xl">
+              My Gym QR Code
+            </h1>
 
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              Show this QR code to reception when checking in or out of the gym.
+              Show this QR code to reception when checking in or out of the
+              gym.
             </p>
 
             <div
               ref={qrRef}
               className="mx-auto mt-8 flex w-fit items-center justify-center border border-border bg-white p-5"
             >
-              <QRCodeSVG value={member.qr_token} size={260} level="H" includeMargin />
+              <QRCodeSVG
+                value={member.qr_token}
+                size={260}
+                level="H"
+                includeMargin
+              />
             </div>
 
             <Button
@@ -272,14 +298,16 @@ function MyQrPage() {
                 </p>
               </div>
 
-              <p className="mt-2 break-all text-xs text-muted-foreground">{member.email}</p>
+              <p className="mt-2 break-all text-xs text-muted-foreground">
+                {member.email}
+              </p>
             </div>
 
             <div className="mt-7 border border-primary/20 bg-primary/5 p-4">
               <p className="text-xs leading-5 text-muted-foreground">
-                Download this QR code and save it to your phone. You can then show the saved image
-                to reception whenever you visit the gym. You do not need to log in again just to
-                access your QR code.
+                Download this QR code and save it to your phone. You can then
+                show the saved image to reception whenever you visit the gym.
+                You do not need to log in again just to access your QR code.
               </p>
             </div>
           </section>

@@ -26,7 +26,12 @@ export const openingHours = [
   { days: "Sunday", hours: "6:30 AM – 7:00 PM" },
 ];
 
-export type MembershipCategory = "Gym" | "VIP" | "Family" | "Training" | "Spa & Recovery";
+export type MembershipCategory =
+  | "Gym"
+  | "VIP"
+  | "Family"
+  | "Training"
+  | "Spa & Recovery";
 
 export type MembershipPlan = {
   id: string;
@@ -172,7 +177,12 @@ export const membershipPlans: MembershipPlan[] = [
     price: 57000,
     duration: "30 days",
     registration: 7000,
-    benefits: ["30-day access", "Gym equipment", "Group classes", "Personal coach training"],
+    benefits: [
+      "30-day access",
+      "Gym equipment",
+      "Group classes",
+      "Personal coach training",
+    ],
     checkoutUrl:
       "https://members.superplusfitness.com/checkout?checkoutId=ca727402-7374-426f-8780-7135176e7b7d&disableContinueShopping=true",
   },
@@ -256,27 +266,32 @@ export const facilities = [
   {
     name: "Strength Training",
     image: "/strength-training.png",
-    description: "Free weights, racks and machines for focused strength work.",
+    description:
+      "Free weights, racks and machines for focused strength work.",
   },
   {
     name: "Cardio",
     image: "/cardio.png",
-    description: "Modern cardio equipment for every pace and fitness level.",
+    description:
+      "Modern cardio equipment for every pace and fitness level.",
   },
   {
     name: "Functional Training",
     image: "/functional-training.png",
-    description: "Open training space for movement, conditioning and performance.",
+    description:
+      "Open training space for movement, conditioning and performance.",
   },
   {
     name: "Group Classes",
     image: "/group-classes.png",
-    description: "Coach-led sessions built around energy, community and progress.",
+    description:
+      "Coach-led sessions built around energy, community and progress.",
   },
   {
     name: "Modern Equipment",
     image: "/modern-equipment.png",
-    description: "A considered mix of equipment for complete workouts.",
+    description:
+      "A considered mix of equipment for complete workouts.",
   },
 ];
 
@@ -313,4 +328,5 @@ export const navItems = [
   { label: "Contact", to: "/contact" },
 ] as const;
 
-export const formatNaira = (value: number) => `₦${value.toLocaleString("en-NG")}`;
+export const formatNaira = (value: number) =>
+  `₦${value.toLocaleString("en-NG")}`;

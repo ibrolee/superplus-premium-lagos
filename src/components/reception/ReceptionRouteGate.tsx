@@ -19,17 +19,13 @@ type AccessState = {
  */
 export function ReceptionRouteGate() {
   const path = useRouterState({ select: (state) => state.location.pathname });
-  const guarded =
-    path === "/reception-dashboard" ||
-    path === "/reception-checkin" ||
+  const guarded = path === "/reception-dashboard" || path === "/reception-checkin" ||
     path.startsWith("/reception-member/");
   const [revision, setRevision] = useState(0);
   const [access, setAccess] = useState<AccessState>({ path: "", revision: -1, status: "checking" });
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") {
         setRevision((previous) => previous + 1);
       }
@@ -48,63 +44,37 @@ export function ReceptionRouteGate() {
           if (!cancelled) setAccess({ path, revision, status: "signed-out" });
           return;
         }
-        const { data: staff, error: staffError } = await supabase
-          .from("staff_users")
-          .select("role,active")
-          .eq("auth_user_id", data.user.id)
-          .maybeSingle();
-        if (!cancelled)
-          setAccess({
-            path,
-            revision,
-            status:
-              !staffError &&
-              staff?.active &&
-              RECEPTION_ROLES.has(String(staff.role || "").toLowerCase())
-                ? "allowed"
-                : "denied",
-          });
+        const { data: staff, error: staffError } = await supabase.from("staff_users")
+          .select("role,active").eq("auth_user_id", data.user.id).maybeSingle();
+        if (!cancelled) setAccess({
+          path,
+          revision,
+          status: !staffError && staff?.active && RECEPTION_ROLES.has(String(staff.role || "").toLowerCase())
+            ? "allowed" : "denied",
+        });
       } catch {
         if (!cancelled) setAccess({ path, revision, status: "denied" });
       }
     }
     void verify();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [path, guarded, revision]);
 
   if (!guarded) return <Outlet />;
   if (access.path !== path || access.revision !== revision || access.status === "checking") {
-    return (
-      <main role="status" className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16 text-sm">
-        Checking reception access…
-      </main>
-    );
+    return <main role="status" className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16 text-sm">Checking reception access…</main>;
   }
-  if (
-    access.status === "allowed" ||
-    (access.status === "signed-out" && path === "/reception-checkin")
-  ) {
+  if (access.status === "allowed" || (access.status === "signed-out" && path === "/reception-checkin")) {
     // Keep the original scanner's staff sign-in form accessible to signed-out users.
     return <Outlet />;
   }
-  return (
-    <main className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16">
-      <div role="alert" className="rounded-2xl border border-[#d8e2d5] bg-white p-6 text-[#193327]">
-        <h1 className="text-2xl font-black">Reception access required</h1>
-        <p className="mt-3 text-sm leading-6">
-          {access.status === "signed-out"
-            ? "Sign in with an authorised reception or management account to access member records."
-            : "Your account does not have reception access. Contact management if you need this permission."}
-        </p>
-        <a
-          href="/staff"
-          className="mt-5 inline-flex rounded-xl bg-[#193327] px-5 py-3 text-sm font-bold text-white"
-        >
-          Go to staff portal
-        </a>
-      </div>
-    </main>
-  );
+  return <main className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16">
+    <div role="alert" className="rounded-2xl border border-[#d8e2d5] bg-white p-6 text-[#193327]">
+      <h1 className="text-2xl font-black">Reception access required</h1>
+      <p className="mt-3 text-sm leading-6">{access.status === "signed-out"
+        ? "Sign in with an authorised reception or management account to access member records."
+        : "Your account does not have reception access. Contact management if you need this permission."}</p>
+      <a href="/staff" className="mt-5 inline-flex rounded-xl bg-[#193327] px-5 py-3 text-sm font-bold text-white">Go to staff portal</a>
+    </div>
+  </main>;
 }

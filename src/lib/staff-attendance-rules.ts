@@ -27,25 +27,15 @@ export function lateRuleApplies(name: string | null, date: string): boolean {
 }
 
 /** Check only the earliest recorded arrival that day, never a later return from a break. */
-export function isLateArrival(
-  name: string | null,
-  date: string,
-  firstClockIn: string | null,
-): boolean {
+export function isLateArrival(name: string | null, date: string, firstClockIn: string | null): boolean {
   if (!firstClockIn || !lateRuleApplies(name, date)) return false;
   const instant = new Date(firstClockIn);
   if (Number.isNaN(instant.getTime())) return false;
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: LAGOS,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
+    timeZone: LAGOS, hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23",
   }).formatToParts(instant);
   const part = (kind: string) => Number(parts.find((entry) => entry.type === kind)?.value ?? NaN);
-  const hour = part("hour"),
-    minute = part("minute"),
-    second = part("second");
+  const hour = part("hour"), minute = part("minute"), second = part("second");
   if (![hour, minute, second].every(Number.isFinite)) return false;
   const clockMinutes = hour * 60 + minute;
   return clockMinutes > CUTOFF_MINUTES || (clockMinutes === CUTOFF_MINUTES && second > 0);
@@ -59,37 +49,21 @@ export function isLateArrival(
  * signals that management should check the source QR records.
  */
 export function recordedWorkMinutes(scans: StaffScan[]): {
-  minutes: number;
-  completed: number;
-  open: number;
-  invalid: number;
-  overlapping: number;
+  minutes: number; completed: number; open: number; invalid: number; overlapping: number;
 } {
   const intervals: Array<{ start: number; end: number }> = [];
-  let open = 0,
-    invalid = 0;
+  let open = 0, invalid = 0;
   for (const scan of scans) {
     const start = Date.parse(scan.checked_in_at);
-    if (!Number.isFinite(start)) {
-      invalid += 1;
-      continue;
-    }
-    if (!scan.checked_out_at) {
-      open += 1;
-      continue;
-    }
+    if (!Number.isFinite(start)) { invalid += 1; continue; }
+    if (!scan.checked_out_at) { open += 1; continue; }
     const end = Date.parse(scan.checked_out_at);
-    if (!Number.isFinite(end) || end < start) {
-      invalid += 1;
-      continue;
-    }
+    if (!Number.isFinite(end) || end < start) { invalid += 1; continue; }
     intervals.push({ start, end });
   }
   intervals.sort((a, b) => a.start - b.start || a.end - b.end);
-  let milliseconds = 0,
-    overlapping = 0;
-  let currentStart: number | null = null,
-    currentEnd = 0;
+  let milliseconds = 0, overlapping = 0;
+  let currentStart: number | null = null, currentEnd = 0;
   for (const interval of intervals) {
     if (currentStart === null) {
       currentStart = interval.start;
@@ -104,13 +78,7 @@ export function recordedWorkMinutes(scans: StaffScan[]): {
     }
   }
   if (currentStart !== null) milliseconds += currentEnd - currentStart;
-  return {
-    minutes: Math.floor(milliseconds / 60000),
-    completed: intervals.length,
-    open,
-    invalid,
-    overlapping,
-  };
+  return { minutes: Math.floor(milliseconds / 60000), completed: intervals.length, open, invalid, overlapping };
 }
 
 export function workDuration(minutes: number): string {

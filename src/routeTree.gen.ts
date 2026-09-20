@@ -14,7 +14,6 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as FacilitiesRouteImport } from './routes/facilities'
-import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as HmoRouteImport } from './routes/hmo'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LoginRouteImport } from './routes/login'
@@ -37,7 +36,6 @@ import { Route as MemberRouteImport } from './routes/member'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as MyQrRouteImport } from './routes/my-qr'
 import { Route as PersonalTrainingRouteImport } from './routes/personal-training'
-import { Route as PortalRouteImport } from './routes/portal'
 import { Route as ReceptionCheckinRouteImport } from './routes/reception-checkin'
 import { Route as ReceptionDashboardRouteImport } from './routes/reception-dashboard'
 import { Route as ReceptionWorkspaceRouteImport } from './routes/reception-workspace'
@@ -47,18 +45,12 @@ import { Route as StaffAdminRouteImport } from './routes/staff-admin'
 import { Route as StaffAttendanceRouteImport } from './routes/staff-attendance'
 import { Route as StaffAttendanceQrRouteImport } from './routes/staff-attendance-qr'
 import { Route as StaffBlogRouteImport } from './routes/staff-blog'
-import { Route as StaffGalleryRouteImport } from './routes/staff-gallery'
 import { Route as StaffMissedScansRouteImport } from './routes/staff-missed-scans'
-import { Route as StaffResetPasswordRouteImport } from './routes/staff-reset-password'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
-import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as BlogArticleRouteImport } from './routes/blog.article'
 import { Route as PaymentCallbackRouteImport } from './routes/payment.callback'
 import { Route as PaymentPublicCallbackRouteImport } from './routes/payment.public-callback'
-import { Route as PortalAdminRouteImport } from './routes/portal.admin'
-import { Route as PortalReceptionRouteImport } from './routes/portal.reception'
-import { Route as PortalStaffRouteImport } from './routes/portal.staff'
 import { Route as ReceptionMemberMemberIdRouteImport } from './routes/reception-member.$memberId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -84,11 +76,6 @@ const ContactRoute = ContactRouteImport.update({
 const FacilitiesRoute = FacilitiesRouteImport.update({
   id: '/facilities',
   path: '/facilities',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GalleryRoute = GalleryRouteImport.update({
-  id: '/gallery',
-  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HmoRoute = HmoRouteImport.update({
@@ -203,11 +190,6 @@ const PersonalTrainingRoute = PersonalTrainingRouteImport.update({
   path: '/personal-training',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortalRoute = PortalRouteImport.update({
-  id: '/portal',
-  path: '/portal',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReceptionCheckinRoute = ReceptionCheckinRouteImport.update({
   id: '/reception-checkin',
   path: '/reception-checkin',
@@ -253,30 +235,15 @@ const StaffBlogRoute = StaffBlogRouteImport.update({
   path: '/staff-blog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StaffGalleryRoute = StaffGalleryRouteImport.update({
-  id: '/staff-gallery',
-  path: '/staff-gallery',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const StaffMissedScansRoute = StaffMissedScansRouteImport.update({
   id: '/staff-missed-scans',
   path: '/staff-missed-scans',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StaffResetPasswordRoute = StaffResetPasswordRouteImport.update({
-  id: '/staff-reset-password',
-  path: '/staff-reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthConfirmRoute = AuthConfirmRouteImport.update({
   id: '/auth/confirm',
   path: '/auth/confirm',
   getParentRoute: () => rootRouteImport,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => BlogRoute,
 } as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/$slug',
@@ -298,21 +265,6 @@ const PaymentPublicCallbackRoute = PaymentPublicCallbackRouteImport.update({
   path: '/payment/public-callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PortalAdminRoute = PortalAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => PortalRoute,
-} as any)
-const PortalReceptionRoute = PortalReceptionRouteImport.update({
-  id: '/reception',
-  path: '/reception',
-  getParentRoute: () => PortalRoute,
-} as any)
-const PortalStaffRoute = PortalStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => PortalRoute,
-} as any)
 const ReceptionMemberMemberIdRoute = ReceptionMemberMemberIdRouteImport.update({
   id: '/reception-member/$memberId',
   path: '/reception-member/$memberId',
@@ -325,7 +277,6 @@ export interface FileRoutesByFullPath {
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
   '/facilities': typeof FacilitiesRoute
-  '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
@@ -348,7 +299,6 @@ export interface FileRoutesByFullPath {
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
-  '/portal': typeof PortalRouteWithChildren
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
@@ -358,26 +308,20 @@ export interface FileRoutesByFullPath {
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
   '/staff-blog': typeof StaffBlogRoute
-  '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
-  '/staff-reset-password': typeof StaffResetPasswordRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
   '/payment/callback': typeof PaymentCallbackRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
-  '/portal/admin': typeof PortalAdminRoute
-  '/portal/reception': typeof PortalReceptionRoute
-  '/portal/staff': typeof PortalStaffRoute
   '/reception-member/$memberId': typeof ReceptionMemberMemberIdRoute
-  '/blog/': typeof BlogIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
   '/facilities': typeof FacilitiesRoute
-  '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
@@ -400,7 +344,6 @@ export interface FileRoutesByTo {
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
-  '/portal': typeof PortalRouteWithChildren
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
@@ -410,19 +353,13 @@ export interface FileRoutesByTo {
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
   '/staff-blog': typeof StaffBlogRoute
-  '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
-  '/staff-reset-password': typeof StaffResetPasswordRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
   '/payment/callback': typeof PaymentCallbackRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
-  '/portal/admin': typeof PortalAdminRoute
-  '/portal/reception': typeof PortalReceptionRoute
-  '/portal/staff': typeof PortalStaffRoute
   '/reception-member/$memberId': typeof ReceptionMemberMemberIdRoute
-  '/blog': typeof BlogIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -431,7 +368,6 @@ export interface FileRoutesById {
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
   '/facilities': typeof FacilitiesRoute
-  '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
@@ -454,7 +390,6 @@ export interface FileRoutesById {
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
-  '/portal': typeof PortalRouteWithChildren
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
@@ -464,19 +399,13 @@ export interface FileRoutesById {
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
   '/staff-blog': typeof StaffBlogRoute
-  '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
-  '/staff-reset-password': typeof StaffResetPasswordRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
   '/payment/callback': typeof PaymentCallbackRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
-  '/portal/admin': typeof PortalAdminRoute
-  '/portal/reception': typeof PortalReceptionRoute
-  '/portal/staff': typeof PortalStaffRoute
   '/reception-member/$memberId': typeof ReceptionMemberMemberIdRoute
-  '/blog/': typeof BlogIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -486,7 +415,6 @@ export interface FileRouteTypes {
     | '/blog'
     | '/contact'
     | '/facilities'
-    | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
@@ -509,7 +437,6 @@ export interface FileRouteTypes {
     | '/membership'
     | '/my-qr'
     | '/personal-training'
-    | '/portal'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-workspace'
@@ -519,26 +446,20 @@ export interface FileRouteTypes {
     | '/staff-attendance'
     | '/staff-attendance-qr'
     | '/staff-blog'
-    | '/staff-gallery'
     | '/staff-missed-scans'
-    | '/staff-reset-password'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
     | '/payment/callback'
     | '/payment/public-callback'
-    | '/portal/admin'
-    | '/portal/reception'
-    | '/portal/staff'
     | '/reception-member/$memberId'
-    | '/blog/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
+    | '/blog'
     | '/contact'
     | '/facilities'
-    | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
@@ -561,7 +482,6 @@ export interface FileRouteTypes {
     | '/membership'
     | '/my-qr'
     | '/personal-training'
-    | '/portal'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-workspace'
@@ -571,19 +491,13 @@ export interface FileRouteTypes {
     | '/staff-attendance'
     | '/staff-attendance-qr'
     | '/staff-blog'
-    | '/staff-gallery'
     | '/staff-missed-scans'
-    | '/staff-reset-password'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
     | '/payment/callback'
     | '/payment/public-callback'
-    | '/portal/admin'
-    | '/portal/reception'
-    | '/portal/staff'
     | '/reception-member/$memberId'
-    | '/blog'
   id:
     | '__root__'
     | '/'
@@ -591,7 +505,6 @@ export interface FileRouteTypes {
     | '/blog'
     | '/contact'
     | '/facilities'
-    | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
@@ -614,7 +527,6 @@ export interface FileRouteTypes {
     | '/membership'
     | '/my-qr'
     | '/personal-training'
-    | '/portal'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-workspace'
@@ -624,19 +536,13 @@ export interface FileRouteTypes {
     | '/staff-attendance'
     | '/staff-attendance-qr'
     | '/staff-blog'
-    | '/staff-gallery'
     | '/staff-missed-scans'
-    | '/staff-reset-password'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
     | '/payment/callback'
     | '/payment/public-callback'
-    | '/portal/admin'
-    | '/portal/reception'
-    | '/portal/staff'
     | '/reception-member/$memberId'
-    | '/blog/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -645,7 +551,6 @@ export interface RootRouteChildren {
   BlogRoute: typeof BlogRouteWithChildren
   ContactRoute: typeof ContactRoute
   FacilitiesRoute: typeof FacilitiesRoute
-  GalleryRoute: typeof GalleryRoute
   HmoRoute: typeof HmoRoute
   JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
@@ -668,7 +573,6 @@ export interface RootRouteChildren {
   MembershipRoute: typeof MembershipRoute
   MyQrRoute: typeof MyQrRoute
   PersonalTrainingRoute: typeof PersonalTrainingRoute
-  PortalRoute: typeof PortalRouteWithChildren
   ReceptionCheckinRoute: typeof ReceptionCheckinRoute
   ReceptionDashboardRoute: typeof ReceptionDashboardRoute
   ReceptionWorkspaceRoute: typeof ReceptionWorkspaceRoute
@@ -678,9 +582,7 @@ export interface RootRouteChildren {
   StaffAttendanceRoute: typeof StaffAttendanceRoute
   StaffAttendanceQrRoute: typeof StaffAttendanceQrRoute
   StaffBlogRoute: typeof StaffBlogRoute
-  StaffGalleryRoute: typeof StaffGalleryRoute
   StaffMissedScansRoute: typeof StaffMissedScansRoute
-  StaffResetPasswordRoute: typeof StaffResetPasswordRoute
   AuthConfirmRoute: typeof AuthConfirmRoute
   PaymentCallbackRoute: typeof PaymentCallbackRoute
   PaymentPublicCallbackRoute: typeof PaymentPublicCallbackRoute
@@ -722,13 +624,6 @@ declare module '@tanstack/react-router' {
       path: '/facilities'
       fullPath: '/facilities'
       preLoaderRoute: typeof FacilitiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gallery': {
-      id: '/gallery'
-      path: '/gallery'
-      fullPath: '/gallery'
-      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hmo': {
@@ -885,13 +780,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PersonalTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/portal': {
-      id: '/portal'
-      path: '/portal'
-      fullPath: '/portal'
-      preLoaderRoute: typeof PortalRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reception-checkin': {
       id: '/reception-checkin'
       path: '/reception-checkin'
@@ -955,25 +843,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffBlogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/staff-gallery': {
-      id: '/staff-gallery'
-      path: '/staff-gallery'
-      fullPath: '/staff-gallery'
-      preLoaderRoute: typeof StaffGalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/staff-missed-scans': {
       id: '/staff-missed-scans'
       path: '/staff-missed-scans'
       fullPath: '/staff-missed-scans'
       preLoaderRoute: typeof StaffMissedScansRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/staff-reset-password': {
-      id: '/staff-reset-password'
-      path: '/staff-reset-password'
-      fullPath: '/staff-reset-password'
-      preLoaderRoute: typeof StaffResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/confirm': {
@@ -982,13 +856,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/confirm'
       preLoaderRoute: typeof AuthConfirmRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof BlogRoute
     }
     '/blog/$slug': {
       id: '/blog/$slug'
@@ -1018,27 +885,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentPublicCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/portal/admin': {
-      id: '/portal/admin'
-      path: '/admin'
-      fullPath: '/portal/admin'
-      preLoaderRoute: typeof PortalAdminRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/reception': {
-      id: '/portal/reception'
-      path: '/reception'
-      fullPath: '/portal/reception'
-      preLoaderRoute: typeof PortalReceptionRouteImport
-      parentRoute: typeof PortalRoute
-    }
-    '/portal/staff': {
-      id: '/portal/staff'
-      path: '/staff'
-      fullPath: '/portal/staff'
-      preLoaderRoute: typeof PortalStaffRouteImport
-      parentRoute: typeof PortalRoute
-    }
     '/reception-member/$memberId': {
       id: '/reception-member/$memberId'
       path: '/reception-member/$memberId'
@@ -1052,31 +898,14 @@ declare module '@tanstack/react-router' {
 interface BlogRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   BlogArticleRoute: typeof BlogArticleRoute
-  BlogIndexRoute: typeof BlogIndexRoute
 }
 
 const BlogRouteChildren: BlogRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   BlogArticleRoute: BlogArticleRoute,
-  BlogIndexRoute: BlogIndexRoute,
 }
 
 const BlogRouteWithChildren = BlogRoute._addFileChildren(BlogRouteChildren)
-
-interface PortalRouteChildren {
-  PortalAdminRoute: typeof PortalAdminRoute
-  PortalReceptionRoute: typeof PortalReceptionRoute
-  PortalStaffRoute: typeof PortalStaffRoute
-}
-
-const PortalRouteChildren: PortalRouteChildren = {
-  PortalAdminRoute: PortalAdminRoute,
-  PortalReceptionRoute: PortalReceptionRoute,
-  PortalStaffRoute: PortalStaffRoute,
-}
-
-const PortalRouteWithChildren =
-  PortalRoute._addFileChildren(PortalRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1084,7 +913,6 @@ const rootRouteChildren: RootRouteChildren = {
   BlogRoute: BlogRouteWithChildren,
   ContactRoute: ContactRoute,
   FacilitiesRoute: FacilitiesRoute,
-  GalleryRoute: GalleryRoute,
   HmoRoute: HmoRoute,
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
@@ -1107,7 +935,6 @@ const rootRouteChildren: RootRouteChildren = {
   MembershipRoute: MembershipRoute,
   MyQrRoute: MyQrRoute,
   PersonalTrainingRoute: PersonalTrainingRoute,
-  PortalRoute: PortalRouteWithChildren,
   ReceptionCheckinRoute: ReceptionCheckinRoute,
   ReceptionDashboardRoute: ReceptionDashboardRoute,
   ReceptionWorkspaceRoute: ReceptionWorkspaceRoute,
@@ -1117,9 +944,7 @@ const rootRouteChildren: RootRouteChildren = {
   StaffAttendanceRoute: StaffAttendanceRoute,
   StaffAttendanceQrRoute: StaffAttendanceQrRoute,
   StaffBlogRoute: StaffBlogRoute,
-  StaffGalleryRoute: StaffGalleryRoute,
   StaffMissedScansRoute: StaffMissedScansRoute,
-  StaffResetPasswordRoute: StaffResetPasswordRoute,
   AuthConfirmRoute: AuthConfirmRoute,
   PaymentCallbackRoute: PaymentCallbackRoute,
   PaymentPublicCallbackRoute: PaymentPublicCallbackRoute,

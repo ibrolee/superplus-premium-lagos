@@ -99,7 +99,12 @@ type RevenuePaymentRow = RevenuePayment & {
   membership: RevenueMembership | null;
 };
 
-type PaymentSource = "all" | "website" | "cash" | "pos" | "bank_transfer";
+type PaymentSource =
+  | "all"
+  | "website"
+  | "cash"
+  | "pos"
+  | "bank_transfer";
 
 const roles = [
   { value: "staff", label: "Staff" },
@@ -123,7 +128,12 @@ const departments = [
   "Other",
 ];
 
-const employmentTypes = ["Full Time", "Part Time", "Contract", "Casual"];
+const employmentTypes = [
+  "Full Time",
+  "Part Time",
+  "Contract",
+  "Casual",
+];
 
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -232,28 +242,55 @@ function getPaymentDate(payment: RevenuePaymentRow) {
 function normalizePaymentValue(value: unknown) {
   if (typeof value !== "string") return "";
 
-  return value.trim().toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
 }
 
-function getPaymentSource(payment: RevenuePaymentRow): Exclude<PaymentSource, "all"> | "other" {
-  const method = normalizePaymentValue(payment.payment_method);
+function getPaymentSource(
+  payment: RevenuePaymentRow,
+): Exclude<PaymentSource, "all"> | "other" {
+  const method = normalizePaymentValue(
+    payment.payment_method,
+  );
 
   const provider = normalizePaymentValue(payment.provider);
 
-  const metadataMethod = normalizePaymentValue(payment.metadata?.payment_method);
+  const metadataMethod = normalizePaymentValue(
+    payment.metadata?.payment_method,
+  );
 
-  const metadataSource = normalizePaymentValue(payment.metadata?.payment_source);
+  const metadataSource = normalizePaymentValue(
+    payment.metadata?.payment_source,
+  );
 
-  const metadataProvider = normalizePaymentValue(payment.metadata?.provider);
+  const metadataProvider = normalizePaymentValue(
+    payment.metadata?.provider,
+  );
 
-  const candidates = [method, provider, metadataMethod, metadataSource, metadataProvider];
+  const candidates = [
+    method,
+    provider,
+    metadataMethod,
+    metadataSource,
+    metadataProvider,
+  ];
 
   // Website / online payments.
   // Paystack is treated as a website payment regardless of whether
   // the payment_method says card, online, Paystack, etc.
   if (
     candidates.some((value) =>
-      ["paystack", "online", "online payment", "website", "card", "card payment"].includes(value),
+      [
+        "paystack",
+        "online",
+        "online payment",
+        "website",
+        "card",
+        "card payment",
+      ].includes(value),
     )
   ) {
     return "website";
@@ -264,18 +301,26 @@ function getPaymentSource(payment: RevenuePaymentRow): Exclude<PaymentSource, "a
     return "cash";
   }
 
-  if (candidates.includes("pos") || candidates.includes("point of sale")) {
+  if (
+    candidates.includes("pos") ||
+    candidates.includes("point of sale")
+  ) {
     return "pos";
   }
 
-  if (candidates.includes("bank transfer") || candidates.includes("bank")) {
+  if (
+    candidates.includes("bank transfer") ||
+    candidates.includes("bank")
+  ) {
     return "bank_transfer";
   }
 
   return "other";
 }
 
-function getPaymentSourceLabel(payment: RevenuePaymentRow) {
+function getPaymentSourceLabel(
+  payment: RevenuePaymentRow,
+) {
   const source = getPaymentSource(payment);
 
   switch (source) {
@@ -307,7 +352,15 @@ function startOfWeek(date: Date) {
 }
 
 function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
+  return new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
 }
 
 function isSameDay(first: Date, second: Date) {
@@ -327,9 +380,12 @@ function RevenueReport({
   loading: boolean;
   onRefresh: () => void;
 }) {
-  const [period, setPeriod] = useState<"today" | "week" | "month" | "all">("month");
+  const [period, setPeriod] = useState<
+    "today" | "week" | "month" | "all"
+  >("month");
 
-  const [paymentSource, setPaymentSource] = useState<PaymentSource>("all");
+  const [paymentSource, setPaymentSource] =
+    useState<PaymentSource>("all");
 
   const [paymentSearch, setPaymentSearch] = useState("");
 
@@ -366,20 +422,36 @@ function RevenueReport({
     return sourcePayments.filter((payment) => {
       if (!periodStart) return true;
 
-      return new Date(getPaymentDate(payment)) >= periodStart;
+      return (
+        new Date(getPaymentDate(payment)) >= periodStart
+      );
     });
   }, [sourcePayments, periodStart]);
 
   const totalRevenue = useMemo(
-    () => periodPayments.reduce((total, payment) => total + Number(payment.amount || 0), 0),
+    () =>
+      periodPayments.reduce(
+        (total, payment) =>
+          total + Number(payment.amount || 0),
+        0,
+      ),
     [periodPayments],
   );
 
   const todayRevenue = useMemo(
     () =>
       sourcePayments
-        .filter((payment) => isSameDay(new Date(getPaymentDate(payment)), now))
-        .reduce((total, payment) => total + Number(payment.amount || 0), 0),
+        .filter((payment) =>
+          isSameDay(
+            new Date(getPaymentDate(payment)),
+            now,
+          ),
+        )
+        .reduce(
+          (total, payment) =>
+            total + Number(payment.amount || 0),
+          0,
+        ),
     [sourcePayments, now],
   );
 
@@ -387,11 +459,21 @@ function RevenueReport({
     const monthStart = startOfMonth(now);
 
     return sourcePayments
-      .filter((payment) => new Date(getPaymentDate(payment)) >= monthStart)
-      .reduce((total, payment) => total + Number(payment.amount || 0), 0);
+      .filter(
+        (payment) =>
+          new Date(getPaymentDate(payment)) >= monthStart,
+      )
+      .reduce(
+        (total, payment) =>
+          total + Number(payment.amount || 0),
+        0,
+      );
   }, [sourcePayments, now]);
 
-  const averagePayment = periodPayments.length > 0 ? totalRevenue / periodPayments.length : 0;
+  const averagePayment =
+    periodPayments.length > 0
+      ? totalRevenue / periodPayments.length
+      : 0;
 
   const revenueByPlan = useMemo(() => {
     const grouped = new Map<
@@ -419,7 +501,9 @@ function RevenueReport({
       }
     });
 
-    return Array.from(grouped.values()).sort((a, b) => b.amount - a.amount);
+    return Array.from(grouped.values()).sort(
+      (a, b) => b.amount - a.amount,
+    );
   }, [periodPayments]);
 
   const filteredPayments = useMemo(() => {
@@ -429,19 +513,25 @@ function RevenueReport({
       .filter((payment) => {
         if (!query) return true;
 
-        const memberName = getPaymentMemberName(payment).toLowerCase();
+        const memberName =
+          getPaymentMemberName(payment).toLowerCase();
 
-        const email = payment.member?.email?.toLowerCase() || "";
+        const email =
+          payment.member?.email?.toLowerCase() || "";
 
-        const phone = payment.member?.phone?.toLowerCase() || "";
+        const phone =
+          payment.member?.phone?.toLowerCase() || "";
 
-        const reference = payment.paystack_reference?.toLowerCase() || "";
+        const reference =
+          payment.paystack_reference?.toLowerCase() || "";
 
         const plan = getPaymentPlan(payment).toLowerCase();
 
-        const source = getPaymentSourceLabel(payment).toLowerCase();
+        const source =
+          getPaymentSourceLabel(payment).toLowerCase();
 
-        const method = payment.payment_method?.toLowerCase() || "";
+        const method =
+          payment.payment_method?.toLowerCase() || "";
 
         return (
           memberName.includes(query) ||
@@ -454,7 +544,9 @@ function RevenueReport({
         );
       })
       .sort(
-        (a, b) => new Date(getPaymentDate(b)).getTime() - new Date(getPaymentDate(a)).getTime(),
+        (a, b) =>
+          new Date(getPaymentDate(b)).getTime() -
+          new Date(getPaymentDate(a)).getTime(),
       );
   }, [periodPayments, paymentSearch]);
 
@@ -530,7 +622,15 @@ function RevenueReport({
               <button
                 key={value}
                 type="button"
-                onClick={() => setPeriod(value as "today" | "week" | "month" | "all")}
+                onClick={() =>
+                  setPeriod(
+                    value as
+                      | "today"
+                      | "week"
+                      | "month"
+                      | "all",
+                  )
+                }
                 className={`min-w-0 border px-3 py-2.5 text-xs font-semibold uppercase sm:px-4 sm:py-2 ${
                   period === value
                     ? "border-foreground bg-foreground text-background"
@@ -564,7 +664,11 @@ function RevenueReport({
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setPaymentSource(value as PaymentSource)}
+                  onClick={() =>
+                    setPaymentSource(
+                      value as PaymentSource,
+                    )
+                  }
                   className={`min-w-0 border px-3 py-2.5 text-xs font-semibold uppercase sm:px-4 sm:py-2 ${
                     paymentSource === value
                       ? "border-foreground bg-foreground text-background"
@@ -589,7 +693,9 @@ function RevenueReport({
                 {formatMoney(totalRevenue)}
               </p>
 
-              <p className="mt-1 text-xs text-muted-foreground">Selected period</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Selected period
+              </p>
             </div>
 
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
@@ -601,7 +707,9 @@ function RevenueReport({
                 {formatMoney(todayRevenue)}
               </p>
 
-              <p className="mt-1 text-xs text-muted-foreground">Successful payments today</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Successful payments today
+              </p>
             </div>
 
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
@@ -609,9 +717,13 @@ function RevenueReport({
                 Payments
               </p>
 
-              <p className="mt-3 text-2xl font-bold sm:text-3xl">{periodPayments.length}</p>
+              <p className="mt-3 text-2xl font-bold sm:text-3xl">
+                {periodPayments.length}
+              </p>
 
-              <p className="mt-1 text-xs text-muted-foreground">Successful transactions</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Successful transactions
+              </p>
             </div>
 
             <div className="min-w-0 overflow-hidden border border-border bg-background p-4 sm:p-5">
@@ -623,7 +735,9 @@ function RevenueReport({
                 {formatMoney(averagePayment)}
               </p>
 
-              <p className="mt-1 text-xs text-muted-foreground">Average per successful payment</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Average per successful payment
+              </p>
             </div>
           </div>
 
@@ -641,7 +755,10 @@ function RevenueReport({
                 ) : (
                   <div className="min-w-0 space-y-3">
                     {revenueByPlan.map((item) => {
-                      const percentage = totalRevenue > 0 ? (item.amount / totalRevenue) * 100 : 0;
+                      const percentage =
+                        totalRevenue > 0
+                          ? (item.amount / totalRevenue) * 100
+                          : 0;
 
                       return (
                         <div
@@ -650,7 +767,9 @@ function RevenueReport({
                         >
                           <div className="flex min-w-0 items-start justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="break-words font-semibold">{item.plan}</p>
+                              <p className="break-words font-semibold">
+                                {item.plan}
+                              </p>
 
                               <p className="mt-1 text-xs text-muted-foreground">
                                 {item.count} payment
@@ -667,7 +786,10 @@ function RevenueReport({
                             <div
                               className="h-full bg-foreground"
                               style={{
-                                width: `${Math.min(100, Math.max(0, percentage))}%`,
+                                width: `${Math.min(
+                                  100,
+                                  Math.max(0, percentage),
+                                )}%`,
                               }}
                             />
                           </div>
@@ -706,7 +828,9 @@ function RevenueReport({
 
                 <input
                   value={paymentSearch}
-                  onChange={(event) => setPaymentSearch(event.target.value)}
+                  onChange={(event) =>
+                    setPaymentSearch(event.target.value)
+                  }
                   placeholder="Search payments..."
                   className="h-10 w-full min-w-0 border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
                 />
@@ -743,7 +867,10 @@ function RevenueReport({
                             </div>
 
                             <p className="shrink-0 text-right text-sm font-bold">
-                              {formatMoney(Number(payment.amount || 0), payment.currency || "NGN")}
+                              {formatMoney(
+                                Number(payment.amount || 0),
+                                payment.currency || "NGN",
+                              )}
                             </p>
                           </div>
 
@@ -784,7 +911,9 @@ function RevenueReport({
                               </p>
 
                               <p className="mt-1 break-words text-sm">
-                                {formatDateTime(getPaymentDate(payment))}
+                                {formatDateTime(
+                                  getPaymentDate(payment),
+                                )}
                               </p>
                             </div>
 
@@ -818,7 +947,10 @@ function RevenueReport({
 
                         <tbody>
                           {filteredPayments.map((payment) => (
-                            <tr key={payment.id} className="border-b border-border">
+                            <tr
+                              key={payment.id}
+                              className="border-b border-border"
+                            >
                               <td className="max-w-[220px] px-3 py-4">
                                 <p className="break-words font-semibold">
                                   {getPaymentMemberName(payment)}
@@ -851,7 +983,9 @@ function RevenueReport({
                               </td>
 
                               <td className="whitespace-nowrap px-3 py-4">
-                                {formatDateTime(getPaymentDate(payment))}
+                                {formatDateTime(
+                                  getPaymentDate(payment),
+                                )}
                               </td>
 
                               <td className="max-w-[180px] px-3 py-4">
@@ -880,16 +1014,21 @@ function StaffAdminPage() {
   const [saving, setSaving] = useState(false);
 
   const [revenueLoading, setRevenueLoading] = useState(true);
-  const [revenuePayments, setRevenuePayments] = useState<RevenuePaymentRow[]>([]);
+  const [revenuePayments, setRevenuePayments] = useState<
+    RevenuePaymentRow[]
+  >([]);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
   const [staff, setStaff] = useState<StaffProfile[]>([]);
-  const [selectedStaff, setSelectedStaff] = useState<StaffProfile | null>(null);
+  const [selectedStaff, setSelectedStaff] =
+    useState<StaffProfile | null>(null);
 
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
-  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<
+    AttendanceRecord[]
+  >([]);
   const [generalAttendance, setGeneralAttendance] = useState<GeneralAttendanceRecord[]>([]);
   const [attendanceDate, setAttendanceDate] = useState(() =>
     new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date()),
@@ -898,9 +1037,9 @@ function StaffAdminPage() {
 
   const [search, setSearch] = useState("");
 
-  const [filter, setFilter] = useState<"all" | "pending" | "approved" | "suspended" | "inactive">(
-    "all",
-  );
+  const [filter, setFilter] = useState<
+    "all" | "pending" | "approved" | "suspended" | "inactive"
+  >("all");
 
   const [showSalaryForm, setShowSalaryForm] = useState(false);
 
@@ -910,7 +1049,8 @@ function StaffAdminPage() {
   const [employmentDate, setEmploymentDate] = useState("");
   const [role, setRole] = useState("staff");
 
-  const [editingPersonalInfo, setEditingPersonalInfo] = useState(false);
+  const [editingPersonalInfo, setEditingPersonalInfo] =
+    useState(false);
 
   const [personalFullName, setPersonalFullName] = useState("");
   const [personalPhone, setPersonalPhone] = useState("");
@@ -923,7 +1063,9 @@ function StaffAdminPage() {
   const [salaryEnd, setSalaryEnd] = useState("");
   const [salaryPaymentDate, setSalaryPaymentDate] = useState("");
 
-  const [salaryStatus, setSalaryStatus] = useState<"pending" | "paid" | "cancelled">("pending");
+  const [salaryStatus, setSalaryStatus] = useState<
+    "pending" | "paid" | "cancelled"
+  >("pending");
 
   const [salaryNotes, setSalaryNotes] = useState("");
 
@@ -950,10 +1092,14 @@ function StaffAdminPage() {
 
     const isAdmin =
       data?.active === true &&
-      ["admin", "owner", "manager"].includes(String(data.role).toLowerCase());
+      ["admin", "owner", "manager"].includes(
+        String(data.role).toLowerCase(),
+      );
 
     if (!isAdmin) {
-      setError("You do not have permission to access staff management.");
+      setError(
+        "You do not have permission to access staff management.",
+      );
       return false;
     }
 
@@ -963,16 +1109,19 @@ function StaffAdminPage() {
   // Revenue reporting starts from this exact reset point.
   // Existing payment records before this timestamp remain in the
   // database but are excluded from the Revenue Report.
-  const REVENUE_START = new Date("2026-09-16T12:01:18.000Z");
+  const REVENUE_START = new Date(
+    "2026-09-16T12:01:18.000Z",
+  );
 
   async function loadRevenue() {
     setRevenueLoading(true);
 
     try {
-      const { data: paymentData, error: paymentError } = await supabase
-        .from("payments")
-        .select(
-          `
+      const { data: paymentData, error: paymentError } =
+        await supabase
+          .from("payments")
+          .select(
+            `
             id,
             member_id,
             membership_id,
@@ -986,13 +1135,13 @@ function StaffAdminPage() {
             created_at,
             metadata
           `,
-        )
-        .eq("status", "success")
-        .order("paid_at", {
-          ascending: false,
-          nullsFirst: false,
-        })
-        .limit(2000);
+          )
+          .eq("status", "success")
+          .order("paid_at", {
+            ascending: false,
+            nullsFirst: false,
+          })
+          .limit(2000);
 
       if (paymentError) {
         setError(paymentError.message);
@@ -1006,8 +1155,13 @@ function StaffAdminPage() {
       // getPaymentDate() falls back to created_at when paid_at is null.
       // This is important for manual POS/Cash/Bank Transfer payments
       // that may not have a paid_at value.
-      const payments = ((paymentData || []) as RevenuePayment[]).filter(
-        (payment) => new Date(payment.paid_at || payment.created_at) >= REVENUE_START,
+      const payments = (
+        (paymentData || []) as RevenuePayment[]
+      ).filter(
+        (payment) =>
+          new Date(
+            payment.paid_at || payment.created_at,
+          ) >= REVENUE_START,
       );
 
       if (payments.length === 0) {
@@ -1019,7 +1173,10 @@ function StaffAdminPage() {
         new Set(
           payments
             .map((payment) => payment.member_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0),
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && id.length > 0,
+            ),
         ),
       );
 
@@ -1027,7 +1184,10 @@ function StaffAdminPage() {
         new Set(
           payments
             .map((payment) => payment.membership_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0),
+            .filter(
+              (id): id is string =>
+                typeof id === "string" && id.length > 0,
+            ),
         ),
       );
 
@@ -1050,24 +1210,38 @@ function StaffAdminPage() {
           .select("id, plan_name")
           .in("id", membershipIds);
 
-        memberships = (membershipData || []) as RevenueMembership[];
+        memberships =
+          (membershipData || []) as RevenueMembership[];
       }
 
-      const memberMap = new Map(members.map((member) => [member.id, member]));
+      const memberMap = new Map(
+        members.map((member) => [member.id, member]),
+      );
 
-      const membershipMap = new Map(memberships.map((membership) => [membership.id, membership]));
+      const membershipMap = new Map(
+        memberships.map((membership) => [
+          membership.id,
+          membership,
+        ]),
+      );
 
       setRevenuePayments(
         payments.map((payment) => ({
           ...payment,
-          member: payment.member_id ? memberMap.get(payment.member_id) || null : null,
+          member: payment.member_id
+            ? memberMap.get(payment.member_id) || null
+            : null,
           membership: payment.membership_id
             ? membershipMap.get(payment.membership_id) || null
             : null,
         })),
       );
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Unable to load revenue records.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Unable to load revenue records.",
+      );
       setRevenuePayments([]);
     } finally {
       setRevenueLoading(false);
@@ -1123,7 +1297,10 @@ function StaffAdminPage() {
   async function refreshAll() {
     setError("");
 
-    await Promise.all([loadStaff(), loadRevenue()]);
+    await Promise.all([
+      loadStaff(),
+      loadRevenue(),
+    ]);
   }
 
   async function loadGeneralAttendance(date: string) {
@@ -1166,18 +1343,23 @@ function StaffAdminPage() {
 
     setPersonalFullName(profile.full_name || "");
     setPersonalPhone(profile.phone || "");
-    setPersonalBirthDay(profile.birth_day ? String(profile.birth_day) : "");
-    setPersonalBirthMonth(profile.birth_month ? String(profile.birth_month) : "");
+    setPersonalBirthDay(
+      profile.birth_day ? String(profile.birth_day) : "",
+    );
+    setPersonalBirthMonth(
+      profile.birth_month ? String(profile.birth_month) : "",
+    );
     setPersonalAddress(profile.address || "");
 
     setEditingPersonalInfo(false);
     setShowSalaryForm(false);
 
-    const [salaryResult, attendanceResult] = await Promise.all([
-      supabase
-        .from("staff_salary_records")
-        .select(
-          `
+    const [salaryResult, attendanceResult] =
+      await Promise.all([
+        supabase
+          .from("staff_salary_records")
+          .select(
+            `
             id,
             staff_profile_id,
             amount,
@@ -1189,24 +1371,24 @@ function StaffAdminPage() {
             notes,
             created_at
           `,
-        )
-        .eq("staff_profile_id", profile.id)
-        .order("created_at", { ascending: false }),
+          )
+          .eq("staff_profile_id", profile.id)
+          .order("created_at", { ascending: false }),
 
-      supabase
-        .from("staff_attendance")
-        .select(
-          `
+        supabase
+          .from("staff_attendance")
+          .select(
+            `
             id,
             checked_in_at,
             checked_out_at,
             notes
           `,
-        )
-        .eq("staff_profile_id", profile.id)
-        .order("checked_in_at", { ascending: false })
-        .limit(50),
-    ]);
+          )
+          .eq("staff_profile_id", profile.id)
+          .order("checked_in_at", { ascending: false })
+          .limit(50),
+      ]);
 
     if (salaryResult.error) {
       setError(salaryResult.error.message);
@@ -1218,9 +1400,13 @@ function StaffAdminPage() {
       return;
     }
 
-    setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
+    setSalaryRecords(
+      (salaryResult.data || []) as SalaryRecord[],
+    );
 
-    setAttendanceRecords((attendanceResult.data || []) as AttendanceRecord[]);
+    setAttendanceRecords(
+      (attendanceResult.data || []) as AttendanceRecord[],
+    );
   }
 
   async function savePersonalInformation() {
@@ -1230,26 +1416,39 @@ function StaffAdminPage() {
     const cleanPhone = personalPhone.trim();
     const cleanAddress = personalAddress.trim();
 
-    const birthDayValue = personalBirthDay ? Number(personalBirthDay) : null;
+    const birthDayValue = personalBirthDay
+      ? Number(personalBirthDay)
+      : null;
 
-    const birthMonthValue = personalBirthMonth ? Number(personalBirthMonth) : null;
+    const birthMonthValue = personalBirthMonth
+      ? Number(personalBirthMonth)
+      : null;
 
     if (!cleanName) {
       setError("Full name cannot be empty.");
       return;
     }
 
-    if (birthDayValue !== null && (birthDayValue < 1 || birthDayValue > 31)) {
+    if (
+      birthDayValue !== null &&
+      (birthDayValue < 1 || birthDayValue > 31)
+    ) {
       setError("Birthday must be between 1 and 31.");
       return;
     }
 
-    if (birthMonthValue !== null && (birthMonthValue < 1 || birthMonthValue > 12)) {
+    if (
+      birthMonthValue !== null &&
+      (birthMonthValue < 1 || birthMonthValue > 12)
+    ) {
       setError("Birth month must be between 1 and 12.");
       return;
     }
 
-    if ((birthDayValue === null) !== (birthMonthValue === null)) {
+    if (
+      (birthDayValue === null) !==
+      (birthMonthValue === null)
+    ) {
       setError("Enter both birthday and birth month.");
       return;
     }
@@ -1308,7 +1507,11 @@ function StaffAdminPage() {
     setSelectedStaff(updatedProfile);
 
     setStaff((current) =>
-      current.map((member) => (member.id === updatedProfile.id ? updatedProfile : member)),
+      current.map((member) =>
+        member.id === updatedProfile.id
+          ? updatedProfile
+          : member,
+      ),
     );
 
     setEditingPersonalInfo(false);
@@ -1331,7 +1534,10 @@ function StaffAdminPage() {
         employment_type: employmentType,
         employment_date: employmentDate || null,
         role,
-        status: selectedStaff.status === "pending" ? "approved" : selectedStaff.status,
+        status:
+          selectedStaff.status === "pending"
+            ? "approved"
+            : selectedStaff.status,
       })
       .eq("id", selectedStaff.id);
 
@@ -1363,13 +1569,15 @@ function StaffAdminPage() {
         return;
       }
     } else {
-      const { error: insertError } = await supabase.from("staff_users").insert({
-        id: crypto.randomUUID(),
-        auth_user_id: selectedStaff.auth_user_id,
-        role,
-        full_name: selectedStaff.full_name,
-        active: true,
-      });
+      const { error: insertError } = await supabase
+        .from("staff_users")
+        .insert({
+          id: crypto.randomUUID(),
+          auth_user_id: selectedStaff.auth_user_id,
+          role,
+          full_name: selectedStaff.full_name,
+          active: true,
+        });
 
       if (insertError) {
         setError(insertError.message);
@@ -1385,13 +1593,20 @@ function StaffAdminPage() {
       employment_type: employmentType,
       employment_date: employmentDate || null,
       role,
-      status: selectedStaff.status === "pending" ? "approved" : selectedStaff.status,
+      status:
+        selectedStaff.status === "pending"
+          ? "approved"
+          : selectedStaff.status,
     };
 
     setSelectedStaff(updatedProfile);
 
     setStaff((current) =>
-      current.map((member) => (member.id === updatedProfile.id ? updatedProfile : member)),
+      current.map((member) =>
+        member.id === updatedProfile.id
+          ? updatedProfile
+          : member,
+      ),
     );
 
     setSuccess(
@@ -1403,7 +1618,10 @@ function StaffAdminPage() {
     setSaving(false);
   }
 
-  async function changeStaffStatus(profile: StaffProfile, newStatus: StaffProfile["status"]) {
+  async function changeStaffStatus(
+    profile: StaffProfile,
+    newStatus: StaffProfile["status"],
+  ) {
     setSaving(true);
     setError("");
     setSuccess("");
@@ -1448,14 +1666,22 @@ function StaffAdminPage() {
     };
 
     setStaff((current) =>
-      current.map((member) => (member.id === profile.id ? updatedProfile : member)),
+      current.map((member) =>
+        member.id === profile.id
+          ? updatedProfile
+          : member,
+      ),
     );
 
     if (selectedStaff?.id === profile.id) {
       setSelectedStaff(updatedProfile);
     }
 
-    setSuccess(`${profile.full_name} is now ${statusLabel(newStatus).toLowerCase()}.`);
+    setSuccess(
+      `${profile.full_name} is now ${statusLabel(
+        newStatus,
+      ).toLowerCase()}.`,
+    );
 
     setSaving(false);
   }
@@ -1503,16 +1729,18 @@ function StaffAdminPage() {
     setError("");
     setSuccess("");
 
-    const { error: salaryError } = await supabase.from("staff_salary_records").insert({
-      staff_profile_id: selectedStaff.id,
-      amount,
-      currency: "NGN",
-      pay_period_start: salaryStart || null,
-      pay_period_end: salaryEnd || null,
-      payment_date: salaryPaymentDate || null,
-      status: salaryStatus,
-      notes: salaryNotes.trim() || null,
-    });
+    const { error: salaryError } = await supabase
+      .from("staff_salary_records")
+      .insert({
+        staff_profile_id: selectedStaff.id,
+        amount,
+        currency: "NGN",
+        pay_period_start: salaryStart || null,
+        pay_period_end: salaryEnd || null,
+        payment_date: salaryPaymentDate || null,
+        status: salaryStatus,
+        notes: salaryNotes.trim() || null,
+      });
 
     if (salaryError) {
       setError(salaryError.message);
@@ -1544,7 +1772,8 @@ function StaffAdminPage() {
     const query = search.trim().toLowerCase();
 
     return staff.filter((member) => {
-      const matchesFilter = filter === "all" || member.status === filter;
+      const matchesFilter =
+        filter === "all" || member.status === filter;
 
       if (!matchesFilter) return false;
 
@@ -1559,13 +1788,21 @@ function StaffAdminPage() {
     });
   }, [staff, search, filter]);
 
-  const pendingCount = staff.filter((member) => member.status === "pending").length;
+  const pendingCount = staff.filter(
+    (member) => member.status === "pending",
+  ).length;
 
-  const approvedCount = staff.filter((member) => member.status === "approved").length;
+  const approvedCount = staff.filter(
+    (member) => member.status === "approved",
+  ).length;
 
-  const suspendedCount = staff.filter((member) => member.status === "suspended").length;
+  const suspendedCount = staff.filter(
+    (member) => member.status === "suspended",
+  ).length;
 
-  const inactiveCount = staff.filter((member) => member.status === "inactive").length;
+  const inactiveCount = staff.filter(
+    (member) => member.status === "inactive",
+  ).length;
 
   useEffect(() => {
     void refreshAll();
@@ -1597,8 +1834,12 @@ function StaffAdminPage() {
             <Link to="/staff-blog" className="flex-1 sm:flex-none">
               <Button variant="outline" className="w-full">
                 <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Blog Management</span>
-                <span className="sm:hidden">Blog</span>
+                <span className="hidden sm:inline">
+                  Blog Management
+                </span>
+                <span className="sm:hidden">
+                  Blog
+                </span>
               </Button>
             </Link>
 
@@ -1609,7 +1850,9 @@ function StaffAdminPage() {
               className="flex-1 sm:flex-none"
             >
               <RefreshCw className="h-4 w-4" />
-              <span className="hidden sm:inline">Refresh</span>
+              <span className="hidden sm:inline">
+                Refresh
+              </span>
             </Button>
 
             <Button
@@ -1619,7 +1862,9 @@ function StaffAdminPage() {
               className="flex-1 sm:flex-none"
             >
               <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Logout</span>
+              <span className="hidden sm:inline">
+                Logout
+              </span>
             </Button>
           </div>
         </div>
@@ -1646,11 +1891,7 @@ function StaffAdminPage() {
                 ["general-attendance", "Attendance"],
                 ["revenue", "Revenue"],
               ].map(([id, label]) => (
-                <a
-                  key={id}
-                  href={`#${id}`}
-                  className="rounded-lg border border-border px-3 py-2 text-xs font-bold uppercase tracking-wide hover:bg-muted"
-                >
+                <a key={id} href={`#${id}`} className="rounded-lg border border-border px-3 py-2 text-xs font-bold uppercase tracking-wide hover:bg-muted">
                   {label}
                 </a>
               ))}
@@ -1674,7 +1915,9 @@ function StaffAdminPage() {
         )}
 
         {loading ? (
-          <div className="py-20 text-center text-muted-foreground">Loading staff management...</div>
+          <div className="py-20 text-center text-muted-foreground">
+            Loading staff management...
+          </div>
         ) : (
           <>
             <details id="staff-management" className="mb-6 rounded-xl border border-border bg-card">
@@ -1682,834 +1925,1022 @@ function StaffAdminPage() {
                 Staff Management & Status
               </summary>
               <div className="border-t border-border p-4 sm:p-6">
-                <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-                  <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Pending
-                    </p>
-                    <p className="mt-2 text-4xl font-bold">{pendingCount}</p>
-                  </div>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Pending
+                </p>
+                <p className="mt-2 text-4xl font-bold">
+                  {pendingCount}
+                </p>
+              </div>
 
-                  <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Approved
-                    </p>
-                    <p className="mt-2 text-4xl font-bold">{approvedCount}</p>
-                  </div>
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Approved
+                </p>
+                <p className="mt-2 text-4xl font-bold">
+                  {approvedCount}
+                </p>
+              </div>
 
-                  <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Suspended
-                    </p>
-                    <p className="mt-2 text-4xl font-bold">{suspendedCount}</p>
-                  </div>
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Suspended
+                </p>
+                <p className="mt-2 text-4xl font-bold">
+                  {suspendedCount}
+                </p>
+              </div>
 
-                  <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Inactive
-                    </p>
-                    <p className="mt-2 text-4xl font-bold">{inactiveCount}</p>
-                  </div>
-                </div>
+              <div className="min-w-0 border border-border bg-card p-4 sm:p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Inactive
+                </p>
+                <p className="mt-2 text-4xl font-bold">
+                  {inactiveCount}
+                </p>
+              </div>
+            </div>
 
-                <div className="mb-6 min-w-0">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
-                    Staff Management
-                  </p>
+            <div className="mb-6 min-w-0">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-primary">
+                Staff Management
+              </p>
 
-                  <h2 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">
-                    Staff Administration
+              <h2 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">
+                Staff Administration
+              </h2>
+
+              <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+                Manage staff applications, employment information,
+                salaries and attendance.
+              </p>
+            </div>
+
+            <div className="grid min-w-0 gap-8 lg:grid-cols-[380px_1fr]">
+              <section className="min-w-0 border border-border bg-card">
+                <div className="border-b border-border p-5">
+                  <h2 className="font-display text-xl font-bold uppercase">
+                    Staff
                   </h2>
 
-                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
-                    Manage staff applications, employment information, salaries and attendance.
-                  </p>
+                  <input
+                    value={search}
+                    onChange={(event) =>
+                      setSearch(event.target.value)
+                    }
+                    placeholder="Search staff..."
+                    className="mt-4 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none focus:border-foreground"
+                  />
+
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {[
+                      ["all", "All"],
+                      ["pending", "Pending"],
+                      ["approved", "Approved"],
+                      ["suspended", "Suspended"],
+                      ["inactive", "Inactive"],
+                    ].map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() =>
+                          setFilter(
+                            value as
+                              | "all"
+                              | "pending"
+                              | "approved"
+                              | "suspended"
+                              | "inactive",
+                          )
+                        }
+                        className={`border px-3 py-2 text-xs font-semibold uppercase ${
+                          filter === value
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border bg-background"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="grid min-w-0 gap-8 lg:grid-cols-[380px_1fr]">
-                  <section className="min-w-0 border border-border bg-card">
-                    <div className="border-b border-border p-5">
-                      <h2 className="font-display text-xl font-bold uppercase">Staff</h2>
-
-                      <input
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        placeholder="Search staff..."
-                        className="mt-4 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none focus:border-foreground"
-                      />
-
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        {[
-                          ["all", "All"],
-                          ["pending", "Pending"],
-                          ["approved", "Approved"],
-                          ["suspended", "Suspended"],
-                          ["inactive", "Inactive"],
-                        ].map(([value, label]) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() =>
-                              setFilter(
-                                value as "all" | "pending" | "approved" | "suspended" | "inactive",
-                              )
-                            }
-                            className={`border px-3 py-2 text-xs font-semibold uppercase ${
-                              filter === value
-                                ? "border-foreground bg-foreground text-background"
-                                : "border-border bg-background"
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
+                <div className="max-h-[700px] overflow-y-auto">
+                  {filteredStaff.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">
+                      No staff found.
                     </div>
+                  ) : (
+                    filteredStaff.map((member) => (
+                      <button
+                        key={member.id}
+                        type="button"
+                        onClick={() =>
+                          void loadStaffDetails(member)
+                        }
+                        className={`w-full border-b border-border p-5 text-left transition ${
+                          selectedStaff?.id === member.id
+                            ? "bg-muted"
+                            : "hover:bg-muted/50"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h3 className="truncate font-display text-lg font-bold uppercase">
+                              {member.full_name}
+                            </h3>
 
-                    <div className="max-h-[700px] overflow-y-auto">
-                      {filteredStaff.length === 0 ? (
-                        <div className="p-6 text-center text-sm text-muted-foreground">
-                          No staff found.
-                        </div>
-                      ) : (
-                        filteredStaff.map((member) => (
-                          <button
-                            key={member.id}
-                            type="button"
-                            onClick={() => void loadStaffDetails(member)}
-                            className={`w-full border-b border-border p-5 text-left transition ${
-                              selectedStaff?.id === member.id ? "bg-muted" : "hover:bg-muted/50"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <h3 className="truncate font-display text-lg font-bold uppercase">
-                                  {member.full_name}
-                                </h3>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {member.staff_id}
+                            </p>
 
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {member.staff_id}
-                                </p>
-
-                                {member.position && (
-                                  <p className="mt-2 text-sm">{member.position}</p>
-                                )}
-                              </div>
-
-                              <span
-                                className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(
-                                  member.status,
-                                )}`}
-                              >
-                                {statusLabel(member.status)}
-                              </span>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </section>
-
-                  <section className="min-w-0">
-                    {!selectedStaff ? (
-                      <div className="flex min-h-[500px] items-center justify-center border border-border bg-card p-8 text-center">
-                        <div>
-                          <UserRound className="mx-auto h-12 w-12 text-muted-foreground" />
-
-                          <h2 className="mt-4 font-display text-2xl font-bold uppercase">
-                            Select a Staff Member
-                          </h2>
-
-                          <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                            Select a staff member from the list to review their application,
-                            employment information, salary and attendance.
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 sm:space-y-6">
-                        <div className="border border-border bg-card p-5 sm:p-6">
-                          <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
-                                <UserRound className="h-6 w-6" />
-                              </div>
-
-                              <div className="min-w-0">
-                                <h2 className="break-words font-display text-2xl font-bold uppercase sm:text-3xl">
-                                  {selectedStaff.full_name}
-                                </h2>
-
-                                <p className="text-sm text-muted-foreground">
-                                  {selectedStaff.staff_id}
-                                </p>
-                              </div>
-                            </div>
-
-                            <span
-                              className={`w-fit shrink-0 rounded-full border px-3 py-2 text-xs font-bold uppercase ${statusClass(
-                                selectedStaff.status,
-                              )}`}
-                            >
-                              {statusLabel(selectedStaff.status)}
-                            </span>
-                          </div>
-
-                          {selectedStaff.status === "pending" && (
-                            <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4">
-                              <div className="flex gap-3">
-                                <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
-
-                                <div>
-                                  <p className="font-semibold">Pending Staff Application</p>
-
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    Review the applicant's information, assign their employment
-                                    details and click Save & Approve.
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <h3 className="font-display text-xl font-bold uppercase">
-                                Personal Information
-                              </h3>
-
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Personal details for this staff member.
+                            {member.position && (
+                              <p className="mt-2 text-sm">
+                                {member.position}
                               </p>
-                            </div>
-
-                            {!editingPersonalInfo ? (
-                              <Button
-                                variant="outline"
-                                onClick={() => {
-                                  setError("");
-                                  setSuccess("");
-                                  setPersonalFullName(selectedStaff.full_name || "");
-                                  setPersonalPhone(selectedStaff.phone || "");
-                                  setPersonalBirthDay(
-                                    selectedStaff.birth_day ? String(selectedStaff.birth_day) : "",
-                                  );
-                                  setPersonalBirthMonth(
-                                    selectedStaff.birth_month
-                                      ? String(selectedStaff.birth_month)
-                                      : "",
-                                  );
-                                  setPersonalAddress(selectedStaff.address || "");
-                                  setEditingPersonalInfo(true);
-                                }}
-                                disabled={saving}
-                                className="w-full sm:w-auto"
-                              >
-                                <Pencil className="h-4 w-4" />
-                                Edit Personal Information
-                              </Button>
-                            ) : (
-                              <div className="flex flex-wrap gap-2">
-                                <Button
-                                  variant="outline"
-                                  onClick={() => setEditingPersonalInfo(false)}
-                                  disabled={saving}
-                                >
-                                  <X className="h-4 w-4" />
-                                  Cancel
-                                </Button>
-
-                                <Button
-                                  onClick={() => void savePersonalInformation()}
-                                  disabled={saving}
-                                >
-                                  <Save className="h-4 w-4" />
-                                  {saving ? "Saving..." : "Save Personal Information"}
-                                </Button>
-                              </div>
                             )}
                           </div>
 
-                          {!editingPersonalInfo ? (
-                            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Full Name
-                                </p>
-                                <p className="mt-1 break-words font-medium">
-                                  {selectedStaff.full_name}
-                                </p>
-                              </div>
+                          <span
+                            className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-bold uppercase ${statusClass(
+                              member.status,
+                            )}`}
+                          >
+                            {statusLabel(member.status)}
+                          </span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </section>
 
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Email
-                                </p>
-                                <p className="mt-1 break-all font-medium">
-                                  {selectedStaff.email || "—"}
-                                </p>
-                              </div>
+              <section className="min-w-0">
+                {!selectedStaff ? (
+                  <div className="flex min-h-[500px] items-center justify-center border border-border bg-card p-8 text-center">
+                    <div>
+                      <UserRound className="mx-auto h-12 w-12 text-muted-foreground" />
 
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Phone
-                                </p>
-                                <p className="mt-1 break-words font-medium">
-                                  {selectedStaff.phone || "—"}
-                                </p>
-                              </div>
+                      <h2 className="mt-4 font-display text-2xl font-bold uppercase">
+                        Select a Staff Member
+                      </h2>
 
-                              <div className="min-w-0">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Birthday
-                                </p>
-                                <p className="mt-1 font-medium">
-                                  {selectedStaff.birth_day && selectedStaff.birth_month
-                                    ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}`
-                                    : "—"}
-                                </p>
-                              </div>
+                      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                        Select a staff member from the list to review
+                        their application, employment information,
+                        salary and attendance.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 sm:space-y-6">
+                    <div className="border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <UserRound className="h-6 w-6" />
+                          </div>
 
-                              <div className="min-w-0 sm:col-span-2">
-                                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Address
-                                </p>
-                                <p className="mt-1 break-words font-medium">
-                                  {selectedStaff.address || "—"}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                              <label className="min-w-0">
-                                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Full Name
-                                </span>
+                          <div className="min-w-0">
+                            <h2 className="break-words font-display text-2xl font-bold uppercase sm:text-3xl">
+                              {selectedStaff.full_name}
+                            </h2>
 
-                                <input
-                                  value={personalFullName}
-                                  onChange={(event) => setPersonalFullName(event.target.value)}
-                                  className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
-                                />
-                              </label>
-
-                              <label className="min-w-0">
-                                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Email
-                                </span>
-
-                                <input
-                                  value={selectedStaff.email || ""}
-                                  disabled
-                                  readOnly
-                                  className="mt-2 h-11 w-full min-w-0 cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
-                                />
-                              </label>
-
-                              <label className="min-w-0">
-                                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Phone
-                                </span>
-
-                                <input
-                                  type="tel"
-                                  value={personalPhone}
-                                  onChange={(event) => setPersonalPhone(event.target.value)}
-                                  className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
-                                />
-                              </label>
-
-                              <div className="grid min-w-0 grid-cols-2 gap-3">
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Birth Day
-                                  </span>
-
-                                  <select
-                                    value={personalBirthDay}
-                                    onChange={(event) => setPersonalBirthDay(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  >
-                                    <option value="">Day</option>
-
-                                    {Array.from({ length: 31 }, (_, index) => index + 1).map(
-                                      (day) => (
-                                        <option key={day} value={day}>
-                                          {day}
-                                        </option>
-                                      ),
-                                    )}
-                                  </select>
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Birth Month
-                                  </span>
-
-                                  <select
-                                    value={personalBirthMonth}
-                                    onChange={(event) => setPersonalBirthMonth(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  >
-                                    <option value="">Month</option>
-
-                                    {[
-                                      "January",
-                                      "February",
-                                      "March",
-                                      "April",
-                                      "May",
-                                      "June",
-                                      "July",
-                                      "August",
-                                      "September",
-                                      "October",
-                                      "November",
-                                      "December",
-                                    ].map((month, index) => (
-                                      <option key={month} value={index + 1}>
-                                        {month}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </label>
-                              </div>
-
-                              <label className="min-w-0 sm:col-span-2">
-                                <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                  Address
-                                </span>
-
-                                <textarea
-                                  value={personalAddress}
-                                  onChange={(event) => setPersonalAddress(event.target.value)}
-                                  rows={3}
-                                  className="mt-2 w-full min-w-0 border border-border bg-background px-3 py-3 outline-none"
-                                />
-                              </label>
-                            </div>
-                          )}
+                            <p className="text-sm text-muted-foreground">
+                              {selectedStaff.staff_id}
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                        <span
+                          className={`w-fit shrink-0 rounded-full border px-3 py-2 text-xs font-bold uppercase ${statusClass(
+                            selectedStaff.status,
+                          )}`}
+                        >
+                          {statusLabel(selectedStaff.status)}
+                        </span>
+                      </div>
+
+                      {selectedStaff.status === "pending" && (
+                        <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4">
+                          <div className="flex gap-3">
+                            <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
+
+                            <div>
+                              <p className="font-semibold">
+                                Pending Staff Application
+                              </p>
+
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Review the applicant's information,
+                                assign their employment details and
+                                click Save & Approve.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0">
                           <h3 className="font-display text-xl font-bold uppercase">
-                            Employment Information
+                            Personal Information
                           </h3>
 
                           <p className="mt-1 text-sm text-muted-foreground">
-                            Assign the staff member's job and access level.
+                            Personal details for this staff member.
                           </p>
+                        </div>
 
-                          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                        {!editingPersonalInfo ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setError("");
+                              setSuccess("");
+                              setPersonalFullName(
+                                selectedStaff.full_name || "",
+                              );
+                              setPersonalPhone(
+                                selectedStaff.phone || "",
+                              );
+                              setPersonalBirthDay(
+                                selectedStaff.birth_day
+                                  ? String(
+                                      selectedStaff.birth_day,
+                                    )
+                                  : "",
+                              );
+                              setPersonalBirthMonth(
+                                selectedStaff.birth_month
+                                  ? String(
+                                      selectedStaff.birth_month,
+                                    )
+                                  : "",
+                              );
+                              setPersonalAddress(
+                                selectedStaff.address || "",
+                              );
+                              setEditingPersonalInfo(true);
+                            }}
+                            disabled={saving}
+                            className="w-full sm:w-auto"
+                          >
+                            <Pencil className="h-4 w-4" />
+                            Edit Personal Information
+                          </Button>
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                setEditingPersonalInfo(false)
+                              }
+                              disabled={saving}
+                            >
+                              <X className="h-4 w-4" />
+                              Cancel
+                            </Button>
+
+                            <Button
+                              onClick={() =>
+                                void savePersonalInformation()
+                              }
+                              disabled={saving}
+                            >
+                              <Save className="h-4 w-4" />
+                              {saving
+                                ? "Saving..."
+                                : "Save Personal Information"}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {!editingPersonalInfo ? (
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Full Name
+                            </p>
+                            <p className="mt-1 break-words font-medium">
+                              {selectedStaff.full_name}
+                            </p>
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Email
+                            </p>
+                            <p className="mt-1 break-all font-medium">
+                              {selectedStaff.email || "—"}
+                            </p>
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Phone
+                            </p>
+                            <p className="mt-1 break-words font-medium">
+                              {selectedStaff.phone || "—"}
+                            </p>
+                          </div>
+
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Birthday
+                            </p>
+                            <p className="mt-1 font-medium">
+                              {selectedStaff.birth_day &&
+                              selectedStaff.birth_month
+                                ? `${selectedStaff.birth_day}/${selectedStaff.birth_month}`
+                                : "—"}
+                            </p>
+                          </div>
+
+                          <div className="min-w-0 sm:col-span-2">
+                            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Address
+                            </p>
+                            <p className="mt-1 break-words font-medium">
+                              {selectedStaff.address || "—"}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                          <label className="min-w-0">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Full Name
+                            </span>
+
+                            <input
+                              value={personalFullName}
+                              onChange={(event) =>
+                                setPersonalFullName(
+                                  event.target.value,
+                                )
+                              }
+                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
+                            />
+                          </label>
+
+                          <label className="min-w-0">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Email
+                            </span>
+
+                            <input
+                              value={selectedStaff.email || ""}
+                              disabled
+                              readOnly
+                              className="mt-2 h-11 w-full min-w-0 cursor-not-allowed border border-border bg-muted px-3 text-muted-foreground"
+                            />
+                          </label>
+
+                          <label className="min-w-0">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Phone
+                            </span>
+
+                            <input
+                              type="tel"
+                              value={personalPhone}
+                              onChange={(event) =>
+                                setPersonalPhone(
+                                  event.target.value,
+                                )
+                              }
+                              className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3 outline-none"
+                            />
+                          </label>
+
+                          <div className="grid min-w-0 grid-cols-2 gap-3">
                             <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Position
+                                Birth Day
+                              </span>
+
+                              <select
+                                value={personalBirthDay}
+                                onChange={(event) =>
+                                  setPersonalBirthDay(
+                                    event.target.value,
+                                  )
+                                }
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                              >
+                                <option value="">
+                                  Day
+                                </option>
+
+                                {Array.from(
+                                  { length: 31 },
+                                  (_, index) => index + 1,
+                                ).map((day) => (
+                                  <option
+                                    key={day}
+                                    value={day}
+                                  >
+                                    {day}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+
+                            <label className="min-w-0">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Birth Month
+                              </span>
+
+                              <select
+                                value={personalBirthMonth}
+                                onChange={(event) =>
+                                  setPersonalBirthMonth(
+                                    event.target.value,
+                                  )
+                                }
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                              >
+                                <option value="">
+                                  Month
+                                </option>
+
+                                {[
+                                  "January",
+                                  "February",
+                                  "March",
+                                  "April",
+                                  "May",
+                                  "June",
+                                  "July",
+                                  "August",
+                                  "September",
+                                  "October",
+                                  "November",
+                                  "December",
+                                ].map((month, index) => (
+                                  <option
+                                    key={month}
+                                    value={index + 1}
+                                  >
+                                    {month}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+
+                          <label className="min-w-0 sm:col-span-2">
+                            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                              Address
+                            </span>
+
+                            <textarea
+                              value={personalAddress}
+                              onChange={(event) =>
+                                setPersonalAddress(
+                                  event.target.value,
+                                )
+                              }
+                              rows={3}
+                              className="mt-2 w-full min-w-0 border border-border bg-background px-3 py-3 outline-none"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <h3 className="font-display text-xl font-bold uppercase">
+                        Employment Information
+                      </h3>
+
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Assign the staff member's job and access level.
+                      </p>
+
+                      <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                        <label className="min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Position
+                          </span>
+
+                          <input
+                            value={position}
+                            onChange={(event) =>
+                              setPosition(event.target.value)
+                            }
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                          />
+                        </label>
+
+                        <label className="min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Department
+                          </span>
+
+                          <select
+                            value={department}
+                            onChange={(event) =>
+                              setDepartment(event.target.value)
+                            }
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                          >
+                            <option value="">
+                              Select department
+                            </option>
+
+                            {departments.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Employment Type
+                          </span>
+
+                          <select
+                            value={employmentType}
+                            onChange={(event) =>
+                              setEmploymentType(event.target.value)
+                            }
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                          >
+                            {employmentTypes.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+
+                        <label className="min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Employment Date
+                          </span>
+
+                          <input
+                            type="date"
+                            value={employmentDate}
+                            onChange={(event) =>
+                              setEmploymentDate(event.target.value)
+                            }
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                          />
+                        </label>
+
+                        <label className="min-w-0 sm:col-span-2">
+                          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                            Staff Role / System Access
+                          </span>
+
+                          <select
+                            value={role}
+                            onChange={(event) =>
+                              setRole(event.target.value)
+                            }
+                            className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                          >
+                            {roles.map((item) => (
+                              <option
+                                key={item.value}
+                                value={item.value}
+                              >
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap gap-3">
+                        <Button
+                          onClick={() =>
+                            void saveStaffDetails()
+                          }
+                          disabled={saving}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+
+                          {selectedStaff.status === "pending"
+                            ? "Save & Approve"
+                            : "Save Changes"}
+                        </Button>
+
+                        {selectedStaff.status === "approved" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                void changeStaffStatus(
+                                  selectedStaff,
+                                  "suspended",
+                                )
+                              }
+                              disabled={saving}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Suspend Staff
+                            </Button>
+
+                            <Button
+                              variant="outline"
+                              onClick={() =>
+                                void changeStaffStatus(
+                                  selectedStaff,
+                                  "inactive",
+                                )
+                              }
+                              disabled={saving}
+                            >
+                              <XCircle className="h-4 w-4" />
+                              Mark Inactive
+                            </Button>
+                          </>
+                        )}
+
+                        {(selectedStaff.status === "suspended" ||
+                          selectedStaff.status === "inactive") && (
+                          <Button
+                            onClick={() =>
+                              void changeStaffStatus(
+                                selectedStaff,
+                                "approved",
+                              )
+                            }
+                            disabled={saving}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Reactivate Staff
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border border-red-500/30 bg-red-500/5 p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-red-700">Delete Staff</p>
+                          <p className="mt-1 text-sm text-muted-foreground">Permanently remove this staff member and their account.</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => void deleteStaff(selectedStaff)}
+                          disabled={saving}
+                          className="w-full border-red-500/40 text-red-700 hover:bg-red-500/10 sm:w-auto"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete Staff
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <h3 className="font-display text-xl font-bold uppercase">
+                            Salary
+                          </h3>
+
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Salary records for this staff member.
+                          </p>
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            setShowSalaryForm((current) => !current)
+                          }
+                          className="w-full sm:w-auto"
+                        >
+                          <DollarSign className="h-4 w-4" />
+
+                          {showSalaryForm
+                            ? "Close"
+                            : "Add Salary"}
+                        </Button>
+                      </div>
+
+                      {showSalaryForm && (
+                        <div className="mt-6 min-w-0 border border-border bg-muted/30 p-4 sm:p-5">
+                          <div className="grid gap-5 sm:grid-cols-2">
+                            <label className="min-w-0">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Amount
                               </span>
 
                               <input
-                                value={position}
-                                onChange={(event) => setPosition(event.target.value)}
+                                type="number"
+                                min="0"
+                                value={salaryAmount}
+                                onChange={(event) =>
+                                  setSalaryAmount(event.target.value)
+                                }
                                 className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
                             <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Department
+                                Status
                               </span>
 
                               <select
-                                value={department}
-                                onChange={(event) => setDepartment(event.target.value)}
+                                value={salaryStatus}
+                                onChange={(event) =>
+                                  setSalaryStatus(
+                                    event.target.value as
+                                      | "pending"
+                                      | "paid"
+                                      | "cancelled",
+                                  )
+                                }
                                 className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               >
-                                <option value="">Select department</option>
-
-                                {departments.map((item) => (
-                                  <option key={item} value={item}>
-                                    {item}
-                                  </option>
-                                ))}
+                                <option value="pending">
+                                  Pending
+                                </option>
+                                <option value="paid">
+                                  Paid
+                                </option>
+                                <option value="cancelled">
+                                  Cancelled
+                                </option>
                               </select>
                             </label>
 
                             <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Employment Type
-                              </span>
-
-                              <select
-                                value={employmentType}
-                                onChange={(event) => setEmploymentType(event.target.value)}
-                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              >
-                                {employmentTypes.map((item) => (
-                                  <option key={item} value={item}>
-                                    {item}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-
-                            <label className="min-w-0">
-                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Employment Date
+                                Pay Period Start
                               </span>
 
                               <input
                                 type="date"
-                                value={employmentDate}
-                                onChange={(event) => setEmploymentDate(event.target.value)}
+                                value={salaryStart}
+                                onChange={(event) =>
+                                  setSalaryStart(event.target.value)
+                                }
                                 className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
                               />
                             </label>
 
-                            <label className="min-w-0 sm:col-span-2">
+                            <label className="min-w-0">
                               <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                Staff Role / System Access
+                                Pay Period End
                               </span>
 
-                              <select
-                                value={role}
-                                onChange={(event) => setRole(event.target.value)}
+                              <input
+                                type="date"
+                                value={salaryEnd}
+                                onChange={(event) =>
+                                  setSalaryEnd(event.target.value)
+                                }
                                 className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                              >
-                                {roles.map((item) => (
-                                  <option key={item.value} value={item.value}>
-                                    {item.label}
-                                  </option>
-                                ))}
-                              </select>
+                              />
+                            </label>
+
+                            <label className="min-w-0">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Payment Date
+                              </span>
+
+                              <input
+                                type="date"
+                                value={salaryPaymentDate}
+                                onChange={(event) =>
+                                  setSalaryPaymentDate(
+                                    event.target.value,
+                                  )
+                                }
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                              />
+                            </label>
+
+                            <label className="min-w-0">
+                              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                                Notes
+                              </span>
+
+                              <input
+                                value={salaryNotes}
+                                onChange={(event) =>
+                                  setSalaryNotes(event.target.value)
+                                }
+                                className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
+                              />
                             </label>
                           </div>
 
-                          <div className="mt-6 flex flex-wrap gap-3">
-                            <Button onClick={() => void saveStaffDetails()} disabled={saving}>
-                              <CheckCircle2 className="h-4 w-4" />
-
-                              {selectedStaff.status === "pending"
-                                ? "Save & Approve"
-                                : "Save Changes"}
-                            </Button>
-
-                            {selectedStaff.status === "approved" && (
-                              <>
-                                <Button
-                                  variant="outline"
-                                  onClick={() => void changeStaffStatus(selectedStaff, "suspended")}
-                                  disabled={saving}
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                  Suspend Staff
-                                </Button>
-
-                                <Button
-                                  variant="outline"
-                                  onClick={() => void changeStaffStatus(selectedStaff, "inactive")}
-                                  disabled={saving}
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                  Mark Inactive
-                                </Button>
-                              </>
-                            )}
-
-                            {(selectedStaff.status === "suspended" ||
-                              selectedStaff.status === "inactive") && (
-                              <Button
-                                onClick={() => void changeStaffStatus(selectedStaff, "approved")}
-                                disabled={saving}
-                              >
-                                <CheckCircle2 className="h-4 w-4" />
-                                Reactivate Staff
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="border border-red-500/30 bg-red-500/5 p-4">
-                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <p className="font-semibold text-red-700">Delete Staff</p>
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Permanently remove this staff member and their account.
-                              </p>
-                            </div>
+                          <div className="mt-5">
                             <Button
-                              variant="outline"
-                              onClick={() => void deleteStaff(selectedStaff)}
+                              onClick={() =>
+                                void addSalaryRecord()
+                              }
                               disabled={saving}
-                              className="w-full border-red-500/40 text-red-700 hover:bg-red-500/10 sm:w-auto"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              Delete Staff
-                            </Button>
-                          </div>
-                        </div>
-
-                        <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                            <div className="min-w-0">
-                              <h3 className="font-display text-xl font-bold uppercase">Salary</h3>
-
-                              <p className="mt-1 text-sm text-muted-foreground">
-                                Salary records for this staff member.
-                              </p>
-                            </div>
-
-                            <Button
-                              variant="outline"
-                              onClick={() => setShowSalaryForm((current) => !current)}
-                              className="w-full sm:w-auto"
                             >
                               <DollarSign className="h-4 w-4" />
-
-                              {showSalaryForm ? "Close" : "Add Salary"}
+                              Save Salary Record
                             </Button>
                           </div>
-
-                          {showSalaryForm && (
-                            <div className="mt-6 min-w-0 border border-border bg-muted/30 p-4 sm:p-5">
-                              <div className="grid gap-5 sm:grid-cols-2">
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Amount
-                                  </span>
-
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={salaryAmount}
-                                    onChange={(event) => setSalaryAmount(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  />
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Status
-                                  </span>
-
-                                  <select
-                                    value={salaryStatus}
-                                    onChange={(event) =>
-                                      setSalaryStatus(
-                                        event.target.value as "pending" | "paid" | "cancelled",
-                                      )
-                                    }
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="cancelled">Cancelled</option>
-                                  </select>
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Pay Period Start
-                                  </span>
-
-                                  <input
-                                    type="date"
-                                    value={salaryStart}
-                                    onChange={(event) => setSalaryStart(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  />
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Pay Period End
-                                  </span>
-
-                                  <input
-                                    type="date"
-                                    value={salaryEnd}
-                                    onChange={(event) => setSalaryEnd(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  />
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Payment Date
-                                  </span>
-
-                                  <input
-                                    type="date"
-                                    value={salaryPaymentDate}
-                                    onChange={(event) => setSalaryPaymentDate(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  />
-                                </label>
-
-                                <label className="min-w-0">
-                                  <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                                    Notes
-                                  </span>
-
-                                  <input
-                                    value={salaryNotes}
-                                    onChange={(event) => setSalaryNotes(event.target.value)}
-                                    className="mt-2 h-11 w-full min-w-0 border border-border bg-background px-3"
-                                  />
-                                </label>
-                              </div>
-
-                              <div className="mt-5">
-                                <Button onClick={() => void addSalaryRecord()} disabled={saving}>
-                                  <DollarSign className="h-4 w-4" />
-                                  Save Salary Record
-                                </Button>
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="mt-6 overflow-x-auto">
-                            {salaryRecords.length === 0 ? (
-                              <p className="py-8 text-center text-sm text-muted-foreground">
-                                No salary records yet.
-                              </p>
-                            ) : (
-                              <table className="w-full min-w-[700px] text-left text-sm">
-                                <thead>
-                                  <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                                    <th className="px-3 py-3">Amount</th>
-                                    <th className="px-3 py-3">Period</th>
-                                    <th className="px-3 py-3">Payment Date</th>
-                                    <th className="px-3 py-3">Status</th>
-                                    <th className="px-3 py-3">Notes</th>
-                                  </tr>
-                                </thead>
-
-                                <tbody>
-                                  {salaryRecords.map((record) => (
-                                    <tr key={record.id} className="border-b border-border">
-                                      <td className="px-3 py-4 font-semibold">
-                                        {formatMoney(record.amount)}
-                                      </td>
-
-                                      <td className="px-3 py-4">
-                                        {record.pay_period_start || record.pay_period_end
-                                          ? `${formatDate(record.pay_period_start)} – ${formatDate(
-                                              record.pay_period_end,
-                                            )}`
-                                          : "—"}
-                                      </td>
-
-                                      <td className="px-3 py-4">
-                                        {formatDate(record.payment_date)}
-                                      </td>
-
-                                      <td className="px-3 py-4">
-                                        <span className="rounded-full border border-border px-2 py-1 text-xs font-semibold uppercase">
-                                          {record.status}
-                                        </span>
-                                      </td>
-
-                                      <td className="px-3 py-4">{record.notes || "—"}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
                         </div>
+                      )}
 
-                        <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
-                          <div>
-                            <h3 className="font-display text-xl font-bold uppercase">Attendance</h3>
+                      <div className="mt-6 overflow-x-auto">
+                        {salaryRecords.length === 0 ? (
+                          <p className="py-8 text-center text-sm text-muted-foreground">
+                            No salary records yet.
+                          </p>
+                        ) : (
+                          <table className="w-full min-w-[700px] text-left text-sm">
+                            <thead>
+                              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                                <th className="px-3 py-3">
+                                  Amount
+                                </th>
+                                <th className="px-3 py-3">
+                                  Period
+                                </th>
+                                <th className="px-3 py-3">
+                                  Payment Date
+                                </th>
+                                <th className="px-3 py-3">
+                                  Status
+                                </th>
+                                <th className="px-3 py-3">
+                                  Notes
+                                </th>
+                              </tr>
+                            </thead>
 
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              Recent staff clock-in and clock-out records.
-                            </p>
-                          </div>
+                            <tbody>
+                              {salaryRecords.map((record) => (
+                                <tr
+                                  key={record.id}
+                                  className="border-b border-border"
+                                >
+                                  <td className="px-3 py-4 font-semibold">
+                                    {formatMoney(record.amount)}
+                                  </td>
 
-                          <div className="mt-6 overflow-x-auto">
-                            {attendanceRecords.length === 0 ? (
-                              <p className="py-8 text-center text-sm text-muted-foreground">
-                                No attendance records yet.
-                              </p>
-                            ) : (
-                              <table className="w-full min-w-[650px] text-left text-sm">
-                                <thead>
-                                  <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
-                                    <th className="px-3 py-3">Check-in</th>
-                                    <th className="px-3 py-3">Check-out</th>
-                                    <th className="px-3 py-3">Duration</th>
-                                    <th className="px-3 py-3">Notes</th>
-                                  </tr>
-                                </thead>
+                                  <td className="px-3 py-4">
+                                    {record.pay_period_start ||
+                                    record.pay_period_end
+                                      ? `${formatDate(
+                                          record.pay_period_start,
+                                        )} – ${formatDate(
+                                          record.pay_period_end,
+                                        )}`
+                                      : "—"}
+                                  </td>
 
-                                <tbody>
-                                  {attendanceRecords.map((record) => {
-                                    const start = new Date(record.checked_in_at).getTime();
+                                  <td className="px-3 py-4">
+                                    {formatDate(
+                                      record.payment_date,
+                                    )}
+                                  </td>
 
-                                    const end = record.checked_out_at
-                                      ? new Date(record.checked_out_at).getTime()
-                                      : Date.now();
+                                  <td className="px-3 py-4">
+                                    <span className="rounded-full border border-border px-2 py-1 text-xs font-semibold uppercase">
+                                      {record.status}
+                                    </span>
+                                  </td>
 
-                                    const minutes = Math.max(0, Math.floor((end - start) / 60000));
-
-                                    const hours = Math.floor(minutes / 60);
-
-                                    const remainingMinutes = minutes % 60;
-
-                                    return (
-                                      <tr key={record.id} className="border-b border-border">
-                                        <td className="px-3 py-4">
-                                          {formatDateTime(record.checked_in_at)}
-                                        </td>
-
-                                        <td className="px-3 py-4">
-                                          {record.checked_out_at
-                                            ? formatDateTime(record.checked_out_at)
-                                            : "Still inside"}
-                                        </td>
-
-                                        <td className="px-3 py-4 font-semibold">
-                                          {hours > 0
-                                            ? `${hours}h ${remainingMinutes}m`
-                                            : `${remainingMinutes}m`}
-                                        </td>
-
-                                        <td className="px-3 py-4">{record.notes || "—"}</td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        </div>
+                                  <td className="px-3 py-4">
+                                    {record.notes || "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
                       </div>
-                    )}
-                  </section>
-                </div>
+                    </div>
+
+                    <div className="min-w-0 border border-border bg-card p-5 sm:p-6">
+                      <div>
+                        <h3 className="font-display text-xl font-bold uppercase">
+                          Attendance
+                        </h3>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          Recent staff clock-in and clock-out records.
+                        </p>
+                      </div>
+
+                      <div className="mt-6 overflow-x-auto">
+                        {attendanceRecords.length === 0 ? (
+                          <p className="py-8 text-center text-sm text-muted-foreground">
+                            No attendance records yet.
+                          </p>
+                        ) : (
+                          <table className="w-full min-w-[650px] text-left text-sm">
+                            <thead>
+                              <tr className="border-b border-border text-xs uppercase tracking-widest text-muted-foreground">
+                                <th className="px-3 py-3">
+                                  Check-in
+                                </th>
+                                <th className="px-3 py-3">
+                                  Check-out
+                                </th>
+                                <th className="px-3 py-3">
+                                  Duration
+                                </th>
+                                <th className="px-3 py-3">
+                                  Notes
+                                </th>
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {attendanceRecords.map((record) => {
+                                const start = new Date(
+                                  record.checked_in_at,
+                                ).getTime();
+
+                                const end = record.checked_out_at
+                                  ? new Date(
+                                      record.checked_out_at,
+                                    ).getTime()
+                                  : Date.now();
+
+                                const minutes = Math.max(
+                                  0,
+                                  Math.floor(
+                                    (end - start) / 60000,
+                                  ),
+                                );
+
+                                const hours = Math.floor(
+                                  minutes / 60,
+                                );
+
+                                const remainingMinutes =
+                                  minutes % 60;
+
+                                return (
+                                  <tr
+                                    key={record.id}
+                                    className="border-b border-border"
+                                  >
+                                    <td className="px-3 py-4">
+                                      {formatDateTime(
+                                        record.checked_in_at,
+                                      )}
+                                    </td>
+
+                                    <td className="px-3 py-4">
+                                      {record.checked_out_at
+                                        ? formatDateTime(
+                                            record.checked_out_at,
+                                          )
+                                        : "Still inside"}
+                                    </td>
+
+                                    <td className="px-3 py-4 font-semibold">
+                                      {hours > 0
+                                        ? `${hours}h ${remainingMinutes}m`
+                                        : `${remainingMinutes}m`}
+                                    </td>
+
+                                    <td className="px-3 py-4">
+                                      {record.notes || "—"}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
               </div>
             </details>
 
-            <details
-              id="general-attendance"
-              className="mb-6 rounded-xl border border-border bg-card"
-            >
+            <details id="general-attendance" className="mb-6 rounded-xl border border-border bg-card">
               <summary className="cursor-pointer list-none px-4 py-4 font-display text-lg font-bold uppercase">
                 General Staff Attendance
               </summary>
               <div className="border-t border-border p-4 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                   <p className="max-w-2xl text-sm text-muted-foreground">
-                    View all staff attendance for any day. Clock-ins after 7:30 PM Lagos time are
-                    highlighted red.
+                    View all staff attendance for any day. Clock-ins after 7:30 PM Lagos time are highlighted red.
                   </p>
                   <label className="w-full sm:w-auto">
-                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                      Attendance Date
-                    </span>
+                    <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Attendance Date</span>
                     <input
                       type="date"
                       value={attendanceDate}
@@ -2523,13 +2954,9 @@ function StaffAdminPage() {
                 </div>
                 <div className="mt-5 overflow-x-auto">
                   {generalAttendanceLoading ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      Loading attendance...
-                    </p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">Loading attendance...</p>
                   ) : generalAttendance.length === 0 ? (
-                    <p className="py-8 text-center text-sm text-muted-foreground">
-                      No attendance records for this date.
-                    </p>
+                    <p className="py-8 text-center text-sm text-muted-foreground">No attendance records for this date.</p>
                   ) : (
                     <table className="w-full min-w-[720px] text-left text-sm">
                       <thead>
@@ -2545,45 +2972,22 @@ function StaffAdminPage() {
                         {generalAttendance.map((record) => {
                           const member = staff.find((item) => item.id === record.staff_profile_id);
                           const startMs = new Date(record.checked_in_at).getTime();
-                          const endMs = record.checked_out_at
-                            ? new Date(record.checked_out_at).getTime()
-                            : Date.now();
+                          const endMs = record.checked_out_at ? new Date(record.checked_out_at).getTime() : Date.now();
                           const minutes = Math.max(0, Math.floor((endMs - startMs) / 60000));
                           const hours = Math.floor(minutes / 60);
                           const remainingMinutes = minutes % 60;
                           const late = isLateClockIn(record.checked_in_at);
 
                           return (
-                            <tr
-                              key={record.id}
-                              className={`border-b border-border ${late ? "bg-red-500/10" : ""}`}
-                            >
-                              <td
-                                className={`px-3 py-4 font-semibold ${late ? "text-red-700" : ""}`}
-                              >
-                                {member?.full_name || "Unknown Staff"}
-                              </td>
+                            <tr key={record.id} className={`border-b border-border ${late ? "bg-red-500/10" : ""}`}>
+                              <td className={`px-3 py-4 font-semibold ${late ? "text-red-700" : ""}`}>{member?.full_name || "Unknown Staff"}</td>
                               <td className="px-3 py-4">{member?.staff_id || "—"}</td>
-                              <td
-                                className={`px-3 py-4 font-semibold ${late ? "text-red-700" : ""}`}
-                              >
+                              <td className={`px-3 py-4 font-semibold ${late ? "text-red-700" : ""}`}>
                                 {formatDateTime(record.checked_in_at)}
-                                {late ? (
-                                  <span className="ml-2 rounded-full bg-red-600 px-2 py-1 text-[10px] font-bold uppercase text-white">
-                                    Late
-                                  </span>
-                                ) : null}
+                                {late ? <span className="ml-2 rounded-full bg-red-600 px-2 py-1 text-[10px] font-bold uppercase text-white">Late</span> : null}
                               </td>
-                              <td className="px-3 py-4">
-                                {record.checked_out_at
-                                  ? formatDateTime(record.checked_out_at)
-                                  : "Still inside"}
-                              </td>
-                              <td className="px-3 py-4 font-semibold">
-                                {hours > 0
-                                  ? `${hours}h ${remainingMinutes}m`
-                                  : `${remainingMinutes}m`}
-                              </td>
+                              <td className="px-3 py-4">{record.checked_out_at ? formatDateTime(record.checked_out_at) : "Still inside"}</td>
+                              <td className="px-3 py-4 font-semibold">{hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`}</td>
                             </tr>
                           );
                         })}

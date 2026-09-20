@@ -26,36 +26,36 @@ spfitnessandspa@gmail.com
 
 Position the business as more than a conventional gym:
 
-- Modern gym
-- Personal training
-- Group classes
-- Spa
-- Full body massage
-- Recovery services
-- Therapy machines
-- Wellness services
+* Modern gym
+* Personal training
+* Group classes
+* Spa
+* Full body massage
+* Recovery services
+* Therapy machines
+* Wellness services
 
 The visual identity should communicate:
 
-- Premium
-- Modern
-- Strong
-- Energetic
-- Clean
-- Professional
-- Welcoming
-- Nigerian/Lagos fitness culture
+* Premium
+* Modern
+* Strong
+* Energetic
+* Clean
+* Professional
+* Welcoming
+* Nigerian/Lagos fitness culture
 
 Avoid:
 
-- Generic gym-template appearance
-- Excessive neon
-- Excessive gradients
-- Overuse of glassmorphism
-- Cartoon fitness graphics
-- Stock-photo-heavy design
-- Excessive rounded cards
-- Cheap-looking effects
+* Generic gym-template appearance
+* Excessive neon
+* Excessive gradients
+* Overuse of glassmorphism
+* Cartoon fitness graphics
+* Stock-photo-heavy design
+* Excessive rounded cards
+* Cheap-looking effects
 
 ==================================================
 DESIGN SYSTEM
@@ -64,21 +64,21 @@ Create ONE unified design system that every page uses.
 
 Use:
 
-- Dark charcoal/black as the primary visual foundation
-- White/light sections for contrast
-- One strong Super Plus accent color
-- Large bold editorial headlines
-- Clean modern sans-serif body typography
-- High-quality photography
-- Strong image crops
-- Generous whitespace
-- Consistent spacing scale
-- Consistent button styles
-- Consistent cards
-- Consistent border radius
-- Subtle shadows
-- Subtle hover animations
-- Smooth section transitions
+* Dark charcoal/black as the primary visual foundation
+* White/light sections for contrast
+* One strong Super Plus accent color
+* Large bold editorial headlines
+* Clean modern sans-serif body typography
+* High-quality photography
+* Strong image crops
+* Generous whitespace
+* Consistent spacing scale
+* Consistent button styles
+* Consistent cards
+* Consistent border radius
+* Subtle shadows
+* Subtle hover animations
+* Smooth section transitions
 
 The website should look like a professionally designed modern fitness brand.
 
@@ -230,58 +230,58 @@ GYM ACCESS
 Daily Plan
 ₦4,000
 
-- ₦7,000 one-time registration fee
-  One-day access
-  All gym equipment
+* ₦7,000 one-time registration fee
+    One-day access
+    All gym equipment
 
 Weekly Plan
 ₦15,000
 
-- ₦7,000 one-time registration fee
-  4-day access
-  Valid for one week
-  All gym equipment
+* ₦7,000 one-time registration fee
+    4-day access
+    Valid for one week
+    All gym equipment
 
 Monthly Plan
 ₦27,000
 
-- ₦7,000 one-time registration fee
-  30-day access
-  All gym equipment
-  Group classes
+* ₦7,000 one-time registration fee
+    30-day access
+    All gym equipment
+    Group classes
 
 LONG-TERM
 
 Quarterly
 ₦75,000
 
-- ₦7,000 registration
-  3 months
-  All gym equipment
-  Group classes
+* ₦7,000 registration
+    3 months
+    All gym equipment
+    Group classes
 
 Semi-Annual
 ₦150,000
 
-- ₦3,000 registration
-  6 months
-  All gym equipment
-  Group classes
+* ₦3,000 registration
+    6 months
+    All gym equipment
+    Group classes
 
 Yearly
 ₦285,000
 
-- ₦7,000 registration
-  12 months
-  All gym equipment
-  Group classes
+* ₦7,000 registration
+    12 months
+    All gym equipment
+    Group classes
 
 PREMIUM
 
 Monthly VIP Silver
 ₦55,000
 
-- ₦7,000 registration
+* ₦7,000 registration
 
 Include:
 All gym and spa equipment
@@ -293,7 +293,7 @@ Two spa sessions
 Monthly VIP Gold
 ₦85,000
 
-- ₦3,000 registration
+* ₦3,000 registration
 
 Include:
 All gym equipment
@@ -306,21 +306,21 @@ Group training
 Family Plan
 ₦75,000
 
-- ₦20,000 registration
-  For 3 family members
-  All gym equipment
-  Group classes
+* ₦20,000 registration
+    For 3 family members
+    All gym equipment
+    Group classes
 
 TRAINING
 
 Personal Training
 ₦57,000
 
-- ₦7,000 registration
-  30-day access
-  Gym equipment
-  Group classes
-  Personal coach training
+* ₦7,000 registration
+    30-day access
+    Gym equipment
+    Group classes
+    Personal coach training
 
 Important:
 These prices and benefits must be editable from one central data source.
@@ -454,10 +454,10 @@ Sunday
 
 Include:
 
-- Map
-- Call button
-- WhatsApp/contact button
-- Directions button
+* Map
+* Call button
+* WhatsApp/contact button
+* Directions button
 
 ⸻
 
@@ -679,11 +679,11 @@ IMPORTANT:
 
 The current Super Plus website contains member-related functionality including:
 
-- Member login/account
-- Membership QR code
-- Reception check-in
-- Membership purchase
-- Online registration
+* Member login/account
+* Membership QR code
+* Reception check-in
+* Membership purchase
+* Online registration
 
 DO NOT remove these concepts.
 
@@ -709,12 +709,12 @@ The QR system should NOT require members to repeatedly navigate through the webs
 
 Design the member dashboard so that after login:
 
-- QR code is immediately visible
-- Member name is visible
-- Membership status is visible
-- Expiry date is visible
-- A large “SHOW QR CODE” button is available
-- QR can be displayed full-screen on mobile
+* QR code is immediately visible
+* Member name is visible
+* Membership status is visible
+* Expiry date is visible
+* A large “SHOW QR CODE” button is available
+* QR can be displayed full-screen on mobile
 
 Also provide a persistent shortcut:
 
@@ -776,12 +776,12 @@ ANIMATION
 
 Use subtle professional animation:
 
-- Fade/slide on scroll
-- Image reveal
-- Button hover
-- Card hover
-- Smooth navigation
-- Subtle page transitions
+* Fade/slide on scroll
+* Image reveal
+* Button hover
+* Card hover
+* Smooth navigation
+* Subtle page transitions
 
 Avoid excessive animation.
 

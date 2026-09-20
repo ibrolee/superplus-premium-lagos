@@ -13,10 +13,11 @@ export function SiteMotion() {
     // Homepage 2.0 shows all sections immediately, including full-page mobile captures.
     // Leave motion behaviour unchanged on all other public marketing pages.
     const isMarketingPage =
-      pathname !== "/" &&
-      (pathname === "/join" ||
+      pathname !== "/" && (
+        pathname === "/join" ||
         navItems.some((item) => item.to === pathname) ||
-        pathname.startsWith("/blog/"));
+        pathname.startsWith("/blog/")
+      );
 
     if (!isMarketingPage || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;

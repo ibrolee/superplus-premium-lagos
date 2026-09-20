@@ -200,7 +200,9 @@ function BlogArticlePage() {
       return;
     }
 
-    const memberIds = [...new Set(data.map((comment) => comment.member_id))];
+    const memberIds = [
+      ...new Set(data.map((comment) => comment.member_id)),
+    ];
 
     let memberMap: Record<string, string> = {};
 
@@ -212,7 +214,10 @@ function BlogArticlePage() {
 
       if (members) {
         memberMap = Object.fromEntries(
-          members.map((item) => [item.id, item.full_name || "Member"]),
+          members.map((item) => [
+            item.id,
+            item.full_name || "Member",
+          ]),
         );
       }
     }
@@ -221,7 +226,8 @@ function BlogArticlePage() {
       data.map((comment) => ({
         ...comment,
         member: {
-          full_name: memberMap[comment.member_id] || "Member",
+          full_name:
+            memberMap[comment.member_id] || "Member",
         },
       })) as BlogComment[],
     );
@@ -306,12 +312,17 @@ function BlogArticlePage() {
   const commentCount = comments.length;
 
   const topLevelComments = useMemo(
-    () => comments.filter((comment) => !comment.parent_id),
+    () =>
+      comments.filter(
+        (comment) => !comment.parent_id,
+      ),
     [comments],
   );
 
   function repliesFor(commentId: string) {
-    return comments.filter((comment) => comment.parent_id === commentId);
+    return comments.filter(
+      (comment) => comment.parent_id === commentId,
+    );
   }
 
   async function handleLike() {
@@ -337,13 +348,17 @@ function BlogArticlePage() {
 
       if (!error) {
         setLiked(false);
-        setLikeCount((count) => Math.max(0, count - 1));
+        setLikeCount((count) =>
+          Math.max(0, count - 1),
+        );
       }
     } else {
-      const { error } = await supabase.from("blog_likes").insert({
-        post_id: post.id,
-        member_id: member.id,
-      });
+      const { error } = await supabase
+        .from("blog_likes")
+        .insert({
+          post_id: post.id,
+          member_id: member.id,
+        });
 
       if (!error) {
         setLiked(true);
@@ -372,11 +387,13 @@ function BlogArticlePage() {
 
     setSubmittingComment(true);
 
-    const { error } = await supabase.from("blog_comments").insert({
-      post_id: post.id,
-      member_id: member.id,
-      comment: text,
-    });
+    const { error } = await supabase
+      .from("blog_comments")
+      .insert({
+        post_id: post.id,
+        member_id: member.id,
+        comment: text,
+      });
 
     if (!error) {
       setCommentText("");
@@ -389,7 +406,9 @@ function BlogArticlePage() {
   async function handleDeleteComment(commentId: string) {
     if (!member) return;
 
-    const confirmed = window.confirm("Delete this comment?");
+    const confirmed = window.confirm(
+      "Delete this comment?",
+    );
 
     if (!confirmed) return;
 
@@ -413,7 +432,9 @@ function BlogArticlePage() {
       if (navigator.share) {
         await navigator.share({
           title: post.title,
-          text: post.excerpt || "Read this article from Super Plus Fitness.",
+          text:
+            post.excerpt ||
+            "Read this article from Super Plus Fitness.",
           url,
         });
 
@@ -478,13 +499,19 @@ function BlogArticlePage() {
         <main className="container mx-auto px-4 py-20 text-center">
           <BookOpen className="mx-auto h-14 w-14 text-muted-foreground" />
 
-          <h1 className="mt-6 text-3xl font-black">Article not found</h1>
+          <h1 className="mt-6 text-3xl font-black">
+            Article not found
+          </h1>
 
           <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-            This article may have been removed or is no longer available.
+            This article may have been removed or is no longer
+            available.
           </p>
 
-          <Link to="/blog" className="mt-7 inline-block">
+          <Link
+            to="/blog"
+            className="mt-7 inline-block"
+          >
             <Button>
               <ArrowLeft />
               Back to Blog
@@ -503,7 +530,10 @@ function BlogArticlePage() {
           <Logo />
 
           <div className="flex items-center gap-3">
-            <Link to="/blog" className="hidden sm:block">
+            <Link
+              to="/blog"
+              className="hidden sm:block"
+            >
               <Button variant="ghost">
                 <ArrowLeft />
                 Blog
@@ -533,7 +563,9 @@ function BlogArticlePage() {
               <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-wider text-primary">
                 <span>{post.category}</span>
 
-                <span className="text-muted-foreground">•</span>
+                <span className="text-muted-foreground">
+                  •
+                </span>
 
                 <span className="text-muted-foreground">
                   {getReadingTime(post.content)} min read
@@ -557,9 +589,13 @@ function BlogArticlePage() {
                   </div>
 
                   <div>
-                    <p className="font-semibold text-foreground">{post.author_name}</p>
+                    <p className="font-semibold text-foreground">
+                      {post.author_name}
+                    </p>
 
-                    <p>{formatDate(post.published_at)}</p>
+                    <p>
+                      {formatDate(post.published_at)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -590,28 +626,45 @@ function BlogArticlePage() {
                 onClick={handleLike}
                 disabled={liking}
               >
-                <Heart className={liked ? "fill-current" : ""} />
+                <Heart
+                  className={
+                    liked ? "fill-current" : ""
+                  }
+                />
 
                 {likeCount}
-                {likeCount === 1 ? " Like" : " Likes"}
+                {likeCount === 1
+                  ? " Like"
+                  : " Likes"}
               </Button>
 
               <a href="#comments">
-                <Button type="button" variant="outline">
+                <Button
+                  type="button"
+                  variant="outline"
+                >
                   <MessageCircle />
 
                   {commentCount}
-                  {commentCount === 1 ? " Comment" : " Comments"}
+                  {commentCount === 1
+                    ? " Comment"
+                    : " Comments"}
                 </Button>
               </a>
 
-              <Button type="button" variant="outline" onClick={handleShare}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleShare}
+              >
                 <Share2 />
                 Share
               </Button>
 
               {shareMessage && (
-                <span className="text-sm font-semibold text-primary">{shareMessage}</span>
+                <span className="text-sm font-semibold text-primary">
+                  {shareMessage}
+                </span>
               )}
             </div>
 
@@ -625,7 +678,10 @@ function BlogArticlePage() {
         </article>
 
         {/* Comments */}
-        <section id="comments" className="border-t border-border bg-muted/20">
+        <section
+          id="comments"
+          className="border-t border-border bg-muted/20"
+        >
           <div className="container mx-auto max-w-5xl px-4 py-12 md:py-16">
             <div className="mx-auto max-w-3xl">
               <div className="flex items-center justify-between gap-4">
@@ -634,7 +690,9 @@ function BlogArticlePage() {
                     Community
                   </p>
 
-                  <h2 className="mt-1 text-3xl font-black">Join the conversation</h2>
+                  <h2 className="mt-1 text-3xl font-black">
+                    Join the conversation
+                  </h2>
                 </div>
 
                 <div className="hidden items-center gap-2 text-sm text-muted-foreground sm:flex">
@@ -653,7 +711,9 @@ function BlogArticlePage() {
                       </div>
 
                       <div>
-                        <p className="text-sm font-bold">{member.full_name}</p>
+                        <p className="text-sm font-bold">
+                          {member.full_name}
+                        </p>
 
                         <p className="text-xs text-muted-foreground">
                           Share your thoughts with the community.
@@ -663,7 +723,11 @@ function BlogArticlePage() {
 
                     <textarea
                       value={commentText}
-                      onChange={(event) => setCommentText(event.target.value)}
+                      onChange={(event) =>
+                        setCommentText(
+                          event.target.value,
+                        )
+                      }
                       placeholder="Write a comment..."
                       maxLength={2000}
                       rows={4}
@@ -678,30 +742,42 @@ function BlogArticlePage() {
                       <Button
                         type="button"
                         onClick={handleCommentSubmit}
-                        disabled={submittingComment || !commentText.trim()}
+                        disabled={
+                          submittingComment ||
+                          !commentText.trim()
+                        }
                       >
                         <Send />
 
-                        {submittingComment ? "Posting..." : "Post Comment"}
+                        {submittingComment
+                          ? "Posting..."
+                          : "Post Comment"}
                       </Button>
                     </div>
                   </>
                 ) : (
                   <div className="text-center">
-                    <h3 className="text-lg font-bold">Want to join the conversation?</h3>
+                    <h3 className="text-lg font-bold">
+                      Want to join the conversation?
+                    </h3>
 
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Log in to your Super Plus Fitness member account to like articles and post
-                      comments.
+                      Log in to your Super Plus Fitness member
+                      account to like articles and post comments.
                     </p>
 
                     <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
                       <Link to="/login">
-                        <Button className="w-full sm:w-auto">Member Login</Button>
+                        <Button className="w-full sm:w-auto">
+                          Member Login
+                        </Button>
                       </Link>
 
                       <Link to="/join">
-                        <Button variant="outline" className="w-full sm:w-auto">
+                        <Button
+                          variant="outline"
+                          className="w-full sm:w-auto"
+                        >
                           Become a Member
                         </Button>
                       </Link>
@@ -731,10 +807,13 @@ function BlogArticlePage() {
                   <div className="rounded-2xl border border-dashed border-border bg-background p-10 text-center">
                     <MessageCircle className="mx-auto h-10 w-10 text-muted-foreground" />
 
-                    <h3 className="mt-4 text-lg font-bold">No comments yet</h3>
+                    <h3 className="mt-4 text-lg font-bold">
+                      No comments yet
+                    </h3>
 
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Be the first Super Plus member to share your thoughts.
+                      Be the first Super Plus member to share your
+                      thoughts.
                     </p>
                   </div>
                 ) : (
@@ -764,7 +843,9 @@ function BlogArticlePage() {
                   Keep Reading
                 </p>
 
-                <h2 className="mt-1 text-3xl font-black">More from {post.category}</h2>
+                <h2 className="mt-1 text-3xl font-black">
+                  More from {post.category}
+                </h2>
               </div>
 
               <div className="grid gap-6 md:grid-cols-3">
@@ -820,7 +901,8 @@ function BlogArticlePage() {
             <Logo />
 
             <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} Super Plus Fitness & Spa. All rights reserved.
+              © {new Date().getFullYear()} Super Plus Fitness & Spa.
+              All rights reserved.
             </p>
           </div>
         </div>
@@ -849,10 +931,14 @@ function CommentCard({
           </div>
 
           <div>
-            <p className="text-sm font-bold">{comment.member?.full_name || "Member"}</p>
+            <p className="text-sm font-bold">
+              {comment.member?.full_name || "Member"}
+            </p>
 
             <p className="text-xs text-muted-foreground">
-              {new Date(comment.created_at).toLocaleDateString("en-NG", {
+              {new Date(
+                comment.created_at,
+              ).toLocaleDateString("en-NG", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
@@ -887,10 +973,14 @@ function CommentCard({
                 </div>
 
                 <div>
-                  <p className="text-xs font-bold">{reply.member?.full_name || "Member"}</p>
+                  <p className="text-xs font-bold">
+                    {reply.member?.full_name || "Member"}
+                  </p>
 
                   <p className="text-[11px] text-muted-foreground">
-                    {new Date(reply.created_at).toLocaleDateString("en-NG", {
+                    {new Date(
+                      reply.created_at,
+                    ).toLocaleDateString("en-NG", {
                       day: "numeric",
                       month: "short",
                       year: "numeric",
