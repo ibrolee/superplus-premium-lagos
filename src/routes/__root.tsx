@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Link, createRootRouteWithContext, useRouter, HeadContent, Scripts } from "@tanstack/react-router";
+import { Link, createRootRouteWithContext, useRouter, useRouterState, HeadContent, Scripts } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
@@ -25,4 +25,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }), shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 function RootShell({ children }: { children: ReactNode }) { return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /></head><body>{children}<Scripts /></body></html>; }
-function RootComponent() { const { queryClient } = Route.useRouteContext(); return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate /><Footer /><Toaster position="top-center" richColors /></QueryClientProvider>; }
+
+// Hide the public marketing footer only on internal staff, reception and admin routes.
+// The public website and member-facing pages retain their existing footer.
+function isInternalWorkspace(pathname: string): boolean {
+  return pathname === "/portal" || pathname.startsWith("/portal/") ||
+    pathname === "/staff" || pathname.startsWith("/staff-") || pathname.startsWith("/staff/") ||
+    pathname === "/reception" || pathname.startsWith("/reception-") || pathname.startsWith("/reception/") ||
+    pathname === "/management" || pathname.startsWith("/management-") || pathname.startsWith("/management/");
+}
+function RootComponent() {
+  const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}<Toaster position="top-center" richColors /></QueryClientProvider>;
+}
