@@ -1,145 +1,133 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Download, Loader2, Printer, RefreshCcw, ShieldAlert } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { supabase } from '@/lib/supabase';
 import { generateMemberCardPdf, saveMemberCardPdf } from '@/lib/member-card-pdf';
 
 export const Route = createFileRoute('/management-member-card')({ component: MembershipCardPage });
-
 type CardMember = { id: string; full_name: string; qr_token: string; created_at: string; member_card_number: number | null };
 const BRAND_LOGO = '/header-logo-colour.svg';
 const CARD_W = 856;
 const CARD_H = 540;
-
 function formattedNumber(number: number | null) {
   return number === null ? 'SPF-PREVIEW' : `SPF-${String(number).padStart(6, '0')}`;
 }
 
+// Preserve the *actual* Super Plus vector artwork and its red/orange gradients.
+// Only recolour the black figure/wordmark to white for this black card: the
+// public header uses the original asset and is unaffected.
+async function getDarkCardLogo() {
+  const response = await fetch(BRAND_LOGO);
+  if (!response.ok) throw new Error('The Super Plus Fitness logo could not be loaded.');
+  const original = await response.text();
+  const darkCardVersion = original
+    .replace(/#050505/gi, '#ffffff')
+    .replace(/#101010/gi, '#ffffff')
+    .replace(/#000000/gi, '#ffffff');
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(darkCardVersion)}`;
+}
 function SvgFrame({ children, label, side, reference }: {
-  children: ReactNode; label: string; side: 'front' | 'back'; reference: RefObject<SVGSVGElement | null>;
+  children: React.ReactNode; label: string; side: 'front' | 'back'; reference: React.RefObject<SVGSVGElement | null>;
 }) {
-  return <svg ref={reference} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${CARD_W} ${CARD_H}`} role="img" aria-label={label} className="block h-auto w-full overflow-hidden rounded-[15px] shadow-xl" data-card-side={side}>
-    {children}
-  </svg>;
+  return <svg ref={reference} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${CARD_W} ${CARD_H}`} role="img" aria-label={label} className="block h-auto w-full overflow-hidden rounded-[15px] shadow-xl" data-card-side={side}>{children}</svg>;
 }
-
-/* Keep the actual Super Plus vector logo, not a recreated wordmark. The first
- * layer renders the original artwork white for contrast; the clipped second
- * layer preserves the original red-to-orange FITNESS wordmark and ring.
- * Both source images are embedded into the PDF by member-card-pdf.ts.
- */
-function DarkBrand({ x = 53, y = 36, width = 520, prefix }: { x?: number; y?: number; width?: number; prefix: string }) {
-  const height = width * 255 / 1030;
-  const scale = width / 1030;
-  return <g>
-    <defs>
-      <filter id={`${prefix}-white-logo`} colorInterpolationFilters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1 0"/></filter>
-      <clipPath id={`${prefix}-red-logo-parts`}>
-        <rect x={x + 381 * scale} y={y + 95 * scale} width={595 * scale} height={98 * scale}/>
-        <circle cx={x + 125 * scale} cy={y + 127 * scale} r={117 * scale}/>
-      </clipPath>
-    </defs>
-    <image href={BRAND_LOGO} x={x} y={y} width={width} height={height} preserveAspectRatio="xMinYMid meet" filter={`url(#${prefix}-white-logo)`}/>
-    <image href={BRAND_LOGO} x={x} y={y} width={width} height={height} preserveAspectRatio="xMinYMid meet" clipPath={`url(#${prefix}-red-logo-parts)`}/>
-  </g>;
+function BrandArtwork({ source, x = 48, y = 29, width = 593 }: { source: string; x?: number; y?: number; width?: number }) {
+  return <image href={source} x={x} y={y} width={width} height={width * 255 / 1030} preserveAspectRatio="xMinYMid meet"/>;
 }
-
-function DarkCardDefs({ side }: { side: 'front' | 'back' }) {
+function CardDefinitions({ side }: { side: 'front' | 'back' }) {
+  const prefix = side === 'front' ? 'spf-front' : 'spf-back';
   return <defs>
-    <linearGradient id={`${side}-matte`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#161719"/><stop offset=".52" stopColor="#090a0c"/><stop offset="1" stopColor="#222326"/></linearGradient>
-    <linearGradient id={`${side}-flare`} x1="0" y1="1" x2="1" y2="0"><stop stopColor="#f20e30"/><stop offset=".53" stopColor="#fa2c22"/><stop offset="1" stopColor="#ff7b16"/></linearGradient>
-    <linearGradient id={`${side}-panel`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#242528"/><stop offset="1" stopColor="#121316"/></linearGradient>
-    <pattern id={`${side}-texture`} width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(42)"><path d="M0 0V26" stroke="#ffffff" strokeWidth=".6" opacity=".08"/></pattern>
-    <clipPath id={`${side}-clip`}><rect width={CARD_W} height={CARD_H} rx="25"/></clipPath>
+    <clipPath id={`${prefix}-clip`}><rect width="856" height="540" rx="25"/></clipPath>
+    <linearGradient id={`${prefix}-base`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#1d1d21"/><stop offset=".44" stopColor="#09090b"/><stop offset="1" stopColor="#141419"/></linearGradient>
+    <linearGradient id={`${prefix}-red`} x1="0" y1="0" x2="1" y2=".3"><stop stopColor="#ec162c"/><stop offset=".58" stopColor="#f43029"/><stop offset="1" stopColor="#ff651c"/></linearGradient>
+    <linearGradient id={`${prefix}-edge`} x1="0" y1="0" x2="1" y2="1"><stop stopColor="#ff6038"/><stop offset=".15" stopColor="#eeeeef"/><stop offset=".65" stopColor="#35363c"/><stop offset="1" stopColor="#ff481d"/></linearGradient>
+    <radialGradient id={`${prefix}-glow`} cx=".88" cy=".81" r=".68"><stop stopColor="#fa3e19" stopOpacity=".54"/><stop offset=".48" stopColor="#ca2223" stopOpacity=".09"/><stop offset="1" stopColor="#ae1515" stopOpacity="0"/></radialGradient>
+    <pattern id={`${prefix}-grain`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(25)"><path d="M0 0V8" stroke="#ffffff" strokeWidth=".45" opacity=".13"/></pattern>
   </defs>;
 }
-
-function CardFront({ member, reference }: { member: CardMember; reference: RefObject<SVGSVGElement | null> }) {
-  const preview = member.member_card_number === null;
+function CardBase({ side }: { side: 'front' | 'back' }) {
+  const p = side === 'front' ? 'spf-front' : 'spf-back';
+  return <>
+    <rect width="856" height="540" fill={`url(#${p}-base)`}/>
+    <path d="M0 0H427L75 540H0Z" fill="#151519" opacity=".66"/>
+    <path d="M350 -10H516L163 555H5Z" fill="#050507" opacity=".6"/>
+    <path d="M535 -5H622L267 550H182Z" fill="#27272a" opacity=".24"/>
+    <rect width="856" height="540" fill={`url(#${p}-grain)`} opacity=".6"/>
+    <rect width="856" height="540" fill={`url(#${p}-glow)`}/>
+    <rect x="1.5" y="1.5" width="853" height="537" rx="24" fill="none" stroke={`url(#${p}-edge)`} strokeWidth="3"/>
+  </>;
+}
+function CardFront({ member, reference, logo }: { member: CardMember; reference: React.RefObject<SVGSVGElement | null>; logo: string }) {
   const number = formattedNumber(member.member_card_number);
-  const nameLength = member.full_name.trim().length;
-  return <SvgFrame reference={reference} label={`Front of ${member.full_name}'s premium black membership card`} side="front">
-    <DarkCardDefs side="front"/>
-    <g clipPath="url(#front-clip)">
-      <rect width="856" height="540" fill="url(#front-matte)"/>
-      <rect width="856" height="540" fill="url(#front-texture)" opacity=".58"/>
-      <path d="M487 -35 H693 L274 580 H79Z" fill="#242528" opacity=".41"/>
-      <path d="M575 -30 H612 L216 575 H181Z" fill="#000000" opacity=".48"/>
-      <path d="M854 250V540H589L856 219Z" fill="url(#front-flare)" opacity=".17"/>
-      <path d="M-35 540 394 540 750 -30 783 -30 432 540Z" fill="url(#front-flare)" opacity=".72"/>
-      <path d="M-35 540 H433 L795 -30 H823 L455 540Z" fill="#ff581b" opacity=".24"/>
-      <path d="M-50 540 H360 L700 -30 H757 L398 540Z" fill="#111114"/>
-      <path d="M0 493 100 393" fill="none" stroke="#f2262b" strokeWidth="3" opacity=".9"/>
-      <path d="M432 540 854 20" fill="none" stroke="#ff481b" strokeWidth="2" opacity=".68"/>
-      <DarkBrand prefix="front"/>
-      <text x="796" y="75" textAnchor="end" fontSize="17" fontWeight="750" letterSpacing="3" fill="#e5e4e3">STRONGER</text>
-      <text x="796" y="104" textAnchor="end" fontSize="17" fontWeight="750" letterSpacing="3" fill="#e5e4e3">FITTER</text>
-      <text x="796" y="133" textAnchor="end" fontSize="17" fontWeight="750" letterSpacing="3" fill="#e5e4e3">HEALTHIER</text>
-      <path d="M730 147 H796" stroke="url(#front-flare)" strokeWidth="4"/>
-      <path d="M58 194 H545" stroke="#4a4c4e" strokeWidth="1.5" opacity=".8"/>
-      <text x="67" y="260" fontSize="17" fill="#c9c9c9" fontWeight="700" letterSpacing="3.6">MEMBER NAME</text>
-      <text x="67" y="318" fontSize={nameLength > 31 ? 26 : nameLength > 23 ? 31 : nameLength > 16 ? 36 : 43} fontWeight="850" fill="#ffffff" textLength={nameLength > 31 ? 450 : undefined} lengthAdjust="spacingAndGlyphs">{member.full_name}</text>
-      <text x="67" y="381" fontSize="17" fill="#cececf" fontWeight="700" letterSpacing="3.5">PERMANENT MEMBER ID</text>
-      <text x="67" y="428" fontSize="39" fill="#ff3341" fontWeight="850" letterSpacing="1">{number}</text>
-      <text x="67" y="496" fontSize="18" fill="#f4f4f3" fontWeight="700" letterSpacing="4">PREMIUM MEMBER</text>
-      <path d="M322 488 H384" stroke="url(#front-flare)" strokeWidth="4"/>
-      <rect x="622" y="290" width="174" height="174" rx="12" fill="#ffffff"/>
-      <svg x="631" y="299" width="156" height="156" viewBox="0 0 156 156"><QRCodeSVG value={member.qr_token} size={156} level="H" marginSize={2} bgColor="#ffffff" fgColor="#080a09"/></svg>
-      <text x="709" y="490" fontSize="15" textAnchor="middle" fontWeight="750" letterSpacing="2" fill="#ffffff">SCAN FOR</text>
-      <text x="709" y="509" fontSize="15" textAnchor="middle" fontWeight="750" letterSpacing="2" fill="#ffffff">MEMBER ACCESS</text>
-      {preview && <g><rect x="570" y="170" width="232" height="33" rx="8" fill="#fff1cf"/><text x="584" y="192" fontSize="14" fill="#885000" fontWeight="800">PREVIEW · ID PENDING</text></g>}
+  return <SvgFrame reference={reference} label={`Front of ${member.full_name}'s membership card`} side="front">
+    <CardDefinitions side="front"/>
+    <g clipPath="url(#spf-front-clip)">
+      <CardBase side="front"/>
+      {/* Diagonal panels and bright red/orange strokes match approved image three. */}
+      <path d="M-15 356 188 548H-15Z" fill="#521316" opacity=".32"/>
+      <path d="M-30 478 204 239" stroke="#ed252e" strokeWidth="1.6" opacity=".9"/>
+      <path d="M382 540 566 329 856 117V540Z" fill="#161317" opacity=".45"/>
+      <path d="M404 540 660 247 856 124" stroke="#ee2430" strokeWidth="2.2" opacity=".9"/>
+      <path d="M438 540 677 279 856 171" stroke="#ff501a" strokeWidth="4" opacity=".85"/>
+      <path d="M832 0 856 0V191L716 349Z" fill="url(#spf-front-red)" opacity=".9"/>
+      <path d="M856 136 653 368 536 540H499L660 292Z" fill="url(#spf-front-red)" opacity=".91"/>
+      <path d="M856 172 665 393 555 540H532L672 312Z" fill="#ff771d" opacity=".68"/>
+      <path d="M0 465 70 540H0Z" fill="#f3252a" opacity=".54"/>
+      <BrandArtwork source={logo}/>
+      <g fill="#fff" fontSize="17" fontWeight="650" letterSpacing="3.1" textAnchor="middle"><text x="757" y="65">STRONGER</text><text x="757" y="89">FITTER</text><text x="757" y="113">HEALTHIER</text><text x="757" y="137">HAPPIER</text></g>
+      <path d="M731 151H783" stroke="#f03130" strokeWidth="3"/>
+      <text x="76" y="265" fontSize="17" fontWeight="600" letterSpacing="4.2" fill="#fff">MEMBER NAME</text>
+      <text x="76" y="321" fill="#fff" fontWeight="850" fontSize={member.full_name.length > 29 ? 32 : member.full_name.length > 20 ? 39 : 47} textLength={member.full_name.length > 32 ? 490 : undefined} lengthAdjust="spacingAndGlyphs">{member.full_name.toUpperCase()}</text>
+      <text x="76" y="386" fontSize="18" fontWeight="600" letterSpacing="3.5" fill="#fff">MEMBER ID</text>
+      <text x="76" y="435" fontSize={number.length > 11 ? 43 : 46} fill="#fc353c" fontWeight="850" letterSpacing="1.4">{number}</text>
+      <text x="76" y="500" fontSize="18" fill="#fff" fontWeight="650" letterSpacing="4">MEMBER ID CARD</text>
+      <path d="M335 493H392" stroke="#ff6121" strokeWidth="3"/>
+      <rect x="603" y="253" width="198" height="198" rx="8" fill="#fff"/>
+      <svg x="611" y="261" width="182" height="182" viewBox="0 0 182 182"><QRCodeSVG value={member.qr_token} size={182} level="H" marginSize={2} bgColor="#ffffff" fgColor="#101010"/></svg>
+      <text x="702" y="479" fill="#fff" textAnchor="middle" fontWeight="700" fontSize="14" letterSpacing="3.2">SCAN FOR</text>
+      <text x="702" y="500" fill="#fff" textAnchor="middle" fontWeight="700" fontSize="14" letterSpacing="3.2">MEMBER ACCESS</text>
     </g>
   </SvgFrame>;
 }
-
-function CardBack({ reference }: { reference: RefObject<SVGSVGElement | null> }) {
-  return <SvgFrame reference={reference} label="Back of premium black Super Plus Fitness membership card" side="back">
-    <DarkCardDefs side="back"/>
-    <g clipPath="url(#back-clip)">
-      <rect width="856" height="540" fill="url(#back-matte)"/>
-      <rect width="856" height="540" fill="url(#back-texture)" opacity=".5"/>
-      <path d="M675 -50 854 143 854 199 617 -50Z" fill="url(#back-flare)" opacity=".42"/>
-      <path d="M751 -30 860 95" stroke="url(#back-flare)" strokeWidth="22" opacity=".75"/>
-      <path d="M-26 510 265 540 H470 L850 100" stroke="url(#back-flare)" strokeWidth="14" opacity=".7" fill="none"/>
-      <path d="M-20 532 296 552 H479 L853 134" stroke="#fd4d20" strokeWidth="4" opacity=".55" fill="none"/>
-      <DarkBrand x={46} y={23} width={496} prefix="back"/>
-      <text x="805" y="78" fontSize="16" textAnchor="end" fill="#ededed" fontWeight="700" letterSpacing="3">DISCIPLINE</text>
-      <text x="805" y="104" fontSize="16" textAnchor="end" fill="#ededed" fontWeight="700" letterSpacing="3">BUILDS A</text>
-      <text x="805" y="130" fontSize="16" textAnchor="end" fill="#ededed" fontWeight="700" letterSpacing="3">BETTER YOU</text>
-      <path d="M737 145 H806" stroke="url(#back-flare)" strokeWidth="4"/>
-      <rect x="45" y="187" width="765" height="328" rx="27" fill="url(#back-panel)" stroke="#55575a" strokeWidth="2"/>
-      <rect x="68" y="218" width="43" height="43" rx="21" fill="#191a1d" stroke="#fb4529" strokeWidth="3"/>
-      <path d="M82 240h14m-7-7v14" stroke="#ff6030" strokeWidth="3" strokeLinecap="round"/>
-      <text x="129" y="247" fontSize="23" fontWeight="750" fill="#ffffff">Present this card at check-in.</text>
-      <rect x="68" y="286" width="43" height="43" rx="21" fill="#191a1d" stroke="#fb4529" strokeWidth="3"/>
-      <path d="M89 296v15m0 6v2" stroke="#ff6030" strokeWidth="4" strokeLinecap="round"/>
-      <text x="129" y="303" fontSize="22" fontWeight="650" fill="#ffffff">If lost, please return to</text>
-      <text x="129" y="328" fontSize="22" fontWeight="750" fill="#ffffff">Super Plus Fitness &amp; Spa.</text>
-      <rect x="68" y="362" width="43" height="43" rx="21" fill="#191a1d" stroke="#fb4529" strokeWidth="3"/>
-      <path d="M89 371c-11 0-12 15 0 25 12-10 11-25 0-25zm0 8v1" fill="none" stroke="#ff6030" strokeWidth="2.8" strokeLinecap="round"/>
-      <text x="129" y="392" fontSize="21" fontWeight="650" fill="#ffffff">No. 105 Apata Street, Shomolu, Lagos</text>
-      <rect x="68" y="424" width="43" height="43" rx="21" fill="#191a1d" stroke="#fb4529" strokeWidth="3"/>
-      <path d="M82 434Q84 447 98 456" fill="none" stroke="#ff6030" strokeWidth="4" strokeLinecap="round"/>
-      <text x="129" y="452" fontSize="23" fontWeight="650" fill="#ffffff">07054263170</text>
-      <path d="M67 479 H785" stroke="#6b6d6f" strokeWidth="1.5" opacity=".75"/>
-      <text x="68" y="501" fontSize="16" fill="#eeeeee" fontWeight="600">This card remains the property of Super Plus Fitness &amp; Spa.</text>
+function CardBack({ reference, logo }: { reference: React.RefObject<SVGSVGElement | null>; logo: string }) {
+  return <SvgFrame reference={reference} label="Back of Super Plus Fitness membership card" side="back">
+    <CardDefinitions side="back"/>
+    <g clipPath="url(#spf-back-clip)">
+      <CardBase side="back"/>
+      <path d="M592 0H856V314L680 92Z" fill="#210f12" opacity=".66"/>
+      <path d="M700 -10 856 194V310L665 47Z" fill="url(#spf-back-red)"/>
+      <path d="M801 -10 856 74V134L761 -10Z" fill="#fe511d" opacity=".85"/>
+      <path d="M840 408 856 386V540H739Z" fill="url(#spf-back-red)" opacity=".9"/>
+      <BrandArtwork source={logo}/>
+      <g fill="#fff" fontSize="17" fontWeight="650" letterSpacing="3" textAnchor="middle"><text x="768" y="69">DISCIPLINE</text><text x="768" y="93">BUILDS</text><text x="768" y="117">A BETTER</text><text x="768" y="141">YOU</text></g>
+      <path d="M742 156H798" stroke="#ff641f" strokeWidth="3"/>
+      <path d="M49 204H714Q752 204 752 242V474Q752 510 714 510H49Q31 510 31 486V238Q31 204 49 204Z" fill="#18191d" stroke="#7c7d82" strokeWidth="1.5"/>
+      <path d="M55 207H706Q748 207 748 246V472Q748 504 716 504H55Q36 504 36 486V238Q36 207 55 207Z" fill="#1d1e22" opacity=".65"/>
+      <path d="M58 256H84M58 317H84M58 377H84M58 438H84" stroke="#ef4435" strokeWidth="3" strokeLinecap="round"/>
+      <g fill="none" stroke="#fa4737" strokeWidth="3"><circle cx="78" cy="255" r="21"/><circle cx="78" cy="317" r="21"/><circle cx="78" cy="379" r="21"/><circle cx="78" cy="440" r="21"/></g>
+      <g fill="#ff6835" fontWeight="900" fontSize="25" textAnchor="middle"><text x="78" y="264">+</text><text x="78" y="327">!</text><text x="78" y="388">⌖</text><text x="78" y="448">☎</text></g>
+      <g fill="#fff" fontSize="20" fontWeight="500"><text x="122" y="263">Present this card at check-in.</text><text x="122" y="326">If lost, please return to Super Plus Fitness &amp; Spa.</text><text x="122" y="387">No. 105 Apata Street, Shomolu, Lagos.</text><text x="122" y="448">07054263170</text></g>
+      <path d="M59 467H725" stroke="#b3b4b8" strokeWidth="1.3"/>
+      <text x="59" y="492" fill="#fff" fontSize="16">This card remains the property of Super Plus Fitness &amp; Spa.</text>
+      <g fill="#fff" textAnchor="middle" fontSize="15" fontWeight="700" letterSpacing="2.5"><text x="803" y="395">FIT</text><text x="803" y="419">PEOPLE</text><text x="803" y="443">BRIGHTER</text><text x="803" y="467">LIVES</text></g>
+      <path d="M783 478H822" stroke="#f94a2a" strokeWidth="3"/>
     </g>
   </SvgFrame>;
 }
-
 function MembershipCardPage() {
   const frontRef = useRef<SVGSVGElement>(null);
   const backRef = useRef<SVGSVGElement>(null);
+  const [logo, setLogo] = useState(BRAND_LOGO);
   const [member, setMember] = useState<CardMember | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState('');
   const [confirmReissue, setConfirmReissue] = useState(false);
-
   useEffect(() => {
     let active = true;
+    void getDarkCardLogo().then((source) => { if (active) setLogo(source); }).catch(() => { if (active) setError('Logo colours could not load. Refresh the page before approving this design.'); });
     async function load() {
       try {
         const id = new URLSearchParams(window.location.search).get('memberId');
@@ -148,32 +136,24 @@ function MembershipCardPage() {
         if (authError || !auth.user) throw new Error('Sign in to the Admin Portal to access membership cards.');
         const { data: staff, error: staffError } = await supabase.from('staff_users').select('role,active').eq('auth_user_id', auth.user.id).maybeSingle();
         if (staffError || !staff?.active || String(staff.role).toLowerCase() !== 'admin') throw new Error('An active administrator account is required to create or print member cards.');
-        // Preview reads the actual existing QR but does not change production data.
-        // Card export and replacement stay disabled until permanent IDs are migrated.
         const query = await supabase.from('members').select('id,full_name,qr_token,created_at,member_card_number').eq('id', id).maybeSingle();
         let data: CardMember | null = null;
         if (query.error?.code === '42703' || query.error?.code === 'PGRST204') {
           const older = await supabase.from('members').select('id,full_name,qr_token,created_at').eq('id', id).maybeSingle();
           if (older.error) throw older.error;
           if (older.data) data = { ...older.data, member_card_number: null } as CardMember;
-        } else {
-          if (query.error) throw query.error;
-          data = query.data as CardMember | null;
-        }
+        } else { if (query.error) throw query.error; data = query.data as CardMember | null; }
         if (!data) throw new Error('Member not found.');
         if (!data.qr_token) throw new Error('This member does not have a QR code yet. Contact reception.');
         if (active) setMember(data);
-      } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load membership card.');
-      } finally { if (active) setLoading(false); }
+      } catch (cause) { if (active) setError(cause instanceof Error ? cause.message : 'Unable to load membership card.'); }
+      finally { if (active) setLoading(false); }
     }
     void load();
     return () => { active = false; };
   }, []);
-
   async function exportPdf(mode: 'save' | 'open') {
     if (!member?.member_card_number || !frontRef.current || !backRef.current || busy) return;
-    // Open before awaiting PDF rendering to avoid Safari popup blocking.
     const popup = mode === 'open' ? window.open('about:blank', '_blank') : null;
     setBusy(true); setError('');
     try {
@@ -181,17 +161,11 @@ function MembershipCardPage() {
       const name = member.full_name.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
       const filename = `${formattedNumber(member.member_card_number)}-${name}-membership-card.pdf`;
       if (mode === 'save') saveMemberCardPdf(pdf, filename);
-      else if (popup) {
-        const url = URL.createObjectURL(pdf);
-        popup.location.replace(url);
-        window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
-      } else saveMemberCardPdf(pdf, filename);
-    } catch (cause) {
-      popup?.close();
-      setError(cause instanceof Error ? cause.message : 'Could not generate the PDF.');
-    } finally { setBusy(false); }
+      else if (popup) { const url = URL.createObjectURL(pdf); popup.location.replace(url); window.setTimeout(() => URL.revokeObjectURL(url), 120_000); }
+      else saveMemberCardPdf(pdf, filename);
+    } catch (cause) { popup?.close(); setError(cause instanceof Error ? cause.message : 'Could not generate the PDF.'); }
+    finally { setBusy(false); }
   }
-
   async function reissue() {
     if (!member?.member_card_number || busy || reason.trim().length < 8) return;
     if (!window.confirm('Invalidate this member’s old QR card immediately? Old printed cards will stop scanning. The permanent member ID will remain unchanged.')) return;
@@ -202,23 +176,21 @@ function MembershipCardPage() {
       if (!data?.success) throw new Error('Card replacement was not confirmed.');
       const refreshed = await supabase.from('members').select('qr_token').eq('id', member.id).single();
       if (refreshed.error || !refreshed.data?.qr_token) throw refreshed.error || new Error('Refresh the page to see the replacement code.');
-      setMember({ ...member, qr_token: refreshed.data.qr_token });
-      setReason(''); setConfirmReissue(false);
+      setMember({ ...member, qr_token: refreshed.data.qr_token }); setReason(''); setConfirmReissue(false);
       window.alert('Old card invalidated. Download and print the new card now.');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not replace the card.'); }
     finally { setBusy(false); }
   }
-
-  return <main className="min-h-screen bg-[#111214] px-4 py-8 text-[#f4f4f3] sm:px-7 sm:py-12"><div className="mx-auto max-w-6xl">
-    <a href="/management-profiles" className="inline-flex items-center gap-2 text-sm font-bold text-[#ff7b57]"><ArrowLeft size={17}/> Back to member profiles</a>
-    <div className="mt-6"><p className="text-xs font-black uppercase tracking-[.2em] text-[#ff5c48]">Super Plus Fitness &amp; Spa · Premium Black · Design 3</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">Membership ID Card</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-[#bbbcc0]">Premium matte-black, double-sided PVC design with red-to-orange details. Uses the same QR as the online member profile; membership status is checked live at reception. The permanent ID never changes on renewal.</p></div>
-    {loading && <p role="status" className="mt-8 flex items-center gap-2 rounded-2xl bg-[#242529] p-6"><Loader2 className="animate-spin" size={18}/> Loading member and checking admin access…</p>}
-    {error && <p role="alert" className="mt-6 rounded-2xl border border-red-700 bg-[#351b1b] p-4 text-sm text-red-100">{error}</p>}
+  return <main className="min-h-screen bg-[#111113] px-4 py-8 text-white sm:px-7 sm:py-12"><div className="mx-auto max-w-6xl">
+    <a href="/management-profiles" className="inline-flex items-center gap-2 text-sm font-bold text-[#ff7050]"><ArrowLeft size={17}/> Back to member profiles</a>
+    <div className="mt-6"><p className="text-xs font-black uppercase tracking-[.2em] text-[#ff6750]">Super Plus Fitness &amp; Spa · Reference design 3</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">Membership ID Card</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-[#c1c0c1]">Premium black and red, double-sided PVC card based on your chosen reference. The same QR works with existing reception check-in.</p></div>
+    {loading && <p role="status" className="mt-8 flex items-center gap-2 rounded-2xl bg-[#242429] p-6"><Loader2 className="animate-spin" size={18}/> Loading member and checking admin access…</p>}
+    {error && <p role="alert" className="mt-6 rounded-2xl border border-red-500/40 bg-red-950 p-4 text-sm text-red-100">{error}</p>}
     {member && <>
-      {!member.member_card_number && <div className="mt-6 rounded-2xl border border-amber-500/70 bg-[#302818] p-5 text-sm leading-6 text-amber-100"><strong>Preview mode:</strong> This shows the member's actual details and existing QR, but the ID is clearly marked as a placeholder. The permanent-ID database migration has NOT been applied to your live system. Printing, downloading and lost-card replacement remain disabled until you approve the preview and the migration is installed.</div>}
-      <div className="mt-8 grid gap-7 lg:grid-cols-2"><section><h2 className="mb-3 text-sm font-black uppercase tracking-widest text-[#f1f1ef]">Front · member identification</h2><CardFront member={member} reference={frontRef}/></section><section><h2 className="mb-3 text-sm font-black uppercase tracking-widest text-[#f1f1ef]">Back · card instructions</h2><CardBack reference={backRef}/></section></div>
-      <div className="mt-7 rounded-2xl border border-[#414144] bg-[#222326] p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-black">Print-ready files</h2><p className="mt-1 text-sm text-[#c2c2c5]">Two-page PDF: front on page 1, back on page 2. CR80 finished size 85.6 × 54 mm. Print at 100% scale; confirm the card shop's required bleed and colour settings before production.</p></div><div className="flex flex-wrap gap-2"><button type="button" disabled={busy || !member.member_card_number} onClick={() => void exportPdf('save')} className="inline-flex items-center gap-2 rounded-xl bg-[#f13735] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Download size={17}/>{busy ? 'Preparing…' : 'Download PDF'}</button><button type="button" disabled={busy || !member.member_card_number} onClick={() => void exportPdf('open')} className="inline-flex items-center gap-2 rounded-xl border border-[#a5a5a8] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Printer size={17}/> Open to print</button></div></div></div>
-      <section className="mt-5 rounded-2xl border border-[#414144] bg-[#222326] p-5 sm:p-6"><div className="flex items-start gap-3"><ShieldAlert size={23} className="shrink-0 text-[#ff644f]"/><div className="min-w-0"><h2 className="font-black">Lost or damaged card?</h2><p className="mt-1 text-sm leading-6 text-[#c2c2c5]">An administrator can invalidate the old QR and issue a replacement without changing the permanent member ID, memberships or payments.</p><button disabled={!member.member_card_number || busy} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#ff7864] underline disabled:opacity-40" onClick={() => setConfirmReissue(!confirmReissue)}><RefreshCcw size={16}/> Replace lost card</button></div></div>{confirmReissue && <div className="mt-4 border-t border-[#55555a] pt-4"><label className="block text-sm font-bold">Audit reason (required)<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} rows={2} placeholder="For example: Member reported card lost" className="mt-2 block w-full rounded-xl border border-[#707075] bg-[#151618] p-3 text-sm text-white"/></label><button onClick={() => void reissue()} disabled={busy || reason.trim().length < 8} className="mt-3 rounded-xl bg-[#ed303a] px-5 py-3 text-sm font-bold text-white disabled:opacity-40">Invalidate old QR and reissue</button></div>}</section>
+      {!member.member_card_number && <div className="mt-6 rounded-2xl border border-amber-400/40 bg-[#392c1e] p-5 text-sm leading-6 text-[#ffe6aa]"><strong>Preview mode:</strong> The actual member information and QR appear on the design, but SPF-PREVIEW is a placeholder. Permanent ID database migration has NOT been run, and PDF export and lost-card replacement remain disabled until you approve launch.</div>}
+      <div className="mt-8 grid gap-7 lg:grid-cols-2"><section><h2 className="mb-3 text-sm font-black uppercase tracking-widest">Front · member identification</h2><CardFront member={member} reference={frontRef} logo={logo}/></section><section><h2 className="mb-3 text-sm font-black uppercase tracking-widest">Back · card instructions</h2><CardBack reference={backRef} logo={logo}/></section></div>
+      <div className="mt-7 rounded-2xl border border-[#44444a] bg-[#232328] p-5 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-black">Print-ready files</h2><p className="mt-1 text-sm text-[#c1c0c1]">Two-page PDF: front on page 1 and back on page 2, CR80 finished size 85.6 × 54 mm. Print at 100% scale; ask the card shop whether they require a separate bleed specification.</p></div><div className="flex flex-wrap gap-2"><button type="button" disabled={busy || !member.member_card_number} onClick={() => void exportPdf('save')} className="inline-flex items-center gap-2 rounded-xl bg-[#eb3037] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Download size={17}/>{busy ? 'Preparing…' : 'Download PDF'}</button><button type="button" disabled={busy || !member.member_card_number} onClick={() => void exportPdf('open')} className="inline-flex items-center gap-2 rounded-xl border border-[#8e8e95] px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"><Printer size={17}/> Open to print</button></div></div></div>
+      <section className="mt-5 rounded-2xl border border-[#48444a] bg-[#232328] p-5 sm:p-6"><div className="flex items-start gap-3"><ShieldAlert size={23} className="shrink-0 text-[#ff5b47]"/><div className="min-w-0"><h2 className="font-black">Lost or damaged card?</h2><p className="mt-1 text-sm leading-6 text-[#c1c0c1]">An administrator can invalidate the old QR and issue a replacement without changing the member ID or altering memberships and payments.</p><button disabled={!member.member_card_number || busy} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-[#ff6657] underline disabled:opacity-40" onClick={() => setConfirmReissue(!confirmReissue)}><RefreshCcw size={16}/> Replace lost card</button></div></div>{confirmReissue && <div className="mt-4 border-t border-[#53535a] pt-4"><label className="block text-sm font-bold">Audit reason (required)<textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} rows={2} placeholder="For example: Member reported card lost" className="mt-2 block w-full rounded-xl border border-[#85858a] bg-[#161619] p-3 text-sm text-white"/></label><button onClick={() => void reissue()} disabled={busy || reason.trim().length < 8} className="mt-3 rounded-xl bg-[#e63235] px-5 py-3 text-sm font-bold text-white disabled:opacity-40">Invalidate old QR and reissue</button></div>}</section>
     </>}
   </div></main>;
 }
