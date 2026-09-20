@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Activity, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, CreditCard, LayoutDashboard, Loader2, ScanLine, ShieldCheck, UserPlus, UserRound, Users, Wallet } from "lucide-react";
+import { Activity, ArrowRight, CalendarClock, CheckCircle2, ClipboardList, CreditCard, Images, LayoutDashboard, Loader2, ScanLine, ShieldCheck, UserPlus, UserRound, Users, Wallet } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-operations")({ component: ManagementOperations });
@@ -40,6 +40,7 @@ function ManagementOperations() {
     { label: "Staff clock-in", description: "Open the existing protected staff QR clock-in and clock-out portal.", href: "/staff-attendance", icon: CalendarClock, eyebrow: "Staff" },
   ];
   const managementActions: Action[] = [
+    { label: "Gallery Management", description: "Upload gym photos and videos, edit existing gallery items, publish or unpublish them, and permanently delete media.", href: "/staff-gallery", icon: Images, eyebrow: "Website gallery" },
     { label: "Staff directory & QR attendance", description: "Read-only team overview with recorded clock-ins, daily date selector, late-arrival flags and worked hours.", href: "/management-staff", icon: Users, eyebrow: "Management only" },
     { label: "Monthly staff attendance", description: "Review monthly recorded work time and late arrivals with the existing named exceptions.", href: "/management-staff-monthly", icon: CalendarClock, eyebrow: "Management only" },
     { label: "Salary records", description: "New read-only ledger of saved salary payments and statuses, separate from attendance and payroll calculations.", href: "/management-payroll", icon: Wallet, eyebrow: "Management only" },
