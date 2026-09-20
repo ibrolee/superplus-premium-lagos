@@ -3,7 +3,7 @@ import { ArrowUpRight, Instagram, LayoutDashboard, Menu, UserRound } from "lucid
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { contact, navItems } from "@/lib/site-data";
+import { contact, navItems, openingHours } from "@/lib/site-data";
 import { GmailIcon, TikTokIcon, WhatsAppIcon } from "./footer-brand-icons";
 
 const links = [...navItems, { label: "Portal", to: "/portal" }] as const;
@@ -79,5 +79,103 @@ export function Navbar() {
 }
 
 export function Footer() {
-  return <footer className="bg-secondary py-14 text-secondary-foreground"><div className="section-shell"><div className="grid gap-10 border-b border-primary-foreground/15 pb-12 md:grid-cols-2 lg:grid-cols-4"><div><Link to="/" aria-label="Super Plus Fitness home" className="inline-flex items-center"><img src="/footer-logo-circular.webp" alt="Super Plus Fitness — Fitness That Fits Your Life" width={80} height={80} loading="lazy" decoding="async" className="block size-20 shrink-0 rounded-full object-contain" /></Link><p className="mt-5 max-w-xs text-sm leading-6 text-secondary-foreground/60">Modern fitness, personal training, spa and recovery in Shomolu, Lagos.</p></div><div><h3 className="text-xs font-extrabold uppercase text-primary">Explore</h3><nav className="mt-5 grid gap-2">{navItems.slice(0, 8).map(item => <Link key={item.to} to={item.to} className="text-sm text-secondary-foreground/70 hover:text-primary">{item.label}</Link>)}</nav></div><div><h3 className="text-xs font-extrabold uppercase text-primary">Member &amp; Portal</h3><nav className="mt-5 grid gap-2">{[{ label: "Member login", to: "/login" }, { label: "My QR Code", to: "/my-qr" }, { label: "Staff, reception & admin portal", to: "/portal" }].map(item => <Link key={item.to} to={item.to} className="text-sm text-secondary-foreground/70 hover:text-primary">{item.label}</Link>)}</nav></div><div><h3 className="text-xs font-extrabold uppercase text-primary">Contact</h3><div className="mt-5 grid gap-3 text-sm text-secondary-foreground/70"><div className="flex flex-wrap items-center gap-3"><a href={`tel:${contact.phoneHref}`} className="hover:text-primary">{contact.phone}</a><a href={contact.whatsapp} aria-label={`WhatsApp ${contact.phone}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg text-[#25D366] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><WhatsAppIcon className="size-6" /></a></div><a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 break-all hover:text-primary"><GmailIcon className="size-5 shrink-0 text-[#EA4335]" /><span>{contact.email}</span></a><p>{contact.address}</p><div className="flex items-center gap-2"><a href="https://www.instagram.com/superplusfitnessandspa/" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Instagram className="size-6" aria-hidden="true" /></a><a href="https://www.tiktok.com/@superplusfitness" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-lg transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><TikTokIcon className="size-6" /></a></div></div></div></div><p className="pt-6 text-xs text-secondary-foreground/45">© {new Date().getFullYear()} Super Plus Fitness &amp; Spa. All rights reserved.</p></div></footer>;
+  const primaryLinks = navItems.slice(0, 6);
+  const businessLinks = navItems.slice(6, 8);
+  const accountLinks = [
+    { label: "Member Login", to: "/login" },
+    { label: "My QR Code", to: "/my-qr" },
+    { label: "Staff & Admin Portal", to: "/portal" },
+  ] as const;
+
+  return (
+    <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
+      <div className="pointer-events-none absolute -right-28 top-12 size-72 rounded-full border-[42px] border-primary/15" aria-hidden="true" />
+      <div className="pointer-events-none absolute -left-20 bottom-10 size-56 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
+
+      <div className="section-shell relative py-12 sm:py-16">
+        <section className="mb-12 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 sm:p-7 lg:p-8" aria-label="Footer call to action">
+          <div className="grid gap-7 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div className="flex gap-4">
+              <Link to="/" aria-label="Super Plus Fitness home" className="inline-flex size-20 shrink-0 items-center justify-center rounded-full bg-white p-2 shadow-lg shadow-black/25 sm:size-24">
+                <img src="/footer-logo-circular.webp" alt="Super Plus Fitness — Fitness That Fits Your Life" width={96} height={96} loading="lazy" decoding="async" className="block size-full rounded-full object-contain" />
+              </Link>
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-primary">Super Plus Fitness & Spa</p>
+                <h2 className="mt-2 font-display text-4xl font-extrabold uppercase leading-[0.88] tracking-tight text-white sm:text-5xl">Train. Recover. Live better.</h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-white/60">Modern gym access, personal training, spa and recovery services in Shomolu, Lagos.</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:justify-self-end">
+              <Button asChild size="lg" className="h-12 rounded-xl text-sm">
+                <Link to="/join">Become a member <ArrowUpRight aria-hidden="true" /></Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="h-12 rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white">
+                <a href={contact.whatsapp} target="_blank" rel="noopener noreferrer">Chat on WhatsApp <WhatsAppIcon className="size-5" /></a>
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <div className="grid gap-8 border-b border-white/10 pb-10 lg:grid-cols-[1.15fr_0.85fr_0.85fr_1.15fr]">
+          <section aria-label="Visit Super Plus Fitness" className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+            <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Visit us</h3>
+            <p className="mt-4 text-sm leading-6 text-white/70">{contact.address}</p>
+            <div className="mt-5 grid gap-2 text-xs text-white/55">
+              {openingHours.map(item => <p key={item.days} className="flex justify-between gap-4 border-b border-white/10 pb-2 last:border-0 last:pb-0"><span>{item.days}</span><span className="text-right text-white/75">{item.hours}</span></p>)}
+            </div>
+            <a href={contact.directions} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-primary hover:text-white">
+              Get directions <ArrowUpRight aria-hidden="true" className="size-4" />
+            </a>
+          </section>
+
+          <section aria-label="Explore" className="grid gap-3">
+            <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Explore</h3>
+            <nav className="grid gap-2.5">
+              {primaryLinks.map(item => <Link key={item.to} to={item.to} className="text-sm font-medium text-white/65 transition-colors hover:text-primary">{item.label}</Link>)}
+            </nav>
+          </section>
+
+          <section aria-label="Business and member links" className="grid gap-7">
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Business</h3>
+              <nav className="mt-3 grid gap-2.5">
+                {businessLinks.map(item => <Link key={item.to} to={item.to} className="text-sm font-medium text-white/65 transition-colors hover:text-primary">{item.label}</Link>)}
+              </nav>
+            </div>
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Members</h3>
+              <nav className="mt-3 grid gap-2.5">
+                {accountLinks.map(item => <Link key={item.to} to={item.to} className="text-sm font-medium text-white/65 transition-colors hover:text-primary">{item.label}</Link>)}
+              </nav>
+            </div>
+          </section>
+
+          <section aria-label="Contact Super Plus Fitness" className="rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+            <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Contact</h3>
+            <div className="mt-4 grid gap-3 text-sm text-white/70">
+              <a href={`tel:${contact.phoneHref}`} className="inline-flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3 hover:border-primary/60 hover:text-white">
+                <span>{contact.phone}</span>
+                <span className="grid size-9 place-items-center rounded-xl bg-primary/15 text-primary">☎</span>
+              </a>
+              <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3 hover:border-primary/60 hover:text-white">
+                <GmailIcon className="size-5 shrink-0 text-[#EA4335]" />
+                <span className="break-all">{contact.email}</span>
+              </a>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <a href={contact.whatsapp} aria-label={`WhatsApp ${contact.phone}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/15 text-[#25D366] transition-colors hover:border-[#25D366]/60 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><WhatsAppIcon className="size-6" /></a>
+                <a href="https://www.instagram.com/superplusfitnessandspa/" aria-label="Instagram" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/15 transition-colors hover:border-primary/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Instagram className="size-6" aria-hidden="true" /></a>
+                <a href="https://www.tiktok.com/@superplusfitness" aria-label="TikTok" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/15 transition-colors hover:border-primary/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><TikTokIcon className="size-6" /></a>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="flex flex-col gap-3 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Super Plus Fitness &amp; Spa. All rights reserved.</p>
+          <p className="font-semibold uppercase tracking-[0.14em] text-white/35">Fitness That Fits Your Life</p>
+        </div>
+      </div>
+    </footer>
+  );
 }
