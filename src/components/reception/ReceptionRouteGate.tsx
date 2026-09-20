@@ -8,6 +8,7 @@ type AccessState = {
   path: string;
   revision: number;
   status: "checking" | "allowed" | "signed-out" | "denied";
+  role?: string;
 };
 
 /**
@@ -46,11 +47,13 @@ export function ReceptionRouteGate() {
         }
         const { data: staff, error: staffError } = await supabase.from("staff_users")
           .select("role,active").eq("auth_user_id", data.user.id).maybeSingle();
+        const role = String(staff?.role || "").toLowerCase();
+        const allowed = !staffError && Boolean(staff?.active) && RECEPTION_ROLES.has(role);
         if (!cancelled) setAccess({
           path,
           revision,
-          status: !staffError && staff?.active && RECEPTION_ROLES.has(String(staff.role || "").toLowerCase())
-            ? "allowed" : "denied",
+          status: allowed ? "allowed" : "denied",
+          role: allowed ? role : undefined,
         });
       } catch {
         if (!cancelled) setAccess({ path, revision, status: "denied" });
@@ -65,8 +68,14 @@ export function ReceptionRouteGate() {
     return <main role="status" className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16 text-sm">Checking reception access…</main>;
   }
   if (access.status === "allowed" || (access.status === "signed-out" && path === "/reception-checkin")) {
-    // Keep the original scanner's staff sign-in form accessible to signed-out users.
-    return <Outlet />;
+    // The administrator's card actions appear at the beginning of the full member
+    // profile. Member data and PDF generation are independently admin-gated on
+    // the card route; a visible link alone never grants access.
+    const memberId = path.startsWith('/reception-member/') ? path.slice('/reception-member/'.length) : '';
+    return <>
+      {access.role === 'admin' && memberId && <div className="mx-auto max-w-5xl px-4 pt-5 sm:px-6 lg:px-8"><a href={`/management-member-card?memberId=${encodeURIComponent(memberId)}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#e0c9c4] bg-white px-5 py-3 text-sm font-extrabold text-[#9d3038] shadow-sm hover:border-[#ba4249] hover:bg-[#fff8f6]">Membership ID Card · View / Download / Print →</a></div>}
+      <Outlet />
+    </>;
   }
   return <main className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16">
     <div role="alert" className="rounded-2xl border border-[#d8e2d5] bg-white p-6 text-[#193327]">
