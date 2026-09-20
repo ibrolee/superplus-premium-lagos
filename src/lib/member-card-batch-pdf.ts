@@ -1,5 +1,7 @@
 /* Batch export: alternating front/back CR80 pages, same size as the single-card PDF.
  * A 25-member ceiling keeps memory and mobile PDF sizes manageable. */
+import { presentMemberCardPdf } from './member-card-file-actions';
+
 const PAGE_W = 85.6 * 72 / 25.4;
 const PAGE_H = 54 * 72 / 25.4;
 const encoder = new TextEncoder();
@@ -81,9 +83,5 @@ export async function generateMemberCardBatchPdf(pairs: Array<{ front: SVGSVGEle
 }
 
 export function saveBatchPdf(pdf: Blob, filename: string) {
-  const url = URL.createObjectURL(pdf);
-  const link = document.createElement('a');
-  link.href = url; link.download = filename;
-  document.body.appendChild(link); link.click(); link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+  presentMemberCardPdf(pdf, filename);
 }
