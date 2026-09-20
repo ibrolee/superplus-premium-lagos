@@ -11,10 +11,10 @@ const mobileSections = [
   { heading: "Explore", items: navItems.slice(0, 5) },
   { heading: "Discover More", items: navItems.slice(5) },
   {
-    heading: "Your Account",
+    heading: "PORTAL",
     items: [
-      { label: "Member Login", to: "/login" },
-      { label: "Staff & Management Portal", to: "/portal" },
+      { label: "Member Portal", to: "/login" },
+      { label: "Staff Portal", to: "/portal" },
     ],
   },
 ] as const;
@@ -135,7 +135,7 @@ export function Footer() {
             </nav>
           </section>
 
-          <section aria-label="Business and member links" className="grid gap-7">
+          <section aria-label="Business and portal links" className="grid gap-7">
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Business</h3>
               <nav className="mt-3 grid gap-2.5">
@@ -143,7 +143,7 @@ export function Footer() {
               </nav>
             </div>
             <div>
-              <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">Members</h3>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.18em] text-primary">PORTAL</h3>
               <nav className="mt-3 grid gap-2.5">
                 {accountLinks.map(item => <Link key={item.to} to={item.to} className="text-sm font-medium text-white/65 transition-colors hover:text-primary">{item.label}</Link>)}
               </nav>
