@@ -20,13 +20,12 @@ export function FittedMemberName({ name }: { name: string }) {
       if (!Number.isFinite(measured) || measured <= MAX_NAME_WIDTH) return;
       const nextSize = Math.max(MIN_FONT_SIZE, Math.floor(ORIGINAL_FONT_SIZE * MAX_NAME_WIDTH / measured));
       text.setAttribute('font-size', String(nextSize));
-      // Serialize an explicit width into the PDF's cloned SVG: its font fallback
-      // can differ from Safari's live preview, but the name must never hit the QR.
-      text.setAttribute('textLength', String(MAX_NAME_WIDTH));
+      // Save an explicit upper bound for PDF SVG rasterization, whose font fallback
+      // can be wider than the on-page font. Never stretch already-fitting names.
+      text.setAttribute('textLength', String(Math.min(MAX_NAME_WIDTH, text.getComputedTextLength())));
       text.setAttribute('lengthAdjust', 'spacingAndGlyphs');
     };
     fit();
-    // A web font resolving after first paint must not change the physical PDF layout.
     void document.fonts?.ready.then(fit);
     return () => { cancelled = true; };
   }, [name]);
