@@ -18,8 +18,7 @@ export const contact = {
   phoneHref: "+2347054263170",
   email: "spfitnessandspa@gmail.com",
   whatsapp: "https://wa.me/2347054263170",
-  directions:
-    "https://www.google.com/maps/dir/?api=1&destination=105%20Apata%20Street%2C%20Shomolu%2C%20Lagos%2C%20Nigeria",
+  directions: "https://maps.app.goo.gl/eDa5jBujqoraFBpD8?g_st=ic",
 };
 
 export const openingHours = [
