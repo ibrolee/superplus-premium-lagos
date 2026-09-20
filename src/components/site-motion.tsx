@@ -3,17 +3,21 @@ import { useEffect } from "react";
 import { navItems } from "@/lib/site-data";
 import "./site-motion.css";
 
-/** Keep motion away from member accounts, check-in, checkout and staff dashboards. */
+/** Keep motion away from member accounts, check-in, checkout, staff dashboards and the homepage. */
 export function SiteMotion() {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
 
   useEffect(() => {
+    // Homepage 2.0 shows all sections immediately, including full-page mobile captures.
+    // Leave motion behaviour unchanged on all other public marketing pages.
     const isMarketingPage =
-      pathname === "/join" ||
-      navItems.some((item) => item.to === pathname) ||
-      pathname.startsWith("/blog/");
+      pathname !== "/" && (
+        pathname === "/join" ||
+        navItems.some((item) => item.to === pathname) ||
+        pathname.startsWith("/blog/")
+      );
 
     if (!isMarketingPage || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       return;
