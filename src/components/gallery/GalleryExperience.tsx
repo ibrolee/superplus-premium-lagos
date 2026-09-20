@@ -35,7 +35,7 @@ function MediaTile({ item, onOpen, priority = false }: { item: DisplayItem; onOp
     {item.media_type === 'video' ? <video src={`${item.url}#t=0.1`} preload="metadata" muted playsInline className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <img src={item.url} alt={item.title} loading={priority ? 'eager' : 'lazy'} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />}
     <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent" />
     {item.media_type === 'video' && <span className="absolute left-4 top-4 grid size-12 place-items-center rounded-full border border-white/50 bg-black/40 text-white backdrop-blur"><Play className="size-5 fill-current" /></span>}
-    <span className="absolute bottom-5 left-5 right-5 text-white"><span className="block text-[10px] font-bold uppercase tracking-[.18em] text-red-300">{item.category}</span><span className="mt-1 block font-display text-2xl font-extrabold uppercase leading-tight">{item.title}</span></span>
+    <span className="absolute bottom-4 left-4 right-4 text-white sm:bottom-5 sm:left-5 sm:right-5"><span className="block text-[10px] font-bold uppercase tracking-[.18em] text-red-300">{item.category}</span><span className="mt-1 block break-words font-display text-sm font-extrabold uppercase leading-snug sm:text-base lg:text-lg">{item.title}</span></span>
   </button>;
 }
 function Viewer({ item, close }: { item: DisplayItem; close: () => void }) {
