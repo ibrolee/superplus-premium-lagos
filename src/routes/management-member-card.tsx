@@ -83,8 +83,8 @@ function CardFront({ member, reference, logo }: { member: CardMember; reference:
       <text x="76" y="435" fontSize={number.length > 11 ? 43 : 46} fill="#fc353c" fontWeight="850" letterSpacing="1.4">{number}</text>
       <text x="76" y="500" fontSize="18" fill="#fff" fontWeight="650" letterSpacing="4">MEMBER ID CARD</text>
       <path d="M335 493H392" stroke="#ff6121" strokeWidth="3"/>
-      <rect x="603" y="253" width="198" height="198" rx="8" fill="#fff"/>
-      <svg x="611" y="261" width="182" height="182" viewBox="0 0 182 182"><QRCodeSVG value={member.qr_token} size={182} level="H" marginSize={2} bgColor="#ffffff" fgColor="#101010"/></svg>
+      <rect x="583" y="243" width="218" height="218" rx="8" fill="#fff"/>
+      <svg x="591" y="251" width="202" height="202" viewBox="0 0 202 202"><QRCodeSVG value={member.qr_token} size={202} level="H" marginSize={2} bgColor="#ffffff" fgColor="#101010"/></svg>
       <text x="702" y="479" fill="#fff" textAnchor="middle" fontWeight="700" fontSize="14" letterSpacing="3.2">SCAN FOR</text>
       <text x="702" y="500" fill="#fff" textAnchor="middle" fontWeight="700" fontSize="14" letterSpacing="3.2">MEMBER ACCESS</text>
     </g>
@@ -104,9 +104,13 @@ function CardBack({ reference, logo }: { reference: React.RefObject<SVGSVGElemen
       <path d="M742 156H798" stroke="#ff641f" strokeWidth="3"/>
       <path d="M49 204H714Q752 204 752 242V474Q752 510 714 510H49Q31 510 31 486V238Q31 204 49 204Z" fill="#18191d" stroke="#7c7d82" strokeWidth="1.5"/>
       <path d="M55 207H706Q748 207 748 246V472Q748 504 716 504H55Q36 504 36 486V238Q36 207 55 207Z" fill="#1d1e22" opacity=".65"/>
-      <path d="M58 256H84M58 317H84M58 377H84M58 438H84" stroke="#ef4435" strokeWidth="3" strokeLinecap="round"/>
       <g fill="none" stroke="#fa4737" strokeWidth="3"><circle cx="78" cy="255" r="21"/><circle cx="78" cy="317" r="21"/><circle cx="78" cy="379" r="21"/><circle cx="78" cy="440" r="21"/></g>
-      <g fill="#ff6835" fontWeight="900" fontSize="25" textAnchor="middle"><text x="78" y="264">+</text><text x="78" y="327">!</text><text x="78" y="388">⌖</text><text x="78" y="448">☎</text></g>
+      <g fill="none" stroke="#ff6835" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="65" y="244" width="26" height="21" rx="3"/><circle cx="73" cy="251" r="2.4"/><path d="M69 259q4-5 8 0M81 250h6M81 256h6"/>
+        <path d="M78 304 91 327H65Z"/><path d="M78 312v7M78 323v.3"/>
+        <path d="M78 367c-6 0-11 5-11 11 0 8 11 15 11 15s11-7 11-15c0-6-5-11-11-11Z"/><circle cx="78" cy="378" r="3.5"/>
+        <path d="M69 430c1-2 4-3 6-1l3 5-4 3c2 4 5 7 9 9l3-4 5 3c2 2 1 5-1 6-4 2-11-1-17-7s-9-13-4-14Z"/>
+      </g>
       <g fill="#fff" fontSize="20" fontWeight="500"><text x="122" y="263">Present this card at check-in.</text><text x="122" y="326">If lost, please return to Super Plus Fitness &amp; Spa.</text><text x="122" y="387">No. 105 Apata Street, Shomolu, Lagos.</text><text x="122" y="448">07054263170</text></g>
       <path d="M59 467H725" stroke="#b3b4b8" strokeWidth="1.3"/>
       <text x="59" y="492" fill="#fff" fontSize="16">This card remains the property of Super Plus Fitness &amp; Spa.</text>
