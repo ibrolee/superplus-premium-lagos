@@ -50,7 +50,7 @@ function ArticleCard({ post, featured }: { post: BlogPost; featured: boolean }) 
     </div>
     <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2.5 sm:justify-start sm:gap-2 sm:p-4">
       <span className="text-[9px] font-extrabold uppercase tracking-[.15em] text-[#ca4634]">{post.category}</span>
-      <h3 className="line-clamp-2 font-display text-[17px] font-bold uppercase leading-[1.05] tracking-tight transition-colors group-hover:text-[#c7402e] sm:text-xl lg:text-[22px]">{post.title}</h3>
+      <h3 className="break-words font-display text-[15px] font-bold uppercase leading-[1.08] tracking-tight transition-colors group-hover:text-[#c7402e] sm:text-xl lg:text-[22px]">{post.title}</h3>
       <p className="hidden line-clamp-2 text-xs leading-5 text-[#716e67] sm:block">{post.excerpt || "Read the full article from Super Plus Fitness."}</p>
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#77736e] sm:mt-auto sm:pt-1"><span>{dateLabel(post.published_at)}</span><span className="inline-flex items-center gap-0.5"><Clock3 aria-hidden="true" className="size-3" />{readTime(post.content)} min</span><ArrowRight aria-hidden="true" className="ml-auto size-3.5 shrink-0 text-[#cf412e]" /></div>
     </div>
@@ -112,14 +112,14 @@ export default function BlogIndexV2() {
       </div>
     </section>
 
-    <main className="mx-auto max-w-[1280px] px-5 pb-10 pt-4 sm:px-10 sm:pb-14 sm:pt-6">
+    <main className="mx-auto max-w-[1280px] px-5 pb-10 pt-2 sm:px-10 sm:pb-14 sm:pt-4">
       {loading ? <div role="status" aria-label="Loading articles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[1, 2, 3, 4].map(n => <div key={n} className="h-28 animate-pulse bg-[#e8e3da] motion-reduce:animate-none sm:h-60" />)}</div>
       : error ? <div role="alert" className="mx-auto max-w-xl border border-[#e2d8d0] bg-white px-6 py-10 text-center"><BookOpen className="mx-auto size-8 text-[#db4d39]" /><h2 className="mt-3 font-display text-2xl font-bold uppercase">Couldn't load the articles</h2><p className="mt-2 text-sm text-[#716e67]">Please check your connection and try again.</p><button type="button" onClick={() => setAttempt(n => n + 1)} className="mt-4 min-h-11 bg-[#df4c38] px-6 text-xs font-bold uppercase text-white">Try again</button></div>
       : ordered.length === 0 ? <div className="mx-auto max-w-2xl border border-[#e4e0d8] bg-white px-6 py-10 text-center"><BookOpen className="mx-auto size-8 text-[#df4c38]" /><h2 className="mt-3 font-display text-2xl font-bold uppercase">{posts.length === 0 ? "New articles coming soon." : "No matching articles."}</h2><p className="mt-2 text-sm text-[#716e67]">{posts.length === 0 ? "We're preparing useful, practical articles for the Super Plus community." : "Try another search or explore all topics."}</p>{hasFilters && <button type="button" className="mt-4 min-h-11 border border-[#df4c38] px-6 text-xs font-extrabold uppercase text-[#df4c38]" onClick={() => { setSearch(""); setTopic("All"); }}>Clear filters</button>}</div>
-      : <section aria-labelledby="article-list-heading">
-        <div className="mb-3 flex items-center justify-between gap-3"><h2 id="article-list-heading" className="font-display text-xl font-bold uppercase sm:text-2xl">Browse posts<span className="text-[#df4c38]">.</span></h2><span className="text-xs text-[#817e77]">{ordered.length} {ordered.length === 1 ? "article" : "articles"}</span></div>
+      : <div aria-labelledby="article-list-heading">
+        <div className="mb-2 flex items-center justify-between gap-3"><h2 id="article-list-heading" className="font-display text-xl font-bold uppercase sm:text-2xl">Browse posts<span className="text-[#df4c38]">.</span></h2><span className="text-xs text-[#817e77]">{ordered.length} {ordered.length === 1 ? "article" : "articles"}</span></div>
         <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">{ordered.map(post => <ArticleCard key={post.id} post={post} featured={post.id === lead?.id && post.featured} />)}</div>
-      </section>}
+      </div>}
     </main>
     <section className="relative overflow-hidden bg-[#232321] text-white"><div className="relative mx-auto flex max-w-[1280px] flex-col items-start justify-between gap-4 px-5 py-8 sm:px-10 sm:py-10 lg:flex-row lg:items-center"><div><p className="text-[10px] font-extrabold uppercase tracking-[.15em] text-[#f16a56]">From reading to action</p><h2 className="mt-1 font-display text-2xl font-bold uppercase sm:text-3xl">Take your next step<span className="text-[#f05a46]">.</span></h2><p className="mt-1 text-xs leading-5 text-white/65 sm:text-sm">Turn what you read into a routine that works for you.</p></div><Link to="/membership" className="inline-flex min-h-11 shrink-0 items-center justify-center gap-3 bg-[#e44b37] px-5 text-xs font-extrabold uppercase tracking-[.1em] text-white hover:bg-[#c93d2c] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white">Explore membership <ArrowRight className="size-4" aria-hidden="true" /></Link></div></section>
   </div>;
