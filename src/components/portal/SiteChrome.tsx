@@ -82,9 +82,8 @@ export function Footer() {
   const primaryLinks = navItems.slice(0, 6);
   const businessLinks = navItems.slice(6, 8);
   const accountLinks = [
-    { label: "Member Login", to: "/login" },
-    { label: "My QR Code", to: "/my-qr" },
-    { label: "Staff & Admin Portal", to: "/portal" },
+    { label: "Member Portal", to: "/login" },
+    { label: "Staff Portal", to: "/portal" },
   ] as const;
 
   return (
@@ -160,7 +159,7 @@ export function Footer() {
               </a>
               <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-black/15 px-4 py-3 hover:border-primary/60 hover:text-white">
                 <GmailIcon className="size-5 shrink-0 text-[#EA4335]" />
-                <span className="break-all">{contact.email}</span>
+                <span>Send us a mail</span>
               </a>
               <div className="flex flex-wrap gap-2 pt-1">
                 <a href={contact.whatsapp} aria-label={`WhatsApp ${contact.phone}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-2xl border border-white/10 bg-black/15 text-[#25D366] transition-colors hover:border-[#25D366]/60 hover:bg-[#25D366]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><WhatsAppIcon className="size-6" /></a>
