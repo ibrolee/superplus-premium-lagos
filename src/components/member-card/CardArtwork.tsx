@@ -1,5 +1,6 @@
 import type { ReactNode, RefObject } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
+import { FittedMemberName } from './FittedMemberName';
 
 export type PrintableMember = { id: string; full_name: string; qr_token: string; member_card_number: number };
 const CARD_W = 856;
@@ -60,7 +61,7 @@ export function BatchCardFront({ member, logo, reference }: { member: PrintableM
       <g fill="#fff" fontSize="17" fontWeight="650" letterSpacing="3.1" textAnchor="middle"><text x="757" y="65">STRONGER</text><text x="757" y="89">FITTER</text><text x="757" y="113">HEALTHIER</text><text x="757" y="137">HAPPIER</text></g>
       <path d="M731 151H783" stroke="#f03130" strokeWidth="3"/>
       <text x="76" y="265" fontSize="17" fontWeight="600" letterSpacing="4.2" fill="#fff">MEMBER NAME</text>
-      <text x="76" y="321" fill="#fff" fontWeight="850" fontSize={member.full_name.length > 29 ? 32 : member.full_name.length > 20 ? 39 : 47} textLength={member.full_name.length > 32 ? 490 : undefined} lengthAdjust="spacingAndGlyphs">{member.full_name.toUpperCase()}</text>
+      <FittedMemberName name={member.full_name}/>
       <text x="76" y="386" fontSize="18" fontWeight="600" letterSpacing="3.5" fill="#fff">MEMBER ID</text>
       <text x="76" y="435" fontSize={number.length > 11 ? 43 : 46} fill="#fc353c" fontWeight="850" letterSpacing="1.4">{number}</text>
       <text x="76" y="500" fontSize="18" fill="#fff" fontWeight="650" letterSpacing="4">MEMBER ID CARD</text>
