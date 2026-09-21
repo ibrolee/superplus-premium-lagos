@@ -66,7 +66,7 @@ function getContinuousMembership(memberships: Membership[]): Membership | null {
   const index = normalized.findIndex(item => String(item.normalizedStart) <= today && today <= String(item.normalizedEnd));
   if (index < 0) return [...normalized].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))[0] || null;
   const current = normalized[index]!;
-  let start = String(current.normalizedStart);
+  const start = String(current.normalizedStart);
   let end = String(current.normalizedEnd);
   for (let i = index + 1; i < normalized.length; i++) {
     const next = normalized[i]!;
@@ -93,6 +93,7 @@ function lagosMonthStart() {
   return `${pick("year")}-${pick("month")}-01T00:00:00+01:00`;
 }
 const supportMessage = "Hello Super Plus Fitness, I would like to request a correction to the contact details on my member profile. Please help me verify the change.";
+const registrationFeeCoupons = new Set(["REGSF", "REGOFF"]);
 
 function MemberDashboard() {
   const navigate = useNavigate();
@@ -102,6 +103,7 @@ function MemberDashboard() {
   const [error, setError] = useState("");
   const [showPlans, setShowPlans] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [coupon, setCoupon] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState("");
   const [visits, setVisits] = useState<Visit[]>([]);
@@ -192,11 +194,13 @@ function MemberDashboard() {
   // Preserve the existing plan selection and secure Paystack initialization flow.
   async function handlePayment() {
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
+    const cleanCoupon = coupon.trim().toUpperCase();
+    if (cleanCoupon && !registrationFeeCoupons.has(cleanCoupon)) { setPaymentError("Invalid coupon code. Use REGSF or leave it blank."); return; }
     setPaymentLoading(true); setPaymentError("");
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate({ to: "/login" }); return; }
-      const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", { body: { planId: selectedPlan } });
+      const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", { body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}) } });
       if (functionError) { console.error("Payment initialization error:", functionError); throw new Error(functionError.message || "Unable to start payment."); }
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to create Paystack payment.");
       window.location.href = data.authorization_url;
@@ -229,6 +233,9 @@ function MemberDashboard() {
   const expirySoon = isActive && daysRemaining <= 7;
   const lastVisit = visits[0]?.checked_in_at;
   const whatsappGroup = "https://chat.whatsapp.com/FysNYsQkx3rAqlB5WS4k6s?s=cl&p=i&mlu=4&ilr=4";
+  const cleanCoupon = coupon.trim().toUpperCase();
+  const couponValid = registrationFeeCoupons.has(cleanCoupon);
+  const couponInvalid = !!cleanCoupon && !couponValid;
 
   return <main className="min-h-[75vh] bg-[#f5f7f2] py-7 text-[#20362a] sm:py-12">
     <div className="section-shell mx-auto max-w-6xl space-y-6">
@@ -247,7 +254,7 @@ function MemberDashboard() {
         {isActive && totalDays !== null && totalDays > 0 && <div className="mt-5"><div className="mb-2 flex justify-between gap-3 text-xs text-white/70"><span>Membership period</span><span>{progress}% elapsed</span></div><div className="h-2 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-label="Membership period elapsed" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}><div className="h-full rounded-full bg-[#b8ee73]" style={{width:`${progress}%`}}/></div></div>}
         {(expirySoon || !isActive) && <div role="status" className="mt-5 rounded-xl border border-[#b8ee73]/40 bg-white/10 p-4 text-sm"><strong>{expirySoon ? (daysRemaining === 0 ? "Your plan expires today." : `Your plan expires in ${daysRemaining} ${daysRemaining === 1 ? "day" : "days"}.`) : "Your membership is not currently active."}</strong> Renew below to keep your access going. This notice does not charge you or renew automatically.</div>}
         <div className="mt-6 grid gap-3 sm:grid-cols-2"><Button asChild size="lg" className="h-12 rounded-xl bg-[#b8ee73] text-[#193b2a] hover:bg-[#d1faa3]"><Link to="/my-qr"><QrCode className="size-5"/> Open My Gym QR Code</Link></Button><Button type="button" size="lg" variant="outline" onClick={() => { setShowPlans(current => !current); setPaymentError(""); }} className="h-12 rounded-xl border-white/50 bg-transparent text-white hover:bg-white hover:text-[#193b2a]"><RefreshCw className="size-4"/>{showPlans ? "Close Plans" : isActive ? "Renew / Extend Membership" : "Renew Membership"}</Button></div>
-        {showPlans && <div id="membership-plans" className="mt-6 rounded-2xl bg-white p-4 text-[#20362a] sm:p-6"><p className="text-xs font-extrabold uppercase tracking-[.15em] text-[#37784b]">Choose your plan</p><p className="mt-2 text-sm text-[#627367]">Select a plan. Payment is processed securely by Paystack.</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{membershipPlans.map(plan => <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)} className={`rounded-xl border p-4 text-left transition ${selectedPlan === plan.id ? "border-[#26743d] bg-[#eaf5e7]" : "border-[#dce6d9] hover:border-[#80ad77]"}`} aria-pressed={selectedPlan === plan.id}><span className="flex items-start justify-between gap-2"><span className="font-display text-lg font-bold uppercase">{plan.name}</span><span className="font-bold">{formatNaira(plan.price)}</span></span><span className="mt-1 block text-xs text-[#627367]">{plan.duration}</span>{selectedPlan === plan.id && <span className="mt-2 flex items-center gap-1 text-xs font-bold text-[#26743d]"><CheckCircle2 className="size-4"/> Selected</span>}</button>)}</div>{selectedPlan && <p className="mt-4 flex items-center gap-2 text-sm"><CreditCard className="size-4"/> You will be redirected to Paystack to complete payment.</p>}{paymentError && <p role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">{paymentError}</p>}<Button size="lg" className="mt-4 w-full rounded-xl" disabled={!selectedPlan || paymentLoading} onClick={handlePayment}>{paymentLoading ? <><Loader2 className="size-4 animate-spin"/> Preparing Payment...</> : <>Continue to Paystack <CreditCard className="size-4"/></>}</Button></div>}
+        {showPlans && <div id="membership-plans" className="mt-6 rounded-2xl bg-white p-4 text-[#20362a] sm:p-6"><p className="text-xs font-extrabold uppercase tracking-[.15em] text-[#37784b]">Choose your plan</p><p className="mt-2 text-sm text-[#627367]">Select a plan. Payment is processed securely by Paystack.</p><div className="mt-4 grid gap-3 sm:grid-cols-2">{membershipPlans.map(plan => <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)} className={`rounded-xl border p-4 text-left transition ${selectedPlan === plan.id ? "border-[#26743d] bg-[#eaf5e7]" : "border-[#dce6d9] hover:border-[#80ad77]"}`} aria-pressed={selectedPlan === plan.id}><span className="flex items-start justify-between gap-2"><span className="font-display text-lg font-bold uppercase">{plan.name}</span><span className="font-bold">{formatNaira(plan.price)}</span></span><span className="mt-1 block text-xs text-[#627367]">{plan.duration}</span>{selectedPlan === plan.id && <span className="mt-2 flex items-center gap-1 text-xs font-bold text-[#26743d]"><CheckCircle2 className="size-4"/> Selected</span>}</button>)}</div><label className="mt-4 block text-sm font-bold">Coupon code (optional)<input className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-4 py-3 text-sm outline-none focus:border-[#26743d]" value={coupon} onChange={event => { setCoupon(event.target.value); setPaymentError(""); }} disabled={paymentLoading} autoComplete="off" placeholder="REGSF"/>{couponValid && <span className="mt-2 block text-xs font-bold text-green-700">{cleanCoupon} accepted. Renewals already have no registration fee.</span>}{couponInvalid && <span className="mt-2 block text-xs font-bold text-red-700">Invalid code. Use REGSF or leave blank.</span>}</label>{selectedPlan && <p className="mt-4 flex items-center gap-2 text-sm"><CreditCard className="size-4"/> You will be redirected to Paystack to complete payment.</p>}{paymentError && <p role="alert" className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700">{paymentError}</p>}<Button size="lg" className="mt-4 w-full rounded-xl" disabled={!selectedPlan || paymentLoading || couponInvalid} onClick={handlePayment}>{paymentLoading ? <><Loader2 className="size-4 animate-spin"/> Preparing Payment...</> : <>Continue to Paystack <CreditCard className="size-4"/></>}</Button></div>}
       </section>
 
       <section aria-labelledby="quick-actions-title"><div className="mb-3 flex items-center justify-between gap-2"><h2 id="quick-actions-title" className="font-display text-2xl font-bold uppercase">Quick actions</h2><span className="text-xs text-[#627367]">Your essentials</span></div><div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

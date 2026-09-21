@@ -13,8 +13,10 @@ export const plans: Record<string, JoinPlan> = {
  family: { name:'Family Plan',databaseName:'Family Plan',price:75000,registration:20000,durationDays:30 },
  'personal-training': { name:'Personal Training',databaseName:'Personal Training',price:57000,registration:7000,durationDays:30 },
 };
+const registrationFeeCoupons = new Set(['REGOFF', 'REGSF']);
 export function couponPricing(plan: JoinPlan, raw: unknown) {
  const code=String(raw||'').trim().toUpperCase();
- if(code && code !== 'REGOFF') throw new Error('Invalid coupon code.');
- return { couponCode: code||null, membershipAmount: plan.price, registrationAmount: code==='REGOFF'?0:plan.registration, totalAmount: plan.price+(code==='REGOFF'?0:plan.registration) };
+ if(code && !registrationFeeCoupons.has(code)) throw new Error('Invalid coupon code.');
+ const registrationAmount=registrationFeeCoupons.has(code)?0:plan.registration;
+ return { couponCode: code||null, membershipAmount: plan.price, registrationAmount, totalAmount: plan.price+registrationAmount };
 }

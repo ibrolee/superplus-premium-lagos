@@ -21,6 +21,7 @@ SELECT pg_catalog.set_config('request.jwt.claim.role','service_role',false);
 SELECT pg_catalog.set_config('request.jwt.claim.sub','00000000-0000-4000-8000-000000000001',false);
 \i supabase/migrations/20260921060000_reception_instant_registration.sql
 \i supabase/migrations/20260921061000_public_regoff_checkout.sql
+\i supabase/migrations/20260921114500_add_regsf_coupon.sql
 
 -- Service-only entry points cannot be invoked by public or ordinary authenticated users.
 DO $$ BEGIN
@@ -29,13 +30,13 @@ DO $$ BEGIN
  IF has_function_privilege('anon','public.public_join_email_matches(text)','EXECUTE') THEN RAISE EXCEPTION 'Private email lookup exposed to anon'; END IF;
 END $$;
 
--- New member with REGOFF: exactly one paid plan, one successful revenue payment, zero registration fee.
+-- New member with REGSF: exactly one paid plan, one successful revenue payment, zero registration fee.
 DO $$ DECLARE r jsonb; n integer; BEGIN
- SELECT public.reception_complete_registration('00000000-0000-4000-8000-000000000001','Test New Member','new@example.test','08012345678',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'Cash','','',true,'00000000-0000-4000-8000-000000000002',null,'REGOFF') INTO r;
- IF r->>'success'<>'true' OR (r->>'amount')::numeric<>27000 OR (r->>'registration_fee')::numeric<>0 THEN RAISE EXCEPTION 'REGOFF direct registration wrong %',r; END IF;
+ SELECT public.reception_complete_registration('00000000-0000-4000-8000-000000000001','Test New Member','new@example.test','08012345678',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'Cash','','',true,'00000000-0000-4000-8000-000000000002',null,'REGSF') INTO r;
+ IF r->>'success'<>'true' OR (r->>'amount')::numeric<>27000 OR (r->>'registration_fee')::numeric<>0 THEN RAISE EXCEPTION 'REGSF direct registration wrong %',r; END IF;
  IF NOT EXISTS (SELECT 1 FROM public.payments WHERE id=(r->>'payment_id')::uuid AND status='success' AND amount=27000 AND metadata->>'record_type'='standard_payment' AND metadata->>'revenue_excluded' IS NULL) THEN RAISE EXCEPTION 'Direct payment missing from standard revenue'; END IF;
  SELECT COUNT(*) INTO n FROM public.payments;
- PERFORM public.reception_complete_registration('00000000-0000-4000-8000-000000000001','Test New Member','new@example.test','08012345678',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'Cash','','',true,'00000000-0000-4000-8000-000000000002',null,'REGOFF');
+ PERFORM public.reception_complete_registration('00000000-0000-4000-8000-000000000001','Test New Member','new@example.test','08012345678',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'Cash','','',true,'00000000-0000-4000-8000-000000000002',null,'REGSF');
  IF (SELECT COUNT(*) FROM public.payments)<>n THEN RAISE EXCEPTION 'Idempotency created duplicate payment'; END IF;
 END $$;
 
@@ -67,10 +68,10 @@ DO $$ DECLARE r jsonb; again jsonb; prior int; BEGIN
  IF again->>'already_processed'<>'true' OR (SELECT count(*) FROM public.payments)<>prior THEN RAISE EXCEPTION 'Legacy callback not idempotent %',again; END IF;
 END $$;
 
--- Public checkout with REGOFF must record only the plan amount, with coupon in metadata.
+-- Public checkout with REGSF must record only the plan amount, with coupon in metadata.
 DO $$ DECLARE r jsonb; BEGIN
- SELECT public.finalize_public_join_payment('SPF-REGOFF-00001','monthly','Promo Payer','promo@example.test','08012345671',15,7,clock_timestamp(),'card','CUS-TEST','REGOFF',2700000) INTO r;
- IF r->>'success'<>'true' OR NOT EXISTS(SELECT 1 FROM public.payments WHERE id=(r->>'payment_id')::uuid AND amount=27000 AND metadata->>'coupon_code'='REGOFF' AND (metadata->>'registration_amount_naira')::numeric=0) THEN RAISE EXCEPTION 'Public REGOFF recording wrong %',r; END IF;
+ SELECT public.finalize_public_join_payment('SPF-REGSF-00001','monthly','Promo Payer','promo@example.test','08012345671',15,7,clock_timestamp(),'card','CUS-TEST','REGSF',2700000) INTO r;
+ IF r->>'success'<>'true' OR NOT EXISTS(SELECT 1 FROM public.payments WHERE id=(r->>'payment_id')::uuid AND amount=27000 AND metadata->>'coupon_code'='REGSF' AND (metadata->>'registration_amount_naira')::numeric=0) THEN RAISE EXCEPTION 'Public REGSF recording wrong %',r; END IF;
 END $$;
 
 -- Ambiguous email must fail closed, leaving the paid callback safely retryable after cleanup.
@@ -83,4 +84,4 @@ DO $$ DECLARE blocked boolean:=false; prior int; BEGIN
  EXCEPTION WHEN OTHERS THEN blocked:=true; END;
  IF NOT blocked OR (SELECT count(*) FROM public.payments)<>prior THEN RAISE EXCEPTION 'Ambiguous email was silently linked'; END IF;
 END $$;
-SELECT 'PASS: isolated registration, idempotency, revenue, renewal, duplicate refs, legacy Paystack, REGOFF and ambiguous identity' AS result;
+SELECT 'PASS: isolated registration, idempotency, revenue, renewal, duplicate refs, legacy Paystack, REGSF and ambiguous identity' AS result;
