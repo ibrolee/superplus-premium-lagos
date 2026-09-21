@@ -1,0 +1,64 @@
+name: One-time remove coupon hints
+on:
+  push:
+    branches:
+      - fix/hide-coupon-code-from-checkouts-sep21
+permissions:
+  contents: write
+jobs:
+  patch-checkout-copy:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Remove coupon disclosure without changing discount validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          fixes = {
+            'src/routes/member.tsx': [
+              ('Invalid coupon code. Use REGSF or leave it blank.', 'Invalid coupon code. Please check your entry or leave it blank.'),
+              ('placeholder="REGSF"', 'placeholder="Enter coupon code"'),
+              ('Invalid code. Use REGSF or leave blank.', 'Invalid coupon code. Please check your entry or leave it blank.'),
+            ],
+            'src/routes/join.tsx': [
+              ('Invalid code. Enter REGSF or remove the coupon.', 'Invalid coupon code. Please check your entry or leave it blank.'),
+              ('placeholder="REGSF"', 'placeholder="Enter coupon code"'),
+              ('REGSF removes only the registration fee; you still pay the membership price. Use your existing email if you have previously joined.', 'A valid coupon can waive the registration fee only; the membership price still applies. Use your existing email if you have previously joined.'),
+            ],
+            'src/routes/reception-register.tsx': [
+              ('Register them as new using REGSF if they previously attended.', 'Register them as new only after checking for an existing member record.'),
+              ('placeholder="Enter REGSF"', 'placeholder="Enter coupon code"'),
+              ('Invalid code. Use REGSF or leave blank.', 'Invalid coupon code. Please check your entry or leave it blank.'),
+            ],
+          }
+          for path, replacements in fixes.items():
+              file = Path(path)
+              source = file.read_text()
+              for old, new in replacements:
+                  if source.count(old) != 1:
+                      raise SystemExit(f'Expected one occurrence of {old!r} in {path}, found {source.count(old)}')
+                  source = source.replace(old, new, 1)
+              file.write_text(source)
+              print('Updated', path)
+          for path in fixes:
+              source = Path(path).read_text()
+              for visible in ['placeholder="REGSF"', 'placeholder="Enter REGSF"', 'Use REGSF', 'Enter REGSF', 'REGSF removes only the registration fee']:
+                  if visible in source:
+                      raise SystemExit(f'Coupon still disclosed by visible UI in {path}: {visible}')
+          PY
+      - name: Commit only three checkout files and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/routes/member.tsx src/routes/join.tsx src/routes/reception-register.tsx
+          git rm -- .github/workflows/one-time-hide-coupon-hints.yml
+          git diff --cached --check
+          git commit -m 'Hide coupon codes in checkout placeholders and errors'
+          git push origin HEAD:fix/hide-coupon-code-from-checkouts-sep21
