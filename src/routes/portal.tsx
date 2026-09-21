@@ -18,17 +18,19 @@ function PortalLayout() {
 }
 
 function PortalDirectory() {
-  return <main className="min-h-[70vh] bg-[#f4f6f1] px-4 py-12 text-[#183125] sm:px-7 sm:py-20">
+  return <main className="bg-[#f4f6f1] px-4 py-5 text-[#183125] sm:min-h-[70vh] sm:px-7 sm:py-12 lg:py-20">
     <div className="mx-auto max-w-5xl">
-      <p className="text-xs font-black uppercase tracking-[.2em] text-[#4a7a4a]">Super Plus Fitness &amp; Spa</p>
-      <h1 className="mt-3 text-4xl font-black sm:text-6xl">Choose your portal</h1>
-      <p className="mt-4 max-w-2xl text-sm leading-7 text-[#607366]">Each portal has its own sign-in page and verifies the account assigned to it. Choose the one that matches your role.</p>
-      <div className="mt-9 grid gap-4 md:grid-cols-3">
-        {entries.map(({ name, description, to, icon: Icon }) => <Link key={to} to={to} className="group flex min-w-0 flex-col rounded-3xl border border-[#d9e7d5] bg-white p-6 shadow-sm transition hover:border-[#6d9b6b] hover:shadow-md">
-          <span className="flex size-12 items-center justify-center rounded-2xl bg-[#193b2a] text-[#b8ee73]"><Icon size={24} /></span>
-          <h2 className="mt-6 text-xl font-black">{name} portal</h2>
-          <p className="mt-2 flex-1 text-sm leading-6 text-[#607366]">{description}</p>
-          <span className="mt-7 inline-flex items-center gap-2 font-bold text-[#27643a]">Open portal <ArrowRight size={18} className="transition group-hover:translate-x-1" /></span>
+      <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#4a7a4a] sm:text-xs">Super Plus Fitness &amp; Spa</p>
+      <h1 className="mt-1 text-3xl font-black leading-tight sm:mt-3 sm:text-6xl">Choose your portal</h1>
+      <p className="mt-1 max-w-2xl text-xs leading-5 text-[#607366] sm:mt-4 sm:text-sm sm:leading-7">Each portal has its own sign-in page and verifies the account assigned to it. Choose the one that matches your role.</p>
+      <div className="mt-4 grid gap-2.5 sm:mt-9 sm:gap-4 md:grid-cols-3">
+        {entries.map(({ name, description, to, icon: Icon }) => <Link key={to} to={to} className="group grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-2xl border border-[#d9e7d5] bg-white p-3 shadow-sm transition hover:border-[#6d9b6b] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#27643a] sm:flex sm:flex-col sm:items-stretch sm:rounded-3xl sm:p-6">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-[#193b2a] text-[#b8ee73] sm:size-12 sm:rounded-2xl"><Icon size={22} className="sm:size-6" aria-hidden="true" /></span>
+          <div className="min-w-0 sm:flex sm:flex-1 sm:flex-col">
+            <h2 className="text-base font-black leading-tight sm:mt-6 sm:text-xl">{name} portal</h2>
+            <p className="mt-1 text-xs leading-4 text-[#607366] sm:mt-2 sm:flex-1 sm:text-sm sm:leading-6">{description}</p>
+          </div>
+          <span className="inline-flex items-center justify-center font-bold text-[#27643a] sm:mt-7 sm:justify-start sm:gap-2"><span className="sr-only sm:not-sr-only">Open portal</span><ArrowRight size={18} className="shrink-0 transition group-hover:translate-x-1" aria-hidden="true" /></span>
         </Link>)}
       </div>
     </div>
