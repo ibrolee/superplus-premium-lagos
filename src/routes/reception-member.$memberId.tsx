@@ -144,6 +144,13 @@ function getBirthday(member: Member) {
 }
 
 function isMembershipValidToday(membership: Membership) {
+  if (
+    String(membership.status || "").toLowerCase() !== "active" ||
+    String(membership.payment_status || "").toLowerCase() !== "paid"
+  ) {
+    return false;
+  }
+
   const startDate = getDateOnly(membership.start_date);
   const endDate = getDateOnly(membership.end_date);
 
