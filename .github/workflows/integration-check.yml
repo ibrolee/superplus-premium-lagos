@@ -56,6 +56,7 @@ jobs:
           if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y postgresql-client; fi
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-integration.sql
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-negative-cases.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-production-guard-compatibility.sql
       - name: Build client, SSR and server without deployment
         run: bun run build
       - name: Strict TypeScript check
