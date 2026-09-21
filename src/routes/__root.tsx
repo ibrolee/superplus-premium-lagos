@@ -4,6 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
+import { AdminPersistentNavigation } from "@/components/admin/AdminPersistentNavigation";
 import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
 import { VisitorChat } from "@/components/visitor/VisitorChat";
 import { Toaster } from "@/components/ui/sonner";
@@ -33,7 +34,8 @@ function isInternalWorkspace(pathname: string): boolean {
   return pathname === "/portal" || pathname.startsWith("/portal/") ||
     pathname === "/staff" || pathname.startsWith("/staff-") || pathname.startsWith("/staff/") ||
     pathname === "/reception" || pathname.startsWith("/reception-") || pathname.startsWith("/reception/") ||
-    pathname === "/management" || pathname.startsWith("/management-") || pathname.startsWith("/management/");
+    pathname === "/management" || pathname.startsWith("/management-") || pathname.startsWith("/management/") ||
+    pathname === "/admin-workspace" || pathname === "/admin-members";
 }
 function isVisitorPage(pathname: string): boolean {
   return ["/", "/membership", "/personal-training", "/facilities", "/gallery", "/spa-recovery", "/about", "/hmo", "/contact", "/blog", "/join"].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname);
@@ -41,5 +43,5 @@ function isVisitorPage(pathname: string): boolean {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}{isVisitorPage(pathname) && <VisitorChat />}<Toaster position="top-center" richColors /></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><AdminPersistentNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}{isVisitorPage(pathname) && <VisitorChat />}<Toaster position="top-center" richColors /></QueryClientProvider>;
 }
