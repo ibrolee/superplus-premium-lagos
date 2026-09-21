@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
+  ArrowRight,
   Cake,
   CheckCircle2,
   ChevronDown,
@@ -501,6 +502,24 @@ function ReceptionMemberProfile() {
 
               {statusLabel}
             </div>
+          </div>
+
+          <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row">
+            <a
+              href={`/reception-register?memberId=${encodeURIComponent(member.id)}`}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-black text-white hover:bg-[#2c5737]"
+            >
+              {currentMembership ? "Add Membership / Renew" : "Add Membership"}
+              <ArrowRight className="h-4 w-4" />
+            </a>
+
+            <a
+              href="/reception-checkin"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#ccd8cb] px-5 py-3 text-sm font-bold text-[#193b2a] hover:border-[#7fa06e]"
+            >
+              Open QR Check-In
+              <QrCode className="h-4 w-4" />
+            </a>
           </div>
         </section>
 
