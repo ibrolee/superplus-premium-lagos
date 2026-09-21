@@ -61,7 +61,8 @@ BEGIN
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('reception-request:'||p_actor_id::text||':'||p_idempotency_key::text,0));
  SELECT * INTO v_existing FROM public.reception_direct_transactions WHERE recorded_by=p_actor_id AND idempotency_key=p_idempotency_key;
  IF v_existing.id IS NOT NULL THEN
-  RETURN jsonb_build_object('success',true,'already_recorded',true,'transaction_id',v_existing.id,'member_id',v_existing.member_id,'membership_id',v_existing.membership_id,'payment_id',v_existing.payment_id,'revenue_recorded',true,'amount',v_existing.amount);
+  RETURN jsonb_build_object('success',true,'already_recorded',true,'transaction_id',v_existing.id,'member_id',v_existing.member_id,'membership_id',v_existing.membership_id,'payment_id',v_existing.payment_id,
+   'revenue_recorded',true,'payment_status','paid','amount',v_existing.amount,'registration_fee',v_existing.registration_fee,'transaction_type',v_existing.transaction_type);
  END IF;
  v_today := (clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date;
  IF p_start_date IS DISTINCT FROM v_today THEN RAISE EXCEPTION 'Payment and membership must be recorded for today in Lagos.'; END IF;
