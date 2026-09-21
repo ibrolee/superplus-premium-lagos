@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Portal = "staff" | "reception" | "admin";
-const destination: Record<Portal, string> = { staff: "/staff", reception: "/reception-workspace", admin: "/staff-admin" };
+const destination: Record<Portal, string> = { staff: "/staff", reception: "/reception-workspace", admin: "/admin-workspace" };
 const fixedEmail: Partial<Record<Portal, string>> = { reception: "spfitnessandspa@gmail.com", admin: "admin@superplusfitness.com" };
 const title: Record<Portal, string> = { staff: "Staff portal", reception: "Reception portal", admin: "Admin portal" };
 
