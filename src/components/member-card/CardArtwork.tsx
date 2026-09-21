@@ -15,7 +15,7 @@ export async function loadCardLogo() {
   const svg = original.replace(/#050505/gi, '#ffffff').replace(/#101010/gi, '#ffffff').replace(/#000000/gi, '#ffffff');
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
-function Frame({ children, label, side, reference }: { children: ReactNode; label: string; side: 'front' | 'back'; reference?: RefObject<SVGSVGElement | null> }) {
+function Frame({ children, label, side, reference }: { children: ReactNode; label: string; side: 'front' | 'back'; reference?: RefObject<SVGSVGElement | null> | undefined }) {
   return <svg ref={reference} xmlns="http://www.w3.org/2000/svg" viewBox={`0 0 ${CARD_W} ${CARD_H}`} role="img" aria-label={label} className="block h-auto w-full overflow-hidden rounded-[15px] shadow-xl" data-card-side={side}>{children}</svg>;
 }
 function BrandArtwork({ source }: { source: string }) { return <image href={source} x="48" y="29" width="593" height={593 * 255 / 1030} preserveAspectRatio="xMinYMid meet"/>; }

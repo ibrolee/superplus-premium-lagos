@@ -39,6 +39,7 @@ async function cardJpeg(svgElement: SVGSVGElement): Promise<{ bytes: Uint8Array;
     context.fillRect(0, 0, width, height);
     context.drawImage(rendered, 0, 0, width, height);
     const jpeg = canvas.toDataURL('image/jpeg', 0.98).split(',')[1];
+    if (!jpeg) throw new Error('Unable to encode the membership card image.');
     const decoded = atob(jpeg);
     const bytes = new Uint8Array(decoded.length);
     for (let index = 0; index < decoded.length; index++) bytes[index] = decoded.charCodeAt(index);

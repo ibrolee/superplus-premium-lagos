@@ -35,6 +35,7 @@ async function renderCard(svgElement: SVGSVGElement): Promise<{ bytes: Uint8Arra
     ctx.fillRect(0, 0, width, height);
     ctx.drawImage(loaded, 0, 0, width, height);
     const payload = canvas.toDataURL('image/jpeg', 0.95).split(',')[1];
+    if (!payload) throw new Error('Unable to encode a selected membership card image.');
     const decoded = atob(payload);
     const bytes = new Uint8Array(decoded.length);
     for (let i = 0; i < decoded.length; i++) bytes[i] = decoded.charCodeAt(i);

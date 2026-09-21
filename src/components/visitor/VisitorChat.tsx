@@ -4,7 +4,7 @@ import { contact } from '@/lib/site-data';
 import { supabase } from '@/lib/supabase';
 import { answerVisitorQuestion, type PublicArticle } from '@/lib/visitor-guide';
 
-type ChatMessage = { id: number; sender: 'guide' | 'visitor'; text: string; href?: string; linkLabel?: string };
+type ChatMessage = { id: number; sender: 'guide' | 'visitor'; text: string; href?: string | undefined; linkLabel?: string | undefined };
 const greeting = 'Hi! 👋 Welcome to Super Plus Fitness & Spa. Ask me about membership prices, opening hours, registration, facilities, training, spa or HMO partners.';
 const suggestions = [
   'How much is the monthly plan?',
@@ -53,7 +53,7 @@ export function VisitorChat() {
     const question = raw.trim().slice(0, 300);
     if (!question) return;
     const reply = answerVisitorQuestion(question, previousId, articles);
-    setMessages(current => [...current, { id: nextId.current++, sender: 'visitor', text: question }, { id: nextId.current++, sender: 'guide', text: reply.text, href: reply.href, linkLabel: reply.linkLabel }].slice(-32));
+    setMessages(current => [...current, { id: nextId.current++, sender: 'visitor' as const, text: question }, { id: nextId.current++, sender: 'guide' as const, text: reply.text, href: reply.href, linkLabel: reply.linkLabel }].slice(-32));
     if (reply.confident && reply.id !== 'hello') setPreviousId(reply.id);
     setDraft('');
   }
