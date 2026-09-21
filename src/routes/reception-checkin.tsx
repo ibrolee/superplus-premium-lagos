@@ -70,6 +70,15 @@ function getMembershipPlanName(membership: any) {
 function isMembershipValidToday(membership: any) {
   if (!membership) return false;
 
+  // Paused, cancelled, expired and unpaid memberships
+  // must never grant access, even if their dates are valid.
+  if (
+    String(membership.status || "").toLowerCase() !== "active" ||
+    String(membership.payment_status || "").toLowerCase() !== "paid"
+  ) {
+    return false;
+  }
+
   const startDate = getDateOnly(
     membership?.start_date ||
       membership?.starts_at ||
@@ -91,8 +100,6 @@ function isMembershipValidToday(membership: any) {
 
   const today = getLocalDateString();
 
-  // Inclusive date range:
-  // start_date <= today <= end_date
   return startDate <= today && today <= endDate;
 }
 
