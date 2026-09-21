@@ -19,10 +19,10 @@ const queues: Queue[] = [
 ];
 
 function describe(row: Record<string, unknown>, key: QueueKey): string {
-  if (key === "payments") return `${String(row.receipt_number || "Payment request")} · ${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(Number(row.amount || 0))}`;
-  if (key === "intake") return `${String(row.receipt_number || "New registration")} · ${String(row.full_name || "Unnamed member")}`;
-  if (key === "returning" || key === "accounts") return String(row.full_name || "Unnamed applicant");
-  return `${String(row.work_date || "Date unknown")} · ${String(row.kind || "Missed scan").replaceAll("_", " ")}`;
+  if (key === "payments") return `${String(row["receipt_number"] || "Payment request")} · ${new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(Number(row["amount"] || 0))}`;
+  if (key === "intake") return `${String(row["receipt_number"] || "New registration")} · ${String(row["full_name"] || "Unnamed member")}`;
+  if (key === "returning" || key === "accounts") return String(row["full_name"] || "Unnamed applicant");
+  return `${String(row["work_date"] || "Date unknown")} · ${String(row["kind"] || "Missed scan").replaceAll("_", " ")}`;
 }
 
 function AdminApprovals() {
@@ -50,7 +50,7 @@ function AdminApprovals() {
             const { data, error: queueError, count } = await supabase.from(queue.table).select(queue.fields, { count: "exact" })
               .eq("status", "pending").order(queue.order, { ascending: false }).limit(3);
             if (queueError) throw queueError;
-            return [queue.key, { count, examples: (data || []).map((row) => describe(row as Record<string, unknown>, queue.key)), error: null }] as const;
+            return [queue.key, { count, examples: (data || []).map((row) => describe(row as unknown as Record<string, unknown>, queue.key)), error: null }] as const;
           } catch (cause) {
             return [queue.key, { count: null, examples: [], error: cause instanceof Error ? cause.message : "Queue unavailable." }] as const;
           }
