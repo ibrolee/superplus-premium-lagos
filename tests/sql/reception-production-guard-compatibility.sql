@@ -37,10 +37,10 @@ END $fn$;
 SELECT pg_catalog.set_config('request.jwt.claim.role','service_role',false);
 SELECT pg_catalog.set_config('request.jwt.claim.sub','',false);
 DO $fn$ DECLARE r jsonb; a uuid:='00000000-0000-4000-8000-000000000001'; today_lagos date:=(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date; BEGIN
- SELECT public.reception_complete_registration(a,'Guard Compatible','guard-compatible@example.test','08011345670',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),today_lagos,30,27000,'Cash','Representative production guards','',true,'00000000-0000-4000-8000-000000000021',null,'REGOFF') INTO r;
+ SELECT public.reception_complete_registration(a,'Guard Compatible','guard-compatible@example.test','08011345670',(SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),today_lagos,30,27000,'Cash','Representative production guards','',true,'00000000-0000-4000-8000-000000000021',null,'REGSF') INTO r;
  IF r->>'success'<>'true' OR (r->>'amount')::numeric<>27000 OR NOT EXISTS (SELECT 1 FROM public.members WHERE id=(r->>'member_id')::uuid AND source='manual') THEN RAISE EXCEPTION 'Service role registration failed live-style guards: %',r; END IF;
  IF NOT EXISTS (SELECT 1 FROM public.payments WHERE id=(r->>'payment_id')::uuid AND status='success' AND amount=27000 AND source='reception_direct') THEN RAISE EXCEPTION 'Success revenue payment failed live-style guards'; END IF;
- SELECT public.finalize_public_join_payment('SPF-GUARD-000001','monthly','Guard Online','guard-online@example.test','08011345671',2,5,clock_timestamp(),'card','CUS-TEST','REGOFF',2700000) INTO r;
+ SELECT public.finalize_public_join_payment('SPF-GUARD-000001','monthly','Guard Online','guard-online@example.test','08011345671',2,5,clock_timestamp(),'card','CUS-TEST','REGSF',2700000) INTO r;
  IF r->>'success'<>'true' OR NOT EXISTS(SELECT 1 FROM public.members WHERE id=(r->>'member_id')::uuid AND source='website') THEN RAISE EXCEPTION 'Public join failed live-style guards: %',r; END IF;
 END $fn$;
-SELECT 'PASS: direct revenue and online REGOFF with representative live source and financial guards; client bypass rejected' AS result;
+SELECT 'PASS: direct revenue and online REGSF with representative live source and financial guards; client bypass rejected' AS result;

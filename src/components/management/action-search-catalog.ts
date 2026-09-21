@@ -6,7 +6,7 @@ export type Action = { label: string; href: string; description: string; keyword
 export const actions: Action[] = [
  { label:'Admin dashboard',href:'/admin-workspace',description:'Revenue and management oversight',keywords:'admin overview',category:'Workspaces & settings',access:'management',quick:true },
  { label:'Reception dashboard',href:'/reception-workspace',description:'Daily front desk workspace',keywords:'home gym front desk',category:'Workspaces & settings',access:'reception',quick:true },
- { label:'Register or renew',href:'/reception-register',description:'Register a new member or renew an existing member directly without approval',keywords:'registration join renewal cash transfer pos REGOFF direct membership',category:'Members & memberships',access:'reception',quick:true },
+ { label:'Register or renew',href:'/reception-register',description:'Register a new member or renew an existing member directly without approval',keywords:'registration join renewal cash transfer pos REGSF direct membership coupon',category:'Members & memberships',access:'reception',quick:true },
  { label:'Online member payment',href:'/login',description:'Existing member signs in and pays through their dashboard',keywords:'online membership renewal paystack profile',category:'Members & memberships',access:'reception' },
  { label:'My staff profile',href:'/staff',description:'View your employee account',keywords:'employee staff account',category:'Workspaces & settings',access:'staff' },
  { label:'Staff clock in / out',href:'/staff-attendance',description:'Record a staff shift',keywords:'attendance qr work hours',category:'Attendance & QR',access:'all' },

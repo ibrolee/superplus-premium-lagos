@@ -8,6 +8,7 @@ const plans: Record<string, { name:string; price:number; duration:number }> = {
   'vip-silver':{name:'Monthly VIP Silver',price:55000,duration:30}, 'vip-gold':{name:'Monthly VIP Gold',price:85000,duration:30},
   family:{name:'Family Plan',price:75000,duration:30}, 'personal-training':{name:'Personal Training',price:57000,duration:30},
 };
+const registrationFeeCoupons = new Set(['REGOFF','REGSF']);
 Deno.serve(async (request: Request) => {
   if (request.method==='OPTIONS') return response({ok:true});
   if (request.method!=='POST') return response({error:'Method not allowed.'},405);
@@ -20,9 +21,12 @@ Deno.serve(async (request: Request) => {
     const userClient=createClient(url,anon,{global:{headers:{Authorization:authorization}}});
     const {data:{user},error:userError}=await userClient.auth.getUser();
     if (userError || !user) return response({error:'Your session expired. Please sign in again.'},401);
-    const {planId}=await request.json();
+    const body=await request.json();
+    const {planId}=body;
     const plan=plans[String(planId||'')];
     if (!plan) return response({error:'Invalid membership plan.'},400);
+    const couponCode=String(body?.couponCode||'').trim().toUpperCase();
+    if (couponCode && !registrationFeeCoupons.has(couponCode)) return response({error:'Invalid coupon code.'},400);
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
     const {data:member,error:memberError}=await admin.from('members').select('id,email,auth_user_id').eq('auth_user_id',user.id).maybeSingle();
     if (memberError || !member || !member.email) return response({error:'Member account or email could not be located.'},404);
@@ -32,7 +36,7 @@ Deno.serve(async (request: Request) => {
     }
     const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
     const metadata={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
-      plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration};
+      plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null};
     const initialized=await fetch('https://api.paystack.co/transaction/initialize',{
       method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},
       body:JSON.stringify({email:member.email,amount:plan.price*100,currency:'NGN',reference,
@@ -51,7 +55,7 @@ Deno.serve(async (request: Request) => {
       console.error('Paystack pending checkout not recorded:',{reference,code:pendingError.code,message:pendingError.message});
       return response({error:'Checkout could not be recorded safely. Please retry. You have not been sent to payment.'},503);
     }
-    return response({authorization_url:result.data.authorization_url,access_code:result.data.access_code,reference});
+    return response({authorization_url:result.data.authorization_url,access_code:result.data.access_code,reference,amount:plan.price,coupon_code:couponCode||null});
   } catch(error) {
     console.error('Initialize payment:',error instanceof Error?error.message:'unknown');
     return response({error:'Unable to start payment. Please retry.'},503);

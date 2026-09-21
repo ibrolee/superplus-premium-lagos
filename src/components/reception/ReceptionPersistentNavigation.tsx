@@ -13,7 +13,7 @@ export const receptionGroups: Group[] = [
   { label: 'Reception overview', href: '/reception-workspace', icon: LayoutDashboard, keywords: 'home daily summary' },
  ] },
  { name: 'Members & payments', icon: Users, tools: [
-  { label: 'Register or renew', href: '/reception-register', icon: UserPlus, keywords: 'new existing member registration renewal cash pos transfer REGOFF' },
+  { label: 'Register or renew', href: '/reception-register', icon: UserPlus, keywords: 'new existing member registration renewal cash pos transfer REGSF coupon' },
   { label: 'Member directory', href: '/management-members', icon: Search, keywords: 'find search member' },
   { label: 'Member profiles', href: '/management-profiles', icon: UserRound, keywords: 'profile plan history' },
   { label: 'Online member payment', href: '/login', icon: CreditCard, keywords: 'self service pay online renew login' },
