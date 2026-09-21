@@ -5,6 +5,7 @@ import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { AdminPersistentNavigation } from "@/components/admin/AdminPersistentNavigation";
+import { ReceptionPersistentNavigation } from "@/components/reception/ReceptionPersistentNavigation";
 import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
 import { VisitorChat } from "@/components/visitor/VisitorChat";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,7 +19,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
-  return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try refreshing or head home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => { router.invalidate(); reset(); }} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Try again</button><a href="/" className="rounded-md border px-4 py-2 text-sm">Go home</a></div></div></div>;
+  return <div className="flex min-h-screen items-center justify-center bg-background px-4"><div className="max-w-md text-center"><h1 className="text-xl font-semibold">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try refreshing or head home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => { router.invalidate(); reset(); }} className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground">Try again</button><a href="/" className="rounded-md border px-4 py-2 text-sm">Go home</a></div></div></div>;
 }
 const structuredData = { "@context": "https://schema.org", "@type": "HealthClub", "@id": "https://www.superplusfitness.com/#business", name: "Super Plus Fitness & Spa", url: "https://www.superplusfitness.com/", logo: "https://www.superplusfitness.com/header-logo.png", telephone: "+2347054263170", email: "spfitnessandspa@gmail.com", description: "Modern gym, personal training, spa and recovery centre in Shomolu, Lagos.", address: { "@type": "PostalAddress", streetAddress: "No. 105 Apata Street", addressLocality: "Shomolu", addressRegion: "Lagos", addressCountry: "NG" }, areaServed: { "@type": "Place", name: "Shomolu, Lagos, Nigeria" }, openingHoursSpecification: [{ "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], opens: "06:00", closes: "20:30" }, { "@type": "OpeningHoursSpecification", dayOfWeek: "Sunday", opens: "06:30", closes: "19:00" }] };
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -43,5 +44,5 @@ function isVisitorPage(pathname: string): boolean {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><AdminPersistentNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}{isVisitorPage(pathname) && <VisitorChat />}<Toaster position="top-center" richColors /></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><AdminPersistentNavigation /><ReceptionPersistentNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}{isVisitorPage(pathname) && <VisitorChat />}<Toaster position="top-center" richColors /></QueryClientProvider>;
 }
