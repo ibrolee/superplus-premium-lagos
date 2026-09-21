@@ -8,7 +8,7 @@ type AccessState = {
   path: string;
   revision: number;
   status: "checking" | "allowed" | "signed-out" | "denied";
-  role?: string;
+  role?: string | undefined;
 };
 
 /**
