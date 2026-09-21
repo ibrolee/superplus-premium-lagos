@@ -16,9 +16,13 @@ Deno.serve(async(req:Request)=>{
   if(name.length<2||!email.includes('@')||!phone||!Number.isInteger(birthDay)||birthDay<1||birthDay>31||!Number.isInteger(birthMonth)||birthMonth<1||birthMonth>12)return respond({error:'Enter your name, valid email, phone and birth day/month.'},400);
   let pricing:ReturnType<typeof couponPricing>;
   try{pricing=couponPricing(plan,body?.couponCode);}catch{return respond({error:'Invalid coupon code.'},400);}
-  // Some historic members share an email: never charge before the account mapping is unambiguous.
-  // This server-side check does not reveal any member identity or provide a public lookup endpoint.
+  // Read current server-side plan prices before charging so a future DB rate change cannot produce a paid but unrecordable transaction.
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
+  const {data:official,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.databaseName).maybeSingle();
+  if(planError||!official?.active||Number(official.price)!==plan.price||Number(official.duration_days)!==plan.durationDays){
+   return respond({error:'Membership prices are being updated. No payment has started; please try again shortly or contact reception.'},503);
+  }
+  // Some historic records share an email. Never charge before the account mapping is unambiguous.
   const {data:matches,error:matchError}=await admin.rpc('public_join_email_matches',{p_email:email});
   if(matchError||typeof matches!=='number')return respond({error:'Member check is temporarily unavailable. No payment has started; try again later.'},503);
   if(matches>1)return respond({error:'Multiple gym profiles use this email. Ask reception to correct the duplicate email records before paying online. No payment has started.'},409);
