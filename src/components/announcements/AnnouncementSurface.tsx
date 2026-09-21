@@ -102,7 +102,7 @@ export function AnnouncementSurface({ placement }: { placement: AnnouncementPlac
   if (!items.length) return null;
   if (placement === "banner") return (
     <section aria-label="Current Super Plus announcements" className="bg-[#eef6ea] px-4 py-4 sm:py-6">
-      <div className="mx-auto max-w-6xl"><AnnouncementVisual item={items[0]} /></div>
+      <div className="mx-auto max-w-6xl"><AnnouncementVisual item={items[0]!} /></div>
     </section>
   );
   return (
