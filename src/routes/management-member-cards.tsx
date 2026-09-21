@@ -4,6 +4,7 @@ import { ArrowLeft, CheckSquare, CreditCard, Download, Loader2, Printer, Refresh
 import { supabase } from '@/lib/supabase';
 import { BatchCardBack, BatchCardFront, cardNumber, loadCardLogo, type PrintableMember } from '@/components/member-card/CardArtwork';
 import { generateMemberCardBatchPdf, saveBatchPdf } from '@/lib/member-card-batch-pdf';
+import { downloadMemberCardSvgZip } from '@/lib/member-card-svg';
 
 export const Route = createFileRoute('/management-member-cards')({ component: MembershipCardDesk });
 type Member = PrintableMember & { phone: string | null; email: string | null };
@@ -26,6 +27,9 @@ function classify(plans: Plan[], day: string): MemberStatus {
   if (plans.some((plan) => currentPaidPlan(plan, day))) return 'active';
   if (plans.some((plan) => plan.end_date && plan.end_date.slice(0, 10) < day)) return 'expired';
   return 'other';
+}
+function filenameSafe(value: string) {
+  return value.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'member';
 }
 async function fetchAll<T>(table: 'members' | 'memberships', columns: string): Promise<T[]> {
   const result: T[] = [];
@@ -115,24 +119,44 @@ function MembershipCardDesk() {
     setFilter('active'); setTerm('');
     updateSelection(new Set(members.filter((member) => status.get(member.id) === 'active').map((member) => member.id)));
   }
+  function currentCardNodes() {
+    const nodes = Array.from(rootRef.current?.querySelectorAll<HTMLElement>('[data-print-member]') || []);
+    if (nodes.length !== current.length) throw new Error('Card previews are not ready. Please try again.');
+    return nodes.map((node, index) => {
+      const front = node.querySelector<SVGSVGElement>('[data-card-side="front"]');
+      const back = node.querySelector<SVGSVGElement>('[data-card-side="back"]');
+      const member = current[index];
+      if (!front || !back || !member) throw new Error('A selected card is incomplete. Please refresh before printing.');
+      return { member, front, back };
+    });
+  }
   async function downloadBatch() {
     if (!authorized || exporting || !logo || !current.length) return;
     setExportError(''); setLastExport(''); setExporting(true);
     try {
-      const nodes = Array.from(rootRef.current?.querySelectorAll<HTMLElement>('[data-print-member]') || []);
-      if (nodes.length !== current.length) throw new Error('Card previews are not ready. Please try again.');
-      const pairs = nodes.map((node) => {
-        const front = node.querySelector<SVGSVGElement>('[data-card-side="front"]');
-        const back = node.querySelector<SVGSVGElement>('[data-card-side="back"]');
-        if (!front || !back) throw new Error('A selected card is incomplete. Please refresh before printing.');
-        return { front, back };
-      });
+      const pairs = currentCardNodes().map(({ front, back }) => ({ front, back }));
       const pdf = await generateMemberCardBatchPdf(pairs);
       saveBatchPdf(pdf, `superplus-membership-cards-batch-${safeBatch + 1}-of-${totalBatches}.pdf`);
       setLastExport(`Batch ${safeBatch + 1} of ${totalBatches} prepared: ${current.length} cards, ${current.length * 2} PDF pages.`);
       if (safeBatch + 1 < totalBatches) setBatchIndex(safeBatch + 1);
     } catch (cause) { setExportError(cause instanceof Error ? cause.message : 'Could not generate the batch PDF.'); }
     finally { setExporting(false); }
+  }
+  function downloadBatchSvg() {
+    if (!authorized || exporting || !logo || !current.length) return;
+    setExportError(''); setLastExport('');
+    try {
+      const files = currentCardNodes().flatMap(({ member, front, back }) => {
+        const prefix = `${cardNumber(member.member_card_number)}-${filenameSafe(member.full_name || '')}`;
+        return [
+          { filename: `${prefix}-front.svg`, card: front },
+          { filename: `${prefix}-back.svg`, card: back },
+        ];
+      });
+      downloadMemberCardSvgZip(files, `superplus-membership-cards-batch-${safeBatch + 1}-of-${totalBatches}-editable-svg.zip`);
+      setLastExport(`Editable SVG ZIP prepared for batch ${safeBatch + 1} of ${totalBatches}: ${current.length} cards, ${current.length * 2} SVG files.`);
+      if (safeBatch + 1 < totalBatches) setBatchIndex(safeBatch + 1);
+    } catch (cause) { setExportError(cause instanceof Error ? cause.message : 'Could not generate the editable SVG ZIP.'); }
   }
 
   return <main className="min-h-screen bg-[#f4f6f1] px-4 py-8 text-[#162b20] sm:px-7 sm:py-12"><div className="mx-auto max-w-6xl">
@@ -149,7 +173,7 @@ function MembershipCardDesk() {
         <div className="mt-4 flex flex-wrap items-center gap-2"><button type="button" onClick={selectVisible} disabled={!visible.length} className="rounded-lg bg-[#193328] px-4 py-2.5 text-xs font-black text-white disabled:opacity-40"><CheckSquare size={15} className="mr-1 inline"/> Select all {visible.length} matching</button><button type="button" onClick={selectActive} disabled={!counts.active} className="rounded-lg bg-[#b8ee73] px-4 py-2.5 text-xs font-black text-[#193328] disabled:opacity-40">Select all active ({counts.active})</button><button type="button" onClick={() => updateSelection(new Set())} disabled={!selected.size} className="rounded-lg border border-[#d2dfce] px-4 py-2.5 text-xs font-bold disabled:opacity-40">Clear selection</button><span className="ml-auto text-xs font-bold text-[#49624f]">{visible.length} shown · {selected.size} selected</span></div>
         <div className="mt-4 max-h-[550px] overflow-y-auto rounded-xl border border-[#dfebdc]" role="group" aria-label="Members available for card printing">{visible.length === 0 ? <p className="p-6 text-sm text-[#65776a]">No matching members. Try another search or filter.</p> : visible.map((member) => <div key={member.id} className="flex flex-wrap items-center gap-3 border-b border-[#e6eee3] p-3 last:border-b-0 sm:p-4"><button type="button" onClick={() => toggle(member.id)} aria-pressed={selected.has(member.id)} aria-label={`${selected.has(member.id) ? 'Deselect' : 'Select'} ${member.full_name || cardNumber(member.member_card_number)}`} className="shrink-0 text-[#376744]">{selected.has(member.id) ? <CheckSquare size={25}/> : <Square size={25}/>}</button><div className="min-w-0 flex-1"><p className="break-words text-sm font-black">{member.full_name || 'Unnamed member'}</p><p className="mt-1 text-xs text-[#6e7c70]">{cardNumber(member.member_card_number)} · {member.phone || 'No phone'}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${status.get(member.id) === 'active' ? 'bg-[#def6c7] text-[#254b2f]' : 'bg-[#eff1ed] text-[#526458]'}`}>{status.get(member.id) === 'none' ? 'No plan' : status.get(member.id) === 'other' ? 'Not active' : status.get(member.id)}</span><a href={`/management-member-card?memberId=${encodeURIComponent(member.id)}`} className="inline-flex items-center gap-1 rounded-lg border border-[#d4dfcf] px-3 py-2 text-xs font-bold"><CreditCard size={14}/> Card</a></div>)}</div>
       </section>
-      <section className="mt-5 rounded-2xl border border-[#e4bba9] bg-[#242126] p-5 text-white sm:p-6"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-widest text-[#ff916d]">Batch print</p><h2 className="mt-1 text-xl font-black">{picked.length} card{picked.length === 1 ? '' : 's'} selected</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#ded7d9]">PDF has the approved front and back for each member in order, on separate CR80-size pages (85.6 × 54 mm). Print at 100% scale; confirm double-sided orientation with the print shop.</p>{picked.length > CHUNK && <p className="mt-2 text-xs font-bold text-[#ffd6c4]">For reliable mobile downloads, files contain up to {CHUNK} members each. {totalBatches} files in total; download each batch in order.</p>}</div><button type="button" disabled={!picked.length || exporting || !logo} onClick={() => void downloadBatch()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#ff6841] px-5 py-3 text-sm font-black text-white disabled:opacity-40">{exporting ? <Loader2 size={19} className="animate-spin"/> : <Download size={19}/>} {exporting ? 'Preparing PDF…' : `Download batch ${safeBatch + 1} of ${Math.max(totalBatches, 1)} (${current.length} cards)`}</button></div>
+      <section className="mt-5 rounded-2xl border border-[#e4bba9] bg-[#242126] p-5 text-white sm:p-6"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-widest text-[#ff916d]">Batch print</p><h2 className="mt-1 text-xl font-black">{picked.length} card{picked.length === 1 ? '' : 's'} selected</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[#ded7d9]">PDF has the approved front and back for each member in order, on separate CR80-size pages (85.6 × 54 mm). Editable SVG ZIP contains separate front and back vector files for every member in the selected batch. Print at 100% scale; confirm double-sided orientation with the print shop.</p>{picked.length > CHUNK && <p className="mt-2 text-xs font-bold text-[#ffd6c4]">For reliable mobile downloads, files contain up to {CHUNK} members each. {totalBatches} files in total; download each batch in order.</p>}</div><div className="flex flex-wrap gap-2"><button type="button" disabled={!picked.length || exporting || !logo} onClick={downloadBatchSvg} className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-[#ff916d] px-5 py-3 text-sm font-black text-white disabled:opacity-40"><Download size={19}/> {`Download SVG ZIP batch ${safeBatch + 1} (${current.length} cards)`}</button><button type="button" disabled={!picked.length || exporting || !logo} onClick={() => void downloadBatch()} className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#ff6841] px-5 py-3 text-sm font-black text-white disabled:opacity-40">{exporting ? <Loader2 size={19} className="animate-spin"/> : <Download size={19}/>} {exporting ? 'Preparing PDF…' : `Download PDF batch ${safeBatch + 1} (${current.length} cards)`}</button></div></div>
         {totalBatches > 1 && <div className="mt-4 flex flex-wrap items-center gap-2"><button onClick={() => setBatchIndex((index) => Math.max(0, index - 1))} disabled={exporting || safeBatch === 0} className="rounded-lg border border-white/30 px-3 py-2 text-xs font-bold disabled:opacity-30">Previous batch</button><span className="text-xs">Batch {safeBatch + 1} / {totalBatches}</span><button onClick={() => setBatchIndex((index) => Math.min(totalBatches - 1, index + 1))} disabled={exporting || safeBatch === totalBatches - 1} className="rounded-lg border border-white/30 px-3 py-2 text-xs font-bold disabled:opacity-30">Next batch</button></div>}
         {lastExport && <p role="status" className="mt-4 rounded-xl border border-emerald-600/30 bg-emerald-950 p-3 text-sm text-emerald-100">{lastExport}</p>}{exportError && <p role="alert" className="mt-4 rounded-xl border border-red-400 bg-red-950 p-3 text-sm text-red-100">{exportError}</p>}
         <div className="mt-4 flex items-center gap-2 text-xs text-[#dcced0]"><Printer size={16}/> Open the downloaded PDF to print or send it to your card printer.</div>
