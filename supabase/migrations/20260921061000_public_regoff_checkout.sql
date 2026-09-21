@@ -1,7 +1,15 @@
--- STAGED ONLY. Apply in a separate non-production database for testing; do not modify live checkout without approval.
--- Called exclusively from the signed Paystack verification Edge Function after independently querying Paystack.
--- Returning members with existing gym records reuse their profile by email. OTP login links unlinked records.
--- REGOFF is a reusable single code that waives registration only; not a plan discount and not an admin request.
+-- STAGED ONLY: test in an isolated database. Do not modify production until approved.
+-- Paystack verification calls the finalizer only AFTER independently verifying success and exact amount.
+-- REGOFF is one reusable code, waiving registration only. Existing profiles are reused by email.
+-- Existing data contains duplicate email groups: never silently select an arbitrary profile.
+CREATE OR REPLACE FUNCTION public.public_join_email_matches(p_email text)
+RETURNS integer LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO '' AS $fn$
+ SELECT COUNT(*)::integer FROM public.members
+ WHERE lower(btrim(COALESCE(email,''))) = lower(btrim(COALESCE(p_email,'')));
+$fn$;
+REVOKE ALL ON FUNCTION public.public_join_email_matches(text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.public_join_email_matches(text) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.finalize_public_join_payment(
  p_reference text,p_plan_id text,p_full_name text,p_email text,p_phone text,p_birth_day integer,p_birth_month integer,
  p_paid_at timestamptz,p_channel text,p_customer_code text,p_coupon_code text,p_verified_amount_kobo bigint
@@ -10,7 +18,7 @@ DECLARE
  v_plan public.membership_plans%ROWTYPE;
  v_plan_name text; v_fee numeric; v_code text; v_email text; v_ref text;
  v_member uuid; v_membership uuid; v_payment uuid; v_existing record;
- v_today date; v_start date; v_end date; v_current_end date;
+ v_today date; v_start date; v_end date; v_current_end date; v_email_matches integer;
 BEGIN
  IF (SELECT auth.role()) IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION 'Paystack verification service only.' USING ERRCODE='42501'; END IF;
  v_ref:=btrim(COALESCE(p_reference,'')); v_email:=lower(btrim(COALESCE(p_email,'')));
@@ -39,6 +47,8 @@ BEGIN
  END IF;
  IF EXISTS(SELECT 1 FROM public.payments WHERE paystack_reference=v_ref) THEN RAISE EXCEPTION 'Payment reference is already present; investigate before retrying.'; END IF;
  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('paystack-email:'||v_email,0));
+ SELECT COUNT(*) INTO v_email_matches FROM public.members WHERE lower(btrim(COALESCE(email,'')))=v_email;
+ IF v_email_matches>1 THEN RAISE EXCEPTION 'Multiple member records share this email. Ask reception to correct the profiles, then retry payment verification with the same reference. Do not pay again.'; END IF;
  SELECT id INTO v_member FROM public.members WHERE lower(btrim(COALESCE(email,'')))=v_email ORDER BY created_at LIMIT 1 FOR UPDATE;
  IF v_member IS NULL THEN
   INSERT INTO public.members(full_name,email,phone,birth_day,birth_month,source)
@@ -57,3 +67,23 @@ BEGIN
 END $fn$;
 REVOKE ALL ON FUNCTION public.finalize_public_join_payment(text,text,text,text,text,integer,integer,timestamptz,text,text,text,bigint) FROM PUBLIC,anon,authenticated;
 GRANT EXECUTE ON FUNCTION public.finalize_public_join_payment(text,text,text,text,text,integer,integer,timestamptz,text,text,text,bigint) TO service_role;
+
+-- Email OTP proves ownership of an email, not which record belongs to the person if multiple records share it.
+-- Preserve existing linking for unique matches; an ambiguous email must be fixed at reception, without an approval queue.
+CREATE OR REPLACE FUNCTION public.link_member_account()
+RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $fn$
+DECLARE v_user uuid; v_email text; v_member uuid; v_matches integer;
+BEGIN
+ v_user:=auth.uid(); v_email:=lower(btrim(COALESCE(auth.jwt()->>'email','')));
+ IF v_user IS NULL THEN RAISE EXCEPTION 'You must be logged in.'; END IF;
+ IF v_email='' THEN RAISE EXCEPTION 'Your account has no email address.'; END IF;
+ SELECT id INTO v_member FROM public.members WHERE auth_user_id=v_user LIMIT 1;
+ IF v_member IS NOT NULL THEN RETURN jsonb_build_object('success',true,'already_linked',true,'member_id',v_member); END IF;
+ SELECT COUNT(*) INTO v_matches FROM public.members WHERE lower(btrim(COALESCE(email,'')))=v_email;
+ IF v_matches>1 THEN RETURN jsonb_build_object('success',false,'linked',false,'reason','Multiple gym records share your email. Ask reception to correct the duplicate contact details before signing in.'); END IF;
+ UPDATE public.members SET auth_user_id=v_user
+ WHERE id=(SELECT id FROM public.members WHERE lower(btrim(COALESCE(email,'')))=v_email AND auth_user_id IS NULL LIMIT 1)
+ RETURNING id INTO v_member;
+ IF v_member IS NULL THEN RETURN jsonb_build_object('success',false,'linked',false,'reason','No unlinked member account was found for this email. Ask reception to confirm your email.'); END IF;
+ RETURN jsonb_build_object('success',true,'linked',true,'member_id',v_member);
+END $fn$;
