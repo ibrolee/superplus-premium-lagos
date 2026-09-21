@@ -1,9 +1,8 @@
-/* This class is applied only after verifying an active reception or management user on a front-desk page. */
-@media (min-width: 1024px) {
-  body.spf-reception-nav-active { padding-left: 270px; }
-}
-/* The new navigation replaces the legacy horizontal staff/reception bars on its own pages. */
+/* Applied only after verifying an active reception or management account on front-desk pages. */
+@media (min-width: 1024px) { body.spf-reception-nav-active { padding-left: 270px; } }
+/* Replace the public website menu with the dedicated reception sidebar, so mobile has one menu. */
+body.spf-reception-nav-active header:has(> .section-shell) { display: none; }
+/* The old management bars would otherwise duplicate the persistent reception navigation. */
 body.spf-reception-nav-active nav[aria-label="Super Plus management workspace"],
 body.spf-reception-nav-active nav[aria-label="Staff and reception action navigation"] { display: none; }
-/* The original member-directory navigation would otherwise create a second sidebar. */
 body.spf-reception-nav-active .reception-responsive > div > aside { display: none; }
