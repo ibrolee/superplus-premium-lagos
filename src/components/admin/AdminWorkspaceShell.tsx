@@ -1,43 +1,48 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Activity, BookOpen, CalendarDays, ChevronDown, ChevronRight, CreditCard,
-  FileDown, Images, LayoutDashboard, Menu, Search, ShieldCheck, ScanLine,
-  UserPlus, UserRound, Users, Wallet, X, type LucideIcon,
+  FileDown, Images, LayoutDashboard, Menu, Search, ShieldCheck,
+  UserRound, Users, Wallet, X, type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-type Tool = { label: string; href: string; icon: LucideIcon; keywords?: string; adminOnly?: boolean };
+type Tool = { label: string; href: string; icon: LucideIcon; keywords?: string; adminOnly?: boolean; ownerOrAdmin?: boolean };
 type Group = { name: string; icon: LucideIcon; tools: Tool[] };
+/** One shared admin catalog feeds the dashboard sidebar, persistent sidebar and both searches.
+ * Reception submission, scanning, reminders and clock-in tools stay in their own workspace.
+ */
 export const adminGroups: Group[] = [
   { name: "Overview", icon: LayoutDashboard, tools: [
     { label: "Dashboard", href: "/admin-workspace", icon: LayoutDashboard, keywords: "home financial summary" },
-    { label: "Operations hub", href: "/management-operations", icon: ShieldCheck, keywords: "all tools" },
+  ] },
+  { name: "Approvals", icon: ShieldCheck, tools: [
+    { label: "All approvals", href: "/admin-approvals", icon: ShieldCheck, keywords: "pending reception staff requests inbox review" },
+    { label: "Payment requests", href: "/management-payment-desk#approvals", icon: CreditCard, keywords: "pending verify approve reject payments transfers cash pos" },
+    { label: "New-member requests", href: "/management-new-member-intake#review", icon: Users, keywords: "pending walk in registration manager approval" },
+    { label: "Returning-member claims", href: "/management-payment-desk#approvals", icon: UserRound, ownerOrAdmin: true, keywords: "reception identity claims review returning" },
+    { label: "Staff account requests", href: "/staff-admin#staff", icon: Users, adminOnly: true, keywords: "approve pending employee staff account" },
+    { label: "Missed-scan requests", href: "/staff-missed-scans", icon: CalendarDays, adminOnly: true, keywords: "staff missed qr correction approval" },
   ] },
   { name: "Finance", icon: Wallet, tools: [
     { label: "Revenue report", href: "/management-revenue", icon: Wallet, keywords: "income sales transactions finance payments report" },
-    { label: "Payment approvals", href: "/management-payment-desk", icon: CreditCard, keywords: "existing member transfer cash pos custom plan pending verify reject" },
-    { label: "New member approvals", href: "/management-new-member-intake", icon: ShieldCheck, keywords: "walk in intake registration verify" },
-    { label: "Original financial report", href: "/staff-admin#revenue", icon: Wallet, keywords: "legacy detailed baseline ledger" },
+    { label: "Original financial report", href: "/staff-admin#revenue", icon: Wallet, keywords: "historical ledger baseline detailed" },
   ] },
   { name: "Members", icon: Users, tools: [
-    { label: "Members list", href: "/admin-members", icon: Users, keywords: "directory search find people" },
-    { label: "Member profiles", href: "/management-profiles", icon: UserRound, keywords: "details history" },
-    { label: "Member registration", href: "/management-new-member-intake", icon: UserPlus, keywords: "new walk in pending offline" },
-    { label: "Registration & renewals", href: "/management-standard-plan", icon: CreditCard, keywords: "standard plan existing member" },
-    { label: "Member cards", href: "/management-member-cards", icon: Users, keywords: "id printable plastic" },
-    { label: "Historical members", href: "/staff-admin#members", icon: ShieldCheck, adminOnly: true, keywords: "historical returning member legacy records" },
-    { label: "Reminders & messages", href: "/management-communications", icon: CalendarDays, keywords: "birthday expiry whatsapp communication" },
+    { label: "Members list", href: "/admin-members", icon: Users, keywords: "directory search find members" },
+    { label: "Member profiles", href: "/management-profiles", icon: UserRound, keywords: "profile history inspect" },
+    { label: "Member ID cards", href: "/management-member-cards", icon: CreditCard, adminOnly: true, keywords: "print plastic id cards" },
+    { label: "Historical members", href: "/staff-admin#members", icon: ShieldCheck, adminOnly: true, keywords: "legacy records existing historic" },
   ] },
   { name: "Attendance", icon: Activity, tools: [
-    { label: "Member attendance", href: "/management-attendance", icon: Activity, keywords: "visits check in records" },
-    { label: "Attendance export", href: "/management-attendance-export", icon: FileDown, keywords: "download csv" },
-    { label: "Member QR scanner", href: "/reception-checkin", icon: ScanLine, keywords: "scan entrance exit" },
+    { label: "Member attendance report", href: "/management-attendance", icon: Activity, keywords: "visits check ins records" },
+    { label: "Attendance export", href: "/management-attendance-export", icon: FileDown, keywords: "download csv history" },
   ] },
   { name: "Team & payroll", icon: Users, tools: [
     { label: "Staff directory", href: "/management-staff", icon: Users, keywords: "employees team" },
-    { label: "Manage staff profiles", href: "/staff-admin#staff", icon: ShieldCheck, keywords: "approve suspend staff account role edit salary legacy" },
-    { label: "Staff attendance", href: "/staff-admin#attendance", icon: CalendarDays, keywords: "daily clock in staff" },
+    { label: "Manage staff profiles", href: "/staff-admin#staff", icon: ShieldCheck, keywords: "staff status role salary edit" },
+    { label: "Staff attendance report", href: "/staff-admin#attendance", icon: CalendarDays, keywords: "daily employee attendance" },
     { label: "Monthly attendance", href: "/management-staff-monthly", icon: CalendarDays, keywords: "hours late shifts" },
+    { label: "QR attendance review", href: "/management-staff-review", icon: ShieldCheck, keywords: "employee exception review" },
     { label: "Payroll records", href: "/management-payroll", icon: Wallet, keywords: "salary payments wages" },
     { label: "Payroll export", href: "/management-payroll-export", icon: FileDown, keywords: "download salary csv" },
   ] },
@@ -47,11 +52,15 @@ export const adminGroups: Group[] = [
   ] },
 ];
 
+export function canSeeAdminTool(tool: Tool, role: string | null): boolean {
+  return !!role && (!tool.adminOnly || role === "admin") && (!tool.ownerOrAdmin || role === "admin" || role === "owner");
+}
+
 type MemberHit = { id: string; full_name: string | null; phone: string | null; email: string | null };
 const managementRoles = ["admin", "owner", "manager"];
 const cleanSearch = (value: string) => value.trim().replace(/[%_,()\\]/g, " ").trim();
 
-/** UI gates complement (and never replace) destination guards and database RLS. */
+/** UI gates complement, never replace, destination guards and database RLS. */
 export function AdminWorkspaceShell({ title, subtitle, active, children }: {
   title: string; subtitle?: string; active: string; children: ReactNode;
 }) {
@@ -59,7 +68,7 @@ export function AdminWorkspaceShell({ title, subtitle, active, children }: {
   const [checking, setChecking] = useState(true);
   const [accessError, setAccessError] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ Overview: true, Finance: true, Members: true });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({ Overview: true, Approvals: true });
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [members, setMembers] = useState<MemberHit[]>([]);
@@ -88,16 +97,15 @@ export function AdminWorkspaceShell({ title, subtitle, active, children }: {
     const needle = query.trim().toLowerCase();
     if (!needle || !role) return [];
     return adminGroups.flatMap((group) => group.tools.filter((tool) =>
-      (!tool.adminOnly || role === "admin") && `${tool.label} ${tool.keywords || ""} ${group.name}`.toLowerCase().includes(needle),
+      canSeeAdminTool(tool, role) && `${tool.label} ${tool.keywords || ""} ${group.name}`.toLowerCase().includes(needle),
     )).slice(0, 12);
   }, [query, role]);
 
   useEffect(() => {
     const term = cleanSearch(query);
-    if (!role || term.length < 2) { setMembers([]); setSearching(false); setSearchError(""); return; }
+    if (!role || !searchOpen || term.length < 2) { setMembers([]); setSearching(false); setSearchError(""); return; }
     let cancelled = false;
-    setSearching(true);
-    setSearchError("");
+    setMembers([]); setSearching(true); setSearchError("");
     const timer = setTimeout(() => {
       void (async () => {
         try {
@@ -112,20 +120,20 @@ export function AdminWorkspaceShell({ title, subtitle, active, children }: {
       })();
     }, 250);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [query, role]);
+  }, [query, role, searchOpen]);
 
   const sidebar = <>
     <a href="/admin-workspace" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-xl px-2 py-2">
       <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#b8ee73] text-lg font-black text-[#193327]">S+</span>
       <span><strong className="block text-sm tracking-wide">SUPER PLUS</strong><span className="text-[11px] text-[#b9c9be]">Admin workspace</span></span>
     </a>
-    <nav aria-label="Admin navigation" className="mt-7 flex-1 space-y-2 overflow-y-auto pb-5">
+    <nav aria-label="Admin navigation" className="mt-7 min-h-0 flex-1 space-y-2 overflow-y-auto pb-5">
       {adminGroups.map((group) => {
         const Icon = group.icon;
-        const tools = group.tools.filter((tool) => !tool.adminOnly || role === "admin");
-        const open = expanded[group.name] || tools.some((tool) => tool.href === active);
+        const tools = group.tools.filter((tool) => canSeeAdminTool(tool, role));
+        const open = expanded[group.name] ?? tools.some((tool) => tool.href.split("#")[0] === active);
         return <div key={group.name} className="rounded-xl border border-white/10">
-          <button type="button" aria-expanded={!!open} onClick={() => setExpanded((previous) => ({ ...previous, [group.name]: !open }))}
+          <button type="button" aria-expanded={open} onClick={() => setExpanded((previous) => ({ ...previous, [group.name]: !open }))}
             className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-white/10">
             <span className="flex items-center gap-3"><Icon size={17} className="text-[#b8ee73]"/>{group.name}</span>
             <ChevronDown size={15} className={open ? "rotate-180" : ""}/>
@@ -140,19 +148,19 @@ export function AdminWorkspaceShell({ title, subtitle, active, children }: {
         </div>;
       })}
     </nav>
-    <a href="/portal/admin" className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[#d5e3d8] hover:bg-white/10">Admin sign-in</a>
+    <a href="/reception-workspace" className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[#d5e3d8] hover:bg-white/10">Switch to Reception Dashboard ↗</a>
   </>;
 
   if (checking) return <main className="min-h-screen bg-[#f4f6f1] p-8 text-sm text-[#193327]" role="status">Checking management access…</main>;
   if (!role) return <main className="min-h-screen bg-[#f4f6f1] p-8"><div role="alert" className="mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-7 text-red-800">{accessError || "Access denied."} <a className="font-bold underline" href="/portal/admin">Admin sign-in</a></div></main>;
 
-  return <div className="min-h-screen bg-[#f4f6f1] text-[#16221c]">
+  return <div className="min-h-screen bg-[#f4f6f1] text-[#16221c] lg:flex">
     {mobileOpen && <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-40 bg-black/50 lg:hidden"/>}
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-[min(85vw,300px)] flex-col overflow-y-auto bg-[#152820] p-5 text-white transition-transform lg:sticky lg:top-0 lg:z-10 lg:h-screen lg:w-[270px] lg:shrink-0 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
       <button type="button" aria-label="Close menu" onClick={() => setMobileOpen(false)} className="absolute right-4 top-5 rounded-lg p-2 hover:bg-white/10 lg:hidden"><X size={20}/></button>
       {sidebar}
     </aside>
-    <div className="min-w-0 lg:ml-[270px] lg:-mt-[100vh] lg:min-h-screen">
+    <div className="min-w-0 flex-1">
       <header className="sticky top-0 z-30 border-b border-[#e1e8dd] bg-[#f4f6f1]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
         <div className="mx-auto flex max-w-[1400px] items-center gap-3">
           <button type="button" aria-label="Open menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)} className="rounded-xl border border-[#d8e2d5] bg-white p-2.5 lg:hidden"><Menu size={21}/></button>
@@ -161,7 +169,7 @@ export function AdminWorkspaceShell({ title, subtitle, active, children }: {
           <span className="hidden rounded-full bg-[#edf6e7] px-3 py-2 text-xs font-bold capitalize text-[#356942] sm:block">{role}</span>
         </div>
         {searchOpen && <div className="relative mx-auto mt-3 max-w-[1400px]"><div className="rounded-2xl border border-[#d8e2d5] bg-white p-3 shadow-lg">
-          <label className="flex items-center gap-2 rounded-xl bg-[#f4f6f1] px-3"><Search size={18}/><span className="sr-only">Search tools, actions and members</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try revenue, approval, member name or phone" className="w-full min-w-0 bg-transparent py-3 text-sm outline-none"/></label>
+          <label className="flex items-center gap-2 rounded-xl bg-[#f4f6f1] px-3"><Search size={18}/><span className="sr-only">Search tools, actions and members</span><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Try revenue, approvals, member name or phone" className="w-full min-w-0 bg-transparent py-3 text-sm outline-none"/></label>
           {query.trim() && <div className="mt-3 max-h-[55vh] overflow-y-auto"><p className="px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[#6b806c]">Tools & actions</p>
             {toolResults.map((tool) => <a href={tool.href} key={`${tool.href}-${tool.label}`} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[#edf6e7]"><ChevronRight size={15}/>{tool.label}</a>)}
             {!toolResults.length && <p className="px-3 py-2 text-xs text-[#66766a]">No matching tool.</p>}
