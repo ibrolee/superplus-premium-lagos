@@ -5,6 +5,7 @@ import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
+import { VisitorChat } from "@/components/visitor/VisitorChat";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import appCss from "../styles.css?url";
@@ -27,16 +28,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 function RootShell({ children }: { children: ReactNode }) { return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} /></head><body>{children}<Scripts /><Analytics /></body></html>; }
 
-// Hide the public marketing footer only on internal staff, reception and admin routes.
-// The public website and member-facing pages retain their existing footer.
+// Keep staff, reception, admin and member account workspaces free of the public visitor guide.
 function isInternalWorkspace(pathname: string): boolean {
   return pathname === "/portal" || pathname.startsWith("/portal/") ||
     pathname === "/staff" || pathname.startsWith("/staff-") || pathname.startsWith("/staff/") ||
     pathname === "/reception" || pathname.startsWith("/reception-") || pathname.startsWith("/reception/") ||
     pathname === "/management" || pathname.startsWith("/management-") || pathname.startsWith("/management/");
 }
+function isVisitorPage(pathname: string): boolean {
+  return ["/", "/membership", "/personal-training", "/facilities", "/gallery", "/spa-recovery", "/about", "/hmo", "/contact", "/blog", "/join"].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname);
+}
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}<Toaster position="top-center" richColors /></QueryClientProvider>;
+  return <QueryClientProvider client={queryClient}><UtilityBar /><Navbar /><SiteMotion /><WorkspaceNavigation /><ReceptionRouteGate />{!isInternalWorkspace(pathname) && <Footer />}{isVisitorPage(pathname) && <VisitorChat />}<Toaster position="top-center" richColors /></QueryClientProvider>;
 }
