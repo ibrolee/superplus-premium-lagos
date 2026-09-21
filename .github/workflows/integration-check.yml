@@ -48,7 +48,7 @@ jobs:
         run: git diff --exit-code -- bun.lock
       - name: Test public join pricing and REGOFF without real payments
         run: bun test tests/public-join-pricing.test.ts
-      - name: Test reception and public payment SQL with isolated disposable PostgreSQL
+      - name: Test reception and Paystack SQL with isolated disposable PostgreSQL
         env:
           PGPASSWORD: disposable-test-only
         run: |
@@ -57,6 +57,7 @@ jobs:
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-integration.sql
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-negative-cases.sql
           psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-production-guard-compatibility.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/member-paystack-recovery.sql
       - name: Build client, SSR and server without deployment
         run: bun run build
       - name: Strict TypeScript check
