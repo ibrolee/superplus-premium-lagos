@@ -40,10 +40,10 @@ DO $$ DECLARE r jsonb; n integer; BEGIN
 END $$;
 
 -- Renewal uses the original member and extends the existing paid plan, never a second joining fee.
-DO $$ DECLARE r jsonb; prior_end date; member_id uuid; BEGIN
- SELECT id INTO member_id FROM public.members WHERE email='new@example.test';
- SELECT end_date INTO prior_end FROM public.memberships WHERE member_id=member_id;
- SELECT public.reception_complete_registration('00000000-0000-4000-8000-000000000001','','','', (SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'POS','','POS-123456',true,'00000000-0000-4000-8000-000000000003',member_id,'') INTO r;
+DO $$ DECLARE r jsonb; prior_end date; v_member_id uuid; BEGIN
+ SELECT id INTO v_member_id FROM public.members WHERE email='new@example.test';
+ SELECT end_date INTO prior_end FROM public.memberships AS m WHERE m.member_id=v_member_id;
+ SELECT public.reception_complete_registration('00000000-0000-4000-8000-000000000001','','','', (SELECT id FROM public.membership_plans WHERE name='Monthly Plan'),(clock_timestamp() AT TIME ZONE 'Africa/Lagos')::date,30,27000,'POS','','POS-123456',true,'00000000-0000-4000-8000-000000000003',v_member_id,'') INTO r;
  IF r->>'transaction_type'<>'renewal' OR (r->>'registration_fee')::numeric<>0 OR (r->>'amount')::numeric<>27000 THEN RAISE EXCEPTION 'Renewal amount wrong %',r; END IF;
  IF (SELECT start_date FROM public.memberships WHERE id=(r->>'membership_id')::uuid)<>prior_end+1 THEN RAISE EXCEPTION 'Renewal did not extend current membership'; END IF;
 END $$;
