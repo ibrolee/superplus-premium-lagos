@@ -275,7 +275,7 @@ function AdminMembers() {
              {visible.map((member) => (
                <article
                  key={member.id}
-                 className="flex flex-wrap items-center gap-3 py-4 sm:flex-nowrap"
+                 className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]"
                >
                  <span
                    aria-hidden="true"
@@ -286,7 +286,7 @@ function AdminMembers() {
                    )}
                  </span>
                  <div className="min-w-0 flex-1">
-                   <p className="truncate text-sm font-bold">
+                   <p className="break-words text-sm font-bold">
                      {member.full_name || "Unnamed member"}
                    </p>
                    <p className="mt-1 break-words text-xs text-[#637469]">
@@ -294,7 +294,7 @@ function AdminMembers() {
                      {member.email ? ` · ${member.email}` : ""}
                    </p>
                  </div>
-                 <div className="ml-auto flex flex-wrap items-center gap-2">
+                 <div className="col-span-2 flex w-full flex-wrap items-center gap-2 lg:col-span-1 lg:ml-auto lg:w-auto">
                    <a
                      href={`/reception-member/${member.id}`}
                      className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2c5737]"
