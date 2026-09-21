@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CalendarDays, CheckCircle2, RefreshCw, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { ArrowRight, CalendarDays, CheckCircle2, Megaphone, RefreshCw, ShieldCheck, Users, Wallet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { AdminWorkspaceShell } from '@/components/admin/AdminWorkspaceShell';
 export const Route=createFileRoute('/admin-workspace')({component:AdminWorkspace});
@@ -23,6 +23,7 @@ async function readRevenue():Promise<Revenue>{
 }
 const actions=[
  {label:'Members directory',description:'Find members and review their plans.',href:'/admin-members',icon:Users},
+ {label:'Announcements',description:'Publish flyers, schedule banners and popups, and post member updates.',href:'/admin-announcements',icon:Megaphone},
  {label:'Staff requests',description:'Staff account and attendance requests. No member registration approvals.',href:'/admin-approvals',icon:ShieldCheck},
  {label:'Staff oversight',description:'View staff records and attendance.',href:'/management-staff',icon:Users},
  {label:'Attendance reports',description:'Review gym visits.',href:'/management-attendance',icon:CalendarDays},
