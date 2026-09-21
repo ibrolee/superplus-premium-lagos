@@ -1,7 +1,12 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-// Production deployment requires verify_jwt=true. Never expose the service-role key to the browser.
+// Staged source only. Deploy with verify_jwt=true after migrations and scanner guards are tested.
+// Bearer JWT is independently validated below; service role is never sent to the client.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
