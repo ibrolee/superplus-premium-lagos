@@ -45,6 +45,15 @@ export const actions: Action[] = [
     access: "all",
   },
   {
+    label: "Website homepage",
+    href: "/",
+    description: "Open the public Super Plus website homepage",
+    keywords: "home homepage public website visitor",
+    category: "Workspaces & settings",
+    access: "all",
+    quick: true,
+  },
+  {
     label: "Register or renew",
     href: "/reception-register",
     description: "Register a new member or renew an existing member directly without approval",

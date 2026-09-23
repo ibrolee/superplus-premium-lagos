@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ClipboardList,
   CreditCard,
+  Home,
   LayoutDashboard,
   Menu,
   Search,
@@ -31,6 +32,12 @@ export const receptionGroups: Group[] = [
     name: "Dashboard",
     icon: LayoutDashboard,
     tools: [
+      {
+        label: "Website homepage",
+        href: "/",
+        icon: Home,
+        keywords: "public website home homepage visitor",
+      },
       {
         label: "Reception overview",
         href: "/reception-workspace",

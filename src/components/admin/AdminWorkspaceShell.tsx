@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CreditCard,
   FileDown,
+  Home,
   Images,
   LayoutDashboard,
   Megaphone,
@@ -37,6 +38,12 @@ export const adminGroups: Group[] = [
     name: "Overview",
     icon: LayoutDashboard,
     tools: [
+      {
+        label: "Website homepage",
+        href: "/",
+        icon: Home,
+        keywords: "public website home homepage visitor",
+      },
       {
         label: "Admin dashboard",
         href: "/admin-workspace",
