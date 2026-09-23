@@ -15,12 +15,7 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import {
   contact,
   facilities,
@@ -34,16 +29,8 @@ import {
 
 export function Logo({ inverse = false }: { inverse?: boolean }) {
   return (
-    <Link
-      to="/"
-      className="flex items-center"
-      aria-label="Super Plus Fitness home"
-    >
-      <img
-        src="/header-logo.png"
-        alt="Super Plus Fitness"
-        className="h-12 w-auto object-contain"
-      />
+    <Link to="/" className="flex items-center" aria-label="Super Plus Fitness home">
+      <img src="/header-logo.png" alt="Super Plus Fitness" className="h-12 w-auto object-contain" />
     </Link>
   );
 }
@@ -58,10 +45,7 @@ export function Navbar() {
       <div className="section-shell grid h-18 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 lg:grid-cols-[auto_1fr_auto]">
         <Logo />
 
-        <nav
-          className="hidden justify-center gap-5 lg:flex"
-          aria-label="Main navigation"
-        >
+        <nav className="hidden justify-center gap-5 lg:flex" aria-label="Main navigation">
           {navItems.map((item) => (
             <Link
               key={item.to}
@@ -95,12 +79,7 @@ export function MobileNavbar() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="lg:hidden"
-          aria-label="Open menu"
-        >
+        <Button variant="outline" size="icon" className="lg:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>
@@ -114,11 +93,7 @@ export function MobileNavbar() {
         <div className="flex h-[100dvh] flex-col px-5 py-3">
           {/* COMPACT HEADER */}
           <div className="mb-3 flex h-9 shrink-0 items-center justify-between">
-            <Link
-              to="/"
-              onClick={() => setOpen(false)}
-              aria-label="Super Plus Fitness home"
-            >
+            <Link to="/" onClick={() => setOpen(false)} aria-label="Super Plus Fitness home">
               <img
                 src="/header-logo.png"
                 alt="Super Plus Fitness"
@@ -138,10 +113,7 @@ export function MobileNavbar() {
           </div>
 
           {/* MAIN NAVIGATION */}
-          <nav
-            className="flex shrink-0 flex-col"
-            aria-label="Mobile navigation"
-          >
+          <nav className="flex shrink-0 flex-col" aria-label="Mobile navigation">
             {navItems.map((item) => (
               <Link
                 key={item.to}
@@ -172,15 +144,8 @@ export function MobileNavbar() {
               My QR Code
             </Link>
 
-            <Button
-              asChild
-              size="lg"
-              className="mt-1 h-10"
-            >
-              <Link
-                to="/join"
-                onClick={() => setOpen(false)}
-              >
+            <Button asChild size="lg" className="mt-1 h-10">
+              <Link to="/join" onClick={() => setOpen(false)}>
                 Join Now
               </Link>
             </Button>
@@ -196,25 +161,27 @@ export function SectionHeader({
   title,
   copy,
   inverse = false,
+  compact = false,
 }: {
   eyebrow?: string;
   title: ReactNode;
   copy?: string;
   inverse?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <div className="max-w-3xl">
+    <div className={compact ? "max-w-2xl" : "max-w-3xl"}>
       <div
-        className={`mb-4 flex items-center gap-3 text-xs font-extrabold uppercase ${
+        className={`${compact ? "mb-2 gap-2 text-[10px]" : "mb-4 gap-3 text-xs"} flex items-center font-extrabold uppercase ${
           inverse ? "text-primary" : "text-primary"
         }`}
       >
-        <span className="h-px w-8 bg-primary" />
+        <span className={`${compact ? "w-6" : "w-8"} h-px bg-primary`} />
         {eyebrow}
       </div>
 
       <h2
-        className={`display-title text-5xl sm:text-7xl ${
+        className={`display-title ${compact ? "text-4xl sm:text-5xl lg:text-6xl" : "text-5xl sm:text-7xl"} ${
           inverse ? "text-primary-foreground" : "text-foreground"
         }`}
       >
@@ -223,10 +190,8 @@ export function SectionHeader({
 
       {copy && (
         <p
-          className={`mt-6 max-w-2xl text-base leading-7 ${
-            inverse
-              ? "text-primary-foreground/70"
-              : "text-muted-foreground"
+          className={`${compact ? "mt-3 max-w-xl text-sm leading-6" : "mt-6 max-w-2xl text-base leading-7"} ${
+            inverse ? "text-primary-foreground/70" : "text-muted-foreground"
           }`}
         >
           {copy}
@@ -261,13 +226,9 @@ export function PageHero({
 
       <div className="relative section-shell flex min-h-[64vh] items-end py-16 sm:py-20">
         <div className="max-w-4xl">
-          <p className="mb-5 text-xs font-extrabold uppercase text-primary">
-            {eyebrow}
-          </p>
+          <p className="mb-5 text-xs font-extrabold uppercase text-primary">{eyebrow}</p>
 
-          <h1 className="display-title text-6xl sm:text-8xl lg:text-9xl">
-            {title}
-          </h1>
+          <h1 className="display-title text-6xl sm:text-8xl lg:text-9xl">{title}</h1>
 
           <p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/80 sm:text-lg">
             {copy}
@@ -281,12 +242,16 @@ export function PageHero({
 /* MEMBERSHIP CARD */
 export function MembershipCard({
   plan,
+  compact = false,
 }: {
   plan: MembershipPlan;
+  compact?: boolean;
 }) {
   return (
     <article
-      className={`relative flex min-h-[29rem] flex-col border p-6 transition-transform hover:-translate-y-1 ${
+      className={`relative flex flex-col border transition-transform hover:-translate-y-1 ${
+        compact ? "min-h-[23rem] p-4 sm:p-5" : "min-h-[29rem] p-6"
+      } ${
         plan.badge
           ? "border-primary bg-secondary text-secondary-foreground"
           : "border-border bg-card text-card-foreground"
@@ -298,45 +263,38 @@ export function MembershipCard({
         </span>
       )}
 
-      <p className="text-xs font-extrabold uppercase text-primary">
-        {plan.group}
-      </p>
+      <p className="text-xs font-extrabold uppercase text-primary">{plan.group}</p>
 
-      <h3 className="mt-5 font-display text-3xl font-bold uppercase">
+      <h3
+        className={`${compact ? "mt-3 text-2xl" : "mt-5 text-3xl"} font-display font-bold uppercase`}
+      >
         {plan.name}
       </h3>
 
-      <div className="mt-5">
-        <span className="font-display text-5xl font-bold">
+      <div className={compact ? "mt-3" : "mt-5"}>
+        <span className={`font-display font-bold ${compact ? "text-4xl" : "text-5xl"}`}>
           {formatNaira(plan.price)}
         </span>
 
         <p
           className={`mt-1 text-sm ${
-            plan.badge
-              ? "text-secondary-foreground/65"
-              : "text-muted-foreground"
+            plan.badge ? "text-secondary-foreground/65" : "text-muted-foreground"
           }`}
         >
           {plan.duration} · {formatNaira(plan.registration)} registration
         </p>
       </div>
 
-      <ul className="mt-7 space-y-3">
+      <ul className={`${compact ? "mt-4 space-y-2" : "mt-7 space-y-3"}`}>
         {plan.benefits.map((benefit) => (
-          <li key={benefit} className="flex gap-3 text-sm">
+          <li key={benefit} className={`flex gap-3 ${compact ? "text-xs leading-5" : "text-sm"}`}>
             <Check className="mt-0.5 size-4 shrink-0 text-primary" />
             {benefit}
           </li>
         ))}
       </ul>
 
-      <Button
-        asChild
-        variant={plan.badge ? "default" : "dark"}
-        size="lg"
-        className="mt-auto"
-      >
+      <Button asChild variant={plan.badge ? "default" : "dark"} size="lg" className="mt-auto">
         <a href={`/join?plan=${encodeURIComponent(plan.id)}`}>
           Choose plan <ArrowRight />
         </a>
@@ -348,28 +306,30 @@ export function MembershipCard({
 /* SPA & RECOVERY SERVICE CARD */
 export function ServiceCard({
   service,
+  compact = false,
 }: {
   service: RecoveryService;
+  compact?: boolean;
 }) {
   return (
     <article className="group border border-border bg-card">
-      <div className="p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-5">
+      <div className={compact ? "p-4 sm:p-5" : "p-6 sm:p-7"}>
+        <div className={`flex items-start justify-between ${compact ? "gap-3" : "gap-5"}`}>
           <div>
-            <p className="text-xs font-extrabold uppercase text-primary">
-              Spa & Recovery
-            </p>
+            <p className="text-xs font-extrabold uppercase text-primary">Spa & Recovery</p>
 
-            <h3 className="mt-3 font-display text-2xl font-bold uppercase sm:text-3xl">
+            <h3
+              className={`${compact ? "mt-2 text-xl sm:text-2xl" : "mt-3 text-2xl sm:text-3xl"} font-display font-bold uppercase`}
+            >
               {service.name}
             </h3>
           </div>
 
           <div className="shrink-0 text-right">
-            <span className="font-display text-2xl font-bold text-primary sm:text-3xl">
-              {service.price !== null
-                ? formatNaira(service.price)
-                : "Price coming soon"}
+            <span
+              className={`${compact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl"} font-display font-bold text-primary`}
+            >
+              {service.price !== null ? formatNaira(service.price) : "Price coming soon"}
             </span>
 
             {service.duration && (
@@ -380,20 +340,21 @@ export function ServiceCard({
           </div>
         </div>
 
-        <p className="mt-5 max-w-xl text-sm leading-6 text-muted-foreground">
+        <p
+          className={`${compact ? "mt-3 line-clamp-3 text-xs leading-5" : "mt-5 text-sm leading-6"} max-w-xl text-muted-foreground`}
+        >
           {service.description}
         </p>
 
-        <div className="mt-6 flex items-center justify-between border-t border-border pt-4">
+        <div
+          className={`${compact ? "mt-4 pt-3" : "mt-6 pt-4"} flex items-center justify-between border-t border-border`}
+        >
           <span className="text-xs font-bold uppercase text-muted-foreground">
             Available at Super Plus Fitness
           </span>
 
           <Button asChild variant="ghost" size="icon">
-            <Link
-              to="/contact"
-              aria-label={`Enquire about ${service.name}`}
-            >
+            <Link to="/contact" aria-label={`Enquire about ${service.name}`}>
               <ArrowRight />
             </Link>
           </Button>
@@ -427,18 +388,12 @@ export function FacilityGrid({ limit }: { limit?: number }) {
           <div className="image-shade absolute inset-0" />
 
           <div className="absolute inset-x-0 bottom-0 p-6 text-primary-foreground">
-            <span className="text-xs font-bold text-primary">
-              0{index + 1}
-            </span>
+            <span className="text-xs font-bold text-primary">0{index + 1}</span>
 
-            <h3 className="mt-2 font-display text-3xl font-bold uppercase">
-              {item.name}
-            </h3>
+            <h3 className="mt-2 font-display text-3xl font-bold uppercase">{item.name}</h3>
 
             {!limit && (
-              <p className="mt-2 max-w-md text-sm text-primary-foreground/70">
-                {item.description}
-              </p>
+              <p className="mt-2 max-w-md text-sm text-primary-foreground/70">{item.description}</p>
             )}
           </div>
         </article>
@@ -447,17 +402,12 @@ export function FacilityGrid({ limit }: { limit?: number }) {
   );
 }
 
-export function ContactForm({
-  partnership = false,
-}: {
-  partnership?: boolean;
-}) {
+export function ContactForm({ partnership = false }: { partnership?: boolean }) {
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     toast("Thanks — this form is ready to connect", {
-      description:
-        "Until delivery is connected, please call, email or WhatsApp our team directly.",
+      description: "Until delivery is connected, please call, email or WhatsApp our team directly.",
     });
   }
 
@@ -465,9 +415,7 @@ export function ContactForm({
     <form
       onSubmit={submit}
       className="grid gap-4"
-      aria-label={
-        partnership ? "Partnership enquiry" : "Contact form"
-      }
+      aria-label={partnership ? "Partnership enquiry" : "Contact form"}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Name" name="name" />
@@ -486,9 +434,7 @@ export function ContactForm({
         </div>
       )}
 
-      {!partnership && (
-        <Field label="Phone" name="phone" type="tel" />
-      )}
+      {!partnership && <Field label="Phone" name="phone" type="tel" />}
 
       <label className="grid gap-2 text-sm font-bold">
         Message
@@ -505,22 +451,13 @@ export function ContactForm({
       </Button>
 
       <p className="text-xs text-muted-foreground">
-        Online delivery is awaiting connection. For an immediate response,
-        use WhatsApp or call us.
+        Online delivery is awaiting connection. For an immediate response, use WhatsApp or call us.
       </p>
     </form>
   );
 }
 
-function Field({
-  label,
-  name,
-  type = "text",
-}: {
-  label: string;
-  name: string;
-  type?: string;
-}) {
+function Field({ label, name, type = "text" }: { label: string; name: string; type?: string }) {
   return (
     <label className="grid gap-2 text-sm font-bold">
       {label}
@@ -535,10 +472,12 @@ function Field({
   );
 }
 
-export function LocationSection() {
+export function LocationSection({ compact = false }: { compact?: boolean }) {
   return (
-    <section className="bg-muted py-20">
-      <div className="section-shell grid gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+    <section className={`bg-muted ${compact ? "py-10 sm:py-12" : "py-20"}`}>
+      <div
+        className={`section-shell grid ${compact ? "gap-6" : "gap-10"} lg:grid-cols-[0.8fr_1.2fr]`}
+      >
         <div>
           <SectionHeader
             eyebrow="Visit us"
@@ -549,9 +488,12 @@ export function LocationSection() {
                 Shomolu.
               </>
             }
+            compact={compact}
           />
 
-          <div className="mt-8 space-y-4 text-sm">
+          <div
+            className={`${compact ? "mt-5 grid gap-3 text-xs sm:grid-cols-2" : "mt-8 space-y-4 text-sm"}`}
+          >
             <p className="flex gap-3">
               <MapPin className="shrink-0 text-primary" />
               {contact.address}
@@ -568,10 +510,7 @@ export function LocationSection() {
             </p>
 
             {openingHours.map((item) => (
-              <p
-                key={item.days}
-                className="flex gap-3"
-              >
+              <p key={item.days} className="flex gap-3">
                 <Clock3 className="shrink-0 text-primary" />
 
                 <span>
@@ -583,27 +522,19 @@ export function LocationSection() {
             ))}
           </div>
 
-          <div className="mt-7 flex flex-wrap gap-2">
+          <div className={`${compact ? "mt-5" : "mt-7"} flex flex-wrap gap-2`}>
             <Button asChild>
               <a href={`tel:${contact.phoneHref}`}>Call</a>
             </Button>
 
             <Button asChild variant="outline">
-              <a
-                href={contact.whatsapp}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={contact.whatsapp} target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
             </Button>
 
             <Button asChild variant="outline">
-              <a
-                href={contact.directions}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a href={contact.directions} target="_blank" rel="noreferrer">
                 Directions
               </a>
             </Button>
@@ -614,7 +545,7 @@ export function LocationSection() {
           title="Map showing Super Plus Fitness in Shomolu"
           src="https://www.google.com/maps?q=105%20Apata%20Street%20Shomolu%20Lagos&output=embed"
           loading="lazy"
-          className="min-h-[28rem] w-full border-0 grayscale"
+          className={`${compact ? "min-h-[18rem]" : "min-h-[28rem]"} w-full border-0 grayscale`}
         />
       </div>
     </section>
@@ -631,17 +562,15 @@ export function FinalCTA() {
   }
 
   return (
-    <section className="bg-primary py-16 text-primary-foreground">
-      <div className="section-shell flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
-        <h2 className="display-title max-w-3xl text-6xl sm:text-8xl">
+    <section className="bg-primary py-10 text-primary-foreground sm:py-12">
+      <div className="section-shell flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <h2 className="display-title max-w-2xl text-4xl sm:text-6xl">
           Your next level starts here.
         </h2>
 
         <div className="flex shrink-0 flex-wrap gap-3">
           <Button asChild variant="dark" size="lg">
-            <Link to="/join">
-              Join now
-            </Link>
+            <Link to="/join">Join now</Link>
           </Button>
 
           <Button asChild variant="inverse" size="lg">
@@ -662,15 +591,11 @@ export function Footer() {
             <Logo inverse />
 
             <p className="mt-5 max-w-xs text-sm leading-6 text-secondary-foreground/60">
-              Modern fitness, personal training, spa and recovery in
-              Shomolu, Lagos.
+              Modern fitness, personal training, spa and recovery in Shomolu, Lagos.
             </p>
           </div>
 
-          <FooterLinks
-            title="Explore"
-            links={navItems.slice(0, 8)}
-          />
+          <FooterLinks title="Explore" links={navItems.slice(0, 8)} />
 
           <FooterLinks
             title="Member & Portal"
@@ -682,22 +607,14 @@ export function Footer() {
           />
 
           <div>
-            <h3 className="text-xs font-extrabold uppercase text-primary">
-              Contact
-            </h3>
+            <h3 className="text-xs font-extrabold uppercase text-primary">Contact</h3>
 
             <div className="mt-5 space-y-3 text-sm text-secondary-foreground/70">
-              <a
-                className="block hover:text-primary"
-                href={`tel:${contact.phoneHref}`}
-              >
+              <a className="block hover:text-primary" href={`tel:${contact.phoneHref}`}>
                 {contact.phone}
               </a>
 
-              <a
-                className="block break-all hover:text-primary"
-                href={`mailto:${contact.email}`}
-              >
+              <a className="block break-all hover:text-primary" href={`mailto:${contact.email}`}>
                 {contact.email}
               </a>
 
@@ -737,8 +654,7 @@ export function Footer() {
         </div>
 
         <p className="pt-6 text-xs text-secondary-foreground/45">
-          © {new Date().getFullYear()} Super Plus Fitness & Spa. All rights
-          reserved.
+          © {new Date().getFullYear()} Super Plus Fitness & Spa. All rights reserved.
         </p>
       </div>
     </footer>
@@ -754,9 +670,7 @@ function FooterLinks({
 }) {
   return (
     <div>
-      <h3 className="text-xs font-extrabold uppercase text-primary">
-        {title}
-      </h3>
+      <h3 className="text-xs font-extrabold uppercase text-primary">{title}</h3>
 
       <nav className="mt-5 grid gap-2">
         {links.map((item) => (
@@ -785,16 +699,10 @@ export function UtilityBar() {
   );
 }
 
-export function IntegrationNotice({
-  children,
-}: {
-  children?: ReactNode;
-}) {
+export function IntegrationNotice({ children }: { children?: ReactNode }) {
   return (
     <div className="border-l-4 border-primary bg-muted p-4 text-sm leading-6">
-      <strong className="block uppercase">
-        Integration ready
-      </strong>
+      <strong className="block uppercase">Integration ready</strong>
 
       {children ??
         "This screen is prepared for the existing Super Plus member system. Live account data will appear when that system is connected."}
