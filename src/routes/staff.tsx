@@ -1107,7 +1107,7 @@ function StaffPage() {
                 Staff Member
               </p>
 
-              <h2 className="mt-1 font-display text-3xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-2xl font-bold uppercase">
                 {profile.full_name}
               </h2>
 
@@ -1118,13 +1118,9 @@ function StaffPage() {
                   : ""}
               </p>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1 text-[10px] font-bold uppercase text-green-700">
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase text-green-700">
                   Active Staff
-                </span>
-
-                <span className="rounded-full border border-border px-3 py-1 text-[10px] font-bold uppercase">
-                  {profile.staff_id}
                 </span>
               </div>
             </div>
@@ -1166,7 +1162,7 @@ function StaffPage() {
             <Button
               asChild
               size="lg"
-              className="w-full shrink-0 sm:w-auto"
+              className="h-10 w-full shrink-0 text-xs sm:w-auto"
             >
               <Link to="/staff-attendance">
                 <ScanLine />
@@ -1174,20 +1170,6 @@ function StaffPage() {
               </Link>
             </Button>
           </div>
-        </section>
-
-        <section className="mt-4 border border-border bg-card p-6">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary">
-            Staff ID
-          </p>
-
-          <p className="mt-2 font-display text-2xl font-bold uppercase">
-            {profile.staff_id}
-          </p>
-
-          <p className="mt-2 text-xs text-muted-foreground">
-            Use this ID when communicating with management.
-          </p>
         </section>
 
         <section className="mt-4 border border-border bg-card">
