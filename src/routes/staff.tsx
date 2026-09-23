@@ -187,7 +187,7 @@ function StaffPage() {
     useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  const [showProfile, setShowProfile] = useState(true);
+  const [showProfile, setShowProfile] = useState(false);
   const [showEmployment, setShowEmployment] = useState(false);
   const [showSalary, setShowSalary] = useState(false);
   const [showAttendance, setShowAttendance] = useState(false);
@@ -773,7 +773,7 @@ function StaffPage() {
                     <KeyRound className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
 
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                         Account Recovery
                       </p>
 
@@ -1057,7 +1057,7 @@ function StaffPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-3 py-3 sm:px-5 sm:py-5 lg:px-8">
         {error && (
           <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
             {error}
@@ -1070,14 +1070,14 @@ function StaffPage() {
           </div>
         )}
 
-        <header className="border border-border bg-card p-4 sm:p-5">
+        <header className="border border-border bg-card p-3 sm:p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
                 Super Plus Fitness
               </p>
 
-              <h1 className="mt-1 font-display text-3xl font-bold uppercase sm:text-4xl">
+              <h1 className="mt-0.5 font-display text-2xl font-bold uppercase sm:text-3xl">
                 Staff Portal
               </h1>
 
@@ -1096,18 +1096,18 @@ function StaffPage() {
           </div>
         </header>
 
-        <section className="mt-3 border border-border bg-card p-4">
+        <section className="mt-2 border border-border bg-card p-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-              <UserRound className="h-6 w-6" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-primary text-primary-foreground">
+              <UserRound className="h-5 w-5" />
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Staff Member
               </p>
 
-              <h2 className="mt-0.5 font-display text-2xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 {profile.full_name}
               </h2>
 
@@ -1127,24 +1127,24 @@ function StaffPage() {
           </div>
         </section>
 
-        <section className="mt-3 border-2 border-primary/40 bg-primary/5 p-4">
+        <section className="mt-2 border-2 border-primary/40 bg-primary/5 p-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <ScanLine className="size-5 text-primary" />
 
-                <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                   Staff Timekeeping
                 </p>
               </div>
 
-              <h2 className="mt-1 font-display text-2xl font-black uppercase">
+              <h2 className="mt-0.5 font-display text-xl font-black uppercase">
                 {activeAttendance
                   ? "Currently Clocked In"
                   : "Clock In / Clock Out"}
               </h2>
 
-              <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
+              <p className="mt-0.5 max-w-xl text-[11px] leading-4 text-muted-foreground">
                 Scan the attendance QR code displayed at the gym to
                 record your working hours.
               </p>
@@ -1172,20 +1172,20 @@ function StaffPage() {
           </div>
         </section>
 
-        <section className="mt-4 border border-border bg-card">
+        <section className="mt-2 border border-border bg-card">
           <button
             type="button"
             onClick={() =>
               setShowProfile((current) => !current)
             }
-            className="flex w-full items-center justify-between p-3.5 text-left"
+            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
           >
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Profile
               </p>
 
-              <h2 className="mt-0.5 font-display text-xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 Personal Information
               </h2>
             </div>
@@ -1308,20 +1308,20 @@ function StaffPage() {
           )}
         </section>
 
-        <section className="mt-4 border border-border bg-card">
+        <section className="mt-2 border border-border bg-card">
           <button
             type="button"
             onClick={() =>
               setShowEmployment((current) => !current)
             }
-            className="flex w-full items-center justify-between p-3.5 text-left"
+            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
           >
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Employment
               </p>
 
-              <h2 className="mt-0.5 font-display text-xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 Job Information
               </h2>
             </div>
@@ -1359,20 +1359,20 @@ function StaffPage() {
           )}
         </section>
 
-        <section className="mt-4 border border-border bg-card">
+        <section className="mt-2 border border-border bg-card">
           <button
             type="button"
             onClick={() =>
               setShowSalary((current) => !current)
             }
-            className="flex w-full items-center justify-between p-3.5 text-left"
+            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
           >
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Payroll
               </p>
 
-              <h2 className="mt-0.5 font-display text-xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 Salary History
               </h2>
             </div>
@@ -1458,20 +1458,20 @@ function StaffPage() {
           )}
         </section>
 
-        <section className="mt-4 border border-border bg-card">
+        <section className="mt-2 border border-border bg-card">
           <button
             type="button"
             onClick={() =>
               setShowAttendance((current) => !current)
             }
-            className="flex w-full items-center justify-between p-3.5 text-left"
+            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
           >
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Timekeeping
               </p>
 
-              <h2 className="mt-0.5 font-display text-xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 Attendance History
               </h2>
             </div>
@@ -1546,20 +1546,20 @@ function StaffPage() {
           )}
         </section>
 
-        <section className="mt-4 border border-border bg-card">
+        <section className="mt-2 border border-border bg-card">
           <button
             type="button"
             onClick={() =>
               setShowQr((current) => !current)
             }
-            className="flex w-full items-center justify-between p-3.5 text-left"
+            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
           >
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
                 Identification
               </p>
 
-              <h2 className="mt-0.5 font-display text-xl font-bold uppercase">
+              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
                 Staff QR Code
               </h2>
             </div>
@@ -1601,7 +1601,7 @@ function StaffPage() {
           )}
         </section>
 
-        <p className="py-8 text-center text-xs text-muted-foreground">
+        <p className="py-4 text-center text-[10px] text-muted-foreground">
           © {new Date().getFullYear()} Super Plus Fitness & Spa — Staff
           Portal
         </p>
