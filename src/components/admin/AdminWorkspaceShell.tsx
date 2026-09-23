@@ -8,7 +8,7 @@ export const adminGroups:Group[] = [
  {name:'Overview',icon:LayoutDashboard,tools:[{label:'Dashboard',href:'/admin-workspace',icon:LayoutDashboard,keywords:'home revenue summary'}]},
  {name:'Staff requests',icon:ShieldCheck,tools:[
   {label:'Staff requests',href:'/admin-approvals',icon:ShieldCheck,keywords:'employee attendance account requests'},
-  {label:'Staff account requests',href:'/staff-admin#staff',icon:Users,adminOnly:true,keywords:'employee authorisation'},
+  {label:'Staff account requests',href:'/staff-account-requests',icon:Users,adminOnly:true,keywords:'employee authorisation approve reject'},
   {label:'Missed-scan requests',href:'/staff-missed-scans',icon:CalendarDays,adminOnly:true,keywords:'staff missed scan'},
  ]},
  {name:'Finance',icon:Wallet,tools:[
