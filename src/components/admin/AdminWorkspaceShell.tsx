@@ -28,7 +28,7 @@ export const adminGroups:Group[] = [
  {name:'Team & payroll',icon:Users,tools:[
   {label:'Staff directory',href:'/management-staff',icon:Users,keywords:'employees'},
   {label:'Manage staff profiles',href:'/staff-admin#staff',icon:ShieldCheck,keywords:'roles salaries'},
-  {label:'Staff attendance report',href:'/staff-admin#attendance',icon:CalendarDays,keywords:'daily'},
+  {label:'Staff attendance report',href:'/management-staff',icon:CalendarDays,keywords:'daily attendance staff clock in clock out'},
   {label:'Monthly attendance',href:'/management-staff-monthly',icon:CalendarDays,keywords:'hours shifts'},
   {label:'QR attendance review',href:'/management-staff-review',icon:ShieldCheck,keywords:'employee QR'},
   {label:'Payroll records',href:'/management-payroll',icon:Wallet,keywords:'wages'},

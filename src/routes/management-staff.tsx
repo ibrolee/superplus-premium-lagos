@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3, Loader2, RefreshCw, Search, ShieldCheck, Users, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { isLateArrival, lateRuleApplies, recordedWorkMinutes, workDuration, type StaffScan } from "@/lib/staff-attendance-rules";
 
 export const Route = createFileRoute("/management-staff")({ component: ManagementStaff });
@@ -87,10 +88,10 @@ function ManagementStaff() {
     return (filter === "all" || (item.status || "pending").toLowerCase() === filter) && (!query || [item.full_name, item.staff_id, item.department, item.position, item.role].some((value) => (value || "").toLowerCase().includes(query)));
   }).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 
-  return <main className="min-h-screen bg-[#f4f6f1] px-4 py-8 text-[#16221c] sm:px-8"><div className="mx-auto max-w-6xl">
+  return <AdminWorkspaceShell title="Staff attendance report" subtitle="Daily attendance for all staff, QR sessions, punctuality and recorded work hours." active="/management-staff"><div className="mx-auto max-w-6xl">
     <div className="flex flex-wrap items-start justify-between gap-4"><div><a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={16}/> Operations hub</a><p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Staff & attendance</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Team directory, punctuality and recorded QR work hours for a selected Lagos date. Staff administration and payroll stay in the original admin system.</p></div><button type="button" disabled={loading} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""}/> Refresh</button></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[#607264]"><Loader2 size={20} className="animate-spin"/> Verifying management access and loading staff records…</div>}
-    {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/staff" className="font-bold underline">Staff login</a></div>}
+    {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/portal/staff" className="font-bold underline">Staff login</a></div>}
     {!loading && authorized && <>
       <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[#d9e6d2] bg-[#eef6e9] p-5 text-sm leading-6 text-[#476149]"><ShieldCheck className="mt-0.5 shrink-0" size={20}/><p><strong>Attendance rules:</strong> The first QR clock-in after 7:30 AM Lagos time is highlighted red on Monday–Saturday. Njorteah Ifeanyi Anthony is exempt every day; Oroke Stephen chinedu is exempt on Thursday and Friday. Sundays are not assessed. Worked hours sum completed clock-in/clock-out sessions only; open sessions are excluded until clock-out. These are display indicators, not automatic payroll deductions. Missed scans require review.</p></div>
       <section aria-label="Staff overview" className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">{[
@@ -100,30 +101,35 @@ function ManagementStaff() {
         { label: "Late arrivals", value: lateCount, note: "After 7:30 AM · exemptions applied", icon: AlertTriangle, late: true },
         { label: "Open clock-ins", value: scans.filter((item) => !item.checked_out_at).length, note: "Unfinished sessions", icon: Clock3, late: false },
       ].map(({label,value,note,icon:Icon,late}) => <div key={label} className={`rounded-[22px] border bg-white p-5 ${late && value > 0 ? "border-red-300 bg-red-50" : "border-[#e1e8dd]"}`}><div className="flex justify-between gap-2"><span className={`text-xs font-bold ${late && value > 0 ? "text-red-800" : "text-[#627468]"}`}>{label}</span><Icon size={19} className={late && value > 0 ? "text-red-600" : "text-[#3b6b38]"}/></div><p className={`mt-5 text-4xl font-black tabular-nums ${late && value > 0 ? "text-red-700" : ""}`}>{value.toLocaleString("en-NG")}</p><p className="mt-2 text-xs text-[#748276]">{note}</p></div>)}</section>
-      <section className="mt-7 rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-7"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-black">Staff directory</h2><p className="mt-2 text-xs text-[#748276]">First clock-in, last recorded clock-out, punctuality and completed work hours.</p></div><label className="text-xs font-bold text-[#617567]"><span className="mb-1 block">Attendance date · Lagos</span><input type="date" value={date} max={todayInLagos()} onChange={(event) => { if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value) && event.target.value <= todayInLagos()) setDate(event.target.value); }} className="rounded-xl border border-[#d8e2d5] px-3 py-2.5 text-sm"/></label></div>
+      <section className="mt-5 rounded-[20px] border border-[#e1e8dd] bg-white p-3 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-black">Staff directory</h2><p className="mt-2 text-xs text-[#748276]">First clock-in, last recorded clock-out, punctuality and completed work hours.</p></div><label className="text-xs font-bold text-[#617567]"><span className="mb-1 block">Attendance date · Lagos</span><input type="date" value={date} max={todayInLagos()} onChange={(event) => { if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value) && event.target.value <= todayInLagos()) setDate(event.target.value); }} className="rounded-xl border border-[#d8e2d5] px-3 py-2.5 text-sm"/></label></div>
         <div className="mt-6 flex flex-wrap gap-3"><label className="relative min-w-0 flex-1"><Search size={17} className="pointer-events-none absolute left-3 top-3.5 text-[#79907b]"/><span className="sr-only">Search staff</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, staff ID, role or department" className="w-full rounded-xl border border-[#d8e2d5] bg-[#f8faf6] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#63915f]"/></label><label><span className="sr-only">Filter employment status</span><select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)} className="rounded-xl border border-[#d8e2d5] bg-white px-3 py-3 text-sm">{(["all", "approved", "pending", "suspended", "inactive"] as const).map((value) => <option key={value} value={value}>{value === "all" ? "All statuses" : value.charAt(0).toUpperCase() + value.slice(1)}</option>)}</select></label></div>
-        <div className="mt-5 divide-y divide-[#e7ede4]">{visible.map((member) => {
-          const records = byStaff.get(member.id) || [];
-          const first = records[0];
-          const lastCompleted = [...records].reverse().find((item) => item.checked_out_at);
-          const worked = recordedWorkMinutes(records);
-          const isLate = isLateArrival(member.full_name, date, first?.checked_in_at || null);
-          const assessed = lateRuleApplies(member.full_name, date);
-          return <div key={member.id} className={`flex flex-wrap items-center gap-4 py-5 ${isLate ? "-mx-2 border-l-4 border-red-500 bg-red-50 px-3 sm:-mx-3 sm:px-4" : ""}`}>
-            <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-black ${isLate ? "bg-red-100 text-red-700" : "bg-[#eef6e8] text-[#386f40]"}`}>{(member.full_name || "?").slice(0, 1).toUpperCase()}</span>
-            <div className="min-w-0 flex-1"><p className="font-bold">{member.full_name || "Unnamed staff"} <span className="ml-2 rounded-full bg-[#edf3e9] px-2 py-1 align-middle text-[10px] font-bold capitalize text-[#426548]">{member.status || "Unknown status"}</span></p>
-              <p className="mt-1 text-xs text-[#718172]">{[member.staff_id, member.position || member.role, member.department].filter(Boolean).join(" · ") || "Details unavailable"}</p>
-              <p className={`mt-2 text-sm font-semibold ${isLate ? "text-red-700" : "text-[#496350]"}`}>{records.length ? `${records.length} session${records.length === 1 ? "" : "s"} · First in ${clock(first!.checked_in_at)} · Last out ${lastCompleted ? clock(lastCompleted.checked_out_at) : "not recorded"}` : "No QR clock-in recorded for this date"}</p>
-              <p className="mt-1 text-sm font-bold text-[#264d30]">Worked hours: {worked.completed ? workDuration(worked.minutes) : "Not yet recorded"}<span className="font-normal text-[#6a796d]"> {worked.open ? `· ${worked.open} open session${worked.open === 1 ? "" : "s"} excluded` : "· completed QR sessions"}{worked.invalid ? ` · ${worked.invalid} invalid session${worked.invalid === 1 ? "" : "s"} excluded` : ""}</span></p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {records.length > 0 && <span className={`rounded-full px-3 py-2 text-xs font-black ${isLate ? "border border-red-300 bg-red-100 text-red-800" : assessed ? "bg-[#eaf6e7] text-[#316b3b]" : "bg-[#f1f3ef] text-[#607264]"}`}>{isLate ? "LATE · after 7:30 AM" : assessed ? "On time" : "Late rule exempt"}</span>}
-              <span className={`rounded-full px-3 py-2 text-xs font-bold ${records.length ? "bg-[#eaf6e7] text-[#316b3b]" : "bg-[#f1f3ef] text-[#607264]"}`}>{records.length ? (worked.open ? "Open session" : "Scanned") : "No scan record"}</span>
-            </div>
-          </div>;
-        })}{visible.length === 0 && <p className="py-10 text-center text-sm text-[#748276]">No staff match this search and status filter.</p>}</div>
+        <div className="mt-4 overflow-hidden rounded-xl border border-[#e1e8dd]">
+          <div className="hidden grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px] gap-2 bg-[#f4f7f1] px-3 py-2 text-[10px] font-black uppercase tracking-wide text-[#607264] md:grid">
+            <span>Staff</span><span>Status</span><span>First in</span><span>Last out</span><span>Worked</span><span>Attendance</span>
+          </div>
+          <div className="divide-y divide-[#e7ede4]">{visible.map((member) => {
+            const records = byStaff.get(member.id) || [];
+            const first = records[0];
+            const lastCompleted = [...records].reverse().find((item) => item.checked_out_at);
+            const worked = recordedWorkMinutes(records);
+            const isLate = isLateArrival(member.full_name, date, first?.checked_in_at || null);
+            const assessed = lateRuleApplies(member.full_name, date);
+            const attendance = !records.length ? "No scan" : isLate ? "Late" : assessed ? "On time" : "Exempt";
+            return <div key={member.id} className={`grid grid-cols-[minmax(0,1.6fr)_minmax(0,.9fr)] gap-x-3 gap-y-2 px-3 py-3 text-xs md:grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px] md:items-center md:gap-2 ${isLate ? "border-l-4 border-red-500 bg-red-50" : "bg-white"}`}>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black text-[#203426]">{member.full_name || "Unnamed staff"}</p>
+                <p className="mt-0.5 truncate text-[10px] text-[#718172]">{[member.position || member.role, member.department].filter(Boolean).join(" · ") || "Staff"}</p>
+              </div>
+              <div className="text-right md:text-left"><span className="rounded-full bg-[#edf3e9] px-2 py-1 text-[10px] font-bold capitalize text-[#426548]">{member.status || "Unknown"}</span></div>
+              <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">First in</span><span className={`font-semibold ${isLate ? "text-red-700" : "text-[#3f5946]"}`}>{records.length ? clock(first!.checked_in_at) : "—"}</span></div>
+              <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Last out</span><span className="font-semibold text-[#3f5946]">{lastCompleted ? clock(lastCompleted.checked_out_at) : "—"}</span></div>
+              <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Worked</span><span className="font-bold text-[#264d30]">{worked.completed ? workDuration(worked.minutes) : worked.open ? "Open" : "—"}</span></div>
+              <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Attendance</span><span className={`font-black ${isLate ? "text-red-700" : records.length ? "text-[#316b3b]" : "text-[#718172]"}`}>{attendance}</span>{worked.open ? <span className="ml-1 text-[9px] text-[#718172]">· open</span> : null}</div>
+            </div>;
+          })}{visible.length === 0 && <p className="py-8 text-center text-sm text-[#748276]">No staff match this search and status filter.</p>}</div>
+        </div>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ede4] pt-5"><p className="text-xs text-[#748276]">Showing {visible.length} of {staff.length} staff profiles · {scans.length} recorded sessions on {date}. Work hours update after clock-out and refresh.</p><div className="flex flex-wrap gap-2"><a href="/staff-admin" className="inline-flex items-center gap-2 rounded-xl bg-[#193d2b] px-4 py-3 text-xs font-bold text-white">Staff admin & payroll <ArrowRight size={15}/></a><a href="/staff-attendance" className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-xs font-bold text-[#356942]">Staff QR scanner <ArrowRight size={15}/></a></div></div>
       </section>
     </>}
-  </div></main>;
+  </div></AdminWorkspaceShell>;
 }
