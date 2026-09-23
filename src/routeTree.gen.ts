@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminAnnouncementsRouteImport } from './routes/admin-announcements'
 import { Route as AdminApprovalsRouteImport } from './routes/admin-approvals'
 import { Route as AdminMembersRouteImport } from './routes/admin-members'
 import { Route as AdminWorkspaceRouteImport } from './routes/admin-workspace'
@@ -51,6 +52,7 @@ import { Route as ReceptionRegisterRouteImport } from './routes/reception-regist
 import { Route as ReceptionWorkspaceRouteImport } from './routes/reception-workspace'
 import { Route as SpaRecoveryRouteImport } from './routes/spa-recovery'
 import { Route as StaffRouteImport } from './routes/staff'
+import { Route as StaffAccountRequestsRouteImport } from './routes/staff-account-requests'
 import { Route as StaffAdminRouteImport } from './routes/staff-admin'
 import { Route as StaffAttendanceRouteImport } from './routes/staff-attendance'
 import { Route as StaffAttendanceQrRouteImport } from './routes/staff-attendance-qr'
@@ -77,6 +79,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAnnouncementsRoute = AdminAnnouncementsRouteImport.update({
+  id: '/admin-announcements',
+  path: '/admin-announcements',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
@@ -282,6 +289,11 @@ const StaffRoute = StaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffAccountRequestsRoute = StaffAccountRequestsRouteImport.update({
+  id: '/staff-account-requests',
+  path: '/staff-account-requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StaffAdminRoute = StaffAdminRouteImport.update({
   id: '/staff-admin',
   path: '/staff-admin',
@@ -371,6 +383,7 @@ const ReceptionMemberMemberIdRoute = ReceptionMemberMemberIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
@@ -411,6 +424,7 @@ export interface FileRoutesByFullPath {
   '/reception-workspace': typeof ReceptionWorkspaceRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
+  '/staff-account-requests': typeof StaffAccountRequestsRoute
   '/staff-admin': typeof StaffAdminRoute
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
@@ -432,6 +446,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
@@ -471,6 +486,7 @@ export interface FileRoutesByTo {
   '/reception-workspace': typeof ReceptionWorkspaceRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
+  '/staff-account-requests': typeof StaffAccountRequestsRoute
   '/staff-admin': typeof StaffAdminRoute
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
@@ -493,6 +509,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
@@ -533,6 +550,7 @@ export interface FileRoutesById {
   '/reception-workspace': typeof ReceptionWorkspaceRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
+  '/staff-account-requests': typeof StaffAccountRequestsRoute
   '/staff-admin': typeof StaffAdminRoute
   '/staff-attendance': typeof StaffAttendanceRoute
   '/staff-attendance-qr': typeof StaffAttendanceQrRoute
@@ -556,6 +574,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-members'
     | '/admin-workspace'
@@ -596,6 +615,7 @@ export interface FileRouteTypes {
     | '/reception-workspace'
     | '/spa-recovery'
     | '/staff'
+    | '/staff-account-requests'
     | '/staff-admin'
     | '/staff-attendance'
     | '/staff-attendance-qr'
@@ -617,6 +637,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-members'
     | '/admin-workspace'
@@ -656,6 +677,7 @@ export interface FileRouteTypes {
     | '/reception-workspace'
     | '/spa-recovery'
     | '/staff'
+    | '/staff-account-requests'
     | '/staff-admin'
     | '/staff-attendance'
     | '/staff-attendance-qr'
@@ -677,6 +699,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-members'
     | '/admin-workspace'
@@ -717,6 +740,7 @@ export interface FileRouteTypes {
     | '/reception-workspace'
     | '/spa-recovery'
     | '/staff'
+    | '/staff-account-requests'
     | '/staff-admin'
     | '/staff-attendance'
     | '/staff-attendance-qr'
@@ -739,6 +763,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminMembersRoute: typeof AdminMembersRoute
   AdminWorkspaceRoute: typeof AdminWorkspaceRoute
@@ -779,6 +804,7 @@ export interface RootRouteChildren {
   ReceptionWorkspaceRoute: typeof ReceptionWorkspaceRoute
   SpaRecoveryRoute: typeof SpaRecoveryRoute
   StaffRoute: typeof StaffRoute
+  StaffAccountRequestsRoute: typeof StaffAccountRequestsRoute
   StaffAdminRoute: typeof StaffAdminRoute
   StaffAttendanceRoute: typeof StaffAttendanceRoute
   StaffAttendanceQrRoute: typeof StaffAttendanceQrRoute
@@ -806,6 +832,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-announcements': {
+      id: '/admin-announcements'
+      path: '/admin-announcements'
+      fullPath: '/admin-announcements'
+      preLoaderRoute: typeof AdminAnnouncementsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-approvals': {
@@ -1088,6 +1121,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff-account-requests': {
+      id: '/staff-account-requests'
+      path: '/staff-account-requests'
+      fullPath: '/staff-account-requests'
+      preLoaderRoute: typeof StaffAccountRequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/staff-admin': {
       id: '/staff-admin'
       path: '/staff-admin'
@@ -1242,6 +1282,7 @@ const PortalRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminMembersRoute: AdminMembersRoute,
   AdminWorkspaceRoute: AdminWorkspaceRoute,
@@ -1282,6 +1323,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReceptionWorkspaceRoute: ReceptionWorkspaceRoute,
   SpaRecoveryRoute: SpaRecoveryRoute,
   StaffRoute: StaffRoute,
+  StaffAccountRequestsRoute: StaffAccountRequestsRoute,
   StaffAdminRoute: StaffAdminRoute,
   StaffAttendanceRoute: StaffAttendanceRoute,
   StaffAttendanceQrRoute: StaffAttendanceQrRoute,
@@ -1297,3 +1339,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
