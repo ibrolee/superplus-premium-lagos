@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, Clock3, Loader2, RefreshCw, Search, ShieldCheck, Users, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { isLateArrival, lateRuleApplies, recordedWorkMinutes, workDuration, type StaffScan } from "@/lib/staff-attendance-rules";
 
 export const Route = createFileRoute("/management-staff")({ component: ManagementStaff });
@@ -87,7 +88,7 @@ function ManagementStaff() {
     return (filter === "all" || (item.status || "pending").toLowerCase() === filter) && (!query || [item.full_name, item.staff_id, item.department, item.position, item.role].some((value) => (value || "").toLowerCase().includes(query)));
   }).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 
-  return <main className="min-h-screen bg-[#f4f6f1] px-3 py-5 text-[#16221c] sm:px-8"><div className="mx-auto max-w-6xl">
+  return <AdminWorkspaceShell title="Staff attendance report" subtitle="Daily attendance for all staff, QR sessions, punctuality and recorded work hours." active="/management-staff"><div className="mx-auto max-w-6xl">
     <div className="flex flex-wrap items-start justify-between gap-4"><div><a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={16}/> Operations hub</a><p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Staff & attendance</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Team directory, punctuality and recorded QR work hours for a selected Lagos date. Staff administration and payroll stay in the original admin system.</p></div><button type="button" disabled={loading} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""}/> Refresh</button></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[#607264]"><Loader2 size={20} className="animate-spin"/> Verifying management access and loading staff records…</div>}
     {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/portal/staff" className="font-bold underline">Staff login</a></div>}
@@ -130,5 +131,5 @@ function ManagementStaff() {
         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ede4] pt-5"><p className="text-xs text-[#748276]">Showing {visible.length} of {staff.length} staff profiles · {scans.length} recorded sessions on {date}. Work hours update after clock-out and refresh.</p><div className="flex flex-wrap gap-2"><a href="/staff-admin" className="inline-flex items-center gap-2 rounded-xl bg-[#193d2b] px-4 py-3 text-xs font-bold text-white">Staff admin & payroll <ArrowRight size={15}/></a><a href="/staff-attendance" className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-xs font-bold text-[#356942]">Staff QR scanner <ArrowRight size={15}/></a></div></div>
       </section>
     </>}
-  </div></main>;
+  </div></AdminWorkspaceShell>;
 }
