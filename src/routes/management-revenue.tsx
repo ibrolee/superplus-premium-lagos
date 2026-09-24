@@ -16,8 +16,14 @@ import {
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-revenue")({ component: ManagementRevenue });
+type RevenueMember = {
+  id: string;
+  full_name: string | null;
+};
 type Payment = {
   id: string;
+  member_id: string | null;
+  member?: RevenueMember | null;
   amount: number | null;
   currency: string | null;
   status: string | null;
@@ -111,6 +117,16 @@ function planOf(payment: Payment) {
   const plan = payment.metadata?.["plan_name"];
   return typeof plan === "string" && plan.trim() ? plan : "Membership payment";
 }
+function customerNameOf(payment: Payment) {
+  const linkedName = payment.member?.full_name;
+  if (typeof linkedName === "string" && linkedName.trim()) return linkedName.trim();
+  const meta = payment.metadata || {};
+  for (const key of ["customer_name", "customer_full_name", "member_name", "full_name"]) {
+    const value = meta[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "Customer name unavailable";
+}
 function addDays(day: string, amount: number) {
   const date = new Date(`${day}T12:00:00Z`);
   date.setUTCDate(date.getUTCDate() + amount);
@@ -146,19 +162,36 @@ async function loadCanonicalPayments(): Promise<{ baseline: string; payments: Pa
     if (batch.length < PAGE_SIZE) break;
   }
   const cutoff = Date.parse(baseline);
+  const eligible = all.filter((payment) => {
+    const date = paymentDate(payment);
+    return (
+      payment.status?.toLowerCase() === "success" &&
+      payment.metadata?.["revenue_excluded"] !== true &&
+      payment.metadata?.["record_type"] !== "historical_import" &&
+      !!date &&
+      Date.parse(date) >= cutoff &&
+      Number.isFinite(Number(payment.amount))
+    );
+  });
+  const memberIds = Array.from(
+    new Set(eligible.map((payment) => payment.member_id).filter((id): id is string => !!id)),
+  );
+  const members: RevenueMember[] = [];
+  for (let index = 0; index < memberIds.length; index += 100) {
+    const { data, error } = await supabase
+      .from("members")
+      .select("id, full_name")
+      .in("id", memberIds.slice(index, index + 100));
+    if (error) throw error;
+    members.push(...((data || []) as RevenueMember[]));
+  }
+  const memberMap = new Map(members.map((member) => [member.id, member]));
   return {
     baseline,
-    payments: all.filter((payment) => {
-      const date = paymentDate(payment);
-      return (
-        payment.status?.toLowerCase() === "success" &&
-        payment.metadata?.["revenue_excluded"] !== true &&
-        payment.metadata?.["record_type"] !== "historical_import" &&
-        !!date &&
-        Date.parse(date) >= cutoff &&
-        Number.isFinite(Number(payment.amount))
-      );
-    }),
+    payments: eligible.map((payment) => ({
+      ...payment,
+      member: payment.member_id ? memberMap.get(payment.member_id) || null : null,
+    })),
   };
 }
 function ManagementRevenue() {
@@ -287,6 +320,7 @@ function ManagementRevenue() {
           !needle ||
           [
             payment.paystack_reference,
+            customerNameOf(payment),
             planOf(payment),
             payment.payment_method,
             payment.provider,
@@ -613,14 +647,14 @@ function ManagementRevenue() {
                   </p>
                 </div>
                 <label className="min-w-0">
-                  <span className="sr-only">Search reference, plan, method or provider</span>
+                  <span className="sr-only">Search customer, reference, plan, method or provider</span>
                   <input
                     value={search}
                     onChange={(event) => {
                       setSearch(event.target.value);
                       setPage(1);
                     }}
-                    placeholder="Search reference, plan or method"
+                    placeholder="Search customer, reference, plan or method"
                     className="w-full rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-4 py-3 text-sm outline-none focus:border-[#63915f] sm:w-72"
                   />
                 </label>
@@ -632,7 +666,10 @@ function ManagementRevenue() {
                       <CreditCard size={18} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold">{planOf(payment)}</p>
+                      <p className="truncate text-sm font-bold">{customerNameOf(payment)}</p>
+                      <p className="mt-1 truncate text-xs font-semibold text-[#53685a]">
+                        {planOf(payment)}
+                      </p>
                       <p className="mt-1 text-xs text-[#718172]">
                         {sourceLabels[sourceOf(payment)]} · {formatDate(paymentDate(payment))}
                       </p>
