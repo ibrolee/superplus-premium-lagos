@@ -3,13 +3,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
+  Camera,
   CheckCircle2,
-  Clock3,
   Loader2,
   LogIn,
   LogOut,
   QrCode,
-  UserRound,
+  SwitchCamera,
+  Volume2,
   XCircle,
 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
@@ -35,7 +36,10 @@ type ScanResult = {
   memberName: string;
   planName: string;
   message: string;
+  timeLabel: string;
 };
+
+type CameraFacing = "user" | "environment";
 
 function getLocalDateString() {
   const now = new Date();
@@ -54,7 +58,6 @@ function getDateOnly(value: unknown) {
 
   if (!stringValue) return null;
 
-  // PostgreSQL date/timestamp values begin with YYYY-MM-DD.
   return stringValue.slice(0, 10);
 }
 
@@ -70,8 +73,6 @@ function getMembershipPlanName(membership: any) {
 function isMembershipValidToday(membership: any) {
   if (!membership) return false;
 
-  // Paused, cancelled, expired and unpaid memberships
-  // must never grant access, even if their dates are valid.
   if (
     String(membership.status || "").toLowerCase() !== "active" ||
     String(membership.payment_status || "").toLowerCase() !== "paid"
@@ -103,9 +104,18 @@ function isMembershipValidToday(membership: any) {
   return startDate <= today && today <= endDate;
 }
 
+function formatScanTime() {
+  return new Intl.DateTimeFormat("en-NG", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date());
+}
+
 function ReceptionCheckInPage() {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const processingRef = useRef(false);
+  const resetTimerRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [staffName, setStaffName] = useState("");
@@ -117,6 +127,8 @@ function ReceptionCheckInPage() {
 
   const [scannerStarted, setScannerStarted] = useState(false);
   const [startingScanner, setStartingScanner] = useState(false);
+  const [processingScan, setProcessingScan] = useState(false);
+  const [cameraFacing, setCameraFacing] = useState<CameraFacing>("environment");
 
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState("");
@@ -212,7 +224,114 @@ function ReceptionCheckInPage() {
     setLoggingIn(false);
   }
 
+  async function prepareAudio() {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext();
+      }
+
+      if (audioContextRef.current.state === "suspended") {
+        await audioContextRef.current.resume();
+      }
+    } catch {
+      // Scanning remains usable even when the browser blocks sound.
+    }
+  }
+
+  function playTone(
+    startFrequency: number,
+    endFrequency: number,
+    duration = 0.16,
+  ) {
+    const context = audioContextRef.current;
+
+    if (!context || context.state !== "running") return;
+
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const startAt = context.currentTime;
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(startFrequency, startAt);
+    oscillator.frequency.exponentialRampToValueAtTime(
+      Math.max(1, endFrequency),
+      startAt + duration,
+    );
+
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(0.18, startAt + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+
+    oscillator.start(startAt);
+    oscillator.stop(startAt + duration + 0.02);
+  }
+
+  function playFeedbackTone(type: ScanResult["type"]) {
+    void prepareAudio().then(() => {
+      if (type === "denied") {
+        playTone(230, 150, 0.24);
+        window.setTimeout(() => playTone(180, 130, 0.2), 120);
+      } else if (type === "out") {
+        playTone(760, 540, 0.14);
+        window.setTimeout(() => playTone(620, 440, 0.12), 100);
+      } else {
+        playTone(700, 980, 0.12);
+        window.setTimeout(() => playTone(900, 1250, 0.14), 95);
+      }
+    });
+
+    try {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(type === "denied" ? [120, 70, 120] : 80);
+      }
+    } catch {
+      // Vibration is optional.
+    }
+  }
+
+  function showScanResult(nextResult: Omit<ScanResult, "timeLabel">) {
+    const completeResult = {
+      ...nextResult,
+      timeLabel: formatScanTime(),
+    };
+
+    setResult(completeResult);
+    setProcessingScan(false);
+    playFeedbackTone(completeResult.type);
+  }
+
+  function clearResetTimer() {
+    if (resetTimerRef.current !== null) {
+      window.clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = null;
+    }
+  }
+
+  function scheduleScannerResume() {
+    clearResetTimer();
+
+    resetTimerRef.current = window.setTimeout(() => {
+      setResult(null);
+      setError("");
+      setProcessingScan(false);
+      processingRef.current = false;
+
+      try {
+        scannerRef.current?.resume();
+      } catch {
+        // Scanner may have been stopped while feedback was visible.
+      }
+
+      resetTimerRef.current = null;
+    }, 3400);
+  }
+
   async function stopScanner() {
+    clearResetTimer();
+
     if (scannerRef.current) {
       try {
         await scannerRef.current.stop();
@@ -230,6 +349,7 @@ function ReceptionCheckInPage() {
     }
 
     processingRef.current = false;
+    setProcessingScan(false);
     setScannerStarted(false);
     setStartingScanner(false);
   }
@@ -247,10 +367,17 @@ function ReceptionCheckInPage() {
     if (processingRef.current) return;
 
     processingRef.current = true;
+    setProcessingScan(true);
     setError("");
     setResult(null);
 
     try {
+      try {
+        scannerRef.current?.pause(true);
+      } catch {
+        // If pause is unsupported, processingRef still prevents duplicate reads.
+      }
+
       const qrToken = decodedText.trim();
 
       const { data: member, error: memberError } = await supabase
@@ -264,17 +391,15 @@ function ReceptionCheckInPage() {
       }
 
       if (!member) {
-        throw new Error(
-          "This QR code is not registered to a Super Plus Fitness member.",
-        );
+        showScanResult({
+          type: "denied",
+          memberName: "QR Not Recognized",
+          planName: "No matching member",
+          message: "Please see reception for assistance.",
+        });
+        return;
       }
 
-      /*
-       * Get the member's memberships.
-       *
-       * We intentionally do NOT rely on the status field here.
-       * Access is determined by the actual membership dates.
-       */
       const { data: memberships, error: membershipError } =
         await supabase
           .from("memberships")
@@ -296,12 +421,11 @@ function ReceptionCheckInPage() {
       );
 
       if (!validMembership) {
-        setResult({
+        showScanResult({
           type: "denied",
           memberName: member.full_name || "Member",
           planName,
-          message:
-            "Membership is inactive or expired. Access should not be granted.",
+          message: "Membership is inactive, unpaid or expired.",
         });
 
         return;
@@ -333,11 +457,11 @@ function ReceptionCheckInPage() {
           throw new Error(checkoutError.message);
         }
 
-        setResult({
+        showScanResult({
           type: "out",
           memberName: member.full_name || "Member",
           planName,
-          message: "Check-out recorded successfully.",
+          message: "Check-out recorded. Goodbye!",
         });
       } else {
         const {
@@ -362,35 +486,59 @@ function ReceptionCheckInPage() {
           throw new Error(checkinError.message);
         }
 
-        setResult({
+        showScanResult({
           type: "in",
           memberName: member.full_name || "Member",
           planName,
-          message: "Check-in recorded successfully.",
+          message: "Access granted. Check-in recorded.",
         });
       }
     } catch (scanError) {
       console.error("QR scan error:", scanError);
 
-      setError(
-        scanError instanceof Error
-          ? scanError.message
-          : "Unable to process this QR code.",
-      );
+      showScanResult({
+        type: "denied",
+        memberName: "Scan Failed",
+        planName: "Access not recorded",
+        message:
+          scanError instanceof Error
+            ? scanError.message
+            : "Unable to process this QR code.",
+      });
     } finally {
-      setTimeout(() => {
-        processingRef.current = false;
-      }, 2000);
+      scheduleScannerResume();
     }
   }
 
   function startScanner() {
     if (startingScanner || scannerStarted) return;
 
+    void prepareAudio();
     setError("");
     setResult(null);
     setStartingScanner(true);
     setScannerStarted(true);
+  }
+
+  async function switchCamera(nextFacing: CameraFacing) {
+    if (nextFacing === cameraFacing || startingScanner) return;
+
+    const shouldRestart = scannerStarted;
+
+    if (shouldRestart) {
+      await stopScanner();
+    }
+
+    setCameraFacing(nextFacing);
+    setResult(null);
+    setError("");
+
+    if (shouldRestart) {
+      window.setTimeout(() => {
+        setStartingScanner(true);
+        setScannerStarted(true);
+      }, 0);
+    }
   }
 
   useEffect(() => {
@@ -411,7 +559,7 @@ function ReceptionCheckInPage() {
 
         if (!scannerElement) {
           throw new Error(
-            "Scanner area could not be loaded. Please refresh the page and try again.",
+            "Scanner area could not be loaded. Please refresh and try again.",
           );
         }
 
@@ -420,17 +568,28 @@ function ReceptionCheckInPage() {
         scannerRef.current = scanner;
 
         await scanner.start(
-          { facingMode: "environment" },
+          { facingMode: cameraFacing },
           {
-            fps: 10,
-            qrbox: {
-              width: 250,
-              height: 250,
+            fps: 12,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const shortestSide = Math.min(
+                viewfinderWidth,
+                viewfinderHeight,
+              );
+              const boxSize = Math.max(
+                180,
+                Math.min(290, Math.floor(shortestSide * 0.72)),
+              );
+
+              return {
+                width: boxSize,
+                height: boxSize,
+              };
             },
             aspectRatio: 1,
           },
           (decodedText) => {
-            processQrCode(decodedText);
+            void processQrCode(decodedText);
           },
           () => {
             // Normal QR scanning misses are ignored.
@@ -487,10 +646,12 @@ function ReceptionCheckInPage() {
     return () => {
       cancelled = true;
     };
-  }, [scannerStarted]);
+  }, [scannerStarted, cameraFacing]);
 
   useEffect(() => {
     return () => {
+      clearResetTimer();
+
       if (scannerRef.current) {
         scannerRef.current
           .stop()
@@ -501,6 +662,8 @@ function ReceptionCheckInPage() {
             } catch {}
           });
       }
+
+      void audioContextRef.current?.close().catch(() => {});
     };
   }, []);
 
@@ -610,237 +773,258 @@ function ReceptionCheckInPage() {
     );
   }
 
+  const isDenied = result?.type === "denied";
+  const isCheckIn = result?.type === "in";
+
   return (
-    <main className="reception-responsive min-h-[75vh] bg-muted py-10 sm:py-16">
-      <div className="section-shell">
-        <div className="mx-auto max-w-3xl">
-          <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="mb-3 text-xs font-extrabold uppercase tracking-[0.18em] text-primary">
-                Super Plus Fitness
+    <main className="reception-responsive min-h-[100svh] overflow-x-hidden bg-[#f3f6f1] px-3 py-3 sm:px-6 sm:py-6">
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-3">
+        <header className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm">
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-black uppercase tracking-[0.18em] text-primary">
+              Super Plus Fitness
+            </p>
+            <h1 className="truncate font-display text-xl font-black uppercase leading-none sm:text-2xl">
+              Member Scanner
+            </h1>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to="/reception-workspace">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Reception dashboard"
+                title="Reception dashboard"
+              >
+                <BarChart3 className="size-4" />
+              </Button>
+            </Link>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+            >
+              Log out
+            </Button>
+          </div>
+        </header>
+
+        <section className="overflow-hidden rounded-2xl border border-border bg-background shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-3">
+            <div className="min-w-0">
+              <p className="text-xs font-black uppercase tracking-[0.12em]">
+                Camera
               </p>
-
-              <h1 className="display-title text-4xl sm:text-6xl">
-                Reception Scanner
-              </h1>
-
-              <p className="mt-3 text-sm text-muted-foreground">
-                Logged in as <strong>{staffName}</strong>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {cameraFacing === "environment" ? "Back camera" : "Front camera"}
               </p>
             </div>
 
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-              <Link
-                to="/reception-workspace"
-                className="w-full sm:w-auto"
+            <div className="grid grid-cols-2 rounded-xl bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => void switchCamera("user")}
+                disabled={startingScanner}
+                className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition disabled:opacity-50 ${
+                  cameraFacing === "user"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
               >
-                <Button
-                  variant="outline"
-                  className="w-full"
-                >
-                  <BarChart3 />
-                  Reception 2.0
-                </Button>
-              </Link>
+                <Camera className="size-3.5" />
+                Front
+              </button>
 
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="w-full sm:w-auto"
+              <button
+                type="button"
+                onClick={() => void switchCamera("environment")}
+                disabled={startingScanner}
+                className={`flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-bold transition disabled:opacity-50 ${
+                  cameraFacing === "environment"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground"
+                }`}
               >
-                Log Out
-              </Button>
+                <SwitchCamera className="size-3.5" />
+                Back
+              </button>
             </div>
           </div>
 
-          <section className="border border-border bg-background p-5 shadow-sm sm:p-8">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex size-11 items-center justify-center bg-primary text-primary-foreground">
-                <QrCode className="size-6" />
-              </div>
+          <div className="relative h-[58svh] min-h-[360px] max-h-[610px] overflow-hidden bg-black">
+            {!scannerStarted && !error && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#101410] px-7 text-center text-white">
+                <div className="flex size-16 items-center justify-center rounded-2xl bg-white/10">
+                  <QrCode className="size-8" />
+                </div>
 
-              <div>
-                <h2 className="font-display text-2xl font-bold uppercase">
-                  Scan Member QR
+                <h2 className="mt-5 font-display text-3xl font-black uppercase">
+                  Ready to Scan
                 </h2>
 
-                <p className="text-xs text-muted-foreground">
-                  Point the camera at the member's QR code.
+                <p className="mt-2 max-w-xs text-sm leading-5 text-white/65">
+                  Start the camera once, then members can scan their cards themselves.
                 </p>
-              </div>
-            </div>
 
-            {!scannerStarted && (
-              <Button
-                type="button"
-                size="lg"
-                className="w-full"
-                onClick={startScanner}
-                disabled={startingScanner}
-              >
-                {startingScanner ? (
-                  <>
-                    <Loader2 className="animate-spin" />
-                    Starting Camera...
-                  </>
-                ) : (
-                  <>
-                    Start Camera Scanner
-                    <QrCode />
-                  </>
-                )}
-              </Button>
-            )}
+                <Button
+                  type="button"
+                  size="lg"
+                  className="mt-6 min-h-12 w-full max-w-xs"
+                  onClick={startScanner}
+                  disabled={startingScanner}
+                >
+                  {startingScanner ? (
+                    <>
+                      <Loader2 className="animate-spin" />
+                      Starting Camera...
+                    </>
+                  ) : (
+                    <>
+                      <Camera />
+                      Start Scanner
+                    </>
+                  )}
+                </Button>
 
-            {scannerStarted && (
-              <>
-                <div
-                  id="reception-qr-reader"
-                  className="w-full min-w-0 max-w-full overflow-hidden border border-border bg-white"
-                />
-
-                {startingScanner && (
-                  <div className="flex items-center justify-center gap-3 py-8 text-sm font-bold uppercase">
-                    <Loader2 className="size-5 animate-spin" />
-                    Starting Camera...
-                  </div>
-                )}
-
-                {!startingScanner && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="mt-4 w-full"
-                    onClick={stopScanner}
-                  >
-                    Stop Camera
-                  </Button>
-                )}
-
-                {!startingScanner && (
-                  <p className="mt-4 text-center text-xs font-bold uppercase text-muted-foreground">
-                    Camera scanner ready — point it at a member QR code
-                  </p>
-                )}
-              </>
-            )}
-          </section>
-
-          {error && (
-            <section className="mt-6 border border-destructive/30 bg-destructive/10 p-6">
-              <div className="flex items-start gap-4">
-                <XCircle className="mt-0.5 size-6 shrink-0 text-destructive" />
-
-                <div>
-                  <h2 className="font-bold uppercase text-destructive">
-                    Camera / Scan Problem
-                  </h2>
-
-                  <p className="mt-2 text-sm leading-6 text-destructive">
-                    {error}
-                  </p>
+                <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-white/55">
+                  <Volume2 className="size-4" />
+                  Sound feedback is on
                 </div>
               </div>
-            </section>
-          )}
+            )}
 
-          {result && (
-            <section
-              className={`mt-6 border p-7 shadow-sm ${
-                result.type === "denied"
-                  ? "border-destructive/30 bg-destructive/10"
-                  : result.type === "in"
-                    ? "border-green-600/30 bg-green-600/10"
-                    : "border-primary/30 bg-primary/10"
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className="flex size-12 shrink-0 items-center justify-center bg-background">
-                  {result.type === "denied" ? (
-                    <XCircle className="size-6 text-destructive" />
-                  ) : result.type === "in" ? (
-                    <LogIn className="size-6 text-green-700" />
+            <div
+              id="reception-qr-reader"
+              className="h-full w-full overflow-hidden bg-black [&_video]:h-full [&_video]:w-full [&_video]:object-cover"
+            />
+
+            {scannerStarted && !result && !error && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent px-4 pb-4 pt-12 text-center text-white">
+                {processingScan ? (
+                  <div className="mx-auto flex w-fit items-center gap-2 rounded-full bg-black/60 px-4 py-2 text-xs font-bold uppercase tracking-wide backdrop-blur">
+                    <Loader2 className="size-4 animate-spin" />
+                    Checking membership...
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm font-black uppercase tracking-wide">
+                      Hold QR inside the frame
+                    </p>
+                    <p className="mt-1 text-xs text-white/70">
+                      It scans automatically — no button needed
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {error && !result && (
+              <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#8f1d1d] px-6 text-center text-white">
+                <XCircle className="size-16" />
+                <h2 className="mt-4 font-display text-3xl font-black uppercase">
+                  Camera Problem
+                </h2>
+                <p className="mt-3 max-w-sm text-sm leading-6 text-white/85">
+                  {error}
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-6 min-h-11 w-full max-w-xs"
+                  onClick={startScanner}
+                >
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {result && (
+              <div
+                role="status"
+                aria-live="assertive"
+                className={`absolute inset-0 z-40 flex flex-col items-center justify-center px-5 py-5 text-center text-white ${
+                  isDenied
+                    ? "bg-[#a91f24]"
+                    : isCheckIn
+                      ? "bg-[#17823b]"
+                      : "bg-[#176c8a]"
+                }`}
+              >
+                <div className="flex size-20 items-center justify-center rounded-full bg-white/16">
+                  {isDenied ? (
+                    <XCircle className="size-12" />
+                  ) : isCheckIn ? (
+                    <LogIn className="size-11" />
                   ) : (
-                    <LogOut className="size-6 text-primary" />
+                    <LogOut className="size-11" />
                   )}
                 </div>
 
-                <div className="min-w-0">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.15em]">
-                    {result.type === "denied"
-                      ? "Access Denied"
-                      : result.type === "in"
-                        ? "Checked In"
-                        : "Checked Out"}
-                  </p>
+                <p className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-white/85">
+                  {isDenied
+                    ? "Access Denied"
+                    : isCheckIn
+                      ? "Access Granted"
+                      : "Checked Out"}
+                </p>
 
-                  <h2 className="mt-2 break-words font-display text-3xl font-bold uppercase">
-                    {result.memberName}
-                  </h2>
+                <h2 className="mt-2 max-w-full break-words font-display text-[clamp(1.9rem,8vw,3rem)] font-black uppercase leading-[0.95]">
+                  {result.memberName}
+                </h2>
 
-                  <p className="mt-2 text-sm font-bold">
+                <div className="mt-4 w-full max-w-sm rounded-2xl bg-black/15 px-4 py-3 backdrop-blur-sm">
+                  <p className="truncate text-sm font-black">
                     {result.planName}
                   </p>
-
-                  <div className="mt-4 flex items-center gap-2 text-sm">
-                    {result.type === "denied" ? (
-                      <XCircle className="size-4 text-destructive" />
-                    ) : (
-                      <CheckCircle2 className="size-4" />
-                    )}
-
+                  <p className="mt-1 text-sm leading-5 text-white/90">
                     {result.message}
-                  </div>
+                  </p>
                 </div>
+
+                <div className="mt-4 flex items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-xs font-black uppercase tracking-wide">
+                  {isDenied ? (
+                    <XCircle className="size-4" />
+                  ) : (
+                    <CheckCircle2 className="size-4" />
+                  )}
+                  {result.timeLabel}
+                </div>
+
+                <p className="mt-3 text-[11px] font-semibold text-white/65">
+                  Scanner will reset automatically
+                </p>
               </div>
-            </section>
-          )}
-
-          <section className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="border border-border bg-background p-5 text-center">
-              <LogIn className="mx-auto size-5 text-primary" />
-
-              <p className="mt-3 text-xs font-extrabold uppercase">
-                First Scan
-              </p>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Checks member in
-              </p>
-            </div>
-
-            <div className="border border-border bg-background p-5 text-center">
-              <LogOut className="mx-auto size-5 text-primary" />
-
-              <p className="mt-3 text-xs font-extrabold uppercase">
-                Next Scan
-              </p>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Checks member out
-              </p>
-            </div>
-
-            <div className="border border-border bg-background p-5 text-center">
-              <Clock3 className="mx-auto size-5 text-primary" />
-
-              <p className="mt-3 text-xs font-extrabold uppercase">
-                Automatic
-              </p>
-
-              <p className="mt-1 text-xs text-muted-foreground">
-                Attendance is recorded
-              </p>
-            </div>
-          </section>
-
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <UserRound className="size-4" />
-            <span>
-              Super Plus Fitness &amp; Spa — Reception
-            </span>
+            )}
           </div>
-        </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-border px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-bold text-muted-foreground">
+                Logged in as {staffName}
+              </p>
+            </div>
+
+            {scannerStarted ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => void stopScanner()}
+              >
+                Stop Camera
+              </Button>
+            ) : (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
+                <Volume2 className="size-3.5" />
+                Green/blue = accepted · Red = denied
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
