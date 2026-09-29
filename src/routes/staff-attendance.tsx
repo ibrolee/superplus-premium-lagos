@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Html5Qrcode } from "html5-qrcode";
 import {
+  AlertTriangle,
   ArrowLeft,
   Camera,
   CheckCircle2,
@@ -33,6 +34,10 @@ type ScanResult = {
   attendance_id?: string;
   checked_in_at?: string;
   checked_out_at?: string;
+  missed_scan_required?: boolean;
+  missed_scan_kind?: "clock_out";
+  missed_scan_date?: string;
+  missed_scan_checked_in_at?: string;
   error?: string;
 };
 
@@ -40,10 +45,25 @@ function formatTime(value?: string) {
   if (!value) return "—";
 
   return new Date(value).toLocaleTimeString("en-NG", {
+    timeZone: "Africa/Lagos",
     hour: "numeric",
     hour12: true,
     minute: "2-digit",
     second: "2-digit",
+  });
+}
+
+function formatLagosDate(value?: string) {
+  if (!value) return "the previous day";
+
+  const parsed = new Date(`${value}T12:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  return parsed.toLocaleDateString("en-NG", {
+    timeZone: "Africa/Lagos",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -362,6 +382,35 @@ function StaffAttendancePage() {
                 )}
               </div>
 
+              {result.missed_scan_required && (
+                <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-left text-amber-950">
+                  <div className="flex items-center gap-2 font-bold">
+                    <AlertTriangle className="size-5 shrink-0" />
+                    <span>Missed scan detected</span>
+                  </div>
+
+                  <p className="mt-2 text-sm leading-6">
+                    Your attendance from{" "}
+                    <strong>{formatLagosDate(result.missed_scan_date)}</strong>{" "}
+                    has no clock-out. Today&apos;s attendance was recorded
+                    normally and did not close the older session.
+                  </p>
+
+                  <p className="mt-2 text-sm font-medium">
+                    Please report the missed clock-out and explain why the scan
+                    was missed.
+                  </p>
+
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-4 w-full border-amber-400 bg-white"
+                  >
+                    <Link to="/staff-missed-scans">Report Missed Scan</Link>
+                  </Button>
+                </div>
+              )}
+
               <Button
                 className="mt-8 w-full"
                 onClick={() => {
@@ -449,8 +498,14 @@ function StaffAttendancePage() {
 
                   <div className="mt-3 space-y-2 text-muted-foreground">
                     <p>1. Scan the QR code displayed at the gym.</p>
-                    <p>2. First scan = Clock In.</p>
-                    <p>3. Next scan = Clock Out.</p>
+                    <p>2. First scan of the day = Clock In.</p>
+                    <p>3. Next scan that same day = Clock Out.</p>
+                    <p>4. Attendance resets at 12:00 AM Lagos time.</p>
+                    <p>
+                      5. An unfinished scan from an earlier day will not be
+                      closed by today&apos;s scan. You will be asked to report
+                      the missed scan and the reason.
+                    </p>
                   </div>
                 </div>
               </CardContent>
