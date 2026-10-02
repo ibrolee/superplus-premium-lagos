@@ -1,7 +1,6 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
-  Image,
   Linking,
   Pressable,
   RefreshControl,
@@ -11,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BrandLogo } from "./BrandLogo";
 
 export const colors = {
   background: "#F4F6F1",
@@ -155,14 +155,9 @@ export function Pill({
 export function LoadingView({ label = "Loading your account…" }: { label?: string }) {
   return (
     <SafeAreaView style={styles.loading}>
-      <Image
-        source={require("../assets/splash-logo.png")}
-        style={styles.loadingLogo}
-        resizeMode="contain"
-      />
-      <ActivityIndicator size="small" color={colors.green} />
+      <BrandLogo size={200} style={styles.loadingLogo} />
+      <ActivityIndicator size="small" color="#EF2B2D" />
       <Text style={styles.loadingText}>{label}</Text>
-      <Text style={styles.loadingHint}>SUPER PLUS FITNESS & SPA</Text>
     </SafeAreaView>
   );
 }
@@ -178,6 +173,7 @@ export function EmptyState({ children }: PropsWithChildren) {
 export function AccountLinkRequired({ email }: { email?: string | null }) {
   return (
     <View style={styles.linkWrap}>
+      <BrandLogo size={120} />
       <Text style={styles.kicker}>MEMBER ACCOUNT</Text>
       <Text style={styles.linkTitle}>We couldn’t link this login yet.</Text>
       <Text style={styles.linkBody}>
@@ -264,20 +260,14 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 10, fontWeight: "900", letterSpacing: 0.6 },
   loading: {
     alignItems: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
+    paddingHorizontal: 24,
     flex: 1,
     gap: 14,
     justifyContent: "center",
   },
-  loadingLogo: { height: 58, marginBottom: 8, width: 228 },
+  loadingLogo: { marginBottom: 8 },
   loadingText: { color: colors.ink, fontSize: 13, fontWeight: "800" },
-  loadingHint: {
-    color: colors.green2,
-    fontSize: 9,
-    fontWeight: "900",
-    letterSpacing: 1.6,
-    marginTop: -5,
-  },
   empty: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: "center" },
   linkWrap: {
     backgroundColor: colors.surface,

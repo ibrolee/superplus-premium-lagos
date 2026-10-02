@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,6 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
 import { colors } from "../lib/ui";
+import { BrandLogo } from "../lib/BrandLogo";
 
 export default function LoginScreen() {
   const { session } = useApp();
@@ -105,13 +105,9 @@ export default function LoginScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <Image
-            source={require("../assets/splash-logo.png")}
-            style={styles.brandLogo}
-            resizeMode="contain"
-          />
+          <BrandLogo size={192} style={styles.brandLogo} />
 
-          <Text style={styles.eyebrow}>SUPER PLUS MEMBER APP</Text>
+          <Text style={styles.eyebrow}>MEMBER APP</Text>
 
           <Text style={styles.title}>
             {step === "email" ? "Your gym, in your pocket." : "Check your email."}
@@ -221,7 +217,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
-  brandLogo: { height: 58, marginBottom: 18, width: 236 },
+  brandLogo: { marginBottom: 24 },
   eyebrow: { color: colors.green2, fontSize: 11, fontWeight: "900", letterSpacing: 1.7 },
   title: {
     color: colors.ink,

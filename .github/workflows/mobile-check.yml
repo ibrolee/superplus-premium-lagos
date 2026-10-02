@@ -32,6 +32,8 @@ jobs:
         run: npx expo install --check
       - name: Strict mobile TypeScript check
         run: npm run typecheck
+      - name: Validate branded PNGs with Expo image processing
+        run: npm run check:assets
       - name: Prebuild Android native project
         run: npx expo prebuild --no-install --platform android
       - name: Bundle Android JavaScript
