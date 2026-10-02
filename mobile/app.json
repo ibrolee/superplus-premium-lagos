@@ -15,7 +15,8 @@
       "package": "com.superplusfitness.app"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-notifications"
     ],
     "owner": "ibrolee98"
   }
