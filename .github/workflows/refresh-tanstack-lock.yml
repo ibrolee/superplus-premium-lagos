@@ -1,0 +1,41 @@
+name: Refresh TanStack security lockfile
+on:
+  push:
+    branches:
+      - feat/family-plan-three-members
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/family-plan-three-members
+      - uses: oven-sh/setup-bun@v2
+      - name: Resolve patched TanStack release set
+        run: bun install
+      - name: Verify patched server core is resolved
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '"@tanstack/react-start": "1.168.60"' package.json
+          grep -Fq '@tanstack/react-start@1.168.60' bun.lock
+          grep -Fq '@tanstack/start-server-core@1.169.39' bun.lock
+      - name: Commit regenerated lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- bun.lock package.json; then
+            echo "Lockfile already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json bun.lock
+          git commit -m "Regenerate lockfile for patched TanStack Start"
+          git push origin HEAD:feat/family-plan-three-members
