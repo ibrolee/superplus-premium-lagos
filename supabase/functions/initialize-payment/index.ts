@@ -22,6 +22,7 @@ Deno.serve(async (request: Request) => {
     const {data:{user},error:userError}=await userClient.auth.getUser();
     if (userError || !user) return response({error:'Your session expired. Please sign in again.'},401);
     const body=await request.json();
+    const mobileClient=body?.client==='mobile';
     const planId=String(body?.planId||'');const plan=plans[planId];
     if (!plan) return response({error:'Invalid membership plan.'},400);
     const couponCode=String(body?.couponCode||'').trim().toUpperCase();
@@ -35,7 +36,7 @@ Deno.serve(async (request: Request) => {
     }
 
     const metadata:Record<string,unknown>={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
-      plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null};
+      plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null,client:mobileClient?'mobile':'web'};
     if(planId==='family'){
       const {data:groups,error:groupError}=await admin.from('family_groups').select('id').eq('primary_member_id',member.id).order('created_at',{ascending:false}).limit(1);
       if(groupError)return response({error:'Family membership check is temporarily unavailable. No payment has started.'},503);
@@ -60,7 +61,7 @@ Deno.serve(async (request: Request) => {
     const initialized=await fetch('https://api.paystack.co/transaction/initialize',{
       method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},
       body:JSON.stringify({email:member.email,amount:plan.price*100,currency:'NGN',reference,
-        callback_url:'https://www.superplusfitness.com/payment/callback',metadata}),signal:AbortSignal.timeout(12000),
+        callback_url:mobileClient?'https://www.superplusfitness.com/payment/mobile-return':'https://www.superplusfitness.com/payment/callback',metadata}),signal:AbortSignal.timeout(12000),
     });
     const result=await initialized.json();
     if (!initialized.ok || result?.status!==true || result.data?.reference!==reference || !result.data?.authorization_url) {
