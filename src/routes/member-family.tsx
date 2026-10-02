@@ -65,7 +65,7 @@ function MemberFamilyPage() {
     setPaying(true);
     try {
       const body: Record<string, unknown> = { planId: "family" };
-      if (!completeExistingGroup) body.familyMembers = [familyMemberPayload(slot2), familyMemberPayload(slot3)];
+      if (!completeExistingGroup) body['familyMembers'] = [familyMemberPayload(slot2), familyMemberPayload(slot3)];
       const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", { body });
       if (functionError) throw new Error(data?.error || functionError.message || "Unable to start Family Plan payment.");
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to start Paystack checkout.");
