@@ -238,6 +238,7 @@ export function MemberDashboardV2() {
   }
   async function handlePayment() {
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
+    if (selectedPlan === "family") { window.location.href = "/member-family"; return; }
     const cleanCoupon = coupon.trim().toUpperCase();
     setPaymentLoading(true);
     setPaymentError("");
