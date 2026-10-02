@@ -29,6 +29,8 @@ const styles = StyleSheet.create({
   logo: {
     alignSelf: "center",
     aspectRatio: 1,
+    // Override the bundled asset's intrinsic height so width controls both axes.
+    height: undefined,
     maxWidth: "100%",
     backgroundColor: "#FFFFFF",
   },
