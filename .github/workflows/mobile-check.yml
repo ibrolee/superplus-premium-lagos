@@ -32,3 +32,7 @@ jobs:
         run: npx expo install --check
       - name: Strict mobile TypeScript check
         run: npm run typecheck
+      - name: Bundle Android JavaScript
+        run: npx expo export --platform android --output-dir /tmp/superplus-mobile-android
+      - name: Bundle iOS JavaScript
+        run: npx expo export --platform ios --output-dir /tmp/superplus-mobile-ios
