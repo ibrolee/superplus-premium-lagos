@@ -45,6 +45,7 @@ Deno.serve(async (req: Request) => {
       p_idempotency_key: body?.idempotencyKey || null,
       p_member_id: body?.memberId || null,
       p_coupon_code: String(body?.couponCode || ''),
+      p_discount_percentage: Number(body?.discountPercentage ?? 0),
     });
     if (error) return json({ error: error.message || 'Payment could not be recorded. Check the member directory before retrying.' }, 400);
     if (!data?.success) return json({ error: 'Transaction status uncertain. Check the member directory before retrying.' }, 409);
