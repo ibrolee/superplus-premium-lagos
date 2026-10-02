@@ -22,21 +22,41 @@ Deno.serve(async (request: Request) => {
     const {data:{user},error:userError}=await userClient.auth.getUser();
     if (userError || !user) return response({error:'Your session expired. Please sign in again.'},401);
     const body=await request.json();
-    const {planId}=body;
-    const plan=plans[String(planId||'')];
+    const planId=String(body?.planId||'');const plan=plans[planId];
     if (!plan) return response({error:'Invalid membership plan.'},400);
     const couponCode=String(body?.couponCode||'').trim().toUpperCase();
     if (couponCode && !registrationFeeCoupons.has(couponCode)) return response({error:'Invalid coupon code.'},400);
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
-    const {data:member,error:memberError}=await admin.from('members').select('id,email,auth_user_id').eq('auth_user_id',user.id).maybeSingle();
+    const {data:member,error:memberError}=await admin.from('members').select('id,email,phone,auth_user_id').eq('auth_user_id',user.id).maybeSingle();
     if (memberError || !member || !member.email) return response({error:'Member account or email could not be located.'},404);
     const {data:databasePlan,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.name).maybeSingle();
     if (planError || !databasePlan?.active || Number(databasePlan.price)!==plan.price || databasePlan.duration_days!==plan.duration) {
       return response({error:'Membership prices are being updated. Please contact reception before paying.'},503);
     }
-    const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
-    const metadata={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
+
+    const metadata:Record<string,unknown>={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
       plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null};
+    if(planId==='family'){
+      const {data:groups,error:groupError}=await admin.from('family_groups').select('id').eq('primary_member_id',member.id).order('created_at',{ascending:false}).limit(1);
+      if(groupError)return response({error:'Family membership check is temporarily unavailable. No payment has started.'},503);
+      const group=groups?.[0];
+      if(group){
+        const {data:links,error:linksError}=await admin.from('family_group_members').select('member_id,slot').eq('group_id',group.id).order('slot');
+        if(linksError)return response({error:'Family membership check is temporarily unavailable. No payment has started.'},503);
+        if((links||[]).length!==3)return response({error:'This Family Plan setup is incomplete. Reception must fill all three family slots before renewal.'},409);
+        metadata.family_group_id=group.id;
+      }else{
+        if(!member.phone)return response({error:'Your member profile needs a phone number before starting a Family Plan. Contact reception to update it.'},409);
+        const familyMembers=Array.isArray(body?.familyMembers)?body.familyMembers:null;
+        if(!familyMembers||familyMembers.length!==2)return response({error:'Starting a Family Plan requires two additional family members.'},400);
+        const preflight=[{mode:'existing',email:member.email,phone:member.phone},...familyMembers];
+        const {error:familyError}=await admin.rpc('validate_family_member_inputs',{p_members:preflight,p_expected_count:3});
+        if(familyError)return response({error:familyError.message||'Family member details could not be verified. No payment has started.'},409);
+        metadata.family_members=familyMembers;
+      }
+    }
+
+    const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
     const initialized=await fetch('https://api.paystack.co/transaction/initialize',{
       method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},
       body:JSON.stringify({email:member.email,amount:plan.price*100,currency:'NGN',reference,
@@ -46,7 +66,6 @@ Deno.serve(async (request: Request) => {
     if (!initialized.ok || result?.status!==true || result.data?.reference!==reference || !result.data?.authorization_url) {
       return response({error:'Unable to start Paystack checkout. Please try again.'},503);
     }
-    // Never hand a customer a checkout URL until its exact reference is durably recorded.
     const {error:pendingError}=await admin.from('payments').insert({
       member_id:member.id,amount:plan.price,currency:'NGN',status:'pending',source:'paystack',provider:'paystack',
       paystack_reference:reference,metadata,
