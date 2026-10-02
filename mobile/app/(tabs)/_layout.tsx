@@ -6,7 +6,7 @@ import { colors, LoadingView } from "../../lib/ui";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
-function TabIcon({ name, color }: { name: IconName; color: string }) {
+function TabIcon({ name, color }: { name: IconName; color: ComponentProps<typeof Ionicons>["color"] }) {
   return <Ionicons name={name} color={color} size={23} />;
 }
 
