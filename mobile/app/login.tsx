@@ -18,54 +18,80 @@ import { colors } from "../lib/ui";
 
 export default function LoginScreen() {
   const { session } = useApp();
-  const [creating, setCreating] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (session) router.replace("/(tabs)");
   }, [session]);
 
-  async function submit() {
+  async function sendCode() {
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail.includes("@") || password.length < 6) {
-      Alert.alert("Check your details", "Enter a valid email and a password of at least 6 characters.");
+
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      Alert.alert("Enter your email", "Please enter the email address registered with your Super Plus membership.");
       return;
     }
 
-    setBusy(true);
+    setSending(true);
+
     try {
-      if (creating) {
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-        });
-        if (error) throw error;
-        if (!data.session) {
-          Alert.alert(
-            "Check your email",
-            "Your login was created. Confirm the email if Supabase asks you to, then sign in.",
-          );
-          setCreating(false);
-          return;
-        }
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-        if (error) throw error;
-      }
-      router.replace("/(tabs)");
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+      });
+
+      if (error) throw error;
+
+      setEmail(cleanEmail);
+      setToken("");
+      setStep("code");
     } catch (cause) {
       Alert.alert(
-        creating ? "Could not create login" : "Could not sign in",
+        "Could not send code",
         cause instanceof Error ? cause.message : "Please try again.",
       );
     } finally {
-      setBusy(false);
+      setSending(false);
     }
+  }
+
+  async function verifyCode() {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanToken = token.replace(/\D/g, "");
+
+    if (cleanToken.length !== 8) {
+      Alert.alert("Check the code", "Please enter the 8-digit code from your email.");
+      return;
+    }
+
+    setVerifying(true);
+
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanToken,
+        type: "email",
+      });
+
+      if (error) throw error;
+
+      router.replace("/(tabs)");
+    } catch {
+      Alert.alert(
+        "Code not accepted",
+        "That code is invalid or has expired. Please request a new code.",
+      );
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  function useDifferentEmail() {
+    setStep("email");
+    setToken("");
   }
 
   return (
@@ -81,67 +107,106 @@ export default function LoginScreen() {
           <View style={styles.brandMark}>
             <Text style={styles.brandPlus}>+</Text>
           </View>
+
           <Text style={styles.eyebrow}>SUPER PLUS FITNESS & SPA</Text>
+
           <Text style={styles.title}>
-            {creating ? "Create your member login." : "Your gym, in your pocket."}
+            {step === "email" ? "Your gym, in your pocket." : "Check your email."}
           </Text>
+
           <Text style={styles.copy}>
-            {creating
-              ? "Use the exact email address saved on your membership profile at reception so the app can link to your existing gym record."
-              : "Sign in to see your membership, permanent QR card, attendance and payment history."}
+            {step === "email"
+              ? "Enter the email address registered with your Super Plus membership. We’ll send you a secure login code."
+              : `Enter the 8-digit login code sent to ${email}.`}
           </Text>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Email address</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-              textContentType="emailAddress"
-              placeholder="you@example.com"
-              placeholderTextColor="#95A098"
-            />
+            {step === "email" ? (
+              <>
+                <Text style={styles.label}>Email address</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  textContentType="emailAddress"
+                  placeholder="you@example.com"
+                  placeholderTextColor="#95A098"
+                  editable={!sending}
+                  onSubmitEditing={() => void sendCode()}
+                />
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              textContentType={creating ? "newPassword" : "password"}
-              placeholder="At least 6 characters"
-              placeholderTextColor="#95A098"
-            />
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    pressed && styles.buttonPressed,
+                    sending && styles.buttonDisabled,
+                  ]}
+                  disabled={sending}
+                  onPress={() => void sendCode()}
+                >
+                  <Text style={styles.buttonText}>
+                    {sending ? "Sending code…" : "Send login code"}
+                  </Text>
+                </Pressable>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.button,
-                pressed && styles.buttonPressed,
-                busy && styles.buttonDisabled,
-              ]}
-              disabled={busy}
-              onPress={() => void submit()}
-            >
-              <Text style={styles.buttonText}>
-                {busy ? "Please wait…" : creating ? "Create member login" : "Sign in"}
-              </Text>
-            </Pressable>
+                <Text style={styles.note}>
+                  No password required. We’ll email you a secure one-time code.
+                </Text>
+              </>
+            ) : (
+              <>
+                <View style={styles.sentBox}>
+                  <Text style={styles.sentLabel}>CODE SENT TO</Text>
+                  <Text style={styles.sentEmail}>{email}</Text>
+                </View>
+
+                <Text style={styles.label}>8-digit login code</Text>
+                <TextInput
+                  style={[styles.input, styles.codeInput]}
+                  value={token}
+                  onChangeText={(value) =>
+                    setToken(value.replace(/\D/g, "").slice(0, 8))
+                  }
+                  keyboardType="number-pad"
+                  textContentType="oneTimeCode"
+                  placeholder="00000000"
+                  placeholderTextColor="#95A098"
+                  maxLength={8}
+                  autoFocus
+                  editable={!verifying}
+                  onSubmitEditing={() => void verifyCode()}
+                />
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    pressed && styles.buttonPressed,
+                    verifying && styles.buttonDisabled,
+                  ]}
+                  disabled={verifying}
+                  onPress={() => void verifyCode()}
+                >
+                  <Text style={styles.buttonText}>
+                    {verifying ? "Verifying…" : "Sign in"}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={styles.secondaryAction}
+                  disabled={verifying}
+                  onPress={useDifferentEmail}
+                >
+                  <Text style={styles.secondaryActionText}>Use a different email</Text>
+                </Pressable>
+              </>
+            )}
           </View>
 
-          <Pressable onPress={() => setCreating((value) => !value)}>
-            <Text style={styles.switchText}>
-              {creating
-                ? "Already have a login? Sign in"
-                : "First time using the app? Create a member login"}
-            </Text>
-          </Pressable>
-
-          <Text style={styles.note}>
-            Creating an app login does not create or charge a new gym membership.
-            Your email is matched to the membership already held by Super Plus.
+          <Text style={styles.noteBottom}>
+            Your app uses the same member login and account as superplusfitness.com.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -194,6 +259,12 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: 14,
   },
+  codeInput: {
+    fontSize: 24,
+    fontWeight: "900",
+    letterSpacing: 5,
+    textAlign: "center",
+  },
   button: {
     alignItems: "center",
     backgroundColor: colors.green,
@@ -205,19 +276,50 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.88 },
   buttonDisabled: { opacity: 0.55 },
   buttonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
-  switchText: {
+  secondaryAction: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    minHeight: 40,
+  },
+  secondaryActionText: {
     color: colors.green2,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "900",
-    marginTop: 20,
-    textAlign: "center",
+    textTransform: "uppercase",
   },
   note: {
     color: colors.muted,
     fontSize: 11,
     lineHeight: 17,
     marginHorizontal: 10,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  noteBottom: {
+    color: colors.muted,
+    fontSize: 11,
+    lineHeight: 17,
+    marginHorizontal: 10,
     marginTop: 18,
     textAlign: "center",
+  },
+  sentBox: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 13,
+    marginBottom: 8,
+    padding: 13,
+  },
+  sentLabel: {
+    color: colors.green2,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  sentEmail: {
+    color: colors.ink,
+    fontSize: 13,
+    fontWeight: "900",
+    marginTop: 4,
   },
 });
