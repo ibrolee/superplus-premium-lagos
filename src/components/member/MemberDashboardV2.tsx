@@ -238,6 +238,7 @@ export function MemberDashboardV2() {
   }
   async function handlePayment() {
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
+    if (selectedPlan === "family") { window.location.href = "/member-family"; return; }
     const cleanCoupon = coupon.trim().toUpperCase();
     setPaymentLoading(true);
     setPaymentError("");
@@ -294,12 +295,12 @@ export function MemberDashboardV2() {
       void weekday;
       const label = new Intl.DateTimeFormat("en-US", { timeZone: LAGOS, weekday: "short" }).format(d);
       const index = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(label);
-      if (index >= 0) weekdayCounts[index] += 1;
+      if (index >= 0) weekdayCounts[index] = (weekdayCounts[index] ?? 0) + 1;
       const hour = lagosHour(visit.checked_in_at);
-      if (hour < 10) timeCounts[0] += 1;
-      else if (hour < 14) timeCounts[1] += 1;
-      else if (hour < 18) timeCounts[2] += 1;
-      else timeCounts[3] += 1;
+      if (hour < 10) timeCounts[0] = (timeCounts[0] ?? 0) + 1;
+      else if (hour < 14) timeCounts[1] = (timeCounts[1] ?? 0) + 1;
+      else if (hour < 18) timeCounts[2] = (timeCounts[2] ?? 0) + 1;
+      else timeCounts[3] = (timeCounts[3] ?? 0) + 1;
     });
     const weekdayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const bestDayIndex = weekdayCounts.indexOf(Math.max(...weekdayCounts));
@@ -365,7 +366,8 @@ export function MemberDashboardV2() {
   const milestoneRemaining = nextMilestone ? nextMilestone - (totalVisits ?? 0) : 0;
 
   const calendar = useMemo(() => {
-    const [year, month] = today.slice(0, 7).split("-").map(Number);
+    const year = Number(today.slice(0, 4));
+    const month = Number(today.slice(5, 7));
     const days = new Date(Date.UTC(year, month, 0)).getUTCDate();
     const first = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
     const mondayOffset = first === 0 ? 6 : first - 1;

@@ -56,6 +56,12 @@ function header(size: number, writer: (view: DataView) => void): Uint8Array {
   return bytes;
 }
 
+function blobPart(bytes: Uint8Array): ArrayBuffer {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy.buffer;
+}
+
 function createZip(entries: { filename: string; content: string }[]): Blob {
   const encoder = new TextEncoder();
   const parts: BlobPart[] = [];
@@ -83,7 +89,7 @@ function createZip(entries: { filename: string; content: string }[]): Blob {
       view.setUint16(28, 0, true);
       localHeaderName(filename, view, 30);
     });
-    parts.push(localHeader, data);
+    parts.push(blobPart(localHeader), blobPart(data));
     offset += localHeader.byteLength + data.byteLength;
 
     const centralHeader = header(46 + filename.length, (view) => {
@@ -106,7 +112,7 @@ function createZip(entries: { filename: string; content: string }[]): Blob {
       view.setUint32(42, localOffset, true);
       localHeaderName(filename, view, 46);
     });
-    central.push(centralHeader);
+    central.push(blobPart(centralHeader));
     centralSize += centralHeader.byteLength;
   }
 
@@ -121,7 +127,7 @@ function createZip(entries: { filename: string; content: string }[]): Blob {
     view.setUint16(20, 0, true);
   });
 
-  return new Blob([...parts, ...central, end], { type: 'application/zip' });
+  return new Blob([...parts, ...central, blobPart(end)], { type: 'application/zip' });
 }
 
 function localHeaderName(filename: Uint8Array, view: DataView, start: number): void {

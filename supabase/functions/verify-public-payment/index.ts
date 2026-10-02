@@ -1,7 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { plans, couponPricing } from '../_shared/public-join-pricing.ts';
-// STAGED SOURCE ONLY: requires the paired initializer and finalize_public_join_payment migration.
-// All amounts are recomputed on the server after verifying the actual Paystack transaction.
 const corsHeaders={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Access-Control-Allow-Methods':'POST,OPTIONS'};
 const respond=(body:Record<string,unknown>,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,'Content-Type':'application/json','Cache-Control':'no-store'}});
 Deno.serve(async(req:Request)=>{
@@ -18,12 +16,27 @@ Deno.serve(async(req:Request)=>{
   if(txn.reference!==reference||metadata.source!=='public_join'||metadata.reference!==reference||txn.currency!=='NGN')return respond({error:'Paystack transaction details do not match this checkout.'},400);
   const planId=String(metadata.plan_id||'').trim(),plan=plans[planId];if(!plan)return respond({error:'Membership plan not found.'},400);
   let pricing:ReturnType<typeof couponPricing>;try{pricing=couponPricing(plan,metadata.coupon_code);}catch{return respond({error:'Invalid coupon in payment metadata.'},400);}
-  // Reject tampered/old metadata, discounts on plan price, and incomplete payments.
   if(Number(txn.amount)!==pricing.totalAmount*100||Number(metadata.membership_amount_naira)!==pricing.membershipAmount||Number(metadata.registration_amount_naira)!==pricing.registrationAmount||Number(metadata.total_amount_naira)!==pricing.totalAmount||Number(metadata.duration_days)!==plan.durationDays)return respond({error:'Verified payment amount does not match the membership and registration fee.'},400);
+  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
+
+  if(planId==='family'&&Array.isArray(metadata.family_members)&&metadata.family_members.length===3){
+   const primary=(metadata.family_members[0]||{}) as Record<string,unknown>;
+   const payerEmail=String(primary.email||'').trim().toLowerCase();
+   if(!payerEmail.includes('@')||String(txn.customer?.email||'').trim().toLowerCase()!==payerEmail)return respond({error:'Primary family member does not match the verified Paystack customer.'},400);
+   const {data,error}=await admin.rpc('finalize_public_family_join_payment',{
+    p_reference:reference,p_family_members:metadata.family_members,p_paid_at:txn.paid_at||null,
+    p_channel:String(txn.channel||''),p_customer_code:String(txn.customer?.customer_code||''),
+    p_coupon_code:pricing.couponCode||'',p_verified_amount_kobo:Number(txn.amount),
+   });
+   if(error){console.error('Verified family payment could not be recorded',{reference,error});return respond({error:'Payment succeeded, but family activation is not complete. Do not pay again. Contact the gym with your Paystack reference.'},503);}
+   if(!data?.success)return respond({error:'Family payment record is uncertain. Contact reception with your reference; do not pay again.'},503);
+   return respond(data as Record<string,unknown>);
+  }
+
+  // Backward-compatible path for standard plans and Family checkouts already initiated before the three-member rollout.
   const email=String(metadata.email||'').trim().toLowerCase(),name=String(metadata.full_name||'').trim(),phone=String(metadata.phone||'').trim();
   const day=Number(metadata.birth_day),month=Number(metadata.birth_month);
   if(!email.includes('@')||!name||!phone||!Number.isInteger(day)||day<1||day>31||!Number.isInteger(month)||month<1||month>12||String(txn.customer?.email||'').trim().toLowerCase()!==email)return respond({error:'Customer details do not match the verified transaction.'},400);
-  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
   const {data,error}=await admin.rpc('finalize_public_join_payment',{
    p_reference:reference,p_plan_id:planId,p_full_name:name,p_email:email,p_phone:phone,p_birth_day:day,p_birth_month:month,
    p_paid_at:txn.paid_at||null,p_channel:String(txn.channel||''),p_customer_code:String(txn.customer?.customer_code||''),

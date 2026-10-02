@@ -6,6 +6,7 @@ import {
   useRouterState,
   HeadContent,
   Scripts,
+  type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
@@ -40,10 +41,13 @@ function NotFoundComponent() {
     </div>
   );
 }
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    const reportableError = error instanceof Error
+      ? error
+      : new Error(typeof error === "string" ? error : "Unknown route error");
+    reportLovableError(reportableError, { boundary: "tanstack_root_error_component" });
   }, [error]);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -57,7 +61,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             type="button"
             onClick={() => {
               router.invalidate();
-              reset();
+              reset?.();
             }}
             className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
           >

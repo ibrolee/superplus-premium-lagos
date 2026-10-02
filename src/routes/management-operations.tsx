@@ -30,6 +30,7 @@ function ManagementOperations() {
   }, []);
   const dailyActions: Action[] = [
     { label: "Register or renew at reception", description: "Find an existing profile or create a new one, choose the plan, confirm received cash/POS/transfer and activate immediately.", href: "/reception-register", icon: UserPlus, eyebrow: "Direct registration" },
+    { label: "Complete a Family Plan", description: "Link all three people to one verified paid Family Plan. Each family slot can use an existing member; managers can also create new profiles.", href: "/management-family", icon: Users, eyebrow: "3-person family setup" },
     { label: "Find a member", description: "Search all member records first, open the profile, then add or renew membership from the member page.", href: "/management-members", icon: Users, eyebrow: "Avoid duplicates" },
     { label: "Online member payment", description: "Existing members can sign in with the email on their gym record and renew from their own dashboard.", href: "/login", icon: CreditCard, eyebrow: "Self service" },
     { label: "Public Join page", description: "New online customers can create a profile and pay through Paystack.", href: "/join", icon: CreditCard, eyebrow: "Online registration" },

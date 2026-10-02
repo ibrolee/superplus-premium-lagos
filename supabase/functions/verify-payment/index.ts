@@ -42,14 +42,24 @@ Deno.serve(async (request: Request) => {
         transaction?.currency !== 'NGN' || !transaction?.paid_at) {
       return respond({ error: 'Paystack returned incomplete transaction details. Contact reception; do not pay again.' }, 409);
     }
-    const { data, error } = await service.rpc('finalize_member_paystack_payment', {
-      p_reference: reference, p_member_id: member.id, p_auth_user_id: user.id,
-      p_plan_id: String(meta.plan_id || ''), p_amount_kobo: transaction.amount,
-      p_currency: transaction.currency, p_paid_at: transaction.paid_at,
-      p_channel: String(transaction.channel || 'paystack'),
-      p_customer_code: transaction.customer?.customer_code || null,
-      p_transaction_id: transaction.id,
-    });
+
+    const isFamily=String(meta.plan_id||'')==='family'&&(meta.family_group_id||Array.isArray(meta.family_members));
+    const call=isFamily
+      ? service.rpc('finalize_member_family_paystack_payment',{
+          p_reference:reference,p_member_id:member.id,p_auth_user_id:user.id,
+          p_family_members:Array.isArray(meta.family_members)?meta.family_members:null,
+          p_amount_kobo:transaction.amount,p_currency:transaction.currency,p_paid_at:transaction.paid_at,
+          p_channel:String(transaction.channel||'paystack'),p_customer_code:transaction.customer?.customer_code||null,
+          p_transaction_id:transaction.id,
+        })
+      : service.rpc('finalize_member_paystack_payment',{
+          p_reference:reference,p_member_id:member.id,p_auth_user_id:user.id,
+          p_plan_id:String(meta.plan_id||''),p_amount_kobo:transaction.amount,
+          p_currency:transaction.currency,p_paid_at:transaction.paid_at,
+          p_channel:String(transaction.channel||'paystack'),p_customer_code:transaction.customer?.customer_code||null,
+          p_transaction_id:transaction.id,
+        });
+    const { data, error } = await call;
     if (error) {
       console.error('Payment finalization failed:', { reference, code: error.code, message: error.message });
       return respond({ error: 'Your payment was received but activation could not finish. Please retry with this reference or contact reception. Do not pay again.' }, 503);
