@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -104,11 +105,13 @@ export default function LoginScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.brandMark}>
-            <Text style={styles.brandPlus}>+</Text>
-          </View>
+          <Image
+            source={require("../assets/splash-logo.png")}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
 
-          <Text style={styles.eyebrow}>SUPER PLUS FITNESS & SPA</Text>
+          <Text style={styles.eyebrow}>SUPER PLUS MEMBER APP</Text>
 
           <Text style={styles.title}>
             {step === "email" ? "Your gym, in your pocket." : "Check your email."}
@@ -218,16 +221,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
-  brandMark: {
-    alignItems: "center",
-    backgroundColor: colors.green,
-    borderRadius: 18,
-    height: 54,
-    justifyContent: "center",
-    marginBottom: 20,
-    width: 54,
-  },
-  brandPlus: { color: "#FFFFFF", fontSize: 34, fontWeight: "300", marginTop: -3 },
+  brandLogo: { height: 58, marginBottom: 18, width: 236 },
   eyebrow: { color: colors.green2, fontSize: 11, fontWeight: "900", letterSpacing: 1.7 },
   title: {
     color: colors.ink,

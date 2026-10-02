@@ -1,6 +1,7 @@
 import type { PropsWithChildren, ReactNode } from "react";
 import {
   ActivityIndicator,
+  Image,
   Linking,
   Pressable,
   RefreshControl,
@@ -154,8 +155,14 @@ export function Pill({
 export function LoadingView({ label = "Loading your account…" }: { label?: string }) {
   return (
     <SafeAreaView style={styles.loading}>
-      <ActivityIndicator size="large" color={colors.green} />
+      <Image
+        source={require("../assets/splash-logo.png")}
+        style={styles.loadingLogo}
+        resizeMode="contain"
+      />
+      <ActivityIndicator size="small" color={colors.green} />
       <Text style={styles.loadingText}>{label}</Text>
+      <Text style={styles.loadingHint}>SUPER PLUS FITNESS & SPA</Text>
     </SafeAreaView>
   );
 }
@@ -262,7 +269,15 @@ const styles = StyleSheet.create({
     gap: 14,
     justifyContent: "center",
   },
-  loadingText: { color: colors.muted, fontSize: 13, fontWeight: "700" },
+  loadingLogo: { height: 58, marginBottom: 8, width: 228 },
+  loadingText: { color: colors.ink, fontSize: 13, fontWeight: "800" },
+  loadingHint: {
+    color: colors.green2,
+    fontSize: 9,
+    fontWeight: "900",
+    letterSpacing: 1.6,
+    marginTop: -5,
+  },
   empty: { color: colors.muted, fontSize: 13, lineHeight: 20, textAlign: "center" },
   linkWrap: {
     backgroundColor: colors.surface,

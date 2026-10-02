@@ -12,12 +12,33 @@
       "bundleIdentifier": "com.superplusfitness.app"
     },
     "android": {
-      "package": "com.superplusfitness.app"
+      "package": "com.superplusfitness.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#EF2B2D"
+      }
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 280,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4F6F1"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#EF2B2D",
+          "defaultChannel": "membership-reminders"
+        }
+      ]
     ],
-    "owner": "ibrolee98"
+    "owner": "ibrolee98",
+    "icon": "./assets/icon.png"
   }
 }
