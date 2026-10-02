@@ -1,0 +1,29 @@
+name: One-time TanStack security lock refresh
+
+on:
+  push:
+    branches:
+      - feat/family-plan-three-members
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: ${{ !contains(github.event.head_commit.message, 'Refresh TanStack security lockfile') && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/family-plan-three-members
+      - uses: oven-sh/setup-bun@v2
+      - name: Upgrade patched TanStack Start
+        run: bun add @tanstack/react-start@1.168.60
+      - name: Commit package and lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json bun.lock
+          git diff --cached --quiet && exit 0
+          git commit -m "Refresh TanStack security lockfile"
+          git push origin HEAD:feat/family-plan-three-members
