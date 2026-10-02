@@ -39,6 +39,11 @@
       ]
     ],
     "owner": "ibrolee98",
-    "icon": "./assets/icon.png"
+    "icon": "./assets/icon.png",
+    "extra": {
+      "eas": {
+        "projectId": "98a7285c-045e-49e6-8f0f-f46a1bc145ae"
+      }
+    }
   }
 }
