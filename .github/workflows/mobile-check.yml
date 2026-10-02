@@ -32,6 +32,8 @@ jobs:
         run: npx expo install --check
       - name: Strict mobile TypeScript check
         run: npm run typecheck
+      - name: Prebuild Android native project
+        run: npx expo prebuild --no-install --platform android
       - name: Bundle Android JavaScript
         run: npx expo export --platform android --output-dir /tmp/superplus-mobile-android
       - name: Bundle iOS JavaScript
