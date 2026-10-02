@@ -8,7 +8,7 @@ import { ActionSearch } from './ActionSearch';
 export function WorkspaceNavigation(){
  const pathname=useRouterState({select:state=>state.location.pathname});
  const onReception=pathname==='/reception-workspace',onStaff=['/staff','/staff-attendance','/staff-admin','/reception-checkin','/staff-missed-scans'].includes(pathname);
- const inWorkspace=onReception||onStaff||['/management-preview','/management-members','/management-attendance','/management-operations','/management-custom-plan','/management-standard-plan','/management-payment-desk','/management-profiles','/management-member-cards','/management-communications','/management-revenue','/management-staff','/management-staff-monthly','/management-staff-review','/management-payroll','/management-attendance-export','/management-payroll-export','/management-new-member-intake'].includes(pathname);
+ const inWorkspace=onReception||onStaff||['/management-preview','/management-members','/management-attendance','/management-operations','/management-custom-plan','/management-standard-plan','/management-payment-desk','/management-profiles','/management-member-cards','/management-communications','/management-revenue','/management-staff','/management-staff-monthly','/management-staff-review','/management-payroll','/management-attendance-export','/management-payroll-export','/management-new-member-intake','/management-family'].includes(pathname);
  const[role,setRole]=useState<string|null>(null);
  useEffect(()=>{let cancelled=false;setRole(null);if(!inWorkspace)return()=>{cancelled=true;};void(async()=>{const{data:auth,error:authError}=await supabase.auth.getUser();if(authError||!auth.user)return;const{data:staff,error}=await supabase.from('staff_users').select('role,active').eq('auth_user_id',auth.user.id).maybeSingle();if(!error&&staff?.active&&!cancelled)setRole(String(staff.role||'').toLowerCase());})();return()=>{cancelled=true;};},[inWorkspace]);
  if(!inWorkspace)return null;const management=['admin','owner','manager'].includes(role||''),admin=role==='admin',reception=management||role==='reception';
@@ -18,6 +18,7 @@ export function WorkspaceNavigation(){
   {label:'Overview',href:'/management-preview',icon:LayoutDashboard},
   {label:'Reception',href:'/reception-workspace',icon:UserPlus},
   {label:'Register / renew',href:'/reception-register',icon:CreditCard},
+  {label:'Family Plan',href:'/management-family',icon:Users},
   {label:'Members',href:'/management-members',icon:Users},
   {label:'Profiles',href:'/management-profiles',icon:UserRound},
   {label:'Attendance',href:'/management-attendance',icon:Activity},
