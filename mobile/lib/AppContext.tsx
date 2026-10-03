@@ -10,6 +10,7 @@ import {
 } from "react";
 import { lagosToday } from "./ui";
 import { supabase } from "./supabase";
+import type { VisitGoal } from "./visit-goals";
 
 export type Member = {
   id: string;
@@ -82,6 +83,7 @@ type AppValue = {
   payments: Payment[];
   announcements: Announcement[];
   family: FamilySummary | null;
+  visitGoal: VisitGoal | null;
   refresh: () => Promise<void>;
 };
 
@@ -115,6 +117,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [family, setFamily] = useState<FamilySummary | null>(null);
+  const [visitGoal, setVisitGoal] = useState<VisitGoal | null>(null);
 
   const clearMemberData = useCallback(() => {
     setMember(null);
@@ -123,6 +126,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPayments([]);
     setAnnouncements([]);
     setFamily(null);
+    setVisitGoal(null);
     setError("");
   }, []);
 
@@ -162,6 +166,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           setAttendance([]);
           setPayments([]);
           setFamily(null);
+          setVisitGoal(null);
           return;
         }
 
@@ -173,6 +178,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           attendanceResult,
           paymentsResult,
           familyResult,
+          visitGoalResult,
         ] = await Promise.all([
           supabase
             .from("memberships")
@@ -187,7 +193,7 @@ export function AppProvider({ children }: PropsWithChildren) {
             .select("id,checked_in_at,checked_out_at")
             .eq("member_id", typedMember.id)
             .order("checked_in_at", { ascending: false })
-            .limit(20),
+            .limit(400),
           supabase
             .from("payments")
             .select("id,amount,currency,payment_method,paid_at,created_at")
@@ -196,6 +202,11 @@ export function AppProvider({ children }: PropsWithChildren) {
             .order("created_at", { ascending: false })
             .limit(20),
           supabase.rpc("get_my_family_summary"),
+          supabase
+            .from("member_visit_goals")
+            .select("*")
+            .eq("member_id", typedMember.id)
+            .maybeSingle(),
         ]);
 
         if (membershipsResult.error) throw membershipsResult.error;
@@ -207,6 +218,9 @@ export function AppProvider({ children }: PropsWithChildren) {
         setAttendance((attendanceResult.data ?? []) as Attendance[]);
         setPayments((paymentsResult.data ?? []) as Payment[]);
         setFamily((familyResult.data ?? null) as FamilySummary | null);
+        setVisitGoal(
+          visitGoalResult.error ? null : ((visitGoalResult.data ?? null) as VisitGoal | null),
+        );
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Unable to load your member account.");
       } finally {
@@ -274,6 +288,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       payments,
       announcements,
       family,
+      visitGoal,
       refresh,
     }),
     [
@@ -289,6 +304,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       payments,
       announcements,
       family,
+      visitGoal,
       refresh,
     ],
   );
