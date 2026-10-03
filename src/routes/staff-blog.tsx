@@ -126,6 +126,8 @@ function StaffBlogPage() {
     const cleanSlug = slugify(slug);
     const payload = { title: title.trim(), slug: cleanSlug, excerpt: excerpt.trim() || null, content: content.trim(), featured_image: featuredImage.trim() || null, category, author_name: "Super Plus Fitness", status, featured, published_at: publishedAt };
     const shouldNotify = publishMode === "published" && (!selectedPost || selectedPost.status !== "published");
+    const shouldScheduleInApp =
+      publishMode === "scheduled" && (!selectedPost || selectedPost.status !== "scheduled");
     const { error: saveError } = selectedPost ? await supabase.from("blog_posts").update(payload).eq("id", selectedPost.id) : await supabase.from("blog_posts").insert(payload);
     if (saveError) { setError(saveError.message.toLowerCase().includes("duplicate") ? "That URL slug is already being used. Please choose another one." : saveError.message); setSaving(false); return; }
 
@@ -141,6 +143,18 @@ function StaffBlogPage() {
         },
       });
       notificationFailed = !!pushError;
+    } else if (shouldScheduleInApp && publishedAt) {
+      const { error: scheduleError } = await supabase.functions.invoke("send-member-push", {
+        body: {
+          title: "New from the Super Plus Blog",
+          body: excerpt.trim() || title.trim(),
+          kind: "blog",
+          deep_link: `/blog/${cleanSlug}`,
+          published_at: publishedAt,
+          send_push: false,
+        },
+      });
+      notificationFailed = !!scheduleError;
     }
 
     setSuccess(
