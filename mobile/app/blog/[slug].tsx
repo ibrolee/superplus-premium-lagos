@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -45,7 +45,7 @@ function readingTime(content: string) {
 
 export default function BlogArticleScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
-  const { session, member } = useApp();
+  const { member } = useApp();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -318,7 +318,6 @@ export default function BlogArticleScreen() {
     });
   }
 
-  if (!session) return <Redirect href="/login" />;
 
   if (loading) {
     return (
@@ -354,8 +353,14 @@ export default function BlogArticleScreen() {
         <View style={styles.headerActions}>
           <Pressable
             style={[styles.shareButton, saved && styles.savedButton]}
-            disabled={savingPost || !member}
-            onPress={() => void toggleSaved()}
+            disabled={savingPost}
+            onPress={() => {
+              if (!member) {
+                router.push("/login");
+                return;
+              }
+              void toggleSaved();
+            }}
           >
             <Ionicons
               name={saved ? "bookmark" : "bookmark-outline"}
@@ -393,8 +398,14 @@ export default function BlogArticleScreen() {
       <View style={styles.interactions}>
         <Pressable
           style={[styles.interactionButton, liked && styles.interactionButtonActive]}
-          disabled={liking || !member}
-          onPress={() => void toggleLike()}
+          disabled={liking}
+          onPress={() => {
+            if (!member) {
+              router.push("/login");
+              return;
+            }
+            void toggleLike();
+          }}
         >
           <Ionicons
             name={liked ? "heart" : "heart-outline"}
@@ -423,41 +434,54 @@ export default function BlogArticleScreen() {
         <Text style={styles.commentsTitle}>Join the conversation</Text>
       </View>
 
-      <Card>
-        <Text style={styles.commentingAs}>
-          Commenting as {member?.full_name || "Super Plus member"}
-        </Text>
-        <TextInput
-          style={styles.commentInput}
-          value={commentText}
-          onChangeText={setCommentText}
-          placeholder="Write a comment…"
-          placeholderTextColor={colors.muted}
-          multiline
-          maxLength={2000}
-          textAlignVertical="top"
-        />
-        <View style={styles.commentFooter}>
-          <Text style={styles.counter}>{commentText.length}/2000</Text>
-          <Pressable
-            style={[
-              styles.postButton,
-              (!commentText.trim() || submitting || !member) && styles.postButtonDisabled,
-            ]}
-            disabled={!commentText.trim() || submitting || !member}
-            onPress={() => void submitComment()}
-          >
-            {submitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <>
-                <Ionicons name="send" size={15} color="#FFFFFF" />
-                <Text style={styles.postButtonText}>Post</Text>
-              </>
-            )}
+      {member ? (
+        <Card>
+          <Text style={styles.commentingAs}>
+            Commenting as {member.full_name}
+          </Text>
+          <TextInput
+            style={styles.commentInput}
+            value={commentText}
+            onChangeText={setCommentText}
+            placeholder="Write a comment…"
+            placeholderTextColor={colors.muted}
+            multiline
+            maxLength={2000}
+            textAlignVertical="top"
+          />
+          <View style={styles.commentFooter}>
+            <Text style={styles.counter}>{commentText.length}/2000</Text>
+            <Pressable
+              style={[
+                styles.postButton,
+                (!commentText.trim() || submitting) && styles.postButtonDisabled,
+              ]}
+              disabled={!commentText.trim() || submitting}
+              onPress={() => void submitComment()}
+            >
+              {submitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Ionicons name="send" size={15} color="#FFFFFF" />
+                  <Text style={styles.postButtonText}>Post</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+        </Card>
+      ) : (
+        <Card style={styles.guestCommentCard}>
+          <Ionicons name="people-outline" size={24} color={colors.green} />
+          <Text style={styles.guestCommentTitle}>Members can join the conversation</Text>
+          <Text style={styles.guestCommentText}>
+            Sign in to like, save and comment. You can still read every public article as a guest.
+          </Text>
+          <Pressable style={styles.guestLoginButton} onPress={() => router.push("/login")}>
+            <Text style={styles.guestLoginText}>Member sign in</Text>
           </Pressable>
-        </View>
-      </Card>
+        </Card>
+      )}
 
       {commentsLoading ? (
         <Card style={styles.loadingCard}>
@@ -584,6 +608,11 @@ const styles = StyleSheet.create({
   commentsHeader: { gap: 4, marginTop: 5 },
   commentsTitle: { color: colors.ink, fontSize: 24, fontWeight: "900", letterSpacing: -0.5 },
   commentingAs: { color: colors.ink, fontSize: 12, fontWeight: "800", marginBottom: 10 },
+  guestCommentCard: { alignItems: "center", gap: 8 },
+  guestCommentTitle: { color: colors.ink, fontSize: 16, fontWeight: "900", textAlign: "center" },
+  guestCommentText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: "center" },
+  guestLoginButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 12, justifyContent: "center", marginTop: 4, minHeight: 44, paddingHorizontal: 18 },
+  guestLoginText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   commentInput: {
     backgroundColor: colors.background,
     borderColor: colors.line,
