@@ -44,26 +44,6 @@ export default function HomeScreen() {
     refresh,
   } = useApp();
 
-  if (dataLoading) return <LoadingView />;
-  if (!member) {
-    return (
-      <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
-        <AccountLinkRequired email={session?.user.email} />
-      </Screen>
-    );
-  }
-
-  const today = lagosToday();
-  const phase = currentMembership
-    ? currentMembership.start_date > today
-      ? "upcoming"
-      : currentMembership.end_date >= today
-        ? "active"
-        : "expired"
-    : "none";
-  const remaining = daysUntil(currentMembership?.end_date);
-  const goalProgress = visitGoal ? calculateGoalProgress(attendance, visitGoal) : null;
-
   useEffect(() => {
     let active = true;
 
@@ -86,6 +66,26 @@ export default function HomeScreen() {
       active = false;
     };
   }, [attendance, member?.id]);
+
+  if (dataLoading) return <LoadingView />;
+  if (!member) {
+    return (
+      <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
+        <AccountLinkRequired email={session?.user.email} />
+      </Screen>
+    );
+  }
+
+  const today = lagosToday();
+  const phase = currentMembership
+    ? currentMembership.start_date > today
+      ? "upcoming"
+      : currentMembership.end_date >= today
+        ? "active"
+        : "expired"
+    : "none";
+  const remaining = daysUntil(currentMembership?.end_date);
+  const goalProgress = visitGoal ? calculateGoalProgress(attendance, visitGoal) : null;
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
