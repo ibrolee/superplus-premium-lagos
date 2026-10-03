@@ -1,0 +1,69 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - build/android-apk-20261003-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
+
+      - name: Verify Expo account
+        run: eas whoami
+
+      - name: Build Android preview APK
+        run: eas build --platform android --profile preview --non-interactive --wait --json > /tmp/eas-build.json
+
+      - name: Extract and download APK
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const raw = fs.readFileSync("/tmp/eas-build.json", "utf8").trim();
+          const data = JSON.parse(raw);
+          const build = Array.isArray(data) ? data[0] : data;
+          const url =
+            build?.artifacts?.applicationArchiveUrl ||
+            build?.artifacts?.buildUrl ||
+            build?.artifactUrl;
+          if (!url) {
+            console.error(raw);
+            throw new Error("Could not find APK artifact URL in EAS build output.");
+          }
+          fs.writeFileSync("/tmp/apk-url.txt", url);
+          console.log("APK artifact URL found.");
+          NODE
+          curl -fL --retry 3 --retry-delay 3 "$(cat /tmp/apk-url.txt)" -o "$GITHUB_WORKSPACE/Super-Plus-Fitness.apk"
+          test -s "$GITHUB_WORKSPACE/Super-Plus-Fitness.apk"
+
+      - name: Upload downloadable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: super-plus-fitness-android-apk
+          path: Super-Plus-Fitness.apk
+          if-no-files-found: error
+          retention-days: 30
