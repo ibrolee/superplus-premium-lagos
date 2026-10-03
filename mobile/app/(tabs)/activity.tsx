@@ -55,7 +55,7 @@ export default function ActivityScreen() {
       <Text style={sharedStyles.kicker}>ACTIVITY</Text>
       <Text style={sharedStyles.title}>Your gym progress.</Text>
       <Text style={sharedStyles.subtitle}>
-        Real attendance from your physical membership-card scans, turned into useful progress.
+        Real attendance from your physical membership-card scans, turned into weekly progress and streaks.
       </Text>
 
       <View style={styles.statsGrid}>
