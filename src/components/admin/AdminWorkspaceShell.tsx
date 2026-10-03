@@ -212,7 +212,7 @@ export const adminGroups: Group[] = [
     ],
   },
   {
-    name: "Website content",
+    name: "App & website content",
     icon: Images,
     tools: [
       {
