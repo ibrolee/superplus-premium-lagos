@@ -112,6 +112,12 @@ export const adminGroups: Group[] = [
         keywords: "expiry birthday whatsapp follow up",
       },
       {
+        label: "Member bookings",
+        href: "/management-bookings",
+        icon: CalendarDays,
+        keywords: "class personal training massage pedicure spa appointment requests",
+      },
+      {
         label: "Operations hub",
         href: "/management-operations",
         icon: ClipboardList,

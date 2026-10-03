@@ -133,6 +133,12 @@ const groupedActions = [
         icon: Activity,
       },
       {
+        label: "Member bookings",
+        description: "Confirm app booking requests.",
+        href: "/management-bookings",
+        icon: CalendarDays,
+      },
+      {
         label: "Reminders",
         description: "Birthdays and expiry follow-up.",
         href: "/management-communications",
