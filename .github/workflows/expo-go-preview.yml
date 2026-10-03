@@ -8,6 +8,10 @@ on:
       - ".github/workflows/expo-go-preview.yml"
   workflow_dispatch:
 
+concurrency:
+  group: expo-go-preview
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -38,5 +42,31 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           CI: "1"
         run: |
-          set -o pipefail
-          npx expo start --tunnel --clear 2>&1 | tee /tmp/expo-go-preview.log
+          nohup npx expo start --tunnel --clear > /tmp/expo-go-preview.log 2>&1 &
+          echo $! > /tmp/expo-go-preview.pid
+
+          for i in $(seq 1 60); do
+            sed -E 's/\x1B\[[0-9;]*[A-Za-z]//g' /tmp/expo-go-preview.log | grep -Eo 'exp://[^[:space:]]+' | head -n 1 > expo-go-preview-url.txt || true
+            if [ -s expo-go-preview-url.txt ]; then
+              break
+            fi
+            sleep 2
+          done
+
+          echo "----- Expo preview log -----"
+          cat /tmp/expo-go-preview.log
+          echo "----- Preview URL -----"
+          cat expo-go-preview-url.txt
+          test -s expo-go-preview-url.txt
+
+      - name: Upload preview URL
+        uses: actions/upload-artifact@v4
+        with:
+          name: expo-go-preview-url
+          path: mobile/expo-go-preview-url.txt
+          retention-days: 1
+
+      - name: Keep preview tunnel available
+        run: |
+          echo "Preview tunnel is live for about 45 minutes."
+          sleep 2700
