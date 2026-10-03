@@ -46,7 +46,7 @@ jobs:
 
       - name: Start Expo Go tunnel and publish link
         run: |
-          rm -f /tmp/expo.log /tmp/manifest.json
+          rm -f /tmp/expo.log /tmp/manifest.json /tmp/tunnels.json
           (npx expo start --go --tunnel --port 8081 > /tmp/expo.log 2>&1) &
           EXPO_PID=$!
 
@@ -63,6 +63,22 @@ jobs:
               break
             fi
 
+            if curl -fsS http://127.0.0.1:4040/api/tunnels > /tmp/tunnels.json 2>/dev/null; then
+              PUBLIC_URL=$(node -e '
+                const fs=require("fs");
+                try {
+                  const j=JSON.parse(fs.readFileSync("/tmp/tunnels.json","utf8"));
+                  const urls=(j.tunnels||[]).map(t=>t.public_url).filter(Boolean);
+                  const url=urls.find(u=>String(u).includes(".exp.direct")) || urls[0];
+                  if (url) process.stdout.write(String(url));
+                } catch {}
+              ')
+              if [ -n "$PUBLIC_URL" ]; then
+                URL="$PUBLIC_URL"
+                break
+              fi
+            fi
+
             if curl -fsS -H 'accept: application/expo+json,application/json' -H 'expo-platform: ios' http://127.0.0.1:8081 > /tmp/manifest.json 2>/dev/null; then
               HOST=$(node -e '
                 const fs=require("fs");
@@ -76,7 +92,7 @@ jobs:
                 } catch {}
               ')
               if [ -n "$HOST" ]; then
-                URL="exps://$HOST"
+                URL="https://$HOST"
                 break
               fi
             fi
@@ -91,7 +107,9 @@ jobs:
           fi
 
           if [[ "$URL" == https://* ]]; then
-            URL="exps://${URL#https://}"
+            URL="exps://$(printf '%s' "$URL" | sed 's#^https://##')"
+          elif [[ "$URL" == http://* ]]; then
+            URL="exp://$(printf '%s' "$URL" | sed 's#^http://##')"
           fi
 
           echo "$URL" > "$GITHUB_WORKSPACE/expo-preview-url.txt"
