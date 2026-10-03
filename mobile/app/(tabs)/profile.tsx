@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { BrandLogo } from "../../lib/BrandLogo";
 import { useApp } from "../../lib/AppContext";
 import { supabase } from "../../lib/supabase";
 import {
@@ -104,7 +105,10 @@ export default function ProfileScreen() {
         <Text style={styles.logoutText}>Sign out</Text>
       </Pressable>
 
-      <Text style={styles.version}>Super Plus mobile · v0.1</Text>
+      <View style={styles.brandFooter}>
+        <BrandLogo size={120} />
+        <Text style={styles.version}>Super Plus Fitness · v0.1</Text>
+      </View>
     </Screen>
   );
 }
@@ -166,5 +170,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   logoutSecondaryText: { color: colors.danger, fontSize: 13, fontWeight: "900" },
+  brandFooter: { alignItems: "center", gap: 8, paddingTop: 8 },
   version: { color: "#9AA39D", fontSize: 10, textAlign: "center" },
 });

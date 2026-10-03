@@ -1,4 +1,4 @@
-import { Ionicons } from "@expo/vector-icons";
+import { BrandLogo } from "../../lib/BrandLogo";
 import QRCode from "react-native-qrcode-svg";
 import { StyleSheet, Text, View } from "react-native";
 import { useApp } from "../../lib/AppContext";
@@ -32,10 +32,7 @@ export default function QrScreen() {
       </Text>
 
       <Card style={styles.qrCard}>
-        <View style={styles.logoMark}>
-          <Ionicons name="fitness" size={24} color="#FFFFFF" />
-        </View>
-        <Text style={styles.gym}>SUPER PLUS FITNESS & SPA</Text>
+        <BrandLogo size={128} />
         <Text style={styles.memberName}>{member.full_name}</Text>
 
         <View style={styles.qrWrap}>
@@ -70,15 +67,6 @@ export default function QrScreen() {
 
 const styles = StyleSheet.create({
   qrCard: { alignItems: "center", paddingVertical: 24 },
-  logoMark: {
-    alignItems: "center",
-    backgroundColor: colors.green,
-    borderRadius: 15,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  gym: { color: colors.green2, fontSize: 10, fontWeight: "900", letterSpacing: 1.4, marginTop: 15 },
   memberName: { color: colors.ink, fontSize: 23, fontWeight: "900", marginTop: 7, textAlign: "center" },
   qrWrap: {
     alignItems: "center",

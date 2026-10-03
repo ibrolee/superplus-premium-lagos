@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { BrandLogo } from "../../lib/BrandLogo";
 import { useApp } from "../../lib/AppContext";
 import {
   AccountLinkRequired,
@@ -59,7 +60,10 @@ export default function HomeScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
       <View style={styles.header}>
-        <Text style={sharedStyles.kicker}>SUPER PLUS FITNESS</Text>
+        <View style={styles.brandRow}>
+          <BrandLogo variant="mark" size={48} />
+          <Text style={styles.brandName}>SUPER PLUS FITNESS</Text>
+        </View>
         <Text style={styles.greeting}>
           {greeting()}, {member.full_name.split(" ")[0]}.
         </Text>
@@ -173,6 +177,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  brandRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 7 },
+  brandName: { ...sharedStyles.kicker, flexShrink: 1 },
   header: { gap: 5, paddingTop: 4 },
   greeting: {
     color: colors.ink,

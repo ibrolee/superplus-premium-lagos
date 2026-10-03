@@ -12,16 +12,29 @@
       "bundleIdentifier": "com.superplusfitness.app"
     },
     "android": {
-      "package": "com.superplusfitness.app"
+      "package": "com.superplusfitness.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "plugins": [
       "expo-router",
-      "expo-splash-screen",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
       [
         "expo-notifications",
         {
           "color": "#EF2B2D",
-          "defaultChannel": "membership-reminders"
+          "defaultChannel": "membership-reminders",
+          "icon": "./assets/notification-icon.png"
         }
       ]
     ],
@@ -30,6 +43,7 @@
       "eas": {
         "projectId": "98a7285c-045e-49e6-8f0f-f46a1bc145ae"
       }
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }
