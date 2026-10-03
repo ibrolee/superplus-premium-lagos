@@ -57,6 +57,7 @@ export default function RewardsScreen() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [points, setPoints] = useState(0);
+  const [visitPoints, setVisitPoints] = useState(1);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
 
@@ -77,6 +78,7 @@ export default function RewardsScreen() {
       ledgerResult,
       rewardsResult,
       redemptionsResult,
+      settingsResult,
     ] = await Promise.all([
       supabase.from("achievement_definitions").select("code,title,description,visit_threshold,points_reward").eq("active", true).order("visit_threshold"),
       supabase.from("member_achievements").select("achievement_code,awarded_at").eq("member_id", member.id),
@@ -85,6 +87,7 @@ export default function RewardsScreen() {
       supabase.from("member_points_ledger").select("points").eq("member_id", member.id),
       supabase.from("reward_catalog").select("id,name,description,points_cost,inventory").eq("active", true).order("points_cost"),
       supabase.from("reward_redemptions").select("id,reward_id,points_cost,status,created_at").eq("member_id", member.id).order("created_at", { ascending: false }).limit(10),
+      supabase.from("app_engagement_settings").select("visit_points").eq("id", "default").maybeSingle(),
     ]);
 
     setDefinitions((definitionsResult.data ?? []) as AchievementDefinition[]);
@@ -94,6 +97,7 @@ export default function RewardsScreen() {
     setRewards((rewardsResult.data ?? []) as Reward[]);
     setRedemptions((redemptionsResult.data ?? []) as Redemption[]);
     setPoints((ledgerResult.data ?? []).reduce((sum, item) => sum + Number(item.points || 0), 0));
+    setVisitPoints(Number(settingsResult.data?.visit_points ?? 1));
     setLoading(false);
   }, [member?.id]);
 
@@ -153,7 +157,9 @@ export default function RewardsScreen() {
       <View style={styles.pointsCard}>
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
-        <Text style={styles.pointsNote}>10 points per recorded gym visit, plus milestone and challenge bonuses.</Text>
+        <Text style={styles.pointsNote}>
+          {visitPoints} point{visitPoints === 1 ? "" : "s"} per recorded gym visit, plus small badge and challenge bonuses.
+        </Text>
       </View>
 
       {loading ? (
@@ -279,7 +285,7 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", letterSpacing: -0.8, lineHeight: 34 },
   pointsCard: { backgroundColor: colors.green, borderRadius: 24, padding: 22 },
   pointsLabel: { color: "#BFD2C2", fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
-  pointsValue: { color: "#FFFFFF", fontSize: 42, fontWeight: "900", letterSpacing: -1, marginTop: 3 },
+  pointsValue: { color: "#FFFFFF", fontSize: 34, fontWeight: "900", letterSpacing: -0.6, marginTop: 3 },
   pointsNote: { color: "#D5E2D7", fontSize: 11, lineHeight: 17, marginTop: 5 },
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   loadingText: { color: colors.muted, fontSize: 12, fontWeight: "700" },

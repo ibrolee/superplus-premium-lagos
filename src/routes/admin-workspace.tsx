@@ -185,8 +185,8 @@ const groupedActions = [
         icon: FileDown,
       },
       {
-        label: "Member engagement",
-        description: "Challenges, rewards and mobile push.",
+        label: "App management",
+        description: "Points, badges, rewards, sessions and app content.",
         href: "/admin-engagement",
         icon: Megaphone,
       },
