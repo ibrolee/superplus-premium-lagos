@@ -34,6 +34,7 @@ begin
   delete from public.blog_comments where member_id = v_member_id;
   delete from public.blog_likes where member_id = v_member_id;
   delete from public.member_saved_posts where member_id = v_member_id;
+  delete from public.member_profile_edit_audit where member_id = v_member_id;
   delete from public.member_push_tokens where member_id = v_member_id;
   delete from public.app_notifications where member_id = v_member_id;
   delete from public.member_notification_reads where member_id = v_member_id;
