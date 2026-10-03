@@ -43,7 +43,7 @@ export default function BlogIndexScreen() {
       .select(
         "id,title,slug,excerpt,featured_image,category,author_name,published_at",
       )
-      .eq("status", "published")
+      .in("status", ["published", "scheduled"])
       .not("published_at", "is", null)
       .lte("published_at", new Date().toISOString())
       .order("published_at", { ascending: false });
