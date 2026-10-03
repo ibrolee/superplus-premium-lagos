@@ -58,6 +58,7 @@ export default function RewardsScreen() {
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [points, setPoints] = useState(0);
   const [visitPoints, setVisitPoints] = useState(1);
+  const [programStartedAt, setProgramStartedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
 
@@ -87,7 +88,7 @@ export default function RewardsScreen() {
       supabase.from("member_points_ledger").select("points").eq("member_id", member.id),
       supabase.from("reward_catalog").select("id,name,description,points_cost,inventory").eq("active", true).order("points_cost"),
       supabase.from("reward_redemptions").select("id,reward_id,points_cost,status,created_at").eq("member_id", member.id).order("created_at", { ascending: false }).limit(10),
-      supabase.from("app_engagement_settings").select("visit_points").eq("id", "default").maybeSingle(),
+      supabase.from("app_engagement_settings").select("visit_points,program_started_at").eq("id", "default").maybeSingle(),
     ]);
 
     setDefinitions((definitionsResult.data ?? []) as AchievementDefinition[]);
@@ -98,6 +99,7 @@ export default function RewardsScreen() {
     setRedemptions((redemptionsResult.data ?? []) as Redemption[]);
     setPoints((ledgerResult.data ?? []).reduce((sum, item) => sum + Number(item.points || 0), 0));
     setVisitPoints(Number(settingsResult.data?.visit_points ?? 1));
+    setProgramStartedAt(settingsResult.data?.program_started_at ?? null);
     setLoading(false);
   }, [member?.id]);
 
@@ -107,7 +109,16 @@ export default function RewardsScreen() {
 
   const earnedCodes = useMemo(() => new Set(earned.map((item) => item.achievement_code)), [earned]);
   const completedChallengeIds = useMemo(() => new Set(completions.map((item) => item.challenge_id)), [completions]);
-  const visitDates = useMemo(() => uniqueVisitDates(attendance), [attendance]);
+  const eligibleAttendance = useMemo(
+    () =>
+      programStartedAt
+        ? attendance.filter(
+            (item) => new Date(item.checked_in_at).getTime() >= new Date(programStartedAt).getTime(),
+          )
+        : attendance,
+    [attendance, programStartedAt],
+  );
+  const visitDates = useMemo(() => uniqueVisitDates(eligibleAttendance), [eligibleAttendance]);
 
   async function redeem(reward: Reward) {
     if (points < reward.points_cost || redeeming) return;
@@ -158,7 +169,7 @@ export default function RewardsScreen() {
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
         <Text style={styles.pointsNote}>
-          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day. Multiple scans on the same day do not earn extra visit points, plus you can earn badge and challenge bonuses.
+          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward. Multiple scans on the same day do not earn extra visit points, plus you can earn badge and challenge bonuses.
         </Text>
       </View>
 
