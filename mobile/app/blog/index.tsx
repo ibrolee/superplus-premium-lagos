@@ -25,8 +25,10 @@ type BlogPost = {
 };
 
 export default function BlogIndexScreen() {
-  const { session } = useApp();
+  const { session, member } = useApp();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<"all" | "saved">("all");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
@@ -53,15 +55,28 @@ export default function BlogIndexScreen() {
       setPosts((data ?? []) as BlogPost[]);
     }
 
+    if (member?.id) {
+      const { data: savedRows } = await supabase
+        .from("member_saved_posts")
+        .select("post_id")
+        .eq("member_id", member.id);
+      setSavedIds(new Set((savedRows ?? []).map((row) => String(row.post_id))));
+    } else {
+      setSavedIds(new Set());
+    }
+
     setLoading(false);
     setRefreshing(false);
-  }, []);
+  }, [member?.id]);
 
   useEffect(() => {
     void loadPosts();
   }, [loadPosts]);
 
   if (!session) return <Redirect href="/login" />;
+
+  const visiblePosts =
+    filter === "saved" ? posts.filter((post) => savedIds.has(post.id)) : posts;
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void loadPosts(true)}>
@@ -78,6 +93,30 @@ export default function BlogIndexScreen() {
         </View>
       </View>
 
+      <View style={styles.filters}>
+        <Pressable
+          onPress={() => setFilter("all")}
+          style={[styles.filterChip, filter === "all" && styles.filterChipActive]}
+        >
+          <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>
+            All
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setFilter("saved")}
+          style={[styles.filterChip, filter === "saved" && styles.filterChipActive]}
+        >
+          <Ionicons
+            name={filter === "saved" ? "bookmark" : "bookmark-outline"}
+            size={14}
+            color={filter === "saved" ? "#FFFFFF" : colors.green}
+          />
+          <Text style={[styles.filterText, filter === "saved" && styles.filterTextActive]}>
+            Saved {savedIds.size ? `(${savedIds.size})` : ""}
+          </Text>
+        </Pressable>
+      </View>
+
       {loading ? (
         <Card style={styles.loadingCard}>
           <ActivityIndicator color={colors.green} />
@@ -88,16 +127,20 @@ export default function BlogIndexScreen() {
           <Ionicons name="cloud-offline-outline" size={24} color={colors.danger} />
           <Text style={styles.errorText}>{error}</Text>
         </Card>
-      ) : posts.length === 0 ? (
+      ) : visiblePosts.length === 0 ? (
         <Card>
-          <Text style={styles.emptyTitle}>No articles yet</Text>
+          <Text style={styles.emptyTitle}>
+            {filter === "saved" ? "No saved articles yet" : "No articles yet"}
+          </Text>
           <Text style={styles.emptyText}>
-            New Super Plus posts will appear here as soon as they are published.
+            {filter === "saved"
+              ? "Save useful articles and they will stay together here."
+              : "New Super Plus posts will appear here as soon as they are published."}
           </Text>
         </Card>
       ) : (
         <View style={styles.list}>
-          {posts.map((post) => (
+          {visiblePosts.map((post) => (
             <Pressable
               key={post.id}
               style={({ pressed }) => [styles.postCard, pressed && styles.pressed]}
@@ -160,6 +203,21 @@ const styles = StyleSheet.create({
     letterSpacing: -0.8,
     lineHeight: 34,
   },
+  filters: { flexDirection: "row", gap: 8 },
+  filterChip: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 5,
+    minHeight: 38,
+    paddingHorizontal: 13,
+  },
+  filterChipActive: { backgroundColor: colors.green, borderColor: colors.green },
+  filterText: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  filterTextActive: { color: "#FFFFFF" },
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   loadingText: { color: colors.muted, fontSize: 13, fontWeight: "700" },
   errorCard: { alignItems: "center", gap: 10, backgroundColor: "#FFF3F1" },
