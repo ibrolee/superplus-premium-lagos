@@ -37,6 +37,7 @@ type Reward = {
 
 type Redemption = {
   id: string;
+  member_id: string;
   points_cost: number;
   status: string;
   staff_note: string | null;
@@ -142,7 +143,7 @@ function AdminEngagement() {
         supabase
           .from("reward_redemptions")
           .select(
-            "id,points_cost,status,staff_note,created_at,member:members(full_name,phone,email),reward:reward_catalog(name)",
+            "id,member_id,points_cost,status,staff_note,created_at,member:members(full_name,phone,email),reward:reward_catalog(name)",
           )
           .order("created_at", { ascending: false })
           .limit(80),
@@ -303,8 +304,30 @@ function AdminEngagement() {
       })
       .eq("id", item.id);
 
-    if (updateError) setError(updateError.message);
-    else {
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      const rewardName = item.reward?.name || "reward";
+      await supabase.functions.invoke("send-member-push", {
+        body: {
+          title:
+            status === "approved"
+              ? "Reward approved"
+              : status === "fulfilled"
+                ? "Reward ready"
+                : "Reward update",
+          body:
+            status === "approved"
+              ? `Your ${rewardName} redemption has been approved.`
+              : status === "fulfilled"
+                ? `Your ${rewardName} has been marked fulfilled.`
+                : `Your ${rewardName} redemption was not approved.${note.trim() ? ` ${note.trim()}` : ""}`,
+          kind: "reward",
+          deep_link: "/rewards",
+          member_id: item.member_id,
+          send_push: true,
+        },
+      });
       setSuccess(`Redemption marked ${status}.`);
       await load();
     }
