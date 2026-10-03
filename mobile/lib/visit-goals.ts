@@ -112,8 +112,8 @@ export function calculateGoalProgress(
   goal: VisitGoal,
 ): GoalProgress {
   const weekDates = currentLagosWeek();
-  const weekStart = weekStart ?? lagosDate(new Date());
-  const weekEnd = weekEnd ?? weekStart;
+  const weekStart = weekDates[0] ?? lagosDate(new Date());
+  const weekEnd = weekDates[6] ?? weekStart;
   const visitedDates = uniqueVisitDates(attendance);
   const currentWeekVisits = attendance.filter((visit) => {
     const day = lagosDate(visit.checked_in_at);
