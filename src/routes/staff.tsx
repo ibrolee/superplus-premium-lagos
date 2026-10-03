@@ -6,6 +6,8 @@ import {
   CheckCircle2,
   Clock3,
   Download,
+  Home,
+  AlertCircle,
   LogIn,
   LogOut,
   QrCode,
@@ -20,6 +22,7 @@ import { QRCodeSVG } from "qrcode.react";
 
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/staff")({
   component: StaffPage,
@@ -125,27 +128,26 @@ function statusClass(status: StaffProfile["status"]) {
   }
 }
 
-function durationLabel(
-  checkedIn: string,
-  checkedOut: string | null,
-) {
+function lagosDay(value: string | number) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(value));
+}
+
+function durationLabel(checkedIn: string, checkedOut: string | null) {
   const start = new Date(checkedIn).getTime();
 
-  const end = checkedOut
-    ? new Date(checkedOut).getTime()
-    : Date.now();
+  const end = checkedOut ? new Date(checkedOut).getTime() : Date.now();
 
-  const minutes = Math.max(
-    0,
-    Math.floor((end - start) / 60000),
-  );
+  const minutes = Math.max(0, Math.floor((end - start) / 60000));
 
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
 
-  return hours > 0
-    ? `${hours}h ${remainingMinutes}m`
-    : `${remainingMinutes}m`;
+  return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
 }
 
 function getRoleLabel(role: string) {
@@ -171,8 +173,7 @@ function StaffPage() {
 
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
-  const [attendanceRecords, setAttendanceRecords] =
-    useState<AttendanceRecord[]>([]);
+  const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
 
   const [loginType, setLoginType] = useState<LoginType>("staff");
   const [loginMode, setLoginMode] = useState(true);
@@ -183,15 +184,11 @@ function StaffPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
 
-  const [forgotPasswordMode, setForgotPasswordMode] =
-    useState(false);
+  const [forgotPasswordMode, setForgotPasswordMode] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
 
-  const [showProfile, setShowProfile] = useState(false);
-  const [showEmployment, setShowEmployment] = useState(false);
-  const [showSalary, setShowSalary] = useState(false);
-  const [showAttendance, setShowAttendance] = useState(false);
-  const [showQr, setShowQr] = useState(false);
+  const [activeSection, setActiveSection] = useState("personal");
+  const [now, setNow] = useState(() => Date.now());
 
   const [editContact, setEditContact] = useState(false);
   const [editPhone, setEditPhone] = useState("");
@@ -228,21 +225,17 @@ function StaffPage() {
 
     const role = String(staffUser?.role || "").toLowerCase();
 
-    if (
-      staffUser?.active === true &&
-      ["admin", "owner", "manager"].includes(role)
-    ) {
+    if (staffUser?.active === true && ["admin", "owner", "manager"].includes(role)) {
       setProfile(null);
       setLoading(false);
       window.location.replace("/staff-admin");
       return;
     }
 
-    const { data: staffProfile, error: profileError } =
-      await supabase
-        .from("staff_profiles")
-        .select(
-          `
+    const { data: staffProfile, error: profileError } = await supabase
+      .from("staff_profiles")
+      .select(
+        `
           id,
           auth_user_id,
           staff_id,
@@ -261,9 +254,9 @@ function StaffPage() {
           qr_token,
           created_at
         `,
-        )
-        .eq("auth_user_id", user.id)
-        .maybeSingle();
+      )
+      .eq("auth_user_id", user.id)
+      .maybeSingle();
 
     if (profileError) {
       setError(profileError.message);
@@ -273,9 +266,7 @@ function StaffPage() {
 
     if (!staffProfile) {
       setProfile(null);
-      setError(
-        "No staff profile was found for this account. Please contact management.",
-      );
+      setError("No staff profile was found for this account. Please contact management.");
       setLoading(false);
       return;
     }
@@ -333,13 +324,9 @@ function StaffPage() {
       return;
     }
 
-    setSalaryRecords(
-      (salaryResult.data || []) as SalaryRecord[],
-    );
+    setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
 
-    setAttendanceRecords(
-      (attendanceResult.data || []) as AttendanceRecord[],
-    );
+    setAttendanceRecords((attendanceResult.data || []) as AttendanceRecord[]);
 
     setLoading(false);
   }
@@ -356,16 +343,11 @@ function StaffPage() {
     setError("");
     setSuccess("");
 
-    const redirectUrl =
-      `${window.location.origin}/staff-reset-password`;
+    const redirectUrl = `${window.location.origin}/staff-reset-password`;
 
-    const { error: resetError } =
-      await supabase.auth.resetPasswordForEmail(
-        cleanEmail,
-        {
-          redirectTo: redirectUrl,
-        },
-      );
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+      redirectTo: redirectUrl,
+    });
 
     if (resetError) {
       setError(resetError.message);
@@ -390,11 +372,10 @@ function StaffPage() {
     setError("");
     setSuccess("");
 
-    const { data, error: loginError } =
-      await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
 
     if (loginError || !data.user) {
       setError(loginError?.message || "Unable to sign in.");
@@ -416,17 +397,13 @@ function StaffPage() {
 
     const role = String(staffUser?.role || "").toLowerCase();
 
-    const isAdmin =
-      staffUser?.active === true &&
-      ["admin", "owner", "manager"].includes(role);
+    const isAdmin = staffUser?.active === true && ["admin", "owner", "manager"].includes(role);
 
     if (loginType === "admin") {
       if (!isAdmin) {
         await supabase.auth.signOut();
 
-        setError(
-          "This account does not have administrator access. Please use Staff Login.",
-        );
+        setError("This account does not have administrator access. Please use Staff Login.");
 
         setSaving(false);
         return;
@@ -475,19 +452,18 @@ function StaffPage() {
 
     const redirectUrl = `${window.location.origin}/staff`;
 
-    const { data, error: signupError } =
-      await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            account_type: "staff",
-            full_name: fullName.trim(),
-            phone: phone.trim(),
-          },
+    const { data, error: signupError } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          account_type: "staff",
+          full_name: fullName.trim(),
+          phone: phone.trim(),
         },
-      });
+      },
+    });
 
     if (signupError) {
       setError(signupError.message);
@@ -516,6 +492,8 @@ function StaffPage() {
     setSuccess("");
     setLoginType("staff");
     setLoginMode(true);
+    setActiveSection("personal");
+    setEditContact(false);
   }
 
   async function updateContactInformation() {
@@ -551,9 +529,7 @@ function StaffPage() {
   }
 
   async function downloadQr() {
-    const svg = document.querySelector(
-      "#staff-profile-qr",
-    ) as SVGElement | null;
+    const svg = document.querySelector("#staff-profile-qr") as SVGElement | null;
 
     if (!svg || !profile) {
       setError("QR code is not ready yet.");
@@ -623,21 +599,34 @@ function StaffPage() {
     };
   }, []);
 
+  // Match the scanner's midnight reset in Lagos, including an open dashboard.
+  useEffect(() => {
+    const refreshTime = () => setNow(Date.now());
+    const timer = window.setInterval(refreshTime, 30_000);
+    window.addEventListener("focus", refreshTime);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshTime);
+    };
+  }, []);
+
+  const today = lagosDay(now);
   const activeAttendance = useMemo(
     () =>
       attendanceRecords.find(
-        (record) => !record.checked_out_at,
+        (record) => !record.checked_out_at && lagosDay(record.checked_in_at) === today,
       ) || null,
-    [attendanceRecords],
+    [attendanceRecords, today],
   );
+  const missedClockOuts = attendanceRecords.filter(
+    (record) => !record.checked_out_at && lagosDay(record.checked_in_at) < today,
+  ).length;
 
   if (loading) {
     return (
       <main className="min-h-screen bg-background">
         <div className="mx-auto max-w-4xl px-4 py-24 text-center">
-          <p className="text-sm text-muted-foreground">
-            Loading Staff Portal...
-          </p>
+          <p className="text-sm text-muted-foreground">Loading Staff Portal...</p>
         </div>
       </main>
     );
@@ -662,9 +651,7 @@ function StaffPage() {
               </p>
 
               <h1 className="mt-3 font-display text-4xl font-bold uppercase sm:text-7xl">
-                {loginType === "admin"
-                  ? "Admin Login"
-                  : "Staff Portal"}
+                {loginType === "admin" ? "Admin Login" : "Staff Portal"}
               </h1>
 
               <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-muted-foreground">
@@ -686,9 +673,7 @@ function StaffPage() {
                   setPassword("");
                 }}
                 className={`flex items-center justify-center gap-2 px-2 py-4 text-xs font-bold uppercase sm:text-sm ${
-                  loginType === "staff"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background"
+                  loginType === "staff" ? "bg-primary text-primary-foreground" : "bg-background"
                 }`}
               >
                 <UserRound className="h-4 w-4" />
@@ -706,9 +691,7 @@ function StaffPage() {
                   setPassword("");
                 }}
                 className={`flex items-center justify-center gap-2 px-2 py-4 text-xs font-bold uppercase sm:text-sm ${
-                  loginType === "admin"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background"
+                  loginType === "admin" ? "bg-primary text-primary-foreground" : "bg-background"
                 }`}
               >
                 <ShieldCheck className="h-4 w-4" />
@@ -727,9 +710,7 @@ function StaffPage() {
                     setSuccess("");
                   }}
                   className={`py-3 text-xs font-bold uppercase ${
-                    loginMode
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                    loginMode ? "bg-foreground text-background" : "bg-background"
                   }`}
                 >
                   Login
@@ -744,9 +725,7 @@ function StaffPage() {
                     setSuccess("");
                   }}
                   className={`py-3 text-xs font-bold uppercase ${
-                    !loginMode
-                      ? "bg-foreground text-background"
-                      : "bg-background"
+                    !loginMode ? "bg-foreground text-background" : "bg-background"
                   }`}
                 >
                   Register
@@ -782,8 +761,8 @@ function StaffPage() {
                       </h2>
 
                       <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        Enter your account email address. We will send
-                        you a link to create a new password.
+                        Enter your account email address. We will send you a link to create a new
+                        password.
                       </p>
                     </div>
                   </div>
@@ -798,12 +777,9 @@ function StaffPage() {
                 >
                   <label className="grid gap-2 text-sm font-bold">
                     Email
-
                     <input
                       value={resetEmail}
-                      onChange={(event) =>
-                        setResetEmail(event.target.value)
-                      }
+                      onChange={(event) => setResetEmail(event.target.value)}
                       type="email"
                       placeholder="Enter your email"
                       autoComplete="email"
@@ -811,16 +787,9 @@ function StaffPage() {
                     />
                   </label>
 
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={saving}
-                    className="mt-2"
-                  >
+                  <Button type="submit" size="lg" disabled={saving} className="mt-2">
                     <KeyRound />
-                    {saving
-                      ? "Sending Reset Link..."
-                      : "Send Reset Link"}
+                    {saving ? "Sending Reset Link..." : "Send Reset Link"}
                   </Button>
                 </form>
 
@@ -854,12 +823,9 @@ function StaffPage() {
                     <>
                       <label className="grid gap-2 text-sm font-bold">
                         Full Name
-
                         <input
                           value={fullName}
-                          onChange={(event) =>
-                            setFullName(event.target.value)
-                          }
+                          onChange={(event) => setFullName(event.target.value)}
                           placeholder="Enter your full name"
                           autoComplete="name"
                           className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
@@ -868,12 +834,9 @@ function StaffPage() {
 
                       <label className="grid gap-2 text-sm font-bold">
                         Phone
-
                         <input
                           value={phone}
-                          onChange={(event) =>
-                            setPhone(event.target.value)
-                          }
+                          onChange={(event) => setPhone(event.target.value)}
                           type="tel"
                           placeholder="Enter your phone number"
                           autoComplete="tel"
@@ -885,12 +848,9 @@ function StaffPage() {
 
                   <label className="grid gap-2 text-sm font-bold">
                     Email
-
                     <input
                       value={email}
-                      onChange={(event) =>
-                        setEmail(event.target.value)
-                      }
+                      onChange={(event) => setEmail(event.target.value)}
                       type="email"
                       placeholder="Enter your email"
                       autoComplete="email"
@@ -900,12 +860,9 @@ function StaffPage() {
 
                   <label className="grid gap-2 text-sm font-bold">
                     Password
-
                     <input
                       value={password}
-                      onChange={(event) =>
-                        setPassword(event.target.value)
-                      }
+                      onChange={(event) => setPassword(event.target.value)}
                       type="text"
                       placeholder={
                         loginType === "staff" && !loginMode
@@ -913,40 +870,27 @@ function StaffPage() {
                           : "Enter your password"
                       }
                       autoComplete={
-                        loginType === "staff" && !loginMode
-                          ? "new-password"
-                          : "current-password"
+                        loginType === "staff" && !loginMode ? "new-password" : "current-password"
                       }
                       className="h-12 border border-input bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                     />
                   </label>
 
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={saving}
-                    className="mt-2"
-                  >
+                  <Button type="submit" size="lg" disabled={saving} className="mt-2">
                     {loginType === "admin" ? (
                       <>
                         <ShieldCheck />
-                        {saving
-                          ? "Signing In..."
-                          : "Admin Login"}
+                        {saving ? "Signing In..." : "Admin Login"}
                       </>
                     ) : loginMode ? (
                       <>
                         <LogIn />
-                        {saving
-                          ? "Signing In..."
-                          : "Staff Login"}
+                        {saving ? "Signing In..." : "Staff Login"}
                       </>
                     ) : (
                       <>
                         <BriefcaseBusiness />
-                        {saving
-                          ? "Submitting..."
-                          : "Submit Staff Application"}
+                        {saving ? "Submitting..." : "Submit Staff Application"}
                       </>
                     )}
                   </Button>
@@ -971,14 +915,11 @@ function StaffPage() {
 
             {loginType === "staff" && !loginMode && (
               <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-800">
-                <strong className="block">
-                  Staff approval required
-                </strong>
+                <strong className="block">Staff approval required</strong>
 
                 <p className="mt-1">
-                  Your registration will be reviewed by Super Plus
-                  Fitness management before your staff account becomes
-                  active.
+                  Your registration will be reviewed by Super Plus Fitness management before your
+                  staff account becomes active.
                 </p>
               </div>
             )}
@@ -1035,16 +976,10 @@ function StaffPage() {
                   Staff ID
                 </p>
 
-                <p className="mt-2 font-display text-2xl font-bold">
-                  {profile.staff_id}
-                </p>
+                <p className="mt-2 font-display text-2xl font-bold">{profile.staff_id}</p>
               </div>
 
-              <Button
-                variant="outline"
-                className="mt-6"
-                onClick={() => void logout()}
-              >
+              <Button variant="outline" className="mt-6" onClick={() => void logout()}>
                 <LogOut />
                 Logout
               </Button>
@@ -1057,177 +992,184 @@ function StaffPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto max-w-5xl px-3 py-3 sm:px-5 sm:py-5 lg:px-8">
-        {error && (
-          <div className="mb-6 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
-
-        {success && (
-          <div className="mb-6 border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700">
-            {success}
-          </div>
-        )}
-
-        <header className="border border-border bg-card p-3 sm:p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+        <header className="flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <img
+              src="/header-logo.png"
+              alt="Super Plus Fitness & Spa"
+              className="h-12 w-12 shrink-0 object-contain"
+            />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-primary">
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
                 Super Plus Fitness
               </p>
-
-              <h1 className="mt-0.5 font-display text-2xl font-bold uppercase sm:text-3xl">
-                Staff Portal
+              <h1 className="font-display text-2xl font-bold uppercase sm:text-3xl">
+                Staff Dashboard
               </h1>
-
-              <p className="mt-2 text-sm text-muted-foreground">
-                Welcome, {profile.full_name}
-              </p>
             </div>
-
-            <Button
-              variant="outline"
-              onClick={() => void logout()}
-            >
-              <LogOut />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">
+                <Home className="size-4" />
+                Home
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void logout()}>
+              <LogOut className="size-4" />
               Logout
             </Button>
           </div>
         </header>
 
-        <section className="mt-2 border border-border bg-card p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center bg-primary text-primary-foreground">
-              <UserRound className="h-5 w-5" />
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Staff Member
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                {profile.full_name}
-              </h2>
-
-              <p className="mt-1 text-sm text-muted-foreground">
-                {profile.position || "Staff"}{" "}
-                {profile.department
-                  ? `• ${profile.department}`
-                  : ""}
-              </p>
-
-              <div className="mt-2 flex flex-wrap gap-2">
-                <span className="rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase text-green-700">
-                  Active Staff
-                </span>
-              </div>
-            </div>
+        {error && (
+          <div
+            role="alert"
+            className="mt-4 border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700"
+          >
+            {error}
           </div>
+        )}
+        {success && (
+          <div
+            role="status"
+            className="mt-4 border border-green-500/30 bg-green-500/10 p-4 text-sm text-green-700"
+          >
+            {success}
+          </div>
+        )}
+
+        <section
+          aria-label="Staff identity"
+          className="mt-4 flex flex-wrap items-center gap-4 border border-border bg-card p-4 sm:p-6"
+        >
+          <div
+            aria-hidden="true"
+            className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 font-display text-2xl font-bold text-primary"
+          >
+            {profile.full_name
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((name) => name[0])
+              .join("")}
+          </div>
+          <div className="min-w-0 flex-1 basis-40">
+            <h2 className="break-words font-display text-2xl font-bold uppercase sm:text-3xl">
+              {profile.full_name}
+            </h2>
+            <p className="mt-1 break-words text-sm text-muted-foreground">
+              {profile.position || getRoleLabel(profile.role)}
+              {profile.department ? ` · ${profile.department}` : ""}
+            </p>
+            <p className="mt-2 break-all text-sm">
+              <span className="text-muted-foreground">Staff ID:</span>{" "}
+              <strong>{profile.staff_id}</strong>
+            </p>
+          </div>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-bold uppercase ${statusClass(profile.status)}`}
+          >
+            Active Staff
+          </span>
         </section>
 
-        <section className="mt-2 border-2 border-primary/40 bg-primary/5 p-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <section
+          aria-label="Staff timekeeping"
+          className="mt-3 border border-primary/40 bg-primary/5 p-4"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="flex items-center gap-2">
-                <ScanLine className="size-5 text-primary" />
-
-                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                  Staff Timekeeping
-                </p>
-              </div>
-
-              <h2 className="mt-0.5 font-display text-xl font-black uppercase">
-                {activeAttendance
-                  ? "Currently Clocked In"
-                  : "Clock In / Clock Out"}
-              </h2>
-
-              <p className="mt-0.5 max-w-xl text-[11px] leading-4 text-muted-foreground">
-                Scan the attendance QR code displayed at the gym to
-                record your working hours.
+              <p className="flex items-center gap-2 text-sm font-bold">
+                <Clock3 className="size-4 text-primary" />
+                {activeAttendance ? "Currently clocked in" : "Ready for your next shift"}
               </p>
-
-              {activeAttendance && (
-                <p className="mt-3 text-sm font-semibold">
-                  Clocked in:{" "}
-                  {formatDateTime(
-                    activeAttendance.checked_in_at,
-                  )}
-                </p>
-              )}
+              <p className="mt-1 text-sm text-muted-foreground">
+                {activeAttendance
+                  ? `Clocked in ${formatDateTime(activeAttendance.checked_in_at)}`
+                  : "Scan the attendance QR at the gym to clock in or out."}
+              </p>
             </div>
-
-            <Button
-              asChild
-              size="lg"
-              className="h-10 w-full shrink-0 text-xs sm:w-auto"
-            >
+            <Button asChild className="w-full shrink-0 sm:w-auto">
               <Link to="/staff-attendance">
                 <ScanLine />
                 Scan Attendance QR
               </Link>
             </Button>
           </div>
+          {missedClockOuts > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3 text-sm">
+              <AlertCircle aria-hidden="true" className="size-4 shrink-0 text-orange-700" />
+              <p className="min-w-0 flex-1">
+                {missedClockOuts} earlier {missedClockOuts === 1 ? "shift has" : "shifts have"} a
+                missing clock-out.
+              </p>
+              <Link
+                to="/staff-missed-scans"
+                className="font-bold text-primary underline underline-offset-4"
+              >
+                Report missed scan
+              </Link>
+            </div>
+          )}
         </section>
 
-        <section className="mt-2 border border-border bg-card">
-          <button
-            type="button"
-            onClick={() =>
-              setShowProfile((current) => !current)
-            }
-            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
+        <Tabs value={activeSection} onValueChange={setActiveSection} className="mt-5">
+          <TabsList
+            aria-label="Staff dashboard sections"
+            className="grid h-auto w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0 sm:grid-cols-3 lg:grid-cols-5"
           >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Profile
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                Personal Information
-              </h2>
+            {[
+              { value: "personal", label: "Personal Information", icon: UserRound },
+              { value: "employment", label: "Employment", icon: BriefcaseBusiness },
+              { value: "attendance", label: "Attendance", icon: CalendarDays },
+              { value: "payments", label: "Payments", icon: Wallet },
+              { value: "identification", label: "Staff QR Code", icon: QrCode },
+            ].map(({ value, label, icon: Icon }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="min-h-12 min-w-0 gap-2 whitespace-normal rounded-none border border-border bg-card px-3 py-3 text-sm font-bold text-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
+              >
+                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value="personal" className="mt-4 min-w-0 border border-border bg-card">
+            <div className="border-b border-border px-4 py-4 sm:px-6">
+              <h2 className="font-display text-2xl font-bold uppercase">Personal Information</h2>
             </div>
-
-            <UserRound className="text-primary" />
-          </button>
-
-          {showProfile && (
-            <div className="border-t border-border p-4">
-              <div className="grid gap-3 sm:grid-cols-2">
+            <div className="p-4 sm:p-6">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Full Name
                   </p>
-                  <p className="mt-1 font-medium">
-                    {profile.full_name}
-                  </p>
+                  <p className="mt-1 break-words font-medium">{profile.full_name}</p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Email
                   </p>
-                  <p className="mt-1 break-all font-medium">
-                    {profile.email || "—"}
-                  </p>
+                  <p className="mt-1 break-all font-medium">{profile.email || "—"}</p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Phone
                   </p>
-                  <p className="mt-1 font-medium">
-                    {profile.phone || "Not available"}
-                  </p>
+                  <p className="mt-1 break-words font-medium">{profile.phone || "Not available"}</p>
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Birthday
                   </p>
-                  <p className="mt-1 font-medium">
+                  <p className="mt-1 break-words font-medium">
                     {profile.birth_day && profile.birth_month
                       ? `${profile.birth_day}/${profile.birth_month}`
                       : "Not available"}
@@ -1235,10 +1177,10 @@ function StaffPage() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                     Address
                   </p>
-                  <p className="mt-1 font-medium">
+                  <p className="mt-1 break-words font-medium">
                     {profile.address || "Not available"}
                   </p>
                 </div>
@@ -1248,7 +1190,11 @@ function StaffPage() {
                 <Button
                   variant="outline"
                   className="mt-5"
-                  onClick={() => setEditContact(true)}
+                  onClick={() => {
+                    setEditPhone(profile.phone || "");
+                    setEditAddress(profile.address || "");
+                    setEditContact(true);
+                  }}
                 >
                   Edit Contact Information
                 </Button>
@@ -1257,47 +1203,31 @@ function StaffPage() {
                   <div className="grid gap-5">
                     <label className="grid gap-2 text-sm font-bold">
                       Phone
-
                       <input
                         value={editPhone}
-                        onChange={(event) =>
-                          setEditPhone(event.target.value)
-                        }
+                        onChange={(event) => setEditPhone(event.target.value)}
                         type="tel"
-                        className="h-11 border border-border bg-background px-3 font-normal outline-none"
+                        className="h-11 min-w-0 border border-border bg-background px-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                       />
                     </label>
 
                     <label className="grid gap-2 text-sm font-bold">
                       Address
-
                       <textarea
                         value={editAddress}
-                        onChange={(event) =>
-                          setEditAddress(event.target.value)
-                        }
+                        onChange={(event) => setEditAddress(event.target.value)}
                         rows={3}
-                        className="border border-border bg-background p-3 font-normal outline-none"
+                        className="min-w-0 border border-border bg-background p-3 font-normal outline-none focus:ring-2 focus:ring-ring"
                       />
                     </label>
 
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        onClick={() =>
-                          void updateContactInformation()
-                        }
-                        disabled={saving}
-                      >
+                      <Button onClick={() => void updateContactInformation()} disabled={saving}>
                         <CheckCircle2 />
                         Save
                       </Button>
 
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          setEditContact(false)
-                        }
-                      >
+                      <Button variant="outline" onClick={() => setEditContact(false)}>
                         Cancel
                       </Button>
                     </div>
@@ -1305,83 +1235,39 @@ function StaffPage() {
                 </div>
               )}
             </div>
-          )}
-        </section>
+          </TabsContent>
 
-        <section className="mt-2 border border-border bg-card">
-          <button
-            type="button"
-            onClick={() =>
-              setShowEmployment((current) => !current)
-            }
-            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-          >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Employment
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                Job Information
-              </h2>
+          <TabsContent value="employment" className="mt-4 min-w-0 border border-border bg-card">
+            <div className="border-b border-border px-4 py-4 sm:px-6">
+              <h2 className="font-display text-2xl font-bold uppercase">Employment Details</h2>
             </div>
-
-            <BriefcaseBusiness className="text-primary" />
-          </button>
-
-          {showEmployment && (
-            <div className="border-t border-border p-4">
+            <div className="p-4 sm:p-6">
               <div className="grid gap-3 sm:grid-cols-2">
                 {[
                   ["Position", profile.position || "Not assigned"],
                   ["Department", profile.department || "Not assigned"],
-                  [
-                    "Employment Type",
-                    profile.employment_type || "Not assigned",
-                  ],
-                  [
-                    "Employment Date",
-                    formatDate(profile.employment_date),
-                  ],
+                  ["Employment Type", profile.employment_type || "Not assigned"],
+                  ["Employment Date", formatDate(profile.employment_date)],
                   ["System Role", getRoleLabel(profile.role)],
                   ["Staff Status", statusLabel(profile.status)],
                 ].map(([label, value]) => (
                   <div key={label}>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       {label}
                     </p>
 
-                    <p className="mt-1 font-medium">{value}</p>
+                    <p className="mt-1 break-words font-medium">{value}</p>
                   </div>
                 ))}
               </div>
             </div>
-          )}
-        </section>
+          </TabsContent>
 
-        <section className="mt-2 border border-border bg-card">
-          <button
-            type="button"
-            onClick={() =>
-              setShowSalary((current) => !current)
-            }
-            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-          >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Payroll
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                Salary History
-              </h2>
+          <TabsContent value="payments" className="mt-4 min-w-0 border border-border bg-card">
+            <div className="border-b border-border px-4 py-4 sm:px-6">
+              <h2 className="font-display text-2xl font-bold uppercase">Salary History</h2>
             </div>
-
-            <Wallet className="text-primary" />
-          </button>
-
-          {showSalary && (
-            <div className="border-t border-border p-4">
+            <div className="p-4 sm:p-6">
               {salaryRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No salary records available yet.
@@ -1389,10 +1275,7 @@ function StaffPage() {
               ) : (
                 <div className="grid gap-4">
                   {salaryRecords.map((record) => (
-                    <article
-                      key={record.id}
-                      className="border border-border p-4"
-                    >
+                    <article key={record.id} className="border border-border p-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
@@ -1400,10 +1283,7 @@ function StaffPage() {
                           </p>
 
                           <p className="mt-1 font-display text-2xl font-bold">
-                            {formatMoney(
-                              record.amount,
-                              record.currency,
-                            )}
+                            {formatMoney(record.amount, record.currency)}
                           </p>
                         </div>
 
@@ -1414,16 +1294,13 @@ function StaffPage() {
 
                       <div className="mt-4 grid gap-4 sm:grid-cols-3">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                             Pay Period
                           </p>
 
-                          <p className="mt-1 text-sm">
-                            {record.pay_period_start ||
-                            record.pay_period_end
-                              ? `${formatDate(
-                                  record.pay_period_start,
-                                )} – ${formatDate(
+                          <p className="mt-1 break-words text-sm">
+                            {record.pay_period_start || record.pay_period_end
+                              ? `${formatDate(record.pay_period_start)} – ${formatDate(
                                   record.pay_period_end,
                                 )}`
                               : "—"}
@@ -1431,23 +1308,21 @@ function StaffPage() {
                         </div>
 
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                             Payment Date
                           </p>
 
-                          <p className="mt-1 text-sm">
+                          <p className="mt-1 break-words text-sm">
                             {formatDate(record.payment_date)}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                             Notes
                           </p>
 
-                          <p className="mt-1 text-sm">
-                            {record.notes || "—"}
-                          </p>
+                          <p className="mt-1 break-words text-sm">{record.notes || "—"}</p>
                         </div>
                       </div>
                     </article>
@@ -1455,42 +1330,30 @@ function StaffPage() {
                 </div>
               )}
             </div>
-          )}
-        </section>
+          </TabsContent>
 
-        <section className="mt-2 border border-border bg-card">
-          <button
-            type="button"
-            onClick={() =>
-              setShowAttendance((current) => !current)
-            }
-            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-          >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Timekeeping
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                Attendance History
-              </h2>
+          <TabsContent value="attendance" className="mt-4 min-w-0 border border-border bg-card">
+            <div className="border-b border-border px-4 py-4 sm:px-6">
+              <h2 className="font-display text-2xl font-bold uppercase">Attendance History</h2>
             </div>
-
-            <CalendarDays className="text-primary" />
-          </button>
-
-          {showAttendance && (
-            <div className="border-t border-border p-4">
+            <div className="p-4 sm:p-6">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm text-muted-foreground">Your latest 100 scans · Lagos time</p>
+                <Button asChild variant="outline">
+                  <Link to="/staff-missed-scans">Report a missed scan</Link>
+                </Button>
+              </div>
               {attendanceRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  No attendance records yet.
+                  No attendance records yet. Scan the attendance QR at the gym to record your first
+                  shift.
                 </p>
               ) : (
                 <div className="grid gap-3">
                   {attendanceRecords.map((record) => (
                     <article
                       key={record.id}
-                      className="border border-border p-4"
+                      className={`border p-4 ${!record.checked_out_at && lagosDay(record.checked_in_at) < today ? "border-orange-500/40 bg-orange-500/5" : "border-border"}`}
                     >
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div>
@@ -1511,7 +1374,9 @@ function StaffPage() {
                           <p className="mt-1 text-sm font-semibold">
                             {record.checked_out_at
                               ? formatDateTime(record.checked_out_at)
-                              : "Still inside"}
+                              : lagosDay(record.checked_in_at) === today
+                                ? "Still clocked in"
+                                : "Missing clock-out"}
                           </p>
                         </div>
 
@@ -1521,21 +1386,16 @@ function StaffPage() {
                           </p>
 
                           <p className="mt-1 text-sm font-semibold">
-                            {durationLabel(
-                              record.checked_in_at,
-                              record.checked_out_at,
-                            )}
+                            {!record.checked_out_at && lagosDay(record.checked_in_at) !== today
+                              ? "Incomplete scan"
+                              : durationLabel(record.checked_in_at, record.checked_out_at)}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs font-bold uppercase text-muted-foreground">
-                            Notes
-                          </p>
+                          <p className="text-xs font-bold uppercase text-muted-foreground">Notes</p>
 
-                          <p className="mt-1 text-sm">
-                            {record.notes || "—"}
-                          </p>
+                          <p className="mt-1 break-words text-sm">{record.notes || "—"}</p>
                         </div>
                       </div>
                     </article>
@@ -1543,40 +1403,22 @@ function StaffPage() {
                 </div>
               )}
             </div>
-          )}
-        </section>
+          </TabsContent>
 
-        <section className="mt-2 border border-border bg-card">
-          <button
-            type="button"
-            onClick={() =>
-              setShowQr((current) => !current)
-            }
-            className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-          >
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Identification
-              </p>
-
-              <h2 className="mt-0.5 font-display text-lg font-bold uppercase">
-                Staff QR Code
-              </h2>
+          <TabsContent value="identification" className="mt-4 min-w-0 border border-border bg-card">
+            <div className="border-b border-border px-4 py-4 sm:px-6">
+              <h2 className="font-display text-2xl font-bold uppercase">Staff QR Code</h2>
             </div>
-
-            <QrCode className="text-primary" />
-          </button>
-
-          {showQr && (
-            <div className="border-t border-border p-6">
+            <div className="p-4 sm:p-6">
               <div className="mx-auto max-w-md text-center">
                 <p className="text-sm text-muted-foreground">
                   This is your personal staff identification QR.
                 </p>
 
-                <div className="mt-6 flex justify-center bg-white p-6">
+                <div className="mt-6 flex justify-center bg-white p-3 sm:p-6">
                   <QRCodeSVG
                     id="staff-profile-qr"
+                    className="h-auto max-w-full"
                     value={`STAFF:${profile.qr_token}`}
                     size={260}
                     level="H"
@@ -1584,26 +1426,18 @@ function StaffPage() {
                   />
                 </div>
 
-                <p className="mt-4 font-display text-xl font-bold">
-                  {profile.staff_id}
-                </p>
+                <p className="mt-4 font-display text-xl font-bold">{profile.staff_id}</p>
 
-                <Button
-                  variant="outline"
-                  className="mt-5"
-                  onClick={() => void downloadQr()}
-                >
+                <Button variant="outline" className="mt-5" onClick={() => void downloadQr()}>
                   <Download />
                   Download QR Code
                 </Button>
               </div>
             </div>
-          )}
-        </section>
-
-        <p className="py-4 text-center text-[10px] text-muted-foreground">
-          © {new Date().getFullYear()} Super Plus Fitness & Spa — Staff
-          Portal
+          </TabsContent>
+        </Tabs>
+        <p className="py-5 text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Super Plus Fitness & Spa · Staff Portal
         </p>
       </div>
     </main>
