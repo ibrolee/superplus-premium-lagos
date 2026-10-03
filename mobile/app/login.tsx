@@ -17,25 +17,83 @@ import { supabase } from "../lib/supabase";
 import { colors } from "../lib/ui";
 import { BrandLogo } from "../lib/BrandLogo";
 
+type LoginMode = "password" | "code";
+type LoginStep = "login" | "code" | "new-password";
+type CodePurpose = "login" | "set-password";
+
 export default function LoginScreen() {
   const { session } = useApp();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [mode, setMode] = useState<LoginMode>("password");
+  const [step, setStep] = useState<LoginStep>("login");
+  const [codePurpose, setCodePurpose] = useState<CodePurpose>("login");
   const [sending, setSending] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
 
   useEffect(() => {
-    if (session) router.replace("/(tabs)");
-  }, [session]);
+    if (
+      session &&
+      !(codePurpose === "set-password" && (step === "code" || step === "new-password"))
+    ) {
+      router.replace("/(tabs)");
+    }
+  }, [codePurpose, session, step]);
 
-  async function sendCode() {
-    const cleanEmail = email.trim().toLowerCase();
+  function normalizedEmail() {
+    return email.trim().toLowerCase();
+  }
 
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      Alert.alert("Enter your email", "Please enter the email address registered with your Super Plus membership.");
+  function validEmail() {
+    const value = normalizedEmail();
+    if (!value || !value.includes("@")) {
+      Alert.alert(
+        "Enter your email",
+        "Please enter the email address registered with your Super Plus membership.",
+      );
+      return null;
+    }
+    return value;
+  }
+
+  async function signInWithPassword() {
+    const cleanEmail = validEmail();
+    if (!cleanEmail) return;
+
+    if (!password) {
+      Alert.alert("Enter your password", "Please enter your Super Plus password.");
       return;
     }
+
+    setVerifying(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password: password.toLowerCase(),
+      });
+
+      if (error) {
+        Alert.alert(
+          "Could not sign in",
+          "Email or password not accepted. If you have never created a password, tap Create / reset password.",
+        );
+        return;
+      }
+
+      router.replace("/(tabs)");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  async function sendCode(purpose: CodePurpose) {
+    const cleanEmail = validEmail();
+    if (!cleanEmail) return;
 
     setSending(true);
 
@@ -48,6 +106,7 @@ export default function LoginScreen() {
 
       setEmail(cleanEmail);
       setToken("");
+      setCodePurpose(purpose);
       setStep("code");
     } catch (cause) {
       Alert.alert(
@@ -60,7 +119,7 @@ export default function LoginScreen() {
   }
 
   async function verifyCode() {
-    const cleanEmail = email.trim().toLowerCase();
+    const cleanEmail = normalizedEmail();
     const cleanToken = token.replace(/\D/g, "");
 
     if (cleanToken.length !== 8) {
@@ -79,6 +138,13 @@ export default function LoginScreen() {
 
       if (error) throw error;
 
+      if (codePurpose === "set-password") {
+        setNewPassword("");
+        setConfirmPassword("");
+        setStep("new-password");
+        return;
+      }
+
       router.replace("/(tabs)");
     } catch {
       Alert.alert(
@@ -90,10 +156,55 @@ export default function LoginScreen() {
     }
   }
 
-  function useDifferentEmail() {
-    setStep("email");
+  async function savePassword() {
+    if (newPassword.length < 6) {
+      Alert.alert("Password too short", "Use at least 6 characters.");
+      return;
+    }
+
+    if (newPassword.toLowerCase() !== confirmPassword.toLowerCase()) {
+      Alert.alert("Passwords do not match", "Please enter the same password twice.");
+      return;
+    }
+
+    setSavingPassword(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword.toLowerCase(),
+      });
+
+      if (error) throw error;
+
+      Alert.alert(
+        "Password created",
+        "You can now use this password on the app and website. Login codes will still work.",
+        [{ text: "Continue", onPress: () => router.replace("/(tabs)") }],
+      );
+    } catch (cause) {
+      Alert.alert(
+        "Could not save password",
+        cause instanceof Error ? cause.message : "Please try again.",
+      );
+    } finally {
+      setSavingPassword(false);
+    }
+  }
+
+  function chooseMode(nextMode: LoginMode) {
+    setMode(nextMode);
+    setStep("login");
+    setToken("");
+    setPassword("");
+  }
+
+  function goBack() {
+    setStep("login");
     setToken("");
   }
+
+  const isPasswordSetup =
+    codePurpose === "set-password" && step !== "login";
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -110,18 +221,61 @@ export default function LoginScreen() {
           <Text style={styles.eyebrow}>MEMBER APP</Text>
 
           <Text style={styles.title}>
-            {step === "email" ? "Your gym, in your pocket." : "Check your email."}
+            {step === "login"
+              ? "Welcome back."
+              : step === "new-password"
+                ? "Create your password."
+                : isPasswordSetup
+                  ? "Verify your email."
+                  : "Check your email."}
           </Text>
 
           <Text style={styles.copy}>
-            {step === "email"
-              ? "Enter the email address registered with your Super Plus membership. We’ll send you a secure login code."
-              : `Enter the 8-digit login code sent to ${email}.`}
+            {step === "login"
+              ? "Sign in with your password or use a secure one-time code sent to your registered email."
+              : step === "new-password"
+                ? "Your email is verified. Choose a password you can use on both the app and website."
+                : `Enter the 8-digit code sent to ${email}.`}
           </Text>
 
           <View style={styles.form}>
-            {step === "email" ? (
+            {step === "login" && (
               <>
+                <View style={styles.modeTabs}>
+                  <Pressable
+                    style={[
+                      styles.modeTab,
+                      mode === "password" && styles.modeTabActive,
+                    ]}
+                    onPress={() => chooseMode("password")}
+                  >
+                    <Text
+                      style={[
+                        styles.modeTabText,
+                        mode === "password" && styles.modeTabTextActive,
+                      ]}
+                    >
+                      PASSWORD
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    style={[
+                      styles.modeTab,
+                      mode === "code" && styles.modeTabActive,
+                    ]}
+                    onPress={() => chooseMode("code")}
+                  >
+                    <Text
+                      style={[
+                        styles.modeTabText,
+                        mode === "code" && styles.modeTabTextActive,
+                      ]}
+                    >
+                      LOGIN CODE
+                    </Text>
+                  </Pressable>
+                </View>
+
                 <Text style={styles.label}>Email address</Text>
                 <TextInput
                   style={styles.input}
@@ -131,38 +285,91 @@ export default function LoginScreen() {
                   autoCorrect={false}
                   keyboardType="email-address"
                   textContentType="emailAddress"
+                  autoComplete="email"
                   placeholder="you@example.com"
                   placeholderTextColor="#95A098"
-                  editable={!sending}
-                  onSubmitEditing={() => void sendCode()}
+                  editable={!sending && !verifying}
                 />
 
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.button,
-                    pressed && styles.buttonPressed,
-                    sending && styles.buttonDisabled,
-                  ]}
-                  disabled={sending}
-                  onPress={() => void sendCode()}
-                >
-                  <Text style={styles.buttonText}>
-                    {sending ? "Sending code…" : "Send login code"}
-                  </Text>
-                </Pressable>
+                {mode === "password" ? (
+                  <>
+                    <Text style={styles.label}>Password</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={password}
+                      onChangeText={setPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry
+                      textContentType="password"
+                      autoComplete="current-password"
+                      placeholder="Your password"
+                      placeholderTextColor="#95A098"
+                      editable={!sending && !verifying}
+                      onSubmitEditing={() => void signInWithPassword()}
+                    />
 
-                <Text style={styles.note}>
-                  No password required. We’ll email you a secure one-time code.
-                </Text>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.button,
+                        pressed && styles.buttonPressed,
+                        verifying && styles.buttonDisabled,
+                      ]}
+                      disabled={verifying || sending}
+                      onPress={() => void signInWithPassword()}
+                    >
+                      <Text style={styles.buttonText}>
+                        {verifying ? "Signing in…" : "Sign in with password"}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.secondaryAction}
+                      disabled={sending || verifying}
+                      onPress={() => void sendCode("set-password")}
+                    >
+                      <Text style={styles.secondaryActionText}>
+                        {sending ? "Sending verification code…" : "Create / reset password"}
+                      </Text>
+                    </Pressable>
+
+                    <Text style={styles.note}>
+                      Never created a password before? We’ll verify your
+                      registered email first, then let you create one.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.button,
+                        pressed && styles.buttonPressed,
+                        sending && styles.buttonDisabled,
+                      ]}
+                      disabled={sending}
+                      onPress={() => void sendCode("login")}
+                    >
+                      <Text style={styles.buttonText}>
+                        {sending ? "Sending code…" : "Send login code"}
+                      </Text>
+                    </Pressable>
+
+                    <Text style={styles.note}>
+                      Login codes remain available even after you create a password.
+                    </Text>
+                  </>
+                )}
               </>
-            ) : (
+            )}
+
+            {step === "code" && (
               <>
                 <View style={styles.sentBox}>
                   <Text style={styles.sentLabel}>CODE SENT TO</Text>
                   <Text style={styles.sentEmail}>{email}</Text>
                 </View>
 
-                <Text style={styles.label}>8-digit login code</Text>
+                <Text style={styles.label}>8-digit verification code</Text>
                 <TextInput
                   style={[styles.input, styles.codeInput]}
                   value={token}
@@ -171,6 +378,7 @@ export default function LoginScreen() {
                   }
                   keyboardType="number-pad"
                   textContentType="oneTimeCode"
+                  autoComplete="one-time-code"
                   placeholder="00000000"
                   placeholderTextColor="#95A098"
                   maxLength={8}
@@ -189,23 +397,86 @@ export default function LoginScreen() {
                   onPress={() => void verifyCode()}
                 >
                   <Text style={styles.buttonText}>
-                    {verifying ? "Verifying…" : "Sign in"}
+                    {verifying
+                      ? "Verifying…"
+                      : codePurpose === "set-password"
+                        ? "Verify & continue"
+                        : "Sign in"}
                   </Text>
                 </Pressable>
 
                 <Pressable
                   style={styles.secondaryAction}
                   disabled={verifying}
-                  onPress={useDifferentEmail}
+                  onPress={goBack}
                 >
-                  <Text style={styles.secondaryActionText}>Use a different email</Text>
+                  <Text style={styles.secondaryActionText}>Back</Text>
                 </Pressable>
+              </>
+            )}
+
+            {step === "new-password" && (
+              <>
+                <View style={styles.sentBox}>
+                  <Text style={styles.sentLabel}>EMAIL VERIFIED</Text>
+                  <Text style={styles.sentEmail}>{email}</Text>
+                </View>
+
+                <Text style={styles.label}>New password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  placeholder="At least 6 characters"
+                  placeholderTextColor="#95A098"
+                  editable={!savingPassword}
+                />
+
+                <Text style={styles.label}>Confirm new password</Text>
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  secureTextEntry
+                  textContentType="newPassword"
+                  autoComplete="new-password"
+                  placeholder="Repeat your password"
+                  placeholderTextColor="#95A098"
+                  editable={!savingPassword}
+                  onSubmitEditing={() => void savePassword()}
+                />
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.button,
+                    pressed && styles.buttonPressed,
+                    savingPassword && styles.buttonDisabled,
+                  ]}
+                  disabled={savingPassword}
+                  onPress={() => void savePassword()}
+                >
+                  <Text style={styles.buttonText}>
+                    {savingPassword ? "Saving password…" : "Save password & continue"}
+                  </Text>
+                </Pressable>
+
+                <Text style={styles.note}>
+                  This password works on both the Super Plus Fitness app and website.
+                  Capital letters do not matter. You can still choose Login code whenever you prefer.
+                </Text>
               </>
             )}
           </View>
 
           <Text style={styles.noteBottom}>
-            Your app uses the same member login and account as superplusfitness.com.
+            Your app uses the same member account as superplusfitness.com.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -237,6 +508,33 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 28,
     padding: 18,
+  },
+  modeTabs: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 13,
+    flexDirection: "row",
+    marginBottom: 8,
+    padding: 4,
+  },
+  modeTab: {
+    alignItems: "center",
+    borderRadius: 10,
+    flex: 1,
+    justifyContent: "center",
+    minHeight: 42,
+    paddingHorizontal: 8,
+  },
+  modeTabActive: {
+    backgroundColor: colors.surface,
+  },
+  modeTabText: {
+    color: colors.muted,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 0.6,
+  },
+  modeTabTextActive: {
+    color: colors.green,
   },
   label: { color: colors.ink, fontSize: 12, fontWeight: "900", marginTop: 5 },
   input: {
@@ -276,6 +574,7 @@ const styles = StyleSheet.create({
     color: colors.green2,
     fontSize: 12,
     fontWeight: "900",
+    textAlign: "center",
     textTransform: "uppercase",
   },
   note: {
