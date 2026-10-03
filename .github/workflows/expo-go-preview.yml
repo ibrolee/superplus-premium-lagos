@@ -31,7 +31,7 @@ jobs:
         run: npm install --package-lock=false
 
       - name: Install tunnel helper
-        run: npm install --no-save @expo/ngrok
+        run: npm install --no-save --legacy-peer-deps @expo/ngrok
 
       - name: Start Expo Go tunnel
         env:
