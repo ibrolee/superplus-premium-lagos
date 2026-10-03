@@ -163,7 +163,7 @@ export default function BlogArticleScreen() {
           "id,title,slug,excerpt,content,featured_image,category,author_name,published_at",
         )
         .eq("slug", slug)
-        .eq("status", "published")
+        .in("status", ["published", "scheduled"])
         .not("published_at", "is", null)
         .lte("published_at", new Date().toISOString())
         .maybeSingle();
