@@ -2,6 +2,7 @@ create table if not exists public.member_visit_goals (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null unique references public.members(id) on delete cascade,
   weekly_target smallint not null check (weekly_target between 1 and 7),
+  session_minutes_target smallint not null default 60 check (session_minutes_target between 15 and 240),
   preferred_days smallint[] not null default '{}'::smallint[],
   reminder_hour smallint not null default 18 check (reminder_hour between 0 and 23),
   reminder_minute smallint not null default 0 check (reminder_minute between 0 and 59),
