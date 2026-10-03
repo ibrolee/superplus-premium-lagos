@@ -124,6 +124,20 @@ export default function WelcomeScreen() {
         </View>
       </Card>
 
+      <View style={styles.legalRow}>
+        <Pressable onPress={() => void openSite("/privacy-policy")}>
+          <Text style={styles.legalLink}>Privacy Policy</Text>
+        </Pressable>
+        <Text style={styles.legalDot}>•</Text>
+        <Pressable onPress={() => void openSite("/terms")}>
+          <Text style={styles.legalLink}>Terms</Text>
+        </Pressable>
+        <Text style={styles.legalDot}>•</Text>
+        <Pressable onPress={() => void openSite("/contact")}>
+          <Text style={styles.legalLink}>Help & Support</Text>
+        </Pressable>
+      </View>
+
       <Text style={styles.footerNote}>
         Staff and admin operations remain on the secure Super Plus website.
         This app is designed for guests and members.
@@ -163,5 +177,8 @@ const styles = StyleSheet.create({
   contactActions: { flexDirection: "row", gap: 8, marginTop: 12 },
   smallAction: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 12, flex: 1, gap: 5, justifyContent: "center", minHeight: 58, paddingHorizontal: 8 },
   smallActionText: { color: colors.green, fontSize: 10, fontWeight: "900" },
+  legalRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 2 },
+  legalLink: { color: colors.green, fontSize: 10, fontWeight: "900" },
+  legalDot: { color: colors.muted, fontSize: 10 },
   footerNote: { color: colors.muted, fontSize: 10, lineHeight: 16, paddingHorizontal: 8, textAlign: "center" },
 });
