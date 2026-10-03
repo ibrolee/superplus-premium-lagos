@@ -1,0 +1,50 @@
+name: Build iOS preview
+
+on:
+  push:
+    branches:
+      - build/ios-preview-20261003
+    paths:
+      - ".github/workflows/eas-ios-preview.yml"
+      - "mobile/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout current app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install EAS CLI
+        run: npm install --global eas-cli@latest
+
+      - name: Verify Expo authentication
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas whoami --non-interactive
+
+      - name: Start iOS internal preview build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          eas build --platform ios --profile preview --non-interactive --no-wait --json | tee /tmp/eas-ios-build.json
+
+      - name: Show build request
+        if: always()
+        run: |
+          if [ -f /tmp/eas-ios-build.json ]; then
+            cat /tmp/eas-ios-build.json
+          fi
