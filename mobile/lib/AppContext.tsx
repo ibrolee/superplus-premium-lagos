@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { registerMemberPushToken } from "./push-notifications";
 import { lagosToday } from "./ui";
 import { supabase } from "./supabase";
 import type { VisitGoal } from "./visit-goals";
@@ -83,6 +84,8 @@ type AppValue = {
   announcements: Announcement[];
   family: FamilySummary | null;
   visitGoal: VisitGoal | null;
+  notificationUnreadCount: number;
+  refreshNotificationCount: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
@@ -117,6 +120,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [family, setFamily] = useState<FamilySummary | null>(null);
   const [visitGoal, setVisitGoal] = useState<VisitGoal | null>(null);
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   const clearMemberData = useCallback(() => {
     setMember(null);
@@ -126,6 +130,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnnouncements([]);
     setFamily(null);
     setVisitGoal(null);
+    setNotificationUnreadCount(0);
     setError("");
   }, []);
 
@@ -166,11 +171,13 @@ export function AppProvider({ children }: PropsWithChildren) {
           setPayments([]);
           setFamily(null);
           setVisitGoal(null);
+          setNotificationUnreadCount(0);
           return;
         }
 
         const typedMember = memberRow as Member;
         setMember(typedMember);
+        void registerMemberPushToken(typedMember.id);
 
         const [
           membershipsResult,
@@ -178,6 +185,8 @@ export function AppProvider({ children }: PropsWithChildren) {
           paymentsResult,
           familyResult,
           visitGoalResult,
+          notificationsResult,
+          notificationReadsResult,
         ] = await Promise.all([
           supabase
             .from("memberships")
@@ -206,6 +215,15 @@ export function AppProvider({ children }: PropsWithChildren) {
             .select("*")
             .eq("member_id", typedMember.id)
             .maybeSingle(),
+          supabase
+            .from("app_notifications")
+            .select("id")
+            .order("published_at", { ascending: false })
+            .limit(100),
+          supabase
+            .from("member_notification_reads")
+            .select("notification_id")
+            .eq("member_id", typedMember.id),
         ]);
 
         if (membershipsResult.error) throw membershipsResult.error;
@@ -220,6 +238,12 @@ export function AppProvider({ children }: PropsWithChildren) {
         setVisitGoal(
           visitGoalResult.error ? null : ((visitGoalResult.data ?? null) as VisitGoal | null),
         );
+        const readIds = new Set(
+          (notificationReadsResult.data ?? []).map((row) => String(row.notification_id)),
+        );
+        setNotificationUnreadCount(
+          (notificationsResult.data ?? []).filter((row) => !readIds.has(String(row.id))).length,
+        );
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Unable to load your member account.");
       } finally {
@@ -229,6 +253,32 @@ export function AppProvider({ children }: PropsWithChildren) {
     },
     [clearMemberData, session?.user],
   );
+
+  const refreshNotificationCount = useCallback(async () => {
+    if (!member?.id) {
+      setNotificationUnreadCount(0);
+      return;
+    }
+
+    const [notificationsResult, readsResult] = await Promise.all([
+      supabase
+        .from("app_notifications")
+        .select("id")
+        .order("published_at", { ascending: false })
+        .limit(100),
+      supabase
+        .from("member_notification_reads")
+        .select("notification_id")
+        .eq("member_id", member.id),
+    ]);
+
+    const readIds = new Set(
+      (readsResult.data ?? []).map((row) => String(row.notification_id)),
+    );
+    setNotificationUnreadCount(
+      (notificationsResult.data ?? []).filter((row) => !readIds.has(String(row.id))).length,
+    );
+  }, [member?.id]);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -288,6 +338,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       announcements,
       family,
       visitGoal,
+      notificationUnreadCount,
+      refreshNotificationCount,
       refresh,
     }),
     [
@@ -304,6 +356,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       announcements,
       family,
       visitGoal,
+      notificationUnreadCount,
+      refreshNotificationCount,
       refresh,
     ],
   );

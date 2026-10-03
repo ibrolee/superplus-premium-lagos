@@ -10,6 +10,7 @@ export const Route = createFileRoute("/management-bookings")({
 
 type Booking = {
   id: string;
+  member_id: string;
   service_type: string;
   service_name: string;
   preferred_at: string;
@@ -49,7 +50,7 @@ function ManagementBookings() {
     const query = supabase
       .from("member_bookings")
       .select(
-        "id,service_type,service_name,preferred_at,notes,status,staff_note,created_at,member:members(full_name,phone,email)",
+        "id,member_id,service_type,service_name,preferred_at,notes,status,staff_note,created_at,member:members(full_name,phone,email)",
       )
       .order("preferred_at", { ascending: true });
 
@@ -92,6 +93,32 @@ function ManagementBookings() {
     if (updateError) {
       window.alert(updateError.message);
       return;
+    }
+
+    if (["confirmed", "declined", "completed"].includes(nextStatus)) {
+      const title =
+        nextStatus === "confirmed"
+          ? "Booking confirmed"
+          : nextStatus === "declined"
+            ? "Booking update"
+            : "Session completed";
+      const body =
+        nextStatus === "confirmed"
+          ? `${booking.service_name} is confirmed for ${dateTime(booking.preferred_at)}.${note.trim() ? ` ${note.trim()}` : ""}`
+          : nextStatus === "declined"
+            ? `Your ${booking.service_name} request could not be confirmed.${note.trim() ? ` ${note.trim()}` : ""}`
+            : `Your ${booking.service_name} was marked completed. We hope you enjoyed it.`;
+
+      await supabase.functions.invoke("send-member-push", {
+        body: {
+          title,
+          body,
+          kind: "booking",
+          deep_link: "/bookings",
+          member_id: booking.member_id,
+          send_push: true,
+        },
+      });
     }
 
     await load();

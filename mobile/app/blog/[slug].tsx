@@ -55,6 +55,8 @@ export default function BlogArticleScreen() {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [liking, setLiking] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [savingPost, setSavingPost] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -102,6 +104,25 @@ export default function BlogArticleScreen() {
     setCommentsLoading(false);
   }, []);
 
+  const loadSaved = useCallback(
+    async (postId: string) => {
+      if (!member?.id) {
+        setSaved(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from("member_saved_posts")
+        .select("post_id")
+        .eq("post_id", postId)
+        .eq("member_id", member.id)
+        .maybeSingle();
+
+      setSaved(!!data);
+    },
+    [member?.id],
+  );
+
   const loadLikes = useCallback(
     async (postId: string) => {
       const { count } = await supabase
@@ -142,7 +163,7 @@ export default function BlogArticleScreen() {
           "id,title,slug,excerpt,content,featured_image,category,author_name,published_at",
         )
         .eq("slug", slug)
-        .eq("status", "published")
+        .in("status", ["published", "scheduled"])
         .not("published_at", "is", null)
         .lte("published_at", new Date().toISOString())
         .maybeSingle();
@@ -157,12 +178,16 @@ export default function BlogArticleScreen() {
 
       const typedPost = data as BlogPost;
       setPost(typedPost);
-      await Promise.all([loadComments(typedPost.id), loadLikes(typedPost.id)]);
+      await Promise.all([
+        loadComments(typedPost.id),
+        loadLikes(typedPost.id),
+        loadSaved(typedPost.id),
+      ]);
 
       setLoading(false);
       setRefreshing(false);
     },
-    [loadComments, loadLikes, slug],
+    [loadComments, loadLikes, loadSaved, slug],
   );
 
   useEffect(() => {
@@ -207,6 +232,29 @@ export default function BlogArticleScreen() {
     }
 
     setLiking(false);
+  }
+
+  async function toggleSaved() {
+    if (!post || !member?.id || savingPost) return;
+    setSavingPost(true);
+
+    if (saved) {
+      const { error: deleteError } = await supabase
+        .from("member_saved_posts")
+        .delete()
+        .eq("member_id", member.id)
+        .eq("post_id", post.id);
+
+      if (!deleteError) setSaved(false);
+    } else {
+      const { error: insertError } = await supabase
+        .from("member_saved_posts")
+        .insert({ member_id: member.id, post_id: post.id });
+
+      if (!insertError) setSaved(true);
+    }
+
+    setSavingPost(false);
   }
 
   async function submitComment() {
@@ -303,10 +351,26 @@ export default function BlogArticleScreen() {
         <Pressable style={styles.backButton} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={21} color={colors.ink} />
         </Pressable>
-        <Pressable style={styles.shareButton} onPress={() => void shareArticle()}>
-          <Ionicons name="share-outline" size={20} color={colors.green} />
-          <Text style={styles.shareText}>Share</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable
+            style={[styles.shareButton, saved && styles.savedButton]}
+            disabled={savingPost || !member}
+            onPress={() => void toggleSaved()}
+          >
+            <Ionicons
+              name={saved ? "bookmark" : "bookmark-outline"}
+              size={19}
+              color={saved ? "#FFFFFF" : colors.green}
+            />
+            <Text style={[styles.shareText, saved && styles.savedText]}>
+              {saved ? "Saved" : "Save"}
+            </Text>
+          </Pressable>
+          <Pressable style={styles.shareButton} onPress={() => void shareArticle()}>
+            <Ionicons name="share-outline" size={20} color={colors.green} />
+            <Text style={styles.shareText}>Share</Text>
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.articleHeader}>
@@ -473,6 +537,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
+  headerActions: { flexDirection: "row", gap: 8 },
   shareButton: {
     alignItems: "center",
     backgroundColor: colors.surface,
@@ -485,6 +550,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   shareText: { color: colors.green, fontSize: 12, fontWeight: "900" },
+  savedButton: { backgroundColor: colors.green, borderColor: colors.green },
+  savedText: { color: "#FFFFFF" },
   articleHeader: { gap: 9 },
   title: { color: colors.ink, fontSize: 31, fontWeight: "900", letterSpacing: -0.9, lineHeight: 36 },
   excerpt: { color: colors.muted, fontSize: 15, lineHeight: 23 },

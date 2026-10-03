@@ -174,10 +174,50 @@ function AdminAnnouncements() {
         : await supabase.from("site_announcements").insert(payload).select("*").single();
       if (writeError) throw writeError;
       if (!data) throw new Error("The announcement was modified elsewhere. Reopen it and try again.");
+
+      const transitioningToPublished =
+        form.status === "published" && (!editing || editing.status !== "published");
+      const shouldNotifyMembers =
+        transitioningToPublished && Date.parse(startsAt) <= Date.now() + 5000;
+      const shouldScheduleInApp =
+        transitioningToPublished && Date.parse(startsAt) > Date.now() + 5000;
+      let notificationFailed = false;
+
+      if (shouldNotifyMembers) {
+        const { error: pushError } = await supabase.functions.invoke("send-member-push", {
+          body: {
+            title: form.title.trim(),
+            body: form.body.trim() || "New Super Plus member update.",
+            kind: "announcement",
+            deep_link: link.startsWith("/") ? link : null,
+            expires_at: endsAt,
+            send_push: true,
+          },
+        });
+        notificationFailed = !!pushError;
+      } else if (shouldScheduleInApp) {
+        const { error: scheduleError } = await supabase.functions.invoke("send-member-push", {
+          body: {
+            title: form.title.trim(),
+            body: form.body.trim() || "New Super Plus member update.",
+            kind: "announcement",
+            deep_link: link.startsWith("/") ? link : null,
+            published_at: startsAt,
+            expires_at: endsAt,
+            send_push: false,
+          },
+        });
+        notificationFailed = !!scheduleError;
+      }
+
       setEditorOpen(false); setEditing(null); setFile(null);
-      setSuccess(form.status === "draft" ? "Draft saved. It is not visible on the website." :
-        Date.parse(startsAt) > Date.now() ? "Scheduled. It will appear automatically at the chosen Lagos time." :
-          "Announcement published. It will appear on the selected website locations.");
+      setSuccess(
+        notificationFailed
+          ? "Announcement published, but the member push notification could not be sent."
+          : form.status === "draft" ? "Draft saved. It is not visible on the website." :
+            Date.parse(startsAt) > Date.now() ? "Scheduled. It will appear automatically at the chosen Lagos time." :
+              "Announcement published and members were notified."
+      );
       await loadItems();
       if (editing?.image_path && editing.image_path !== payload.image_path) {
         const { error: cleanupError } = await supabase.storage.from(ANNOUNCEMENT_BUCKET).remove([editing.image_path]);
@@ -198,8 +238,33 @@ function AdminAnnouncements() {
     const next = item.status === "published" ? "draft" : "published";
     const { error: changeError } = await supabase.from("site_announcements")
       .update({ status: next }).eq("id", item.id).eq("updated_at", item.updated_at).select("id").maybeSingle();
-    if (changeError) setError(changeError.message);
-    else { setSuccess(next === "draft" ? "Announcement unpublished." : "Announcement enabled. Scheduling rules apply automatically."); await loadItems(); }
+    if (changeError) {
+      setError(changeError.message);
+    } else {
+      let notificationFailed = false;
+      if (next === "published" && Date.parse(item.starts_at) <= Date.now() + 5000) {
+        const { error: pushError } = await supabase.functions.invoke("send-member-push", {
+          body: {
+            title: item.title,
+            body: item.body || "New Super Plus member update.",
+            kind: "announcement",
+            deep_link: item.cta_url?.startsWith("/") ? item.cta_url : null,
+            expires_at: item.ends_at,
+            send_push: true,
+          },
+        });
+        notificationFailed = !!pushError;
+      }
+
+      setSuccess(
+        next === "draft"
+          ? "Announcement unpublished."
+          : notificationFailed
+            ? "Announcement enabled, but the member push notification could not be sent."
+            : "Announcement enabled and members were notified."
+      );
+      await loadItems();
+    }
     setBusyId(null);
   }
   async function removeAnnouncement(item: SiteAnnouncement) {
