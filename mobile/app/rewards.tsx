@@ -160,7 +160,7 @@ export default function RewardsScreen() {
           <Text style={sharedStyles.kicker}>REWARDS & CHALLENGES</Text>
           <Text style={styles.title}>Your consistency pays.</Text>
           <Text style={sharedStyles.subtitle}>
-            Earn SP Points from real gym visits, milestones and active Super Plus challenges.
+            Earn SP Points from real gym visits, memberships, milestones and active Super Plus challenges.
           </Text>
         </View>
       </View>
@@ -169,7 +169,7 @@ export default function RewardsScreen() {
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
         <Text style={styles.pointsNote}>
-          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward. Multiple scans on the same day do not earn extra visit points, plus you can earn badge and challenge bonuses.
+          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward, plus 5 points whenever you register or renew a paid membership plan. Multiple scans on the same day do not earn extra visit points, and you can also earn badge and challenge bonuses.
         </Text>
       </View>
 
