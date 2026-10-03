@@ -1,7 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { BrandLogo } from "../../lib/BrandLogo";
+import { loadHomeHighlights, type HomeHighlight } from "../../lib/home-highlights";
 import { calculateGoalProgress } from "../../lib/visit-goals";
 import { useApp } from "../../lib/AppContext";
 import {
@@ -27,6 +29,7 @@ function greeting() {
 }
 
 export default function HomeScreen() {
+  const [highlights, setHighlights] = useState<HomeHighlight | null>(null);
   const {
     session,
     member,
@@ -60,6 +63,29 @@ export default function HomeScreen() {
     : "none";
   const remaining = daysUntil(currentMembership?.end_date);
   const goalProgress = visitGoal ? calculateGoalProgress(attendance, visitGoal) : null;
+
+  useEffect(() => {
+    let active = true;
+
+    if (!member?.id) {
+      setHighlights(null);
+      return () => {
+        active = false;
+      };
+    }
+
+    void loadHomeHighlights(member.id, attendance)
+      .then((result) => {
+        if (active) setHighlights(result);
+      })
+      .catch(() => {
+        if (active) setHighlights(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [attendance, member?.id]);
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
@@ -184,6 +210,74 @@ export default function HomeScreen() {
           <Text style={styles.qrText}>Your physical card is used to scan in and out at reception.</Text>
         </View>
       </View>
+
+      {highlights && (
+        <>
+          <SectionTitle title="Your momentum" />
+          <View style={styles.momentumGrid}>
+            <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
+              <Ionicons name="sparkles-outline" size={21} color={colors.green} />
+              <Text style={styles.momentumValue}>{highlights.points.toLocaleString()}</Text>
+              <Text style={styles.momentumLabel}>SP Points</Text>
+            </Pressable>
+            <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
+              <Ionicons name="ribbon-outline" size={21} color={colors.green} />
+              <Text style={styles.momentumValue} numberOfLines={1}>
+                {highlights.achievement?.title ?? "Next badge"}
+              </Text>
+              <Text style={styles.momentumLabel}>
+                {highlights.achievement ? "Latest achievement" : "Keep showing up"}
+              </Text>
+            </Pressable>
+          </View>
+
+          {highlights.challenge && (
+            <Pressable style={styles.challengeCard} onPress={() => router.push("/rewards")}>
+              <View style={styles.challengeTop}>
+                <View style={styles.grow}>
+                  <Text style={styles.challengeEyebrow}>ACTIVE CHALLENGE</Text>
+                  <Text style={styles.challengeTitle}>{highlights.challenge.title}</Text>
+                </View>
+                <Text style={styles.challengePoints}>+{highlights.challenge.points_reward} pts</Text>
+              </View>
+              <View style={styles.challengeTrack}>
+                <View
+                  style={[
+                    styles.challengeFill,
+                    { width: `${highlights.challenge.percentage}%` as `${number}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.challengeMeta}>
+                {highlights.challenge.visits}/{highlights.challenge.target_visits} visits · ends {dateLabel(highlights.challenge.ends_on)}
+              </Text>
+            </Pressable>
+          )}
+
+          {highlights.latestPost && (
+            <Pressable
+              style={styles.latestPostCard}
+              onPress={() =>
+                router.push({
+                  pathname: "/blog/[slug]",
+                  params: { slug: highlights.latestPost!.slug },
+                })
+              }
+            >
+              <View style={styles.latestPostIcon}>
+                <Ionicons name="newspaper-outline" size={22} color={colors.green} />
+              </View>
+              <View style={styles.grow}>
+                <Text style={styles.challengeEyebrow}>LATEST FROM THE BLOG</Text>
+                <Text style={styles.latestPostTitle} numberOfLines={2}>
+                  {highlights.latestPost.title}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={19} color={colors.green2} />
+            </Pressable>
+          )}
+        </>
+      )}
 
       <SectionTitle title="Explore Super Plus" />
       <View style={styles.exploreGrid}>
@@ -398,6 +492,63 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
+  momentumGrid: { flexDirection: "row", gap: 10 },
+  momentumCard: {
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 18,
+    borderWidth: 1,
+    flex: 1,
+    minHeight: 118,
+    padding: 15,
+  },
+  momentumValue: {
+    color: colors.ink,
+    fontSize: 18,
+    fontWeight: "900",
+    letterSpacing: -0.4,
+    marginTop: 10,
+  },
+  momentumLabel: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 3 },
+  challengeCard: {
+    backgroundColor: "#EEF5EA",
+    borderColor: colors.line,
+    borderRadius: 19,
+    borderWidth: 1,
+    padding: 16,
+  },
+  challengeTop: { alignItems: "flex-start", flexDirection: "row", gap: 10 },
+  challengeEyebrow: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 1 },
+  challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 4 },
+  challengePoints: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  challengeTrack: {
+    backgroundColor: "#DCE8D7",
+    borderRadius: 999,
+    height: 8,
+    marginTop: 13,
+    overflow: "hidden",
+  },
+  challengeFill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  challengeMeta: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 8 },
+  latestPostCard: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 11,
+    padding: 14,
+  },
+  latestPostIcon: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 12,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  latestPostTitle: { color: colors.ink, fontSize: 13, fontWeight: "900", lineHeight: 18, marginTop: 3 },
   exploreGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   exploreCard: {
     backgroundColor: "#EEF5EA",
