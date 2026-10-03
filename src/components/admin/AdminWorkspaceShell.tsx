@@ -216,6 +216,12 @@ export const adminGroups: Group[] = [
     icon: Images,
     tools: [
       {
+        label: "Member engagement",
+        href: "/admin-engagement",
+        icon: Megaphone,
+        keywords: "mobile app push notifications challenge rewards loyalty points redemptions",
+      },
+      {
         label: "Announcements",
         href: "/admin-announcements",
         icon: Megaphone,
