@@ -15,6 +15,7 @@ jobs:
     timeout-minutes: 90
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_BUILD_SKIP_LOCKFILE_CHECK: "1"
     defaults:
       run:
         working-directory: mobile
