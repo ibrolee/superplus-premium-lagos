@@ -18,7 +18,6 @@ export type Member = {
   email: string | null;
   phone: string | null;
   member_card_number: number;
-  qr_token: string;
 };
 
 export type Membership = {
@@ -143,7 +142,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       try {
         const { data: memberRow, error: memberError } = await supabase
           .from("members")
-          .select("id,full_name,email,phone,member_card_number,qr_token")
+          .select("id,full_name,email,phone,member_card_number")
           .eq("auth_user_id", session.user.id)
           .maybeSingle();
 
