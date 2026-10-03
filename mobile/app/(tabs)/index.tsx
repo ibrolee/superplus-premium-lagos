@@ -124,6 +124,17 @@ export default function HomeScreen() {
         <Ionicons name="chevron-forward" size={21} color={colors.green2} />
       </Pressable>
 
+      <Pressable style={styles.blogButton} onPress={() => router.push("/blog")}>
+        <View style={styles.blogIcon}>
+          <Ionicons name="newspaper-outline" size={24} color={colors.green} />
+        </View>
+        <View style={styles.qrCopy}>
+          <Text style={styles.qrTitle}>Read the Super Plus Blog</Text>
+          <Text style={styles.qrText}>Tips, recovery, gym life and member stories.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={21} color={colors.green2} />
+      </Pressable>
+
       <SectionTitle title="Recent visits" />
       {attendance.length ? (
         <Card>
@@ -218,6 +229,24 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 13,
     padding: 16,
+  },
+  blogButton: {
+    alignItems: "center",
+    backgroundColor: "#EEF5EA",
+    borderColor: colors.line,
+    borderRadius: 19,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 13,
+    padding: 16,
+  },
+  blogIcon: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 13,
+    height: 48,
+    justifyContent: "center",
+    width: 48,
   },
   qrIcon: {
     alignItems: "center",
