@@ -28,6 +28,9 @@ jobs:
         with:
           node-version: "22.13"
 
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
       - name: Install EAS CLI
         run: npm install --global eas-cli@latest
 
@@ -40,6 +43,7 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
+          set -o pipefail
           eas build --platform ios --profile preview --non-interactive --no-wait --json | tee /tmp/eas-ios-build.json
 
       - name: Show build request
