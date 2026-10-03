@@ -45,6 +45,8 @@ export default function ActivityScreen() {
 
   const weekDates = currentLagosWeek();
   const visitedDates = uniqueVisitDates(attendance);
+  const weekStart = weekDates[0] ?? lagosToday();
+  const weekEnd = weekDates[6] ?? weekStart;
   const visitedSet = new Set(visitedDates);
   const monthKey = lagosToday().slice(0, 7);
   const monthVisits = visitedDates.filter((day) => day.startsWith(monthKey)).length;
@@ -61,7 +63,7 @@ export default function ActivityScreen() {
       <View style={styles.statsGrid}>
         <View style={styles.statCard}>
           <Text style={styles.statValue}>
-            {visitedDates.filter((day) => day >= weekDates[0] && day <= weekDates[6]).length}
+            {visitedDates.filter((day) => day >= weekStart && day <= weekEnd).length}
           </Text>
           <Text style={styles.statLabel}>THIS WEEK</Text>
         </View>
