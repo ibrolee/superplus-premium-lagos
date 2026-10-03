@@ -158,7 +158,7 @@ export default function RewardsScreen() {
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
         <Text style={styles.pointsNote}>
-          {visitPoints} point{visitPoints === 1 ? "" : "s"} per recorded gym visit, plus small badge and challenge bonuses.
+          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day. Multiple scans on the same day do not earn extra visit points, plus you can earn badge and challenge bonuses.
         </Text>
       </View>
 
