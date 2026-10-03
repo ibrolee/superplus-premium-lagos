@@ -349,7 +349,10 @@ function AdminEngagement() {
     setError("");
     setSuccess("");
 
-    const safePoints = Math.max(1, Math.min(20, Math.round(visitPoints)));
+    const safePoints = Math.max(
+      0.1,
+      Math.min(20, Math.round(visitPoints * 100) / 100),
+    );
     const { error: updateError } = await supabase
       .from("app_engagement_settings")
       .upsert(
@@ -364,7 +367,9 @@ function AdminEngagement() {
     if (updateError) setError(updateError.message);
     else {
       setVisitPoints(safePoints);
-      setSuccess(`SP Points updated: each recorded gym visit now earns ${safePoints} point${safePoints === 1 ? "" : "s"}.`);
+      setSuccess(
+        `SP Points updated: each member earns ${safePoints} point${safePoints === 1 ? "" : "s"} for a gym day, regardless of how many times they scan that day.`,
+      );
       await load();
     }
 
@@ -971,24 +976,31 @@ function AdminEngagement() {
 
         <CollapsiblePanel
           title="SP Points"
-          subtitle="Set how many points a recorded visit earns."
+          subtitle="Set points earned once per unique gym day."
           icon={<Settings2 size={19} />}
           badge={
             <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
-              {visitPoints} / visit
+              {visitPoints} / day
             </span>
           }
         >
           <label className="block min-w-0 text-sm font-bold">
-            Points earned per recorded gym visit
+            Points earned per unique gym day
             <input
               type="number"
-              min={1}
+              min={0.1}
               max={20}
+              step={0.1}
+              inputMode="decimal"
               value={visitPoints}
-              onChange={(event) => setVisitPoints(Number(event.target.value) || 1)}
+              onChange={(event) =>
+                setVisitPoints(Number(event.target.value) || 0.5)
+              }
               className={inputClass}
             />
+            <span className="mt-2 block text-xs font-normal leading-5 text-[#657568]">
+              Multiple check-ins/check-outs on the same Lagos calendar day still earn only one daily points award.
+            </span>
           </label>
           <button
             type="button"
