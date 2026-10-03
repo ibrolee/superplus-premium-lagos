@@ -275,7 +275,20 @@ export default function BookingsScreen() {
                 <Text style={styles.bookingTitle}>{booking.service_name}</Text>
                 <Text style={styles.bookingDate}>{dateTimeLabel(booking.preferred_at)}</Text>
               </View>
-              <View style={[styles.statusPill, styles[`status_${booking.status}` as keyof typeof styles]]}>
+              <View
+                style={[
+                  styles.statusPill,
+                  booking.status === "confirmed"
+                    ? styles.status_confirmed
+                    : booking.status === "completed"
+                      ? styles.status_completed
+                      : booking.status === "declined"
+                        ? styles.status_declined
+                        : booking.status === "cancelled"
+                          ? styles.status_cancelled
+                          : styles.status_pending,
+                ]}
+              >
                 <Text style={styles.statusText}>{booking.status.toUpperCase()}</Text>
               </View>
             </View>
