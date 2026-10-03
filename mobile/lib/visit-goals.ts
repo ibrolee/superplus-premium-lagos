@@ -79,7 +79,7 @@ function completedWeekCount(
   if (!visitedDates.length || target < 1) return 0;
 
   const currentWeek = currentLagosWeek();
-  let cursorMonday = currentWeek[0];
+  const cursorMonday = currentWeek[0] ?? lagosDate(new Date());
   const started = goalStartedAt.slice(0, 10);
   let streak = 0;
 
@@ -112,10 +112,12 @@ export function calculateGoalProgress(
   goal: VisitGoal,
 ): GoalProgress {
   const weekDates = currentLagosWeek();
+  const weekStart = weekStart ?? lagosDate(new Date());
+  const weekEnd = weekEnd ?? weekStart;
   const visitedDates = uniqueVisitDates(attendance);
   const currentWeekVisits = attendance.filter((visit) => {
     const day = lagosDate(visit.checked_in_at);
-    return day >= weekDates[0] && day <= weekDates[6];
+    return day >= weekStart && day <= weekEnd;
   });
   const completedMinutes = currentWeekVisits
     .filter((visit): visit is { checked_in_at: string; checked_out_at: string } => Boolean((visit as { checked_out_at?: string | null }).checked_out_at))
@@ -126,7 +128,7 @@ export function calculateGoalProgress(
     ? Math.round(minutesThisWeek / completedMinutes.length)
     : 0;
   const current = visitedDates.filter(
-    (day) => day >= weekDates[0] && day <= weekDates[6],
+    (day) => day >= weekStart && day <= weekEnd,
   ).length;
   const target = Math.max(1, goal.weekly_target);
   const remaining = Math.max(0, target - current);
