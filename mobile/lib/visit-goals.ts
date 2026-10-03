@@ -6,6 +6,7 @@ export type VisitGoal = {
   id: string;
   member_id: string;
   weekly_target: number;
+  session_minutes_target: number;
   preferred_days: number[];
   reminder_hour: number;
   reminder_minute: number;
@@ -22,6 +23,8 @@ export type GoalProgress = {
   remaining: number;
   percentage: number;
   streakWeeks: number;
+  minutesThisWeek: number;
+  averageSessionMinutes: number;
   weekDates: string[];
   visitedDates: string[];
 };
@@ -105,11 +108,23 @@ function completedWeekCount(
 }
 
 export function calculateGoalProgress(
-  attendance: Array<{ checked_in_at: string }>,
+  attendance: Array<{ checked_in_at: string; checked_out_at?: string | null }>,
   goal: VisitGoal,
 ): GoalProgress {
   const weekDates = currentLagosWeek();
   const visitedDates = uniqueVisitDates(attendance);
+  const currentWeekVisits = attendance.filter((visit) => {
+    const day = lagosDate(visit.checked_in_at);
+    return day >= weekDates[0] && day <= weekDates[6];
+  });
+  const completedMinutes = currentWeekVisits
+    .filter((visit): visit is { checked_in_at: string; checked_out_at: string } => Boolean((visit as { checked_out_at?: string | null }).checked_out_at))
+    .map((visit) => Math.max(0, Math.round((new Date(visit.checked_out_at).getTime() - new Date(visit.checked_in_at).getTime()) / 60_000)))
+    .filter((minutes) => minutes > 0 && minutes <= 12 * 60);
+  const minutesThisWeek = completedMinutes.reduce((sum, minutes) => sum + minutes, 0);
+  const averageSessionMinutes = completedMinutes.length
+    ? Math.round(minutesThisWeek / completedMinutes.length)
+    : 0;
   const current = visitedDates.filter(
     (day) => day >= weekDates[0] && day <= weekDates[6],
   ).length;
@@ -123,6 +138,8 @@ export function calculateGoalProgress(
     remaining,
     percentage: Math.min(100, Math.round((current / target) * 100)),
     streakWeeks: completedWeekCount(visitedDates, target, goal.started_at),
+    minutesThisWeek,
+    averageSessionMinutes,
     weekDates,
     visitedDates,
   };
