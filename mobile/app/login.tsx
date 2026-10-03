@@ -74,7 +74,7 @@ export default function LoginScreen() {
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
-        password,
+        password: password.toLowerCase(),
       });
 
       if (error) {
@@ -157,12 +157,12 @@ export default function LoginScreen() {
   }
 
   async function savePassword() {
-    if (newPassword.length < 8) {
-      Alert.alert("Password too short", "Use at least 8 characters.");
+    if (newPassword.length < 6) {
+      Alert.alert("Password too short", "Use at least 6 characters.");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (newPassword.toLowerCase() !== confirmPassword.toLowerCase()) {
       Alert.alert("Passwords do not match", "Please enter the same password twice.");
       return;
     }
@@ -171,7 +171,7 @@ export default function LoginScreen() {
 
     try {
       const { error } = await supabase.auth.updateUser({
-        password: newPassword,
+        password: newPassword.toLowerCase(),
       });
 
       if (error) throw error;
@@ -432,7 +432,7 @@ export default function LoginScreen() {
                   secureTextEntry
                   textContentType="newPassword"
                   autoComplete="new-password"
-                  placeholder="At least 8 characters"
+                  placeholder="At least 6 characters"
                   placeholderTextColor="#95A098"
                   editable={!savingPassword}
                 />
@@ -469,7 +469,7 @@ export default function LoginScreen() {
 
                 <Text style={styles.note}>
                   This password works on both the Super Plus Fitness app and website.
-                  You can still choose Login code whenever you prefer.
+                  Capital letters do not matter. You can still choose Login code whenever you prefer.
                 </Text>
               </>
             )}
