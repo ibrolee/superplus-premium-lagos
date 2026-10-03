@@ -123,10 +123,32 @@ function StaffBlogPage() {
     setSaving(true);
     const status = publishMode;
     const publishedAt = publishMode === "published" ? new Date().toISOString() : publishMode === "scheduled" ? new Date(scheduledDate).toISOString() : null;
-    const payload = { title: title.trim(), slug: slugify(slug), excerpt: excerpt.trim() || null, content: content.trim(), featured_image: featuredImage.trim() || null, category, author_name: "Super Plus Fitness", status, featured, published_at: publishedAt };
+    const cleanSlug = slugify(slug);
+    const payload = { title: title.trim(), slug: cleanSlug, excerpt: excerpt.trim() || null, content: content.trim(), featured_image: featuredImage.trim() || null, category, author_name: "Super Plus Fitness", status, featured, published_at: publishedAt };
+    const shouldNotify = publishMode === "published" && (!selectedPost || selectedPost.status !== "published");
     const { error: saveError } = selectedPost ? await supabase.from("blog_posts").update(payload).eq("id", selectedPost.id) : await supabase.from("blog_posts").insert(payload);
     if (saveError) { setError(saveError.message.toLowerCase().includes("duplicate") ? "That URL slug is already being used. Please choose another one." : saveError.message); setSaving(false); return; }
-    setSuccess(selectedPost ? "Blog post updated successfully." : "Blog post created successfully."); await loadPosts(); setSaving(false); window.setTimeout(() => { setShowEditor(false); resetEditor(); }, 700);
+
+    let notificationFailed = false;
+    if (shouldNotify) {
+      const { error: pushError } = await supabase.functions.invoke("send-member-push", {
+        body: {
+          title: "New from the Super Plus Blog",
+          body: excerpt.trim() || title.trim(),
+          kind: "blog",
+          deep_link: `/blog/${cleanSlug}`,
+          send_push: true,
+        },
+      });
+      notificationFailed = !!pushError;
+    }
+
+    setSuccess(
+      notificationFailed
+        ? "Blog post saved, but the member push notification could not be sent."
+        : selectedPost ? "Blog post updated successfully." : "Blog post created successfully.",
+    );
+    await loadPosts(); setSaving(false); window.setTimeout(() => { setShowEditor(false); resetEditor(); }, 700);
   }
 
   async function deletePost(post: BlogPost) { if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) return; setDeleting(post.id); const { error: deleteError } = await supabase.from("blog_posts").delete().eq("id", post.id); if (deleteError) setError(deleteError.message); else { setSuccess("Blog post deleted."); await loadPosts(); } setDeleting(null); }
