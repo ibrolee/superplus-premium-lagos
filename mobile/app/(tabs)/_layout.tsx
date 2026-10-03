@@ -50,15 +50,6 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="qr"
-        options={{
-          title: "QR Card",
-          tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? "qr-code" : "qr-code-outline"} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="activity"
         options={{
           title: "Activity",
