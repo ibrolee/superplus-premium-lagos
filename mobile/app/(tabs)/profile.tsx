@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { BrandLogo } from "../../lib/BrandLogo";
 import { useApp } from "../../lib/AppContext";
+import { disableCurrentMemberPushToken } from "../../lib/push-notifications";
 import { supabase } from "../../lib/supabase";
 import {
   AccountLinkRequired,
@@ -58,7 +59,12 @@ export default function ProfileScreen() {
       {
         text: "Sign out",
         style: "destructive",
-        onPress: () => void supabase.auth.signOut(),
+        onPress: () => {
+          void (async () => {
+            await disableCurrentMemberPushToken();
+            await supabase.auth.signOut();
+          })();
+        },
       },
     ]);
   }
