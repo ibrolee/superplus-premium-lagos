@@ -7,5 +7,5 @@ export default function IndexScreen() {
 
   if (authLoading) return <LoadingView label="Opening Super Plus…" />;
 
-  return <Redirect href={session ? "/(tabs)" : "/login"} />;
+  return <Redirect href={session ? "/(tabs)" : "/welcome"} />;
 }
