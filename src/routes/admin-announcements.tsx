@@ -175,10 +175,12 @@ function AdminAnnouncements() {
       if (writeError) throw writeError;
       if (!data) throw new Error("The announcement was modified elsewhere. Reopen it and try again.");
 
+      const transitioningToPublished =
+        form.status === "published" && (!editing || editing.status !== "published");
       const shouldNotifyMembers =
-        form.status === "published" &&
-        Date.parse(startsAt) <= Date.now() + 5000 &&
-        (!editing || editing.status !== "published");
+        transitioningToPublished && Date.parse(startsAt) <= Date.now() + 5000;
+      const shouldScheduleInApp =
+        transitioningToPublished && Date.parse(startsAt) > Date.now() + 5000;
       let notificationFailed = false;
 
       if (shouldNotifyMembers) {
@@ -193,6 +195,19 @@ function AdminAnnouncements() {
           },
         });
         notificationFailed = !!pushError;
+      } else if (shouldScheduleInApp) {
+        const { error: scheduleError } = await supabase.functions.invoke("send-member-push", {
+          body: {
+            title: form.title.trim(),
+            body: form.body.trim() || "New Super Plus member update.",
+            kind: "announcement",
+            deep_link: link.startsWith("/") ? link : null,
+            published_at: startsAt,
+            expires_at: endsAt,
+            send_push: false,
+          },
+        });
+        notificationFailed = !!scheduleError;
       }
 
       setEditorOpen(false); setEditing(null); setFile(null);
