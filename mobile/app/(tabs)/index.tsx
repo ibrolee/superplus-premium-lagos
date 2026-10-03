@@ -36,6 +36,7 @@ export default function HomeScreen() {
     attendance,
     announcements,
     visitGoal,
+    notificationUnreadCount,
     refreshing,
     refresh,
   } = useApp();
@@ -64,8 +65,24 @@ export default function HomeScreen() {
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
       <View style={styles.header}>
         <View style={styles.brandRow}>
-          <BrandLogo variant="mark" size={48} />
-          <Text style={styles.brandName}>SUPER PLUS FITNESS</Text>
+          <View style={styles.brandIdentity}>
+            <BrandLogo variant="mark" size={48} />
+            <Text style={styles.brandName}>SUPER PLUS FITNESS</Text>
+          </View>
+          <Pressable
+            accessibilityLabel="Open notifications"
+            style={styles.notificationButton}
+            onPress={() => router.push("/notifications")}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.green} />
+            {notificationUnreadCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notificationUnreadCount > 9 ? "9+" : notificationUnreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
         </View>
         <Text style={styles.greeting}>
           {greeting()}, {member.full_name.split(" ")[0]}.
@@ -253,8 +270,35 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  brandRow: { alignItems: "center", flexDirection: "row", gap: 10, marginBottom: 7 },
+  brandRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", gap: 10, marginBottom: 7 },
+  brandIdentity: { alignItems: "center", flex: 1, flexDirection: "row", gap: 10 },
   brandName: { ...sharedStyles.kicker, flexShrink: 1 },
+  notificationButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    position: "relative",
+    width: 44,
+  },
+  notificationBadge: {
+    alignItems: "center",
+    backgroundColor: "#EF2B2D",
+    borderColor: "#FFFFFF",
+    borderRadius: 999,
+    borderWidth: 2,
+    justifyContent: "center",
+    minHeight: 18,
+    minWidth: 18,
+    paddingHorizontal: 3,
+    position: "absolute",
+    right: -4,
+    top: -5,
+  },
+  notificationBadgeText: { color: "#FFFFFF", fontSize: 8, fontWeight: "900" },
   header: { gap: 5, paddingTop: 4 },
   greeting: {
     color: colors.ink,
