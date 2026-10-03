@@ -26,6 +26,7 @@ export const Route = createFileRoute("/admin-engagement")({
 type EngagementSettings = {
   id: string;
   visit_points: number;
+  program_started_at: string;
 };
 
 type AchievementDefinition = {
@@ -261,7 +262,7 @@ function AdminEngagement() {
     ] = await Promise.all([
       supabase
         .from("app_engagement_settings")
-        .select("id,visit_points")
+        .select("id,visit_points,program_started_at")
         .eq("id", "default")
         .maybeSingle(),
       supabase
@@ -976,7 +977,7 @@ function AdminEngagement() {
 
         <CollapsiblePanel
           title="SP Points"
-          subtitle="Set points earned once per unique gym day."
+          subtitle="Set points earned once per unique gym day from the programme launch onward."
           icon={<Settings2 size={19} />}
           badge={
             <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
@@ -1000,6 +1001,9 @@ function AdminEngagement() {
             />
             <span className="mt-2 block text-xs font-normal leading-5 text-[#657568]">
               Multiple check-ins/check-outs on the same Lagos calendar day still earn only one daily points award.
+              {settings?.program_started_at
+                ? ` SP Points launched ${dateTime(settings.program_started_at)}; earlier attendance does not count.`
+                : ""}
             </span>
           </label>
           <button
