@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
@@ -33,8 +33,6 @@ type LoginStep = "login" | "code" | "new-password";
 type CodePurpose = "login" | "set-password";
 
 function LoginRoute() {
-  const navigate = useNavigate();
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [token, setToken] = useState("");
@@ -49,6 +47,14 @@ function LoginRoute() {
   const [savingPassword, setSavingPassword] = useState(false);
   const [error, setError] = useState("");
 
+  function continueAfterLogin() {
+    const redirect =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("redirect")
+        : null;
+    window.location.replace(redirect === "/delete-account" ? "/delete-account" : "/member");
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -60,7 +66,7 @@ function LoginRoute() {
       if (!active) return;
 
       if (session) {
-        navigate({ to: "/member", replace: true });
+        continueAfterLogin();
         return;
       }
 
@@ -72,7 +78,7 @@ function LoginRoute() {
     return () => {
       active = false;
     };
-  }, [navigate]);
+  }, []);
 
   function cleanEmail() {
     return email.trim().toLowerCase();
@@ -117,7 +123,7 @@ function LoginRoute() {
       return;
     }
 
-    navigate({ to: "/member", replace: true });
+    continueAfterLogin();
   }
 
   async function sendCode(purpose: CodePurpose) {
@@ -189,7 +195,7 @@ function LoginRoute() {
       return;
     }
 
-    navigate({ to: "/member", replace: true });
+    continueAfterLogin();
   }
 
   async function handleSavePassword(
@@ -221,7 +227,7 @@ function LoginRoute() {
       return;
     }
 
-    navigate({ to: "/member", replace: true });
+    continueAfterLogin();
   }
 
   function chooseMode(nextMode: LoginMode) {
