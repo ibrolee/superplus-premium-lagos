@@ -138,7 +138,7 @@ export default function HomeScreen() {
         {goalProgress ? (
           <>
             <View style={styles.goalTrack}>
-              <View style={[styles.goalFill, { width: `${goalProgress.percentage}%` }]} />
+              <View style={[styles.goalFill, { width: `${goalProgress.percentage}%` as `${number}%` }]} />
             </View>
             <View style={styles.goalFooter}>
               <Text style={styles.goalNote}>
@@ -168,16 +168,37 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Pressable style={styles.blogButton} onPress={() => router.push("/blog")}>
-        <View style={styles.blogIcon}>
-          <Ionicons name="newspaper-outline" size={24} color={colors.green} />
-        </View>
-        <View style={styles.qrCopy}>
-          <Text style={styles.qrTitle}>Read the Super Plus Blog</Text>
-          <Text style={styles.qrText}>Tips, recovery, gym life and member stories.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={21} color={colors.green2} />
-      </Pressable>
+      <SectionTitle title="Explore Super Plus" />
+      <View style={styles.exploreGrid}>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/blog")}>
+          <View style={styles.exploreIcon}>
+            <Ionicons name="newspaper-outline" size={22} color={colors.green} />
+          </View>
+          <Text style={styles.exploreTitle}>Blog</Text>
+          <Text style={styles.exploreText}>Tips, recovery and gym life.</Text>
+        </Pressable>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/workouts")}>
+          <View style={styles.exploreIcon}>
+            <Ionicons name="barbell-outline" size={22} color={colors.green} />
+          </View>
+          <Text style={styles.exploreTitle}>Workouts</Text>
+          <Text style={styles.exploreText}>Plan and check off a session.</Text>
+        </Pressable>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/bookings")}>
+          <View style={styles.exploreIcon}>
+            <Ionicons name="calendar-outline" size={22} color={colors.green} />
+          </View>
+          <Text style={styles.exploreTitle}>Book</Text>
+          <Text style={styles.exploreText}>PT, classes and spa services.</Text>
+        </Pressable>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/rewards")}>
+          <View style={styles.exploreIcon}>
+            <Ionicons name="trophy-outline" size={22} color={colors.green} />
+          </View>
+          <Text style={styles.exploreTitle}>Rewards</Text>
+          <Text style={styles.exploreText}>Challenges, badges and SP Points.</Text>
+        </Pressable>
+      </View>
 
       <SectionTitle title="Recent visits" />
       {attendance.length ? (
@@ -333,24 +354,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 44,
   },
-  blogButton: {
-    alignItems: "center",
+  exploreGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  exploreCard: {
     backgroundColor: "#EEF5EA",
     borderColor: colors.line,
-    borderRadius: 19,
+    borderRadius: 18,
     borderWidth: 1,
-    flexDirection: "row",
-    gap: 13,
-    padding: 16,
+    minHeight: 142,
+    padding: 14,
+    width: "48%",
   },
-  blogIcon: {
+  exploreIcon: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 13,
-    height: 48,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    height: 42,
     justifyContent: "center",
-    width: 48,
+    width: 42,
   },
+  exploreTitle: { color: colors.ink, fontSize: 15, fontWeight: "900", marginTop: 12 },
+  exploreText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
   qrCopy: { flex: 1 },
   qrTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
   qrText: { color: colors.muted, fontSize: 12, marginTop: 3 },
