@@ -1,0 +1,42 @@
+name: Expo Go iPhone preview
+
+on:
+  push:
+    branches:
+      - build/ios-preview-20261003
+    paths:
+      - ".github/workflows/expo-go-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout current app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Install tunnel helper
+        run: npm install --no-save @expo/ngrok
+
+      - name: Start Expo Go tunnel
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          CI: "1"
+        run: |
+          set -o pipefail
+          npx expo start --tunnel --clear 2>&1 | tee /tmp/expo-go-preview.log
