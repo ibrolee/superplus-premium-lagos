@@ -469,7 +469,7 @@ export function AdminWorkspaceShell({
       </main>
     );
   return (
-    <div className="min-h-screen bg-[#f4f6f1] text-[#16221c] lg:flex">
+    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#f4f6f1] text-[#16221c] lg:flex">
       {mobileOpen && (
         <button
           type="button"
@@ -598,7 +598,7 @@ export function AdminWorkspaceShell({
             </div>
           )}
         </header>
-        <main className="mx-auto max-w-[1480px] px-4 py-7 sm:px-7 lg:px-10 lg:py-10">
+        <main className="mx-auto w-full min-w-0 max-w-[1480px] overflow-x-hidden px-4 py-7 sm:px-7 lg:px-10 lg:py-10">
           <p className="text-xs font-black uppercase tracking-[.17em] text-[#65905c]">
             Super Plus / Admin
           </p>

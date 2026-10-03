@@ -190,9 +190,7 @@ function isInternalWorkspace(pathname: string): boolean {
     pathname.startsWith("/management-") ||
     pathname.startsWith("/management/") ||
     pathname === "/admin-workspace" ||
-    pathname === "/admin-members" ||
-    pathname === "/admin-approvals" ||
-    pathname === "/admin-announcements"
+    pathname.startsWith("/admin-")
   );
 }
 function isVisitorPage(pathname: string): boolean {
