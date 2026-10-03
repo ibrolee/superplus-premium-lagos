@@ -42,6 +42,7 @@ jobs:
       - name: Start iOS internal preview build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_SKIP_LOCKFILE_CHECK: "1"
         run: |
           set -o pipefail
           eas build --platform ios --profile preview --non-interactive --no-wait --json | tee /tmp/eas-ios-build.json
