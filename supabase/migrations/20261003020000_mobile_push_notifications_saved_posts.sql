@@ -16,6 +16,7 @@ create table if not exists public.app_notifications (
   kind text not null default 'general',
   deep_link text null,
   audience text not null default 'members' check (audience in ('members')),
+  member_id uuid null references public.members(id) on delete cascade,
   published_at timestamptz not null default now(),
   expires_at timestamptz null,
   created_by uuid null references auth.users(id) on delete set null,
@@ -71,6 +72,15 @@ using (
   audience = 'members'
   and published_at <= now()
   and (expires_at is null or expires_at > now())
+  and (
+    member_id is null
+    or exists (
+      select 1
+      from public.members m
+      where m.id = app_notifications.member_id
+        and m.auth_user_id = auth.uid()
+    )
+  )
 );
 
 drop policy if exists "Staff can manage app notifications" on public.app_notifications;
@@ -170,6 +180,8 @@ create index if not exists member_push_tokens_member_idx
   on public.member_push_tokens(member_id, enabled);
 create index if not exists app_notifications_live_idx
   on public.app_notifications(published_at desc);
+create index if not exists app_notifications_member_idx
+  on public.app_notifications(member_id, published_at desc);
 create index if not exists member_notification_reads_member_idx
   on public.member_notification_reads(member_id, read_at desc);
 create index if not exists member_saved_posts_member_idx
