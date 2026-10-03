@@ -1,0 +1,77 @@
+name: Temporary Expo Go Preview
+
+on:
+  push:
+    branches:
+      - preview/ios-expo-go-20261003
+    paths-ignore:
+      - expo-preview-url.txt
+
+permissions:
+  contents: write
+
+jobs:
+  expo-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout preview branch
+        uses: actions/checkout@v4
+        with:
+          ref: preview/ios-expo-go-20261003
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install dependencies
+        run: npm install --package-lock=false
+
+      - name: Install tunnel support
+        run: npm install --no-save @expo/ngrok
+
+      - name: Start Expo Go tunnel and publish link
+        env:
+          CI: "1"
+        run: |
+          rm -f /tmp/expo.log
+          (npx expo start --tunnel --port 8081 > /tmp/expo.log 2>&1) &
+          EXPO_PID=$!
+
+          for i in $(seq 1 90); do
+            URL=$(grep -Eo 'exp://[^[:space:]]+|https://[^[:space:]]+\.exp\.direct[^[:space:]]*' /tmp/expo.log | head -n 1 || true)
+            if [ -n "$URL" ]; then
+              break
+            fi
+            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+              cat /tmp/expo.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ -z "$URL" ]; then
+            cat /tmp/expo.log
+            echo "Could not find Expo preview URL."
+            exit 1
+          fi
+
+          if [[ "$URL" == https://* ]]; then
+            URL="exp://\${URL#https://}"
+          fi
+
+          echo "$URL" > "$GITHUB_WORKSPACE/expo-preview-url.txt"
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add expo-preview-url.txt
+          git commit -m "Publish temporary Expo Go preview link"
+          git push origin HEAD:preview/ios-expo-go-20261003
+
+          echo "Expo Go preview: $URL"
+          echo "Keeping the tunnel online for about one hour."
+          wait "$EXPO_PID"
