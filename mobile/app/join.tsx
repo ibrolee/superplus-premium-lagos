@@ -26,7 +26,9 @@ export default function PublicJoinScreen() {
   const [loading, setLoading] = useState(false);
 
   const selectedPlan = useMemo(
-    () => publicMembershipPlans.find((plan) => plan.id === selectedPlanId) ?? publicMembershipPlans[2],
+    () =>
+      publicMembershipPlans.find((plan) => plan.id === selectedPlanId) ??
+      publicMembershipPlans[0]!,
     [selectedPlanId],
   );
 
