@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { BrandLogo } from "../../lib/BrandLogo";
+import { calculateGoalProgress } from "../../lib/visit-goals";
 import { useApp } from "../../lib/AppContext";
 import {
   AccountLinkRequired,
@@ -34,6 +35,7 @@ export default function HomeScreen() {
     currentMembership,
     attendance,
     announcements,
+    visitGoal,
     refreshing,
     refresh,
   } = useApp();
@@ -56,6 +58,7 @@ export default function HomeScreen() {
         : "expired"
     : "none";
   const remaining = daysUntil(currentMembership?.end_date);
+  const goalProgress = visitGoal ? calculateGoalProgress(attendance, visitGoal) : null;
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
@@ -113,16 +116,57 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <Pressable style={styles.qrButton} onPress={() => router.push("/(tabs)/qr")}>
-        <View style={styles.qrIcon}>
-          <Ionicons name="qr-code" size={25} color={colors.green} />
+      <Pressable style={styles.goalCard} onPress={() => router.push("/goal")}>
+        <View style={styles.goalTop}>
+          <View>
+            <Text style={styles.goalEyebrow}>WEEKLY GYM GOAL</Text>
+            <Text style={styles.goalTitle}>
+              {goalProgress
+                ? `${goalProgress.current} of ${goalProgress.target} visits`
+                : "Set your visit goal"}
+            </Text>
+          </View>
+          <View style={styles.goalIcon}>
+            <Ionicons
+              name={goalProgress?.complete ? "trophy" : "flag"}
+              size={22}
+              color={colors.green}
+            />
+          </View>
+        </View>
+
+        {goalProgress ? (
+          <>
+            <View style={styles.goalTrack}>
+              <View style={[styles.goalFill, { width: `${goalProgress.percentage}%` }]} />
+            </View>
+            <View style={styles.goalFooter}>
+              <Text style={styles.goalNote}>
+                {goalProgress.complete
+                  ? "Goal complete for this week 🎉"
+                  : `${goalProgress.remaining} visit${goalProgress.remaining === 1 ? "" : "s"} left this week`}
+              </Text>
+              <Text style={styles.goalStreak}>
+                🔥 {goalProgress.streakWeeks} wk
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.goalNote}>
+            Choose your weekly frequency, preferred gym days and reminder time.
+          </Text>
+        )}
+      </Pressable>
+
+      <View style={styles.cardReminder}>
+        <View style={styles.cardReminderIcon}>
+          <Ionicons name="card-outline" size={22} color={colors.green} />
         </View>
         <View style={styles.qrCopy}>
-          <Text style={styles.qrTitle}>Show my QR card</Text>
-          <Text style={styles.qrText}>Scan in and out at reception.</Text>
+          <Text style={styles.qrTitle}>Bring your membership card</Text>
+          <Text style={styles.qrText}>Your physical card is used to scan in and out at reception.</Text>
         </View>
-        <Ionicons name="chevron-forward" size={21} color={colors.green2} />
-      </Pressable>
+      </View>
 
       <Pressable style={styles.blogButton} onPress={() => router.push("/blog")}>
         <View style={styles.blogIcon}>
@@ -220,15 +264,74 @@ const styles = StyleSheet.create({
   bigStat: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
   cardNumberWrap: { alignItems: "flex-end" },
   cardNumber: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
-  qrButton: {
-    alignItems: "center",
+  goalCard: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
-    borderRadius: 19,
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 17,
+  },
+  goalTop: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  goalEyebrow: {
+    color: colors.green2,
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 1.1,
+  },
+  goalTitle: {
+    color: colors.ink,
+    fontSize: 21,
+    fontWeight: "900",
+    letterSpacing: -0.4,
+    marginTop: 4,
+  },
+  goalIcon: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 13,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  goalTrack: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 999,
+    height: 8,
+    marginTop: 15,
+    overflow: "hidden",
+  },
+  goalFill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  goalFooter: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+    marginTop: 9,
+  },
+  goalNote: { color: colors.muted, flex: 1, fontSize: 11, fontWeight: "700", lineHeight: 17, marginTop: 9 },
+  goalStreak: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  cardReminder: {
+    alignItems: "center",
+    backgroundColor: "#F7F8F5",
+    borderColor: colors.line,
+    borderRadius: 18,
     borderWidth: 1,
     flexDirection: "row",
-    gap: 13,
-    padding: 16,
+    gap: 12,
+    padding: 14,
+  },
+  cardReminderIcon: {
+    alignItems: "center",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: 12,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
   },
   blogButton: {
     alignItems: "center",
@@ -243,14 +346,6 @@ const styles = StyleSheet.create({
   blogIcon: {
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    borderRadius: 13,
-    height: 48,
-    justifyContent: "center",
-    width: 48,
-  },
-  qrIcon: {
-    alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
     borderRadius: 13,
     height: 48,
     justifyContent: "center",
