@@ -36,7 +36,7 @@ export async function loadHomeHighlights(
   await supabase.rpc("sync_my_engagement");
 
   const today = lagosToday();
-  const [ledgerResult, achievementResult, challengeResult, postResult] =
+  const [ledgerResult, achievementResult, challengeResult, postResult, settingsResult] =
     await Promise.all([
       supabase
         .from("member_points_ledger")
@@ -67,6 +67,11 @@ export async function loadHomeHighlights(
         .order("published_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase
+        .from("app_engagement_settings")
+        .select("program_started_at")
+        .eq("id", "default")
+        .maybeSingle(),
     ]);
 
   const points = (ledgerResult.data ?? []).reduce(
@@ -94,7 +99,15 @@ export async function loadHomeHighlights(
   let challenge: HomeHighlight["challenge"] = null;
   if (challengeResult.data) {
     const row = challengeResult.data;
-    const visits = uniqueVisitDates(attendance).filter(
+    const programStartedAt = settingsResult.data?.program_started_at
+      ? new Date(settingsResult.data.program_started_at).getTime()
+      : null;
+    const eligibleAttendance = programStartedAt
+      ? attendance.filter(
+          (item) => new Date(item.checked_in_at).getTime() >= programStartedAt,
+        )
+      : attendance;
+    const visits = uniqueVisitDates(eligibleAttendance).filter(
       (day) => day >= row.starts_on && day <= row.ends_on,
     ).length;
     const target = Math.max(1, Number(row.target_visits));
