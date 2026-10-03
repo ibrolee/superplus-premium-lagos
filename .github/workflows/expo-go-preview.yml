@@ -42,12 +42,26 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           CI: "1"
         run: |
-          nohup npx expo start --tunnel --clear > /tmp/expo-go-preview.log 2>&1 &
+          nohup npx expo start --go --tunnel --clear > /tmp/expo-go-preview.log 2>&1 &
           echo $! > /tmp/expo-go-preview.pid
 
-          for i in $(seq 1 60); do
-            sed -E 's/\x1B\[[0-9;]*[A-Za-z]//g' /tmp/expo-go-preview.log | grep -Eo 'exp://[^[:space:]]+' | head -n 1 > expo-go-preview-url.txt || true
-            if [ -s expo-go-preview-url.txt ]; then
+          for i in $(seq 1 90); do
+            TUNNEL_URL=$(curl -fsS http://127.0.0.1:4040/api/tunnels 2>/dev/null | node -e '
+              let input = "";
+              process.stdin.on("data", d => input += d);
+              process.stdin.on("end", () => {
+                try {
+                  const data = JSON.parse(input);
+                  const tunnel = (data.tunnels || []).find(t => String(t.public_url || "").startsWith("https://"));
+                  if (tunnel) process.stdout.write(tunnel.public_url);
+                } catch {}
+              });
+            ' || true)
+
+            if [ -n "$TUNNEL_URL" ]; then
+              EXPO_URL="exps://${TUNNEL_URL#https://}"
+              printf '%s\n' "$EXPO_URL" > expo-go-preview-url.txt
+              printf '%s\n' "$TUNNEL_URL" > expo-go-tunnel-url.txt
               break
             fi
             sleep 2
@@ -63,7 +77,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: expo-go-preview-url
-          path: mobile/expo-go-preview-url.txt
+          path: |
+            mobile/expo-go-preview-url.txt
+            mobile/expo-go-tunnel-url.txt
           retention-days: 1
 
       - name: Keep preview tunnel available
