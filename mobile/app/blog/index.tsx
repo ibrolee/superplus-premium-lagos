@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, router } from "expo-router";
+import { router } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -25,7 +25,7 @@ type BlogPost = {
 };
 
 export default function BlogIndexScreen() {
-  const { session, member } = useApp();
+  const { member } = useApp();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"all" | "saved">("all");
@@ -73,10 +73,11 @@ export default function BlogIndexScreen() {
     void loadPosts();
   }, [loadPosts]);
 
-  if (!session) return <Redirect href="/login" />;
 
   const visiblePosts =
-    filter === "saved" ? posts.filter((post) => savedIds.has(post.id)) : posts;
+    filter === "saved" && member
+      ? posts.filter((post) => savedIds.has(post.id))
+      : posts;
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void loadPosts(true)}>
@@ -102,19 +103,26 @@ export default function BlogIndexScreen() {
             All
           </Text>
         </Pressable>
-        <Pressable
-          onPress={() => setFilter("saved")}
-          style={[styles.filterChip, filter === "saved" && styles.filterChipActive]}
-        >
-          <Ionicons
-            name={filter === "saved" ? "bookmark" : "bookmark-outline"}
-            size={14}
-            color={filter === "saved" ? "#FFFFFF" : colors.green}
-          />
-          <Text style={[styles.filterText, filter === "saved" && styles.filterTextActive]}>
-            Saved {savedIds.size ? `(${savedIds.size})` : ""}
-          </Text>
-        </Pressable>
+        {member ? (
+          <Pressable
+            onPress={() => setFilter("saved")}
+            style={[styles.filterChip, filter === "saved" && styles.filterChipActive]}
+          >
+            <Ionicons
+              name={filter === "saved" ? "bookmark" : "bookmark-outline"}
+              size={14}
+              color={filter === "saved" ? "#FFFFFF" : colors.green}
+            />
+            <Text style={[styles.filterText, filter === "saved" && styles.filterTextActive]}>
+              Saved {savedIds.size ? `(${savedIds.size})` : ""}
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.filterChip} onPress={() => router.push("/login")}>
+            <Ionicons name="person-outline" size={14} color={colors.green} />
+            <Text style={styles.filterText}>Member sign in</Text>
+          </Pressable>
+        )}
       </View>
 
       {loading ? (
