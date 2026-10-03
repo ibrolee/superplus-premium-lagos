@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Bell,
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Dumbbell,
   Gift,
   Megaphone,
@@ -99,7 +100,7 @@ type AppNotification = {
 };
 
 const inputClass =
-  "mt-1 w-full rounded-xl border border-[#d8e2d5] bg-white px-3 py-3 text-sm outline-none focus:border-[#79a56e]";
+  "mt-1 box-border w-full min-w-0 max-w-full rounded-xl border border-[#d8e2d5] bg-white px-3 py-3 text-sm outline-none focus:border-[#79a56e]";
 
 const buttonClass =
   "rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50";
@@ -119,6 +120,50 @@ function makeCode(value: string) {
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
     .slice(0, 48);
+}
+
+function CollapsiblePanel({
+  title,
+  subtitle,
+  icon,
+  badge,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  icon?: ReactNode;
+  badge?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <details className="group min-w-0 max-w-full overflow-hidden rounded-[20px] border border-[#e1e8dd] bg-white">
+      <summary className="flex min-w-0 cursor-pointer list-none items-center gap-3 px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
+        {icon && (
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#edf6e7] text-[#38673e]">
+            {icon}
+          </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <strong className="block truncate text-base font-black text-[#16221c] sm:text-lg">
+            {title}
+          </strong>
+          {subtitle && (
+            <span className="mt-0.5 block text-xs leading-5 text-[#657568]">
+              {subtitle}
+            </span>
+          )}
+        </span>
+        {badge}
+        <ChevronDown
+          size={18}
+          className="shrink-0 text-[#526b57] transition-transform group-open:rotate-180"
+        />
+      </summary>
+      <div className="min-w-0 max-w-full overflow-x-hidden border-t border-[#edf1eb] p-4 sm:p-5">
+        {children}
+      </div>
+    </details>
+  );
 }
 
 function AdminEngagement() {
@@ -789,7 +834,7 @@ function AdminEngagement() {
   if (checking) {
     return (
       <AdminWorkspaceShell title="App management" active="/admin-engagement">
-        <p className="mt-7 rounded-2xl bg-white p-6 text-sm">
+        <p className="mt-5 rounded-2xl bg-white p-5 text-sm">
           Checking management access…
         </p>
       </AdminWorkspaceShell>
@@ -801,7 +846,7 @@ function AdminEngagement() {
       <AdminWorkspaceShell title="App management" active="/admin-engagement">
         <p
           role="alert"
-          className="mt-7 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800"
+          className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
         >
           {error || "Management access required."}
         </p>
@@ -812,34 +857,28 @@ function AdminEngagement() {
   return (
     <AdminWorkspaceShell
       title="App management"
-      subtitle="Control member-app points, badges, rewards, challenges, session requests and notifications."
+      subtitle="Control points, badges, rewards, challenges, session requests and member notifications."
       active="/admin-engagement"
     >
-      <div className="mt-7 space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[.15em] text-[#65905c]">
-              Super Plus member app
-            </p>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-[#637469]">
-              This is the central control room for the member app. Changes to
-              badges, rewards, challenges and SP Points feed directly into the app.
-            </p>
-          </div>
+      <div className="mt-5 min-w-0 max-w-full space-y-3 overflow-x-hidden">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+          <p className="min-w-0 text-sm leading-6 text-[#637469]">
+            Changes here feed directly into the Super Plus member app.
+          </p>
           <button
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-3 py-2.5 text-xs font-bold disabled:opacity-50"
           >
-            <RefreshCw size={16} /> Refresh
+            <RefreshCw size={15} /> Refresh
           </button>
         </div>
 
         {error && (
           <p
             role="alert"
-            className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            className="max-w-full break-words rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
           >
             {error}
           </p>
@@ -848,36 +887,32 @@ function AdminEngagement() {
         {success && (
           <p
             role="status"
-            className="rounded-xl border border-[#bfdab8] bg-[#ecf8e8] p-4 text-sm text-[#285c33]"
+            className="max-w-full break-words rounded-xl border border-[#bfdab8] bg-[#ecf8e8] p-4 text-sm text-[#285c33]"
           >
             {success}
           </p>
         )}
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {[
             {
-              label: "Points per visit",
+              label: "Points / visit",
               value: String(settings?.visit_points ?? visitPoints),
-              note: "Current member earning rate",
               icon: Sparkles,
             },
             {
               label: "Active badges",
               value: String(activeBadges),
-              note: `${badges.length} configured`,
               icon: Trophy,
             },
             {
               label: "Pending sessions",
               value: String(pendingBookings),
-              note: "Member requests needing action",
               icon: CalendarDays,
             },
             {
               label: "Active rewards",
               value: String(activeRewards),
-              note: `${activeChallenges} active challenge${activeChallenges === 1 ? "" : "s"}`,
               icon: Gift,
             },
           ].map((item) => {
@@ -885,664 +920,457 @@ function AdminEngagement() {
             return (
               <article
                 key={item.label}
-                className="rounded-[20px] border border-[#e1e8dd] bg-white p-5"
+                className="min-w-0 rounded-2xl border border-[#e1e8dd] bg-white p-4"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-xl bg-[#edf6e7] p-2.5 text-[#38673e]">
-                    <Icon size={19} />
+                  <span className="rounded-xl bg-[#edf6e7] p-2 text-[#38673e]">
+                    <Icon size={18} />
                   </span>
-                  <span className="text-2xl font-black tabular-nums">
-                    {item.value}
-                  </span>
+                  <span className="text-xl font-black tabular-nums">{item.value}</span>
                 </div>
-                <p className="mt-4 text-sm font-black">{item.label}</p>
-                <p className="mt-1 text-xs text-[#657568]">{item.note}</p>
+                <p className="mt-3 truncate text-xs font-black text-[#526b57]">
+                  {item.label}
+                </p>
               </article>
             );
           })}
         </section>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid min-w-0 gap-2 sm:grid-cols-3">
           <a
             href="/staff-blog"
-            className="flex items-center gap-3 rounded-[18px] border border-[#e1e8dd] bg-white p-4 hover:border-[#9cbb92]"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <BookOpen size={20} className="text-[#38673e]" />
-            <span>
-              <strong className="block text-sm">Manage blog</strong>
-              <span className="text-xs text-[#657568]">Posts shown inside the app</span>
+            <BookOpen size={18} className="shrink-0 text-[#38673e]" />
+            <span className="min-w-0">
+              <strong className="block truncate text-sm">Blog</strong>
+              <span className="block truncate text-[11px] text-[#657568]">Manage app articles</span>
             </span>
           </a>
           <a
             href="/admin-announcements"
-            className="flex items-center gap-3 rounded-[18px] border border-[#e1e8dd] bg-white p-4 hover:border-[#9cbb92]"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <Megaphone size={20} className="text-[#38673e]" />
-            <span>
-              <strong className="block text-sm">Announcements</strong>
-              <span className="text-xs text-[#657568]">Website and member notices</span>
+            <Megaphone size={18} className="shrink-0 text-[#38673e]" />
+            <span className="min-w-0">
+              <strong className="block truncate text-sm">Announcements</strong>
+              <span className="block truncate text-[11px] text-[#657568]">Member notices</span>
             </span>
           </a>
           <a
             href="/management-bookings"
-            className="flex items-center gap-3 rounded-[18px] border border-[#e1e8dd] bg-white p-4 hover:border-[#9cbb92]"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <Users size={20} className="text-[#38673e]" />
-            <span>
-              <strong className="block text-sm">Full session queue</strong>
-              <span className="text-xs text-[#657568]">Dedicated booking workspace</span>
+            <Users size={18} className="shrink-0 text-[#38673e]" />
+            <span className="min-w-0">
+              <strong className="block truncate text-sm">Full session queue</strong>
+              <span className="block truncate text-[11px] text-[#657568]">Booking workspace</span>
             </span>
           </a>
         </section>
 
-        <section className="grid gap-5 xl:grid-cols-2">
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Settings2 size={20} /> SP Points
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[#657568]">
-              Keep points small and easy to understand. Existing visit points are
-              recalculated when the new settings are deployed.
-            </p>
-            <label className="mt-5 block text-sm font-bold">
-              Points earned per recorded gym visit
+        <CollapsiblePanel
+          title="SP Points"
+          subtitle="Set how many points a recorded visit earns."
+          icon={<Settings2 size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {visitPoints} / visit
+            </span>
+          }
+        >
+          <label className="block min-w-0 text-sm font-bold">
+            Points earned per recorded gym visit
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={visitPoints}
+              onChange={(event) => setVisitPoints(Number(event.target.value) || 1)}
+              className={inputClass}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={busy === "visit-points"}
+            onClick={() => void saveVisitPoints()}
+            className={`${buttonClass} mt-4 w-full sm:w-auto`}
+          >
+            {busy === "visit-points" ? "Saving…" : "Save point rule"}
+          </button>
+        </CollapsiblePanel>
+
+        <CollapsiblePanel
+          title="Add badge"
+          subtitle="Create a new achievement for members."
+          icon={<Trophy size={19} />}
+        >
+          <div className="grid min-w-0 gap-4">
+            <label className="min-w-0 text-sm font-bold">
+              Badge title
               <input
-                type="number"
-                min={1}
-                max={20}
-                value={visitPoints}
-                onChange={(event) =>
-                  setVisitPoints(Number(event.target.value) || 1)
-                }
+                value={badgeTitle}
+                onChange={(event) => setBadgeTitle(event.target.value)}
                 className={inputClass}
+                placeholder="Morning Regular"
               />
             </label>
+            <label className="min-w-0 text-sm font-bold">
+              Description
+              <textarea
+                value={badgeDescription}
+                onChange={(event) => setBadgeDescription(event.target.value)}
+                className={inputClass}
+                rows={3}
+                placeholder="A short explanation members will see."
+              />
+            </label>
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0 text-sm font-bold">
+                Visits required
+                <input
+                  type="number"
+                  min={1}
+                  value={badgeThreshold}
+                  onChange={(event) => setBadgeThreshold(Number(event.target.value) || 1)}
+                  className={inputClass}
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Bonus SP Points
+                <input
+                  type="number"
+                  min={0}
+                  value={badgePoints}
+                  onChange={(event) => setBadgePoints(Number(event.target.value) || 0)}
+                  className={inputClass}
+                />
+              </label>
+            </div>
             <button
               type="button"
-              disabled={busy === "visit-points"}
-              onClick={() => void saveVisitPoints()}
-              className={`${buttonClass} mt-4`}
+              disabled={busy === "badge-create"}
+              onClick={() => void createBadge()}
+              className={`${buttonClass} w-full sm:w-auto`}
             >
-              {busy === "visit-points" ? "Saving…" : "Save point rule"}
+              {busy === "badge-create" ? "Adding…" : "Add badge"}
             </button>
           </div>
+        </CollapsiblePanel>
 
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Trophy size={20} /> Add badge
-            </h2>
-            <div className="mt-5 grid gap-4">
-              <label className="text-sm font-bold">
-                Badge title
-                <input
-                  value={badgeTitle}
-                  onChange={(event) => setBadgeTitle(event.target.value)}
-                  className={inputClass}
-                  placeholder="Morning Regular"
-                />
-              </label>
-              <label className="text-sm font-bold">
-                Description
-                <textarea
-                  value={badgeDescription}
-                  onChange={(event) => setBadgeDescription(event.target.value)}
-                  className={inputClass}
-                  rows={3}
-                  placeholder="A short explanation members will see."
-                />
-              </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">
-                  Visits required
-                  <input
-                    type="number"
-                    min={1}
-                    value={badgeThreshold}
-                    onChange={(event) =>
-                      setBadgeThreshold(Number(event.target.value) || 1)
-                    }
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-sm font-bold">
-                  Bonus SP Points
-                  <input
-                    type="number"
-                    min={0}
-                    value={badgePoints}
-                    onChange={(event) =>
-                      setBadgePoints(Number(event.target.value) || 0)
-                    }
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-              <button
-                type="button"
-                disabled={busy === "badge-create"}
-                onClick={() => void createBadge()}
-                className={buttonClass}
-              >
-                {busy === "badge-create" ? "Adding…" : "Add badge"}
-              </button>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-          <h2 className="text-xl font-black">Badges & achievements</h2>
-          <p className="mt-1 text-sm text-[#657568]">
-            Edit the badge name, visit target and bonus points or hide a badge from members.
-          </p>
-          <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <CollapsiblePanel
+          title="Badges & achievements"
+          subtitle="Edit targets, bonus points and visibility."
+          icon={<Trophy size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {activeBadges} active
+            </span>
+          }
+        >
+          <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {badges.map((item) => (
-              <article
-                key={item.code}
-                className="rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
+              <article key={item.code} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-2">
                   <span className="rounded-xl bg-[#edf6e7] p-2 text-[#38673e]">
-                    <Trophy size={18} />
+                    <Trophy size={17} />
                   </span>
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-black ${
-                      item.active
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
                     {item.active ? "ACTIVE" : "HIDDEN"}
                   </span>
                 </div>
-                <p className="mt-3 font-black">{item.title}</p>
-                <p className="mt-1 text-xs leading-5 text-[#657568]">
-                  {item.description}
-                </p>
+                <p className="mt-3 break-words font-black">{item.title}</p>
+                <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
                 <p className="mt-3 text-xs font-bold text-[#45634b]">
                   {item.visit_threshold} visits · +{item.points_reward} pts
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={busy === item.code}
-                    onClick={() => void editBadge(item)}
-                    className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                  >
+                  <button type="button" disabled={busy === item.code} onClick={() => void editBadge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     Edit
                   </button>
-                  <button
-                    type="button"
-                    disabled={busy === item.code}
-                    onClick={() => void toggleBadge(item)}
-                    className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                  >
+                  <button type="button" disabled={busy === item.code} onClick={() => void toggleBadge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     {item.active ? "Hide" : "Publish"}
                   </button>
                 </div>
               </article>
             ))}
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="grid gap-5 xl:grid-cols-2">
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Dumbbell size={20} /> Create challenge
-            </h2>
-            <div className="mt-5 grid gap-4">
-              <label className="text-sm font-bold">
-                Title
-                <input
-                  value={challengeTitle}
-                  onChange={(event) => setChallengeTitle(event.target.value)}
-                  className={inputClass}
-                  placeholder="November Consistency"
-                />
+        <CollapsiblePanel
+          title="Create challenge"
+          subtitle="Set a visit target, dates and bonus points."
+          icon={<Dumbbell size={19} />}
+        >
+          <div className="grid min-w-0 gap-4">
+            <label className="min-w-0 text-sm font-bold">
+              Title
+              <input
+                value={challengeTitle}
+                onChange={(event) => setChallengeTitle(event.target.value)}
+                className={inputClass}
+                placeholder="November Consistency"
+              />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Description
+              <textarea
+                value={challengeDescription}
+                onChange={(event) => setChallengeDescription(event.target.value)}
+                className={inputClass}
+                rows={3}
+                placeholder="Complete 12 gym visits this month."
+              />
+            </label>
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0 text-sm font-bold">
+                Starts
+                <input type="date" value={challengeStart} onChange={(event) => setChallengeStart(event.target.value)} className={inputClass} />
               </label>
-              <label className="text-sm font-bold">
-                Description
-                <textarea
-                  value={challengeDescription}
-                  onChange={(event) => setChallengeDescription(event.target.value)}
-                  className={inputClass}
-                  rows={3}
-                  placeholder="Complete 12 gym visits this month."
-                />
+              <label className="min-w-0 text-sm font-bold">
+                Ends
+                <input type="date" value={challengeEnd} onChange={(event) => setChallengeEnd(event.target.value)} className={inputClass} />
               </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">
-                  Starts
-                  <input
-                    type="date"
-                    value={challengeStart}
-                    onChange={(event) => setChallengeStart(event.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-sm font-bold">
-                  Ends
-                  <input
-                    type="date"
-                    value={challengeEnd}
-                    onChange={(event) => setChallengeEnd(event.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">
-                  Visit target
-                  <input
-                    type="number"
-                    min={1}
-                    value={challengeTarget}
-                    onChange={(event) =>
-                      setChallengeTarget(Number(event.target.value) || 1)
-                    }
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-sm font-bold">
-                  Bonus SP Points
-                  <input
-                    type="number"
-                    min={0}
-                    value={challengePoints}
-                    onChange={(event) =>
-                      setChallengePoints(Number(event.target.value) || 0)
-                    }
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-              <button
-                type="button"
-                disabled={busy === "challenge-create"}
-                onClick={() => void createChallenge()}
-                className={buttonClass}
-              >
-                {busy === "challenge-create"
-                  ? "Creating…"
-                  : "Create challenge & notify members"}
-              </button>
             </div>
-          </div>
-
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="flex items-center gap-2 text-xl font-black">
-              <Gift size={20} /> Add reward
-            </h2>
-            <div className="mt-5 grid gap-4">
-              <label className="text-sm font-bold">
-                Reward name
-                <input
-                  value={rewardName}
-                  onChange={(event) => setRewardName(event.target.value)}
-                  className={inputClass}
-                  placeholder="Free guest pass"
-                />
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0 text-sm font-bold">
+                Visit target
+                <input type="number" min={1} value={challengeTarget} onChange={(event) => setChallengeTarget(Number(event.target.value) || 1)} className={inputClass} />
               </label>
-              <label className="text-sm font-bold">
-                Description
-                <textarea
-                  value={rewardDescription}
-                  onChange={(event) => setRewardDescription(event.target.value)}
-                  className={inputClass}
-                  rows={3}
-                  placeholder="One guest visit for a friend or family member."
-                />
+              <label className="min-w-0 text-sm font-bold">
+                Bonus SP Points
+                <input type="number" min={0} value={challengePoints} onChange={(event) => setChallengePoints(Number(event.target.value) || 0)} className={inputClass} />
               </label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm font-bold">
-                  SP Points cost
-                  <input
-                    type="number"
-                    min={1}
-                    value={rewardCost}
-                    onChange={(event) =>
-                      setRewardCost(Number(event.target.value) || 1)
-                    }
-                    className={inputClass}
-                  />
-                </label>
-                <label className="text-sm font-bold">
-                  Inventory
-                  <input
-                    value={rewardInventory}
-                    onChange={(event) => setRewardInventory(event.target.value)}
-                    className={inputClass}
-                    placeholder="Blank = unlimited"
-                  />
-                </label>
-              </div>
-              <button
-                type="button"
-                disabled={busy === "reward-create"}
-                onClick={() => void createReward()}
-                className={buttonClass}
-              >
-                {busy === "reward-create" ? "Adding…" : "Add reward"}
-              </button>
             </div>
+            <button
+              type="button"
+              disabled={busy === "challenge-create"}
+              onClick={() => void createChallenge()}
+              className={`${buttonClass} w-full sm:w-auto`}
+            >
+              {busy === "challenge-create" ? "Creating…" : "Create challenge & notify members"}
+            </button>
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="grid gap-5 xl:grid-cols-2">
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="text-xl font-black">Challenges</h2>
-            <div className="mt-4 space-y-3">
-              {challenges.map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-black">{item.title}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#657568]">
-                        {item.description}
-                      </p>
-                      <p className="mt-2 text-xs font-bold text-[#45634b]">
-                        {item.target_visits} visits · +{item.points_reward} pts ·{" "}
-                        {item.starts_on} → {item.ends_on}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-black ${
-                        item.active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {item.active ? "ACTIVE" : "OFF"}
-                    </span>
+        <CollapsiblePanel
+          title="Challenges"
+          subtitle="Edit, activate or pause existing challenges."
+          icon={<Dumbbell size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {activeChallenges} active
+            </span>
+          }
+        >
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+            {challenges.map((item) => (
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-black">{item.title}</p>
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
+                    <p className="mt-2 break-words text-xs font-bold text-[#45634b]">
+                      {item.target_visits} visits · +{item.points_reward} pts · {item.starts_on} → {item.ends_on}
+                    </p>
                   </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void editChallenge(item)}
-                      className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void toggleChallenge(item)}
-                      className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                    >
-                      {item.active ? "Deactivate" : "Activate"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-              {!challenges.length && (
-                <p className="text-sm text-[#657568]">No challenges yet.</p>
-              )}
-            </div>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
+                    {item.active ? "ACTIVE" : "OFF"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" disabled={busy === item.id} onClick={() => void editChallenge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                    Edit
+                  </button>
+                  <button type="button" disabled={busy === item.id} onClick={() => void toggleChallenge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                    {item.active ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              </article>
+            ))}
+            {!challenges.length && <p className="text-sm text-[#657568]">No challenges yet.</p>}
           </div>
+        </CollapsiblePanel>
 
-          <div className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-            <h2 className="text-xl font-black">Rewards catalogue</h2>
-            <div className="mt-4 space-y-3">
-              {rewards.map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-black">{item.name}</p>
-                      <p className="mt-1 text-xs leading-5 text-[#657568]">
-                        {item.description}
-                      </p>
-                      <p className="mt-2 text-xs font-bold text-[#45634b]">
-                        {item.points_cost} pts ·{" "}
-                        {item.inventory === null
-                          ? "Unlimited"
-                          : `${item.inventory} left`}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-black ${
-                        item.active
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {item.active ? "ACTIVE" : "OFF"}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void editReward(item)}
-                      className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void toggleReward(item)}
-                      className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50"
-                    >
-                      {item.active ? "Hide reward" : "Publish reward"}
-                    </button>
-                  </div>
-                </article>
-              ))}
-              {!rewards.length && (
-                <p className="text-sm text-[#657568]">
-                  No rewards published yet.
-                </p>
-              )}
+        <CollapsiblePanel
+          title="Add reward"
+          subtitle="Create a reward members can redeem with SP Points."
+          icon={<Gift size={19} />}
+        >
+          <div className="grid min-w-0 gap-4">
+            <label className="min-w-0 text-sm font-bold">
+              Reward name
+              <input value={rewardName} onChange={(event) => setRewardName(event.target.value)} className={inputClass} placeholder="Free guest pass" />
+            </label>
+            <label className="min-w-0 text-sm font-bold">
+              Description
+              <textarea value={rewardDescription} onChange={(event) => setRewardDescription(event.target.value)} className={inputClass} rows={3} placeholder="One guest visit for a friend or family member." />
+            </label>
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+              <label className="min-w-0 text-sm font-bold">
+                SP Points cost
+                <input type="number" min={1} value={rewardCost} onChange={(event) => setRewardCost(Number(event.target.value) || 1)} className={inputClass} />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Inventory
+                <input value={rewardInventory} onChange={(event) => setRewardInventory(event.target.value)} className={inputClass} placeholder="Blank = unlimited" />
+              </label>
             </div>
+            <button type="button" disabled={busy === "reward-create"} onClick={() => void createReward()} className={`${buttonClass} w-full sm:w-auto`}>
+              {busy === "reward-create" ? "Adding…" : "Add reward"}
+            </button>
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-black">
-                <CalendarDays size={20} /> Session requests
-              </h2>
-              <p className="mt-1 text-sm text-[#657568]">
-                Group classes, personal training, massage, pedicure and spa requests from the app.
-              </p>
-            </div>
-            <span className="rounded-full bg-[#edf6e7] px-3 py-1.5 text-xs font-black text-[#356942]">
+        <CollapsiblePanel
+          title="Rewards catalogue"
+          subtitle="Edit costs, inventory and member visibility."
+          icon={<Gift size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {activeRewards} active
+            </span>
+          }
+        >
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+            {rewards.map((item) => (
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-black">{item.name}</p>
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
+                    <p className="mt-2 text-xs font-bold text-[#45634b]">
+                      {item.points_cost} pts · {item.inventory === null ? "Unlimited" : `${item.inventory} left`}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
+                    {item.active ? "ACTIVE" : "OFF"}
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" disabled={busy === item.id} onClick={() => void editReward(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                    Edit
+                  </button>
+                  <button type="button" disabled={busy === item.id} onClick={() => void toggleReward(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                    {item.active ? "Hide reward" : "Publish reward"}
+                  </button>
+                </div>
+              </article>
+            ))}
+            {!rewards.length && <p className="text-sm text-[#657568]">No rewards published yet.</p>}
+          </div>
+        </CollapsiblePanel>
+
+        <CollapsiblePanel
+          title="Session requests"
+          subtitle="PT, classes, massage, pedicure and spa requests."
+          icon={<CalendarDays size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {pendingBookings} pending
             </span>
-          </div>
-
-          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          }
+        >
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {bookings.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black">{item.service_name}</p>
-                    <p className="mt-1 text-xs text-[#657568]">
-                      {item.member?.full_name || "Member"} ·{" "}
-                      {item.member?.phone ||
-                        item.member?.email ||
-                        "No contact"}
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-black">{item.service_name}</p>
+                    <p className="mt-1 break-words text-xs text-[#657568]">
+                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
-                    <p className="mt-2 text-xs font-bold text-[#45634b]">
-                      {dateTime(item.preferred_at)}
-                    </p>
+                    <p className="mt-2 text-xs font-bold text-[#45634b]">{dateTime(item.preferred_at)}</p>
                   </div>
-                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase">
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
                     {item.status}
                   </span>
                 </div>
-                {item.notes && (
-                  <p className="mt-3 text-xs leading-5 text-[#657568]">
-                    Member note: {item.notes}
-                  </p>
-                )}
-                {item.staff_note && (
-                  <p className="mt-2 text-xs leading-5 text-[#657568]">
-                    Staff note: {item.staff_note}
-                  </p>
-                )}
+                {item.notes && <p className="mt-3 break-words text-xs leading-5 text-[#657568]">Member note: {item.notes}</p>}
+                {item.staff_note && <p className="mt-2 break-words text-xs leading-5 text-[#657568]">Staff note: {item.staff_note}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {item.status === "pending" && (
                     <>
-                      <button
-                        type="button"
-                        disabled={busy === item.id}
-                        onClick={() => void updateBooking(item, "confirmed")}
-                        className={buttonClass}
-                      >
+                      <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "confirmed")} className={buttonClass}>
                         Confirm
                       </button>
-                      <button
-                        type="button"
-                        disabled={busy === item.id}
-                        onClick={() => void updateBooking(item, "declined")}
-                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
-                      >
+                      <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "declined")} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
                         Decline
                       </button>
                     </>
                   )}
                   {item.status === "confirmed" && (
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void updateBooking(item, "completed")}
-                      className={buttonClass}
-                    >
+                    <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "completed")} className={buttonClass}>
                       Mark completed
                     </button>
                   )}
                 </div>
               </article>
             ))}
-            {!bookings.length && (
-              <p className="text-sm text-[#657568]">
-                No member session requests yet.
-              </p>
-            )}
+            {!bookings.length && <p className="text-sm text-[#657568]">No member session requests yet.</p>}
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-          <h2 className="text-xl font-black">Reward redemptions</h2>
-          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+        <CollapsiblePanel
+          title="Reward redemptions"
+          subtitle="Approve, reject and fulfil member redemptions."
+          icon={<CheckCircle2 size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {redemptions.filter((item) => item.status === "pending").length} pending
+            </span>
+          }
+        >
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {redemptions.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black">
-                      {item.reward?.name || "Reward"}
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-black">{item.reward?.name || "Reward"}</p>
+                    <p className="mt-1 break-words text-xs text-[#657568]">
+                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
-                    <p className="mt-1 text-xs text-[#657568]">
-                      {item.member?.full_name || "Member"} ·{" "}
-                      {item.member?.phone ||
-                        item.member?.email ||
-                        "No contact"}
-                    </p>
-                    <p className="mt-2 text-xs font-bold">
-                      {item.points_cost} points
-                    </p>
+                    <p className="mt-2 text-xs font-bold">{item.points_cost} points</p>
                   </div>
-                  <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase">
-                    {item.status}
-                  </span>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">{item.status}</span>
                 </div>
-                {item.staff_note && (
-                  <p className="mt-3 text-xs text-[#657568]">
-                    Staff: {item.staff_note}
-                  </p>
-                )}
+                {item.staff_note && <p className="mt-3 break-words text-xs text-[#657568]">Staff: {item.staff_note}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {item.status === "pending" && (
                     <>
-                      <button
-                        type="button"
-                        disabled={busy === item.id}
-                        onClick={() =>
-                          void updateRedemption(item, "approved")
-                        }
-                        className={buttonClass}
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        disabled={busy === item.id}
-                        onClick={() =>
-                          void updateRedemption(item, "rejected")
-                        }
-                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
-                      >
-                        Reject
-                      </button>
+                      <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "approved")} className={buttonClass}>Approve</button>
+                      <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "rejected")} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700">Reject</button>
                     </>
                   )}
                   {item.status === "approved" && (
-                    <button
-                      type="button"
-                      disabled={busy === item.id}
-                      onClick={() =>
-                        void updateRedemption(item, "fulfilled")
-                      }
-                      className={`inline-flex items-center gap-2 ${buttonClass}`}
-                    >
+                    <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "fulfilled")} className={`inline-flex items-center gap-2 ${buttonClass}`}>
                       <CheckCircle2 size={14} /> Mark fulfilled
                     </button>
                   )}
                 </div>
               </article>
             ))}
-            {!redemptions.length && (
-              <p className="text-sm text-[#657568]">
-                No reward redemptions yet.
-              </p>
-            )}
+            {!redemptions.length && <p className="text-sm text-[#657568]">No reward redemptions yet.</p>}
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-          <h2 className="flex items-center gap-2 text-xl font-black">
-            <Bell size={20} /> Send member notification
-          </h2>
-          <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            <label className="text-sm font-bold">
+        <CollapsiblePanel
+          title="Send member notification"
+          subtitle="Publish an in-app update and push notification."
+          icon={<Bell size={19} />}
+        >
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+            <label className="min-w-0 text-sm font-bold">
               Title
-              <input
-                value={pushTitle}
-                onChange={(event) => setPushTitle(event.target.value)}
-                className={inputClass}
-                placeholder="Saturday group class update"
-              />
+              <input value={pushTitle} onChange={(event) => setPushTitle(event.target.value)} className={inputClass} placeholder="Saturday group class update" />
             </label>
-            <label className="text-sm font-bold">
+            <label className="min-w-0 text-sm font-bold">
               App destination
-              <input
-                value={pushLink}
-                onChange={(event) => setPushLink(event.target.value)}
-                className={inputClass}
-                placeholder="/rewards, /blog, /bookings…"
-              />
+              <input value={pushLink} onChange={(event) => setPushLink(event.target.value)} className={inputClass} placeholder="/rewards, /blog, /bookings…" />
             </label>
-            <label className="text-sm font-bold">
+            <label className="min-w-0 text-sm font-bold">
               Type
-              <select
-                value={pushKind}
-                onChange={(event) => setPushKind(event.target.value)}
-                className={inputClass}
-              >
+              <select value={pushKind} onChange={(event) => setPushKind(event.target.value)} className={inputClass}>
                 <option value="general">General</option>
                 <option value="blog">Blog</option>
                 <option value="challenge">Challenge</option>
@@ -1551,56 +1379,43 @@ function AdminEngagement() {
                 <option value="announcement">Announcement</option>
               </select>
             </label>
-            <label className="text-sm font-bold lg:row-span-2">
+            <label className="min-w-0 text-sm font-bold lg:row-span-2">
               Message
-              <textarea
-                value={pushBody}
-                onChange={(event) => setPushBody(event.target.value)}
-                className={inputClass}
-                rows={4}
-                placeholder="Short, useful message for members."
-              />
+              <textarea value={pushBody} onChange={(event) => setPushBody(event.target.value)} className={inputClass} rows={4} placeholder="Short, useful message for members." />
             </label>
-            <button
-              type="button"
-              disabled={busy === "push"}
-              onClick={() => void sendBroadcast()}
-              className={`inline-flex items-center justify-center gap-2 ${buttonClass}`}
-            >
-              <Send size={17} />{" "}
-              {busy === "push" ? "Sending…" : "Publish & send push"}
+            <button type="button" disabled={busy === "push"} onClick={() => void sendBroadcast()} className={`inline-flex w-full items-center justify-center gap-2 ${buttonClass} sm:w-auto`}>
+              <Send size={17} /> {busy === "push" ? "Sending…" : "Publish & send push"}
             </button>
           </div>
-        </section>
+        </CollapsiblePanel>
 
-        <section className="rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-6">
-          <h2 className="text-xl font-black">Recent app notifications</h2>
-          <div className="mt-4 space-y-2">
+        <CollapsiblePanel
+          title="Recent app notifications"
+          subtitle="Previously published member updates."
+          icon={<Bell size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {notifications.length}
+            </span>
+          }
+        >
+          <div className="min-w-0 space-y-2">
             {notifications.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-xl border border-[#e4ebe1] p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-black">{item.title}</p>
-                    <p className="mt-1 text-xs leading-5 text-[#657568]">
-                      {item.body}
-                    </p>
+              <article key={item.id} className="min-w-0 rounded-xl border border-[#e4ebe1] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-black">{item.title}</p>
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.body}</p>
                   </div>
-                  <span className="rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black uppercase text-[#356942]">
+                  <span className="shrink-0 rounded-full bg-[#edf6e7] px-2 py-1 text-[9px] font-black uppercase text-[#356942]">
                     {item.kind}
                   </span>
                 </div>
               </article>
             ))}
-            {!notifications.length && (
-              <p className="text-sm text-[#657568]">
-                No app notifications yet.
-              </p>
-            )}
+            {!notifications.length && <p className="text-sm text-[#657568]">No app notifications yet.</p>}
           </div>
-        </section>
+        </CollapsiblePanel>
       </div>
     </AdminWorkspaceShell>
   );
