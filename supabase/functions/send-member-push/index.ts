@@ -9,6 +9,7 @@ type Payload = {
   published_at?: string | null;
   expires_at?: string | null;
   send_push?: boolean;
+  member_id?: string | null;
 };
 
 function json(data: unknown, status = 200) {
@@ -81,6 +82,10 @@ Deno.serve(async (req: Request) => {
     typeof payload.deep_link === "string" && payload.deep_link.startsWith("/")
       ? payload.deep_link
       : null;
+  const memberId =
+    typeof payload.member_id === "string" && /^[0-9a-f-]{36}$/i.test(payload.member_id)
+      ? payload.member_id
+      : null;
 
   if (!title || title.length > 140 || body.length > 1200) {
     return json({ error: "Invalid title or message length" }, 400);
@@ -101,6 +106,7 @@ Deno.serve(async (req: Request) => {
       kind,
       deep_link: deepLink,
       audience: "members",
+      member_id: memberId,
       published_at: publishedAt,
       expires_at: expiresAt,
       created_by: user.id,
@@ -123,10 +129,14 @@ Deno.serve(async (req: Request) => {
     return json({ notification, push_sent: 0, scheduled_in_app: true });
   }
 
-  const { data: tokenRows, error: tokenError } = await admin
+  let tokenQuery = admin
     .from("member_push_tokens")
     .select("expo_push_token")
     .eq("enabled", true);
+
+  if (memberId) tokenQuery = tokenQuery.eq("member_id", memberId);
+
+  const { data: tokenRows, error: tokenError } = await tokenQuery;
 
   if (tokenError) {
     return json({
