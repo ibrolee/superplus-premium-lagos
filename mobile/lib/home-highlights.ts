@@ -61,7 +61,7 @@ export async function loadHomeHighlights(
       supabase
         .from("blog_posts")
         .select("id,title,slug,excerpt,category,featured_image")
-        .eq("status", "published")
+        .in("status", ["published", "scheduled"])
         .not("published_at", "is", null)
         .lte("published_at", new Date().toISOString())
         .order("published_at", { ascending: false })
