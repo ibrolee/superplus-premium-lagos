@@ -105,7 +105,7 @@ function LoginRoute() {
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: value,
-      password,
+      password: password.toLowerCase(),
     });
 
     setVerifying(false);
@@ -197,12 +197,12 @@ function LoginRoute() {
   ) {
     event.preventDefault();
 
-    if (newPassword.length < 8) {
-      setError("Your password must be at least 8 characters.");
+    if (newPassword.length < 6) {
+      setError("Your password must be at least 6 characters.");
       return;
     }
 
-    if (newPassword !== confirmPassword) {
+    if (newPassword.toLowerCase() !== confirmPassword.toLowerCase()) {
       setError("The two passwords do not match.");
       return;
     }
@@ -211,7 +211,7 @@ function LoginRoute() {
     setError("");
 
     const { error: updateError } = await supabase.auth.updateUser({
-      password: newPassword,
+      password: newPassword.toLowerCase(),
     });
 
     setSavingPassword(false);
@@ -540,9 +540,9 @@ function LoginRoute() {
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 6 characters"
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={6}
                   required
                   disabled={savingPassword}
                   className="h-13 rounded-md border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
@@ -557,7 +557,7 @@ function LoginRoute() {
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="Repeat your password"
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={6}
                   required
                   disabled={savingPassword}
                   className="h-13 rounded-md border border-input bg-background px-4 font-normal outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
@@ -594,7 +594,8 @@ function LoginRoute() {
 
               <p className="text-center text-xs leading-5 text-muted-foreground">
                 Your password will work on both superplusfitness.com and the
-                Super Plus Fitness mobile app. Login codes remain available.
+                Super Plus Fitness mobile app. Capital letters do not matter,
+                and login codes remain available.
               </p>
             </form>
           )}
