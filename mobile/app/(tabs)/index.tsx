@@ -70,7 +70,7 @@ export default function HomeScreen() {
         <Text style={styles.greeting}>
           {greeting()}, {member.full_name.split(" ")[0]}.
         </Text>
-        <Text style={sharedStyles.subtitle}>Everything you need for your membership.</Text>
+        <Text style={sharedStyles.subtitle}>Membership, goals, workouts and more — all in one place.</Text>
       </View>
 
       {!!error && (
