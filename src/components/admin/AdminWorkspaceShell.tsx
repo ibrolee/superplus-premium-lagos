@@ -301,6 +301,40 @@ export function AdminWorkspaceShell({
     [searchError, setSearchError] = useState(""),
     [searching, setSearching] = useState(false);
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previous = {
+      htmlOverflowX: html.style.overflowX,
+      htmlMaxWidth: html.style.maxWidth,
+      bodyOverflowX: body.style.overflowX,
+      bodyMaxWidth: body.style.maxWidth,
+      bodyWidth: body.style.width,
+    };
+
+    html.style.overflowX = "hidden";
+    html.style.maxWidth = "100vw";
+    body.style.overflowX = "hidden";
+    body.style.maxWidth = "100vw";
+    body.style.width = "100%";
+
+    const resetHorizontalScroll = () => {
+      window.scrollTo({ left: 0, top: window.scrollY, behavior: "auto" });
+    };
+
+    resetHorizontalScroll();
+    window.addEventListener("resize", resetHorizontalScroll);
+
+    return () => {
+      window.removeEventListener("resize", resetHorizontalScroll);
+      html.style.overflowX = previous.htmlOverflowX;
+      html.style.maxWidth = previous.htmlMaxWidth;
+      body.style.overflowX = previous.bodyOverflowX;
+      body.style.maxWidth = previous.bodyMaxWidth;
+      body.style.width = previous.bodyWidth;
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
@@ -469,7 +503,7 @@ export function AdminWorkspaceShell({
       </main>
     );
   return (
-    <div className="min-h-screen max-w-full overflow-x-hidden bg-[#f4f6f1] text-[#16221c] lg:flex">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#f4f6f1] text-[#16221c] touch-pan-y lg:flex">
       {mobileOpen && (
         <button
           type="button"
@@ -491,9 +525,9 @@ export function AdminWorkspaceShell({
         </button>
         {sidebar}
       </aside>
-      <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-30 border-b border-[#e1e8dd] bg-[#f4f6f1]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
-          <div className="mx-auto flex max-w-[1400px] items-center gap-3">
+      <div className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden">
+        <header className="sticky top-0 z-30 box-border w-full max-w-full overflow-x-hidden border-b border-[#e1e8dd] bg-[#f4f6f1]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
+          <div className="mx-auto flex w-full min-w-0 max-w-[1400px] items-center gap-3 overflow-hidden">
             <button
               type="button"
               aria-label="Open menu"
@@ -598,7 +632,7 @@ export function AdminWorkspaceShell({
             </div>
           )}
         </header>
-        <main className="mx-auto w-full min-w-0 max-w-[1480px] overflow-x-hidden px-4 py-7 sm:px-7 lg:px-10 lg:py-10">
+        <main className="mx-auto box-border w-full min-w-0 max-w-full overflow-x-hidden px-4 py-7 sm:max-w-[1480px] sm:px-7 lg:px-10 lg:py-10">
           <p className="text-xs font-black uppercase tracking-[.17em] text-[#65905c]">
             Super Plus / Admin
           </p>
