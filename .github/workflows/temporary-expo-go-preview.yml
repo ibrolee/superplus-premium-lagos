@@ -7,6 +7,10 @@ on:
     paths-ignore:
       - expo-preview-url.txt
 
+concurrency:
+  group: super-plus-expo-preview
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -14,6 +18,9 @@ jobs:
   expo-preview:
     runs-on: ubuntu-latest
     timeout-minutes: 65
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      CI: "1"
     defaults:
       run:
         working-directory: mobile
@@ -34,34 +41,57 @@ jobs:
       - name: Install tunnel support
         run: npm install --no-save --legacy-peer-deps @expo/ngrok
 
+      - name: Verify Expo account
+        run: npx expo whoami
+
       - name: Start Expo Go tunnel and publish link
-        env:
-          CI: "1"
         run: |
-          rm -f /tmp/expo.log
-          (npx expo start --tunnel --port 8081 > /tmp/expo.log 2>&1) &
+          rm -f /tmp/expo.log /tmp/manifest.json
+          (npx expo start --go --tunnel --port 8081 > /tmp/expo.log 2>&1) &
           EXPO_PID=$!
 
-          for i in $(seq 1 90); do
-            URL=$(grep -Eo 'exp://[^[:space:]]+|https://[^[:space:]]+\.exp\.direct[^[:space:]]*' /tmp/expo.log | head -n 1 || true)
-            if [ -n "$URL" ]; then
-              break
-            fi
+          URL=""
+          for i in $(seq 1 120); do
             if ! kill -0 "$EXPO_PID" 2>/dev/null; then
               cat /tmp/expo.log
               exit 1
             fi
+
+            LOG_URL=$(grep -Eo '(exp|exps)://[^[:space:]]+|https://[^[:space:]]+\.exp\.direct[^[:space:]]*' /tmp/expo.log | head -n 1 || true)
+            if [ -n "$LOG_URL" ]; then
+              URL="$LOG_URL"
+              break
+            fi
+
+            if curl -fsS -H 'accept: application/expo+json,application/json' -H 'expo-platform: ios' http://127.0.0.1:8081 > /tmp/manifest.json 2>/dev/null; then
+              HOST=$(node -e '
+                const fs=require("fs");
+                try {
+                  const j=JSON.parse(fs.readFileSync("/tmp/manifest.json","utf8"));
+                  const candidates=[j?.extra?.expoClient?.hostUri,j?.hostUri,j?.developer?.host,j?.launchAsset?.url].filter(Boolean);
+                  for (const v of candidates) {
+                    const m=String(v).match(/([A-Za-z0-9.-]+\.exp\.direct)(?::\d+)?/);
+                    if (m) { process.stdout.write(m[1]); break; }
+                  }
+                } catch {}
+              ')
+              if [ -n "$HOST" ]; then
+                URL="exps://$HOST"
+                break
+              fi
+            fi
+
             sleep 2
           done
 
           if [ -z "$URL" ]; then
             cat /tmp/expo.log
-            echo "Could not find Expo preview URL."
+            echo "Could not determine Expo Go tunnel URL."
             exit 1
           fi
 
           if [[ "$URL" == https://* ]]; then
-            URL="exp://\${URL#https://}"
+            URL="exps://${URL#https://}"
           fi
 
           echo "$URL" > "$GITHUB_WORKSPACE/expo-preview-url.txt"
