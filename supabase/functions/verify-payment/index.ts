@@ -64,6 +64,17 @@ Deno.serve(async (request: Request) => {
       console.error('Payment finalization failed:', { reference, code: error.code, message: error.message });
       return respond({ error: 'Your payment was received but activation could not finish. Please retry with this reference or contact reception. Do not pay again.' }, 503);
     }
+    if (String(meta.plan_id || '') === 'personal-training' && typeof meta.trainer_staff_profile_id === 'string' && meta.trainer_staff_profile_id) {
+      const { error: trainerError } = await service.rpc('ensure_pt_assignment_for_service', {
+        p_membership_id: data.membership_id,
+        p_trainer_staff_profile_id: meta.trainer_staff_profile_id,
+        p_assigned_by: user.id,
+      });
+      if (trainerError) {
+        console.error('PT trainer assignment failed:', { reference, code: trainerError.code, message: trainerError.message });
+        return respond({ error: 'Your payment was received but the trainer assignment could not finish. Retry with the same reference or contact reception. Do not pay again.' }, 503);
+      }
+    }
     return respond(data);
   } catch (error) {
     console.error('Payment callback verification error:', error instanceof Error ? error.message : 'unknown');
