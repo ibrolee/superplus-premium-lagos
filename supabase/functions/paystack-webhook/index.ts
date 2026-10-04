@@ -43,12 +43,11 @@ Deno.serve(async (request: Request) => {
       if (typeof meta.member_id !== 'string' || typeof meta.auth_user_id !== 'string' || typeof meta.plan_id !== 'string') {
         return json({ error: 'Missing member checkout metadata' }, 422);
       }
-      const { data, error } = await admin.rpc('finalize_member_paystack_payment_with_pt', {
+      const { data, error } = await admin.rpc('finalize_member_paystack_payment', {
         p_reference: reference, p_member_id: meta.member_id, p_auth_user_id: meta.auth_user_id,
         p_plan_id: meta.plan_id, p_amount_kobo: transaction.amount, p_currency: transaction.currency,
         p_paid_at: transaction.paid_at, p_channel: transaction.channel || 'paystack',
         p_customer_code: transaction.customer?.customer_code || null, p_transaction_id: transaction.id,
-        p_trainer_staff_profile_id: meta.plan_id === 'personal-training' ? (meta.trainer_staff_profile_id || null) : null,
       });
       if (error || !data?.success) {
         console.error('Webhook member finalization failed:', { reference, code: error?.code, message: error?.message });
@@ -73,7 +72,7 @@ Deno.serve(async (request: Request) => {
       if (meta.reference !== reference || !payerEmail || payerEmail !== requestedEmail) {
         return json({ error: 'Public checkout email/reference mismatch' }, 422);
       }
-      const { data, error } = await admin.rpc('finalize_public_join_payment_with_pt', {
+      const { data, error } = await admin.rpc('finalize_public_join_payment', {
         p_reference: reference, p_plan_id: String(meta.plan_id || ''),
         p_full_name: String(meta.full_name || ''), p_email: requestedEmail,
         p_phone: String(meta.phone || ''), p_birth_day: Number(meta.birth_day),
@@ -81,7 +80,6 @@ Deno.serve(async (request: Request) => {
         p_channel: transaction.channel || 'paystack',
         p_customer_code: transaction.customer?.customer_code || null,
         p_coupon_code: String(meta.coupon_code || ''), p_verified_amount_kobo: transaction.amount,
-        p_trainer_staff_profile_id: String(meta.plan_id || '') === 'personal-training' ? (meta.trainer_staff_profile_id || null) : null,
       });
       if (error || !data?.success) {
         console.error('Webhook public finalization failed:', { reference, code: error?.code, message: error?.message });
