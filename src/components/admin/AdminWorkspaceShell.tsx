@@ -138,7 +138,14 @@ export const adminGroups: Group[] = [
     icon: ShieldCheck,
     tools: [
       {
-        label: "Staff requests",
+        label: "Staff requests & complaints",
+        href: "/management-staff-support",
+        icon: MessageSquareWarning,
+        ownerOrAdmin: true,
+        keywords: "staff employee requests complaints concerns messages support responses review",
+      },
+      {
+        label: "Staff approvals",
         href: "/admin-approvals",
         icon: ShieldCheck,
         keywords: "employee attendance account requests",
@@ -674,3 +681,4 @@ export function AdminWorkspaceShell({
     </div>
   );
 }
+
