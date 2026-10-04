@@ -1339,14 +1339,14 @@ function StaffPage() {
                     <p className="mt-2 font-display text-3xl font-bold">{coachPerformance.current_trainees}</p>
                   </div>
                   <div className="border border-border bg-muted/20 p-4">
-                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">90-day renewal rate</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Two-cycle retention</p>
                     <p className="mt-2 font-display text-3xl font-bold">
                       {coachPerformance.renewal_rate === null ? "—" : `${Number(coachPerformance.renewal_rate).toFixed(0)}%`}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {coachPerformance.renewal_eligible
-                        ? `${coachPerformance.renewed_same_coach}/${coachPerformance.renewal_eligible} matured renewals`
-                        : "No matured renewals yet"}
+                        ? `${coachPerformance.renewed_same_coach}/${coachPerformance.renewal_eligible} clients retained through two renewals`
+                        : "No matured two-cycle opportunities yet"}
                     </p>
                   </div>
                   <div className="border border-border bg-muted/20 p-4">
@@ -1359,7 +1359,7 @@ function StaffPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {coachPerformance.rating_established
                         ? `${coachPerformance.evaluation_count} anonymised evaluations`
-                        : `${coachPerformance.evaluation_count}/3 evaluations before ratings appear`}
+                        : `${coachPerformance.evaluation_count}/2 evaluations before ratings appear`}
                     </p>
                   </div>
                   <div className="border border-border bg-muted/20 p-4">
@@ -1370,7 +1370,7 @@ function StaffPage() {
                         : "—"}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Shown only after at least 3 evaluations.
+                      Shown only after at least 2 evaluations.
                     </p>
                   </div>
                 </div>
@@ -1380,7 +1380,7 @@ function StaffPage() {
                     <div className="flex items-start gap-3">
                       <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
                       <p>
-                        <strong>Feedback privacy is protected.</strong> Your category ratings and continuation percentage will appear only after at least 3 trainee evaluations, so a single trainee’s response cannot be identified.
+                        <strong>Feedback privacy is protected.</strong> Your category ratings and continuation percentage will appear only after at least 2 trainee evaluations. Individual comments, identities and change requests remain private to management.
                       </p>
                     </div>
                   </div>
@@ -1412,7 +1412,7 @@ function StaffPage() {
                 )}
 
                 <div className="mt-5 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
-                  Renewal rate uses PT cycles from the matured 90-day window and gives members a 3-day renewal grace period. Monthly payout calculations and other coaches’ figures remain management-only.
+                  Two-cycle retention counts a client only after they have renewed twice with the same coach. The second renewal has the same 3-day grace period. Monthly payout calculations and other coaches’ figures remain management-only.
                 </div>
               </div>
             </TabsContent>
