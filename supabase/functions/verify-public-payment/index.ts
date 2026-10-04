@@ -44,6 +44,14 @@ Deno.serve(async(req:Request)=>{
   });
   if(error){console.error('Verified Paystack payment could not be recorded',{reference,error});return respond({error:'Payment succeeded, but recording is not complete. Do not pay again. Contact the gym with your Paystack reference.'},503);}
   if(!data?.success)return respond({error:'Payment record is uncertain. Contact reception with your reference; do not pay again.'},503);
+  if(planId==='personal-training'&&typeof metadata.trainer_staff_profile_id==='string'&&metadata.trainer_staff_profile_id){
+   const {error:trainerError}=await admin.rpc('ensure_pt_assignment_for_service',{
+    p_membership_id:data.membership_id,
+    p_trainer_staff_profile_id:metadata.trainer_staff_profile_id,
+    p_assigned_by:null,
+   });
+   if(trainerError){console.error('Verified public PT trainer assignment failed',{reference,trainerError});return respond({error:'Payment succeeded, but trainer assignment is not complete. Do not pay again. Contact the gym with your Paystack reference.'},503);}
+  }
   return respond(data as Record<string,unknown>);
  }catch(error){console.error('Public Paystack verification failed',error);return respond({error:'Payment confirmation is unavailable. Do not pay again if Paystack already charged you; contact reception with the transaction reference.'},503);}
 });
