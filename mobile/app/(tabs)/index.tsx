@@ -211,6 +211,22 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {phase === "active" && (
+        <Pressable style={styles.feedbackCard} onPress={() => router.push("/feedback")}>
+          <View style={styles.feedbackIcon}>
+            <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
+          </View>
+          <View style={styles.grow}>
+            <Text style={styles.feedbackEyebrow}>CONFIDENTIAL TO MANAGEMENT</Text>
+            <Text style={styles.feedbackTitle}>Suggestion or report an issue</Text>
+            <Text style={styles.feedbackText}>
+              Coach, staff, equipment, facilities, payments, safety or anything about the gym.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={19} color={colors.green2} />
+        </Pressable>
+      )}
+
       {highlights && (
         <>
           <SectionTitle title="Your momentum" />
@@ -367,6 +383,27 @@ const styles = StyleSheet.create({
   brandRow: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", gap: 10, marginBottom: 7 },
   brandIdentity: { alignItems: "center", flex: 1, flexDirection: "row", gap: 10 },
   brandName: { ...sharedStyles.kicker, flexShrink: 1 },
+  feedbackCard: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 18,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 12,
+    padding: 14,
+  },
+  feedbackIcon: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: 13,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
+  feedbackEyebrow: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 0.8 },
+  feedbackTitle: { color: colors.ink, fontSize: 14, fontWeight: "900", marginTop: 3 },
+  feedbackText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
   notificationButton: {
     alignItems: "center",
     backgroundColor: colors.surface,

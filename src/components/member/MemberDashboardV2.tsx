@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity, AlertCircle, ArrowRight, Award, BarChart3, BookOpen, CalendarDays,
   CheckCircle2, Clock3, CreditCard, Dumbbell, ExternalLink, Flame, Home,
-  Loader2, LogOut, Medal, Megaphone, MessageCircle, PencilLine, QrCode,
+  Lightbulb, Loader2, LogOut, Medal, Megaphone, MessageCircle, MessageSquareWarning, PencilLine, QrCode,
   RefreshCw, ShieldCheck, Sparkles, Star, Target, Trophy, UserRound, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ type Membership = {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+  payment_status?: string | null;
 };
 type BlogPreview = {
   id: string;
@@ -167,6 +168,14 @@ export function MemberDashboardV2() {
   const [ptReportSaving, setPtReportSaving] = useState(false);
   const [ptReportError, setPtReportError] = useState("");
   const [ptReportMessage, setPtReportMessage] = useState("");
+  const [memberFeedbackOpen, setMemberFeedbackOpen] = useState(false);
+  const [memberFeedbackType, setMemberFeedbackType] = useState<"suggestion" | "issue">("suggestion");
+  const [memberFeedbackCategory, setMemberFeedbackCategory] = useState("service");
+  const [memberFeedbackSubject, setMemberFeedbackSubject] = useState("");
+  const [memberFeedbackDetails, setMemberFeedbackDetails] = useState("");
+  const [memberFeedbackSaving, setMemberFeedbackSaving] = useState(false);
+  const [memberFeedbackError, setMemberFeedbackError] = useState("");
+  const [memberFeedbackMessage, setMemberFeedbackMessage] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<DashboardTab>("home");
   const [showPlans, setShowPlans] = useState(false);
@@ -340,6 +349,11 @@ export function MemberDashboardV2() {
   }) || null;
   const ptReportAssignment = ptReportMembership ? ptAssignmentMap.get(ptReportMembership.id) || null : null;
   const ptReportCoach = ptReportAssignment ? ptTrainerMap.get(ptReportAssignment.trainer_staff_profile_id) || null : null;
+  const activeFeedbackMembership = membershipHistory.find((row) => {
+    const start = dateOnly(row.start_date);
+    const end = dateOnly(row.end_date);
+    return row.payment_status === "paid" && !!start && !!end && start <= today && today <= end;
+  }) || null;
   const isActive = Boolean(startDate && expiryDate && startDate <= today && today <= expiryDate);
   const daysRemaining = isActive ? Math.max(0, daysBetween(today, expiryDate) ?? 0) : 0;
   const totalDays = daysBetween(startDate, expiryDate);
@@ -425,6 +439,42 @@ export function MemberDashboardV2() {
       setPtReportOpen(false);
     }
     setPtReportSaving(false);
+  }
+
+  async function submitMemberFeedback() {
+    if (!member || !activeFeedbackMembership) return;
+    const details = memberFeedbackDetails.trim();
+    if (details.length < 10) {
+      setMemberFeedbackError("Please add a little more detail so management can understand your submission.");
+      return;
+    }
+
+    setMemberFeedbackSaving(true);
+    setMemberFeedbackError("");
+    setMemberFeedbackMessage("");
+    const { error: submitError } = await supabase.from("member_feedback_submissions").insert({
+      member_id: member.id,
+      membership_id: activeFeedbackMembership.id,
+      submission_type: memberFeedbackType,
+      category: memberFeedbackCategory,
+      subject: memberFeedbackSubject.trim() || null,
+      details,
+    });
+
+    if (submitError) {
+      setMemberFeedbackError(submitError.message);
+    } else {
+      setMemberFeedbackMessage(
+        memberFeedbackType === "suggestion"
+          ? "Your confidential suggestion has been sent to Super Plus management."
+          : "Your confidential issue report has been sent to Super Plus management.",
+      );
+      setMemberFeedbackSubject("");
+      setMemberFeedbackDetails("");
+      setMemberFeedbackCategory("service");
+      setMemberFeedbackOpen(false);
+    }
+    setMemberFeedbackSaving(false);
   }
 
   const stats = useMemo(() => {
@@ -657,6 +707,175 @@ export function MemberDashboardV2() {
             <button type="button" onClick={() => setActiveTab("community")} className="flex min-h-20 flex-col items-center justify-center gap-2 rounded-2xl border border-[#dbe6d7] bg-white p-2 text-[10px] font-black"><Users className="size-6 text-[#287144]"/>Community</button>
           </div>
         </section>
+
+        {isActive && activeFeedbackMembership && (
+          <section className="rounded-[24px] border border-[#d9e5d7] bg-white p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Your voice</p>
+                <h2 className="mt-1 font-display text-2xl font-black uppercase">Suggestions & Issues</h2>
+                <p className="mt-2 text-xs leading-5 text-[#66766b]">
+                  Share an idea or report anything concerning a coach, staff member, equipment, facilities, cleanliness, payments, safety or any other part of the gym.
+                </p>
+              </div>
+              <MessageSquareWarning className="size-6 shrink-0 text-[#2f7746]" />
+            </div>
+
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#d7e5d4] bg-[#f3f8f0] p-4">
+              <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white">
+                <ShieldCheck className="size-4" />
+              </span>
+              <div>
+                <p className="text-xs font-black text-[#244f32]">Confidential to management</p>
+                <p className="mt-1 text-xs leading-5 text-[#607366]">
+                  Only authorised Super Plus management accounts can access your submission. Coaches, staff and reception cannot see it through their dashboards. Management may contact you privately if follow-up is needed.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMemberFeedbackType("suggestion");
+                  setMemberFeedbackCategory("service");
+                  setMemberFeedbackOpen(true);
+                  setMemberFeedbackError("");
+                  setMemberFeedbackMessage("");
+                }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1f6338] px-4 py-3 text-xs font-black text-white"
+              >
+                <Lightbulb className="size-4" /> Make a suggestion
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMemberFeedbackType("issue");
+                  setMemberFeedbackCategory("other");
+                  setMemberFeedbackOpen(true);
+                  setMemberFeedbackError("");
+                  setMemberFeedbackMessage("");
+                }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#e4c9c4] bg-[#fff7f4] px-4 py-3 text-xs font-black text-[#8c3833]"
+              >
+                <AlertCircle className="size-4" /> Report an issue
+              </button>
+            </div>
+
+            {!!memberFeedbackMessage && (
+              <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
+                {memberFeedbackMessage}
+              </p>
+            )}
+
+            {memberFeedbackOpen && (
+              <div className="mt-4 rounded-2xl border border-[#dfe7dc] bg-[#fafcf9] p-4">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: "suggestion" as const, label: "Suggestion", icon: Lightbulb },
+                    { value: "issue" as const, label: "Report issue", icon: AlertCircle },
+                  ].map(({ value, label, icon: Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setMemberFeedbackType(value)}
+                      className={
+                        "inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black " +
+                        (memberFeedbackType === value
+                          ? "bg-[#193b2a] text-white"
+                          : "border border-[#d7e1d5] bg-white text-[#405948]")
+                      }
+                    >
+                      <Icon className="size-3.5" /> {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-black">
+                    What does it concern?
+                    <select
+                      value={memberFeedbackCategory}
+                      onChange={(event) => setMemberFeedbackCategory(event.target.value)}
+                      className="mt-1.5 w-full rounded-xl border border-[#d1ddd0] bg-white px-3 py-3 text-sm font-semibold"
+                    >
+                      <option value="coach">Coach</option>
+                      <option value="staff">Staff member</option>
+                      <option value="equipment">Equipment</option>
+                      <option value="facilities">Facilities</option>
+                      <option value="cleanliness">Cleanliness</option>
+                      <option value="payment">Payment / billing</option>
+                      <option value="safety">Safety</option>
+                      <option value="service">Gym service / experience</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label className="text-xs font-black">
+                    Subject <span className="font-normal text-[#7a837d]">(optional)</span>
+                    <input
+                      type="text"
+                      maxLength={160}
+                      value={memberFeedbackSubject}
+                      onChange={(event) => setMemberFeedbackSubject(event.target.value)}
+                      placeholder={memberFeedbackType === "suggestion" ? "Short title for your idea" : "Short title for the issue"}
+                      className="mt-1.5 w-full rounded-xl border border-[#d1ddd0] bg-white px-3 py-3 text-sm font-normal"
+                    />
+                  </label>
+                </div>
+
+                <label className="mt-3 block text-xs font-black">
+                  {memberFeedbackType === "suggestion" ? "Tell management your suggestion" : "Tell management what happened"}
+                  <textarea
+                    value={memberFeedbackDetails}
+                    onChange={(event) => {
+                      setMemberFeedbackDetails(event.target.value);
+                      setMemberFeedbackError("");
+                    }}
+                    maxLength={3000}
+                    rows={5}
+                    placeholder={
+                      memberFeedbackType === "suggestion"
+                        ? "Explain your idea and how it could improve Super Plus..."
+                        : "Describe the issue clearly and include anything management should know..."
+                    }
+                    className="mt-1.5 w-full resize-y rounded-xl border border-[#d1ddd0] bg-white p-3 text-sm font-normal leading-6"
+                  />
+                </label>
+                <div className="mt-1 text-right text-[10px] text-[#7b837e]">{memberFeedbackDetails.length}/3000</div>
+
+                {!!memberFeedbackError && (
+                  <p className="mt-3 rounded-xl bg-red-100 p-3 text-xs font-semibold text-red-800">
+                    {memberFeedbackError}
+                  </p>
+                )}
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    disabled={memberFeedbackSaving}
+                    onClick={() => void submitMemberFeedback()}
+                    className="rounded-xl bg-[#193b2a]"
+                  >
+                    {memberFeedbackSaving ? (
+                      <><Loader2 className="size-4 animate-spin" /> Sending...</>
+                    ) : (
+                      <><ShieldCheck className="size-4" /> Send confidentially</>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={memberFeedbackSaving}
+                    onClick={() => {
+                      setMemberFeedbackOpen(false);
+                      setMemberFeedbackError("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         <section className="rounded-[24px] border border-[#dce7d8] bg-white p-5">
           <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">For you</p><h2 className="mt-1 font-display text-2xl font-black uppercase">Fitness journal</h2></div><Link to="/blog" className="text-xs font-black text-[#2a7140]">View all →</Link></div>
