@@ -501,7 +501,7 @@ export default function MembershipScreen() {
               <View style={styles.reportForm}>
                 <Text style={styles.inputLabel}>What is this about?</Text>
                 <View style={styles.categoryGrid}>
-                  {[
+                  {([
                     ["training_quality", "Training quality"],
                     ["punctuality", "Punctuality"],
                     ["communication", "Communication"],
@@ -509,7 +509,7 @@ export default function MembershipScreen() {
                     ["safety", "Safety concern"],
                     ["inappropriate_behaviour", "Inappropriate behaviour"],
                     ["other", "Other"],
-                  ].map(([value, label]) => {
+                  ] as const).map(([value, label]) => {
                     const selected = reportCategory === value;
                     return (
                       <Pressable
