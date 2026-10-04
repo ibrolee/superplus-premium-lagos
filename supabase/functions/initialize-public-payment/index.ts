@@ -39,9 +39,10 @@ Deno.serve(async(req:Request)=>{
   let trainerId='';
   if(planId==='personal-training'){
    trainerId=String(body?.trainerStaffProfileId||'').trim();
-   if(!trainerId)return respond({error:'Choose a personal trainer before starting payment.'},400);
-   const {data:trainer,error:trainerError}=await admin.from('pt_trainers').select('staff_profile_id').eq('staff_profile_id',trainerId).eq('active',true).maybeSingle();
-   if(trainerError||!trainer)return respond({error:'The selected personal trainer is not available. Choose another coach.'},409);
+   if(trainerId){
+    const {data:trainer,error:trainerError}=await admin.from('pt_trainers').select('staff_profile_id').eq('staff_profile_id',trainerId).eq('active',true).maybeSingle();
+    if(trainerError||!trainer)return respond({error:'The selected personal trainer is not available. Choose another coach or assign later.'},409);
+   }
   }
 
   const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
