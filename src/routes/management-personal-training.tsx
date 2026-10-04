@@ -97,6 +97,9 @@ type PtPayoutBreakdown = {
   rating_count: number;
   rating_average: number | null;
   performance_index: number;
+  payout_mode?: "full_50_30_20" | "trainee_commission" | "none";
+  full_pool_eligible?: boolean;
+  trainee_commission?: number;
   team_share: number;
   workload_share: number;
   performance_share: number;
@@ -113,6 +116,10 @@ type PtPayoutRun = {
 };
 
 type View = "current" | "expiring" | "unassigned" | "feedback" | "all";
+
+const FULL_PAYOUT_MIN_TRAINEES = 3;
+const LOW_VOLUME_TRAINEE_COMMISSION = 10_000;
+const RENEWAL_GRACE_DAYS = 3;
 
 const DAY = 86400000;
 const lagosToday = () => {
@@ -415,7 +422,7 @@ function ManagementPersonalTraining() {
     const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
     const pool = Math.max(0, Number(payoutPool || 0));
     const measurementEnd = monthEnd < today ? monthEnd : today;
-    const maturedRenewalEnd = addDays(measurementEnd, -7);
+    const maturedRenewalEnd = addDays(measurementEnd, -RENEWAL_GRACE_DAYS);
     const renewalWindowStart = addDays(maturedRenewalEnd, -89);
 
     const unassignedMemberIds = new Set(
@@ -458,7 +465,7 @@ function ManagementPersonalTraining() {
             candidate.member_id === cycle.member_id &&
             candidate.payment_status === "paid" &&
             candidate.created_at > cycle.created_at &&
-            candidate.start_date <= addDays(cycle.end_date, 7) &&
+            candidate.start_date <= addDays(cycle.end_date, RENEWAL_GRACE_DAYS) &&
             assignmentMap.get(candidate.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
         ),
       ).length;
@@ -492,14 +499,17 @@ function ManagementPersonalTraining() {
       };
     });
 
-    const measured = rawRows
+    const fullEligibleRows = rawRows.filter(
+      (row) => row.traineeCount >= FULL_PAYOUT_MIN_TRAINEES,
+    );
+    const measured = fullEligibleRows
       .map((row) => row.rawPerformanceIndex)
       .filter((value): value is number => value !== null);
     const neutralPerformance = measured.length
       ? measured.reduce((sum, value) => sum + value, 0) / measured.length
       : 1;
-    const workloadTotal = rawRows.reduce((sum, row) => sum + row.traineeCount, 0);
-    const performanceTotal = rawRows.reduce(
+    const workloadTotal = fullEligibleRows.reduce((sum, row) => sum + row.traineeCount, 0);
+    const performanceTotal = fullEligibleRows.reduce(
       (sum, row) => sum + (row.rawPerformanceIndex ?? neutralPerformance),
       0,
     );
@@ -508,18 +518,30 @@ function ManagementPersonalTraining() {
     const performancePool = pool * 0.2;
 
     const rows: PtPayoutBreakdown[] = rawRows.map((row) => {
+      const fullPoolEligible = row.traineeCount >= FULL_PAYOUT_MIN_TRAINEES;
       const performanceIndex = row.rawPerformanceIndex ?? neutralPerformance;
-      const teamShare = activeTrainers.length ? teamPool / activeTrainers.length : 0;
-      const workloadShare = workloadTotal
-        ? workloadPool * (row.traineeCount / workloadTotal)
-        : activeTrainers.length
-          ? workloadPool / activeTrainers.length
+      const traineeCommission = fullPoolEligible
+        ? 0
+        : row.traineeCount * LOW_VOLUME_TRAINEE_COMMISSION;
+      const teamShare =
+        fullPoolEligible && fullEligibleRows.length
+          ? teamPool / fullEligibleRows.length
           : 0;
-      const performanceShare = performanceTotal
-        ? performancePool * (performanceIndex / performanceTotal)
-        : activeTrainers.length
-          ? performancePool / activeTrainers.length
+      const workloadShare =
+        fullPoolEligible && workloadTotal
+          ? workloadPool * (row.traineeCount / workloadTotal)
           : 0;
+      const performanceShare =
+        fullPoolEligible
+          ? performanceTotal
+            ? performancePool * (performanceIndex / performanceTotal)
+            : fullEligibleRows.length
+              ? performancePool / fullEligibleRows.length
+              : 0
+          : 0;
+      const recommendedPayout = fullPoolEligible
+        ? teamShare + workloadShare + performanceShare
+        : traineeCommission;
 
       return {
         trainer_staff_profile_id: row.trainer.staff_profile_id,
@@ -530,11 +552,19 @@ function ManagementPersonalTraining() {
         renewal_rate: row.renewalRate,
         rating_count: row.ratingCount,
         rating_average: row.ratingAverage,
-        performance_index: performanceIndex,
+        performance_index: fullPoolEligible ? performanceIndex : 0,
+        payout_mode:
+          fullPoolEligible
+            ? "full_50_30_20"
+            : row.traineeCount > 0
+              ? "trainee_commission"
+              : "none",
+        full_pool_eligible: fullPoolEligible,
+        trainee_commission: traineeCommission,
         team_share: teamShare,
         workload_share: workloadShare,
         performance_share: performanceShare,
-        recommended_payout: teamShare + workloadShare + performanceShare,
+        recommended_payout: recommendedPayout,
       };
     });
 
@@ -543,6 +573,9 @@ function ManagementPersonalTraining() {
       monthStart,
       monthEnd,
       rows,
+      fullEligibleCount: fullEligibleRows.length,
+      commissionTotal: rows.reduce((sum, row) => sum + Number(row.trainee_commission || 0), 0),
+      totalRecommended: rows.reduce((sum, row) => sum + row.recommended_payout, 0),
       unassignedCount: unassignedMemberIds.size,
       workloadTotal,
       maturedRenewalEnd,
@@ -551,8 +584,16 @@ function ManagementPersonalTraining() {
   }, [trainers, memberships, evaluations, assignmentMap, payoutMonth, payoutPool, today]);
 
   async function savePayoutRun() {
-    if (!payoutCalculation.pool || payoutCalculation.pool <= 0) {
-      setError("Enter the monthly PT coach payout amount before saving.");
+    if (payoutCalculation.fullEligibleCount > 0 && payoutCalculation.pool <= 0) {
+      setError("Enter the 50/30/20 payout pool for coaches with 3 or more trainees.");
+      return;
+    }
+    if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.pool > 0) {
+      setError("No in-house coach has 3 or more trainees this month. Set the 50/30/20 pool to 0; only fixed trainee commissions apply.");
+      return;
+    }
+    if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.commissionTotal <= 0) {
+      setError("There is no PT payout to save for this month.");
       return;
     }
     setPayoutSaving(true);
