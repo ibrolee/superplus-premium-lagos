@@ -24,7 +24,7 @@ type StaffStatus = "pending" | "approved" | "suspended" | "inactive";
 
 type StaffProfile = {
   id: string;
-  auth_user_id: string;
+  auth_user_id: string | null;
   staff_id: string | null;
   full_name: string;
   email: string | null;
@@ -515,6 +515,7 @@ function ManagementStaffManagement() {
                         <h2 className="mt-1 truncate text-2xl font-black">{selectedStaff.full_name}</h2>
                         <p className="mt-1 text-xs text-[#6b796f]">
                           {selectedStaff.staff_id || "No staff ID"} · {selectedStaff.email || "No email"}
+                          {!selectedStaff.auth_user_id && <span className="mt-1 block">Payroll profile · No login account</span>}
                         </p>
                       </div>
                     </div>
