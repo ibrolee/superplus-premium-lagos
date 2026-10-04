@@ -26,6 +26,7 @@ type Trainer = {
   display_name: string;
   active: boolean;
   sort_order: number;
+  coach_type: "in_house" | "part_time";
 };
 
 type Member = {
@@ -50,6 +51,7 @@ type Assignment = {
   membership_id: string;
   member_id: string;
   trainer_staff_profile_id: string;
+  assignment_source: "management" | "coach_referred" | "member_requested";
   updated_at: string;
 };
 
@@ -102,11 +104,22 @@ type PtPayoutBreakdown = {
   recommended_payout: number;
 };
 
+type PtPartTimeSettlement = {
+  coach_staff_profile_id: string;
+  coach_name: string;
+  eligible_count: number;
+  coach_referred_count: number;
+  member_requested_count: number;
+  non_eligible_count: number;
+  manual_amount: number;
+};
+
 type PtPayoutRun = {
   id: string;
   payout_month: string;
   payout_pool: number;
   breakdown: PtPayoutBreakdown[];
+  part_time_settlements: PtPartTimeSettlement[];
   created_by: string | null;
   updated_at: string;
 };
@@ -180,12 +193,14 @@ function ManagementPersonalTraining() {
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutMonth, setPayoutMonth] = useState(lagosToday().slice(0, 7));
   const [payoutPool, setPayoutPool] = useState("");
+  const [partTimeSettlementAmounts, setPartTimeSettlementAmounts] = useState<Record<string, string>>({});
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutMessage, setPayoutMessage] = useState("");
   const [view, setView] = useState<View>("current");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [savingMembershipId, setSavingMembershipId] = useState<string | null>(null);
+  const [savingCoachTypeId, setSavingCoachTypeId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
@@ -207,11 +222,11 @@ function ManagementPersonalTraining() {
         .limit(600),
       supabase
         .from("pt_trainers")
-        .select("staff_profile_id,display_name,active,sort_order")
+        .select("staff_profile_id,display_name,active,sort_order,coach_type")
         .order("sort_order", { ascending: true }),
       supabase
         .from("pt_assignments")
-        .select("membership_id,member_id,trainer_staff_profile_id,updated_at")
+        .select("membership_id,member_id,trainer_staff_profile_id,assignment_source,updated_at")
         .order("updated_at", { ascending: false }),
       supabase
         .from("pt_evaluations")
@@ -219,7 +234,7 @@ function ManagementPersonalTraining() {
         .order("submitted_at", { ascending: false }),
       supabase
         .from("pt_payout_runs")
-        .select("id,payout_month,payout_pool,breakdown,created_by,updated_at")
+        .select("id,payout_month,payout_pool,breakdown,part_time_settlements,created_by,updated_at")
         .order("payout_month", { ascending: false })
         .limit(24),
       supabase
@@ -276,6 +291,12 @@ function ManagementPersonalTraining() {
   useEffect(() => {
     const saved = payoutRuns.find((row) => row.payout_month.slice(0, 7) === payoutMonth);
     setPayoutPool(saved ? String(Number(saved.payout_pool)) : "");
+    const savedSettlements = saved?.part_time_settlements || [];
+    setPartTimeSettlementAmounts(
+      Object.fromEntries(
+        savedSettlements.map((row) => [row.coach_staff_profile_id, String(Number(row.manual_amount || 0))]),
+      ),
+    );
   }, [payoutMonth, payoutRuns]);
 
   const today = lagosToday();
@@ -394,7 +415,9 @@ function ManagementPersonalTraining() {
   });
 
   const payoutCalculation = useMemo(() => {
-    const activeTrainers = trainers.filter((trainer) => trainer.active);
+    const activeTrainers = trainers.filter(
+      (trainer) => trainer.active && trainer.coach_type === "in_house",
+    );
     const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
     const pool = Math.max(0, Number(payoutPool || 0));
     const measurementEnd = monthEnd < today ? monthEnd : today;
@@ -533,9 +556,62 @@ function ManagementPersonalTraining() {
     };
   }, [trainers, memberships, evaluations, assignmentMap, payoutMonth, payoutPool, today]);
 
+  const partTimeSettlementRows = useMemo(() => {
+    const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
+    return trainers
+      .filter((trainer) => trainer.active && trainer.coach_type === "part_time")
+      .map((trainer) => {
+        const byMember = new Map<string, { membership: PtMembership; assignment: Assignment }>();
+        memberships
+          .filter(
+            (membership) =>
+              membership.payment_status === "paid" &&
+              membership.start_date <= monthEnd &&
+              membership.end_date >= monthStart &&
+              assignmentMap.get(membership.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+          )
+          .forEach((membership) => {
+            const assignment = assignmentMap.get(membership.id);
+            if (!assignment) return;
+            const current = byMember.get(membership.member_id);
+            if (!current || membership.created_at > current.membership.created_at) {
+              byMember.set(membership.member_id, { membership, assignment });
+            }
+          });
+
+        const records = Array.from(byMember.values());
+        const eligible = records.filter(({ assignment }) =>
+          ["coach_referred", "member_requested"].includes(assignment.assignment_source),
+        );
+        const coachReferred = eligible.filter(
+          ({ assignment }) => assignment.assignment_source === "coach_referred",
+        );
+        const memberRequested = eligible.filter(
+          ({ assignment }) => assignment.assignment_source === "member_requested",
+        );
+        const nonEligible = records.filter(
+          ({ assignment }) => assignment.assignment_source === "management",
+        );
+
+        return {
+          trainer,
+          eligibleCount: eligible.length,
+          coachReferredCount: coachReferred.length,
+          memberRequestedCount: memberRequested.length,
+          nonEligibleCount: nonEligible.length,
+          manualAmount: Math.max(0, Number(partTimeSettlementAmounts[trainer.staff_profile_id] || 0)),
+          eligibleMembers: eligible.map(({ membership, assignment }) => ({
+            member: memberMap.get(membership.member_id),
+            source: assignment.assignment_source,
+          })),
+        };
+      });
+  }, [trainers, memberships, assignmentMap, memberMap, payoutMonth, partTimeSettlementAmounts]);
+
   async function savePayoutRun() {
-    if (!payoutCalculation.pool || payoutCalculation.pool <= 0) {
-      setError("Enter the monthly PT coach payout amount before saving.");
+    const partTimeTotal = partTimeSettlementRows.reduce((sum, row) => sum + row.manualAmount, 0);
+    if (payoutCalculation.pool <= 0 && partTimeTotal <= 0) {
+      setError("Enter an in-house payout pool or a part-time coach settlement amount before saving.");
       return;
     }
     setPayoutSaving(true);
@@ -551,6 +627,15 @@ function ManagementPersonalTraining() {
         workload_weight: 0.3,
         performance_weight: 0.2,
         breakdown: payoutCalculation.rows,
+        part_time_settlements: partTimeSettlementRows.map((row) => ({
+          coach_staff_profile_id: row.trainer.staff_profile_id,
+          coach_name: row.trainer.display_name,
+          eligible_count: row.eligibleCount,
+          coach_referred_count: row.coachReferredCount,
+          member_requested_count: row.memberRequestedCount,
+          non_eligible_count: row.nonEligibleCount,
+          manual_amount: row.manualAmount,
+        })),
         created_by: userId,
         updated_by: userId,
         updated_at: new Date().toISOString(),
@@ -564,6 +649,43 @@ function ManagementPersonalTraining() {
       await load();
     }
     setPayoutSaving(false);
+  }
+
+  async function updateCoachType(trainerId: string, coachType: "in_house" | "part_time") {
+    setSavingCoachTypeId(trainerId);
+    setError("");
+    setMessage("");
+    const { error: updateError } = await supabase.rpc("management_set_pt_coach_type", {
+      p_staff_profile_id: trainerId,
+      p_coach_type: coachType,
+    });
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setMessage(coachType === "part_time" ? "Coach marked as part-time." : "Coach marked as in-house.");
+      await load();
+    }
+    setSavingCoachTypeId(null);
+  }
+
+  async function updateAssignmentSource(
+    membershipId: string,
+    source: "management" | "coach_referred" | "member_requested",
+  ) {
+    setSavingMembershipId(membershipId);
+    setError("");
+    setMessage("");
+    const { error: updateError } = await supabase.rpc("management_set_pt_assignment_source", {
+      p_membership_id: membershipId,
+      p_assignment_source: source,
+    });
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setMessage("Part-time coach payout eligibility updated.");
+      await load();
+    }
+    setSavingMembershipId(null);
   }
 
   async function assignCoach(membershipId: string, trainerId: string) {
