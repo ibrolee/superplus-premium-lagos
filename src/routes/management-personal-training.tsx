@@ -100,6 +100,8 @@ type PtPayoutBreakdown = {
   payout_mode?: "full_50_30_20" | "trainee_commission" | "none";
   full_pool_eligible?: boolean;
   trainee_commission?: number;
+  commission_membership_count?: number;
+  commission_membership_ids?: string[];
   team_share: number;
   workload_share: number;
   performance_share: number;
@@ -112,6 +114,18 @@ type PtPayoutRun = {
   payout_pool: number;
   breakdown: PtPayoutBreakdown[];
   created_by: string | null;
+  updated_at: string;
+};
+
+type PtPayoutDisbursement = {
+  id: string;
+  payout_run_id: string;
+  installment: 1 | 2;
+  total_amount: number;
+  breakdown: Array<PtPayoutBreakdown & { monthly_entitlement?: number; installment_amount?: number }>;
+  status: "pending" | "paid";
+  paid_at: string | null;
+  paid_by: string | null;
   updated_at: string;
 };
 
@@ -259,9 +273,11 @@ function ManagementPersonalTraining() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
+  const [payoutDisbursements, setPayoutDisbursements] = useState<PtPayoutDisbursement[]>([]);
   const [payoutMonth, setPayoutMonth] = useState(lagosToday().slice(0, 7));
   const [payoutPool, setPayoutPool] = useState("");
   const [payoutSaving, setPayoutSaving] = useState(false);
+  const [disbursementSavingId, setDisbursementSavingId] = useState<string | null>(null);
   const [payoutMessage, setPayoutMessage] = useState("");
   const [view, setView] = useState<View>("current");
   const [query, setQuery] = useState("");
@@ -279,7 +295,7 @@ function ManagementPersonalTraining() {
     setLoading(true);
     setError("");
 
-    const [membershipResult, trainerResult, staffTitleResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
+    const [membershipResult, trainerResult, staffTitleResult, assignmentResult, evaluationResult, payoutResult, disbursementResult, reportResult] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -307,6 +323,10 @@ function ManagementPersonalTraining() {
         .order("payout_month", { ascending: false })
         .limit(24),
       supabase
+        .from("pt_payout_disbursements")
+        .select("id,payout_run_id,installment,total_amount,breakdown,status,paid_at,paid_by,updated_at")
+        .order("installment", { ascending: true }),
+      supabase
         .from("pt_coach_reports")
         .select("id,membership_id,member_id,coach_staff_profile_id,category,details,incident_date,status,submitted_at,updated_at")
         .order("submitted_at", { ascending: false })
@@ -314,7 +334,7 @@ function ManagementPersonalTraining() {
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || staffTitleResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
+      membershipResult.error || trainerResult.error || staffTitleResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || disbursementResult.error || reportResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -359,6 +379,7 @@ function ManagementPersonalTraining() {
     setEvaluations((evaluationResult.data || []) as Evaluation[]);
     setCoachReports(nextReports);
     setPayoutRuns((payoutResult.data || []) as PtPayoutRun[]);
+    setPayoutDisbursements((disbursementResult.data || []) as PtPayoutDisbursement[]);
     setLoading(false);
   }, []);
 
@@ -521,6 +542,16 @@ function ManagementPersonalTraining() {
           .map((row) => row.member_id),
       );
 
+      const commissionMembershipIds = memberships
+        .filter(
+          (row) =>
+            row.payment_status === "paid" &&
+            row.start_date >= monthStart &&
+            row.start_date <= measurementEnd &&
+            assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+        )
+        .map((row) => row.id);
+
       const twoCycleRetention = twoCycleRetentionForCoach(
         memberships,
         assignmentMap,
@@ -552,6 +583,7 @@ function ManagementPersonalTraining() {
         renewalRate,
         ratingCount: coachEvaluations.length,
         ratingAverage,
+        commissionMembershipIds,
         rawPerformanceIndex: performanceIndex,
       };
     });
@@ -579,7 +611,7 @@ function ManagementPersonalTraining() {
       const performanceIndex = row.rawPerformanceIndex ?? neutralPerformance;
       const traineeCommission = fullPoolEligible
         ? 0
-        : row.traineeCount * LOW_VOLUME_TRAINEE_COMMISSION;
+        : row.commissionMembershipIds.length * LOW_VOLUME_TRAINEE_COMMISSION;
       const teamShare =
         fullPoolEligible && fullEligibleRows.length
           ? teamPool / fullEligibleRows.length
@@ -613,11 +645,13 @@ function ManagementPersonalTraining() {
         payout_mode:
           fullPoolEligible
             ? "full_50_30_20"
-            : row.traineeCount > 0
+            : row.commissionMembershipIds.length > 0
               ? "trainee_commission"
               : "none",
         full_pool_eligible: fullPoolEligible,
         trainee_commission: traineeCommission,
+        commission_membership_count: fullPoolEligible ? 0 : row.commissionMembershipIds.length,
+        commission_membership_ids: fullPoolEligible ? [] : row.commissionMembershipIds,
         team_share: teamShare,
         workload_share: workloadShare,
         performance_share: performanceShare,
@@ -639,6 +673,15 @@ function ManagementPersonalTraining() {
     };
   }, [trainers, memberships, evaluations, assignmentMap, payoutMonth, payoutPool, today]);
 
+  const selectedPayoutRun = payoutRuns.find(
+    (row) => row.payout_month.slice(0, 7) === payoutMonth,
+  ) || null;
+  const selectedDisbursements = selectedPayoutRun
+    ? payoutDisbursements
+        .filter((row) => row.payout_run_id === selectedPayoutRun.id)
+        .sort((a, b) => a.installment - b.installment)
+    : [];
+
   async function savePayoutRun() {
     if (payoutCalculation.fullEligibleCount > 0 && payoutCalculation.pool <= 0) {
       setError("Enter the 50/30/20 payout pool for coaches with 3 or more trainees.");
@@ -655,29 +698,47 @@ function ManagementPersonalTraining() {
     setPayoutSaving(true);
     setError("");
     setPayoutMessage("");
-    const { data: authData } = await supabase.auth.getUser();
-    const userId = authData.user?.id || null;
-    const { error: saveError } = await supabase.from("pt_payout_runs").upsert(
+    const { data: saveResult, error: saveError } = await supabase.rpc(
+      "management_save_pt_payout_run",
       {
-        payout_month: payoutCalculation.monthStart,
-        payout_pool: payoutCalculation.pool,
-        team_weight: 0.5,
-        workload_weight: 0.3,
-        performance_weight: 0.2,
-        breakdown: payoutCalculation.rows,
-        created_by: userId,
-        updated_by: userId,
-        updated_at: new Date().toISOString(),
+        p_payout_month: payoutCalculation.monthStart,
+        p_payout_pool: payoutCalculation.pool,
+        p_breakdown: payoutCalculation.rows,
       },
-      { onConflict: "payout_month" },
     );
     if (saveError) {
       setError(saveError.message);
     } else {
-      setPayoutMessage("Monthly PT payout calculation saved.");
+      setPayoutMessage(
+        `Monthly PT calculation saved. Two biweekly disbursements created: ${formatMoney(Number(saveResult?.first_disbursement || 0))} and ${formatMoney(Number(saveResult?.second_disbursement || 0))}.`,
+      );
       await load();
     }
     setPayoutSaving(false);
+  }
+
+  async function markDisbursementPaid(disbursement: PtPayoutDisbursement) {
+    if (disbursement.status === "paid" || disbursementSavingId) return;
+    const confirmed = window.confirm(
+      `Mark the ${disbursement.installment === 1 ? "first" : "second"} biweekly PT disbursement of ${formatMoney(Number(disbursement.total_amount))} as PAID?\n\nThis locks the monthly payout calculation against further changes.`,
+    );
+    if (!confirmed) return;
+
+    setDisbursementSavingId(disbursement.id);
+    setError("");
+    setPayoutMessage("");
+    const { error: markError } = await supabase.rpc("management_mark_pt_disbursement_paid", {
+      p_disbursement_id: disbursement.id,
+    });
+    if (markError) {
+      setError(markError.message);
+    } else {
+      setPayoutMessage(
+        `${disbursement.installment === 1 ? "First" : "Second"} biweekly PT disbursement marked paid.`,
+      );
+      await load();
+    }
+    setDisbursementSavingId(null);
   }
 
   async function assignCoach(membershipId: string, trainerId: string) {
@@ -944,10 +1005,10 @@ function ManagementPersonalTraining() {
         >
           <div className="max-w-2xl">
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
-              Monthly PT payout
+              Monthly PT calculation · biweekly pay
             </p>
             <h2 className="mt-1 text-xl font-black">Coach payout calculator</h2>
-            <p className="mt-1 text-xs text-[#6c7a70]">Monthly coach payout recommendations and saved calculations.</p>
+            <p className="mt-1 text-xs text-[#6c7a70]">Calculate each coach's monthly entitlement once, then pay it in two biweekly disbursements.</p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
             <CircleDollarSign className="size-7 text-[#2f7746]" />
@@ -962,9 +1023,10 @@ function ManagementPersonalTraining() {
           <>
             <p className="mt-4 text-xs leading-5 text-[#67776c]">
               Only an in-house coach with <strong>3 or more assigned PT trainees</strong> enters the 50/30/20 pool.
-              An in-house coach with 1–2 trainees gets a fixed <strong>₦10,000 per trainee</strong> instead, and a coach
-              with 0 trainees gets ₦0. Those fixed commissions are separate and do not reduce the 50/30/20 pool.
-              Part-time coaches are excluded completely and are settled separately by management. Cover sessions are not included.
+              An in-house coach with 1–2 trainees uses the fixed commission model: <strong>₦10,000 once per PT membership cycle</strong>,
+              not ₦10,000 every two weeks. The monthly entitlement is then split into two biweekly payments. A coach with 0 trainees gets ₦0.
+              Fixed commissions are separate and do not reduce the 50/30/20 pool. Part-time coaches are excluded completely and are settled
+              separately by management. Cover sessions are not included.
             </p>
 
             <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
@@ -1000,7 +1062,7 @@ function ManagementPersonalTraining() {
             onClick={() => void savePayoutRun()}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Save size={15} /> {payoutSaving ? "Saving…" : "Save monthly payout"}
+            <Save size={15} /> {payoutSaving ? "Saving…" : "Save monthly calculation"}
           </button>
         </div>
 
@@ -1022,8 +1084,10 @@ function ManagementPersonalTraining() {
         <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
           <strong className="text-[#33483a]">Payout eligibility:</strong> an in-house coach needs at least 3 assigned
           PT trainees in the selected month to enter the 50/30/20 calculation. With 1–2 trainees, the coach receives
-          only ₦10,000 per trainee; with 0, the PT payout is ₦0. For fully eligible coaches, performance is 75%
-          two-cycle same-coach retention and 25% established trainee rating. Retention counts a client as successful only
+          ₦10,000 once for each PT membership cycle that starts in the selected month; the same membership is not commissioned
+          again at the next two-week payment. The resulting monthly entitlement is split into two biweekly disbursements.
+          With 0 trainees, the PT payout is ₦0. For fully eligible coaches, performance is 75% two-cycle same-coach retention
+          and 25% established trainee rating. Retention counts a client as successful only
           after they renew twice with the same coach; the second renewal keeps the same 3-day grace. A rating counts after
           at least 2 evaluations.
         </div>
@@ -1100,9 +1164,11 @@ function ManagementPersonalTraining() {
                         {row.trainee_count > 0 ? "Fixed trainee commission" : "Not payout eligible"}
                       </p>
                       <p className="mt-1 text-xs text-[#68766d]">
-                        {row.trainee_count > 0
-                          ? `₦10,000 × ${row.trainee_count} trainee${row.trainee_count === 1 ? "" : "s"}`
-                          : "0 assigned PT trainees this month"}
+                        {Number(row.commission_membership_count || 0) > 0
+                          ? `₦10,000 × ${row.commission_membership_count} PT membership cycle${row.commission_membership_count === 1 ? "" : "s"} starting this month`
+                          : row.trainee_count > 0
+                            ? "No new commissionable PT membership cycle starts this month"
+                            : "0 assigned PT trainees this month"}
                       </p>
                     </div>
                     <p className="text-lg font-black text-[#193b2a]">
@@ -1152,13 +1218,81 @@ function ManagementPersonalTraining() {
           <div>
             <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">1–2 trainee commissions</p>
             <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.commissionTotal)}</p>
-            <p className="mt-1 text-[9px] text-white/60">₦10,000 per trainee</p>
+            <p className="mt-1 text-[9px] text-white/60">₦10,000 once per PT membership cycle</p>
           </div>
           <div>
             <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Recommended PT payout total</p>
             <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.totalRecommended)}</p>
             <p className="mt-1 text-[9px] text-white/60">Part-time coach payments remain separate</p>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-[#dbe5d8] bg-[#fbfcf9] p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#65905c]">Biweekly disbursement</p>
+              <h3 className="mt-1 font-black">Two payments from the saved monthly entitlement</h3>
+              <p className="mt-1 text-xs leading-5 text-[#68766d]">
+                Each saved monthly payout is split 50/50 into a first and second two-week payment. The second installment absorbs any rounding difference.
+              </p>
+            </div>
+            {selectedPayoutRun && (
+              <span className="rounded-full bg-[#eaf3e6] px-3 py-1.5 text-[10px] font-black uppercase text-[#2f7042]">
+                {payoutMonth}
+              </span>
+            )}
+          </div>
+
+          {!selectedPayoutRun ? (
+            <p className="mt-4 rounded-xl border border-dashed border-[#d6dfd3] p-4 text-xs text-[#68766d]">
+              Save the monthly calculation first to create the two biweekly payout installments.
+            </p>
+          ) : selectedDisbursements.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">
+              This is an older saved payout without biweekly installments. Save the monthly calculation again to create them.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              {selectedDisbursements.map((disbursement) => (
+                <article key={disbursement.id} className="rounded-xl border border-[#dce6d9] bg-white p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[.14em] text-[#718078]">
+                        {disbursement.installment === 1 ? "First biweekly payout" : "Second biweekly payout"}
+                      </p>
+                      <p className="mt-1 text-2xl font-black text-[#193b2a]">
+                        {formatMoney(Number(disbursement.total_amount))}
+                      </p>
+                      <p className="mt-1 text-[11px] text-[#68766d]">
+                        {disbursement.status === "paid" && disbursement.paid_at
+                          ? `Paid ${formatDateTime(disbursement.paid_at)}`
+                          : "Pending payment"}
+                      </p>
+                    </div>
+                    <span className={
+                      "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                      (disbursement.status === "paid"
+                        ? "bg-green-100 text-green-800"
+                        : "bg-amber-100 text-amber-800")
+                    }>
+                      {disbursement.status}
+                    </span>
+                  </div>
+                  {disbursement.status === "pending" && (
+                    <button
+                      type="button"
+                      disabled={disbursementSavingId === disbursement.id}
+                      onClick={() => void markDisbursementPaid(disbursement)}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={15} />
+                      {disbursementSavingId === disbursement.id ? "Saving…" : "Mark paid"}
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
         </div>
           </>
         )}
