@@ -73,7 +73,7 @@ Deno.serve(async (request: Request) => {
       if (meta.reference !== reference || !payerEmail || payerEmail !== requestedEmail) {
         return json({ error: 'Public checkout email/reference mismatch' }, 422);
       }
-      const { data, error } = await admin.rpc('finalize_public_join_payment', {
+      const { data, error } = await admin.rpc('finalize_public_join_payment_with_pt', {
         p_reference: reference, p_plan_id: String(meta.plan_id || ''),
         p_full_name: String(meta.full_name || ''), p_email: requestedEmail,
         p_phone: String(meta.phone || ''), p_birth_day: Number(meta.birth_day),
@@ -81,6 +81,7 @@ Deno.serve(async (request: Request) => {
         p_channel: transaction.channel || 'paystack',
         p_customer_code: transaction.customer?.customer_code || null,
         p_coupon_code: String(meta.coupon_code || ''), p_verified_amount_kobo: transaction.amount,
+        p_trainer_staff_profile_id: String(meta.plan_id || '') === 'personal-training' ? (meta.trainer_staff_profile_id || null) : null,
       });
       if (error || !data?.success) {
         console.error('Webhook public finalization failed:', { reference, code: error?.code, message: error?.message });
