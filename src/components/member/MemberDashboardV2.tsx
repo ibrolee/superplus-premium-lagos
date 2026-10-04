@@ -38,6 +38,26 @@ type BlogPreview = {
   featured_image: string | null;
 };
 type Visit = { id: string; checked_in_at: string; checked_out_at: string | null };
+type PtTrainer = { staff_profile_id: string; display_name: string };
+type PtAssignment = { membership_id: string; member_id: string; trainer_staff_profile_id: string; updated_at: string };
+type PtEvaluation = {
+  membership_id: string;
+  member_id: string;
+  trainer_staff_profile_id: string;
+  overall_rating: number;
+  professionalism_rating: number;
+  punctuality_rating: number;
+  communication_rating: number;
+  coaching_quality_rating: number;
+  motivation_rating: number;
+  program_consistency: boolean;
+  comments: string | null;
+  continuation_choice: "continue" | "change" | "finish";
+  requested_trainer_staff_profile_id: string | null;
+  change_reason: string | null;
+  management_status: string;
+  submitted_at: string;
+};
 type DashboardTab = "home" | "activity" | "community" | "profile";
 
 const DAY = 86400000;
@@ -121,6 +141,25 @@ export function MemberDashboardV2() {
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<Member | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
+  const [membershipHistory, setMembershipHistory] = useState<Membership[]>([]);
+  const [ptTrainers, setPtTrainers] = useState<PtTrainer[]>([]);
+  const [ptAssignments, setPtAssignments] = useState<PtAssignment[]>([]);
+  const [ptEvaluations, setPtEvaluations] = useState<PtEvaluation[]>([]);
+  const [selectedTrainerId, setSelectedTrainerId] = useState("");
+  const [ptOverall, setPtOverall] = useState(0);
+  const [ptProfessionalism, setPtProfessionalism] = useState(5);
+  const [ptPunctuality, setPtPunctuality] = useState(5);
+  const [ptCommunication, setPtCommunication] = useState(5);
+  const [ptCoaching, setPtCoaching] = useState(5);
+  const [ptMotivation, setPtMotivation] = useState(5);
+  const [ptConsistent, setPtConsistent] = useState(true);
+  const [ptComments, setPtComments] = useState("");
+  const [ptChoice, setPtChoice] = useState<"" | "continue" | "change" | "finish">("");
+  const [ptRequestedTrainerId, setPtRequestedTrainerId] = useState("");
+  const [ptChangeReason, setPtChangeReason] = useState("");
+  const [ptEvaluationSaving, setPtEvaluationSaving] = useState(false);
+  const [ptEvaluationError, setPtEvaluationError] = useState("");
+  const [ptEvaluationMessage, setPtEvaluationMessage] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<DashboardTab>("home");
   const [showPlans, setShowPlans] = useState(false);
@@ -154,10 +193,21 @@ export function MemberDashboardV2() {
         if (memberError) throw memberError;
         if (!person) throw new Error("Your login was successful, but we could not find a member account connected to this email. Please contact Super Plus Fitness reception.");
         setMember(person as Member);
-        const { data: plans, error: membershipError } = await supabase.from("memberships").select("*").eq("member_id", person.id).order("created_at", { ascending: false });
+        const [membershipResult, assignmentResult, evaluationResult, trainerResult] = await Promise.all([
+          supabase.from("memberships").select("*").eq("member_id", person.id).order("created_at", { ascending: false }),
+          supabase.from("pt_assignments").select("membership_id,member_id,trainer_staff_profile_id,updated_at").eq("member_id", person.id).order("updated_at", { ascending: false }),
+          supabase.from("pt_evaluations").select("membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,submitted_at").eq("member_id", person.id).order("submitted_at", { ascending: false }),
+          supabase.from("pt_trainers").select("staff_profile_id,display_name").eq("active", true).order("sort_order", { ascending: true }),
+        ]);
         if (!active) return;
-        if (membershipError) throw membershipError;
-        setMembership(getContinuousMembership((plans || []) as Membership[]));
+        const dataError = membershipResult.error || assignmentResult.error || evaluationResult.error || trainerResult.error;
+        if (dataError) throw dataError;
+        const membershipRows = (membershipResult.data || []) as Membership[];
+        setMembershipHistory(membershipRows);
+        setMembership(getContinuousMembership(membershipRows));
+        setPtAssignments((assignmentResult.data || []) as PtAssignment[]);
+        setPtEvaluations((evaluationResult.data || []) as PtEvaluation[]);
+        setPtTrainers((trainerResult.data || []) as PtTrainer[]);
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : "Unable to load your account.");
       } finally {
@@ -238,6 +288,7 @@ export function MemberDashboardV2() {
   }
   async function handlePayment() {
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
+    if (selectedPlan === "personal-training" && !selectedTrainerId) { setPaymentError("Please choose your personal trainer."); return; }
     if (selectedPlan === "family") { window.location.href = "/member-family"; return; }
     const cleanCoupon = coupon.trim().toUpperCase();
     setPaymentLoading(true);
@@ -246,7 +297,7 @@ export function MemberDashboardV2() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate({ to: "/login" }); return; }
       const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", {
-        body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}) },
+        body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}), ...(selectedPlan === "personal-training" ? { trainerStaffProfileId: selectedTrainerId } : {}) },
       });
       if (functionError) throw new Error(functionError.message || "Unable to start payment.");
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to create Paystack payment.");
@@ -263,6 +314,19 @@ export function MemberDashboardV2() {
   const startDate = membership?.start_date || null;
   const expiryDate = membership?.end_date || null;
   const today = getLocalDateString();
+  const ptMemberships = membershipHistory.filter((row) => /^Personal Training(?: Only)?$/i.test(row.plan_name || row.name || row.plan || ""));
+  const ptAssignmentMap = new Map(ptAssignments.map((row) => [row.membership_id, row]));
+  const ptEvaluationMap = new Map(ptEvaluations.map((row) => [row.membership_id, row]));
+  const ptTrainerMap = new Map(ptTrainers.map((row) => [row.staff_profile_id, row]));
+  const latestPtAssignment = ptAssignments[0] || null;
+  const ptEvaluationMembership = ptMemberships.find((row) => {
+    const end = dateOnly(row.end_date);
+    if (!end || !ptAssignmentMap.has(row.id) || ptEvaluationMap.has(row.id)) return false;
+    return today >= addDays(end, -7) && today <= addDays(end, 7);
+  }) || null;
+  const ptEvaluationAssignment = ptEvaluationMembership ? ptAssignmentMap.get(ptEvaluationMembership.id) || null : null;
+  const ptEvaluationCoach = ptEvaluationAssignment ? ptTrainerMap.get(ptEvaluationAssignment.trainer_staff_profile_id) || null : null;
+  const evaluationDays = ptEvaluationMembership?.end_date ? daysBetween(today, dateOnly(ptEvaluationMembership.end_date)) : null;
   const isActive = Boolean(startDate && expiryDate && startDate <= today && today <= expiryDate);
   const daysRemaining = isActive ? Math.max(0, daysBetween(today, expiryDate) ?? 0) : 0;
   const totalDays = daysBetween(startDate, expiryDate);
@@ -270,7 +334,55 @@ export function MemberDashboardV2() {
   const membershipProgress = isActive && totalDays !== null && totalDays > 0 && elapsedDays !== null
     ? Math.max(0, Math.min(100, Math.round((elapsedDays / totalDays) * 100))) : 0;
   const expirySoon = isActive && daysRemaining <= 7;
-  const isPtMember = /personal|pt\b/i.test(planName);
+  const isPtMember = /personal|pt\b/i.test(planName) || ptMemberships.some((row) => {
+    const start = dateOnly(row.start_date);
+    const end = dateOnly(row.end_date);
+    return !!start && !!end && start <= today && today <= end;
+  });
+
+  useEffect(() => {
+    if (selectedPlan !== "personal-training") {
+      if (selectedTrainerId) setSelectedTrainerId("");
+      return;
+    }
+    if (!selectedTrainerId && latestPtAssignment?.trainer_staff_profile_id) {
+      setSelectedTrainerId(latestPtAssignment.trainer_staff_profile_id);
+    }
+  }, [selectedPlan, selectedTrainerId, latestPtAssignment?.trainer_staff_profile_id]);
+
+  async function submitPtEvaluation() {
+    if (!member || !ptEvaluationMembership || !ptEvaluationAssignment) return;
+    if (ptOverall < 1 || ptOverall > 5) { setPtEvaluationError("Choose an overall rating from 1 to 5."); return; }
+    if (!ptChoice) { setPtEvaluationError("Choose whether you want to continue, change trainer or finish PT."); return; }
+    if (ptChoice === "change" && !ptRequestedTrainerId) { setPtEvaluationError("Choose the trainer you would like to change to."); return; }
+    setPtEvaluationSaving(true);
+    setPtEvaluationError("");
+    setPtEvaluationMessage("");
+    const payload = {
+      membership_id: ptEvaluationMembership.id,
+      member_id: member.id,
+      trainer_staff_profile_id: ptEvaluationAssignment.trainer_staff_profile_id,
+      overall_rating: ptOverall,
+      professionalism_rating: ptProfessionalism,
+      punctuality_rating: ptPunctuality,
+      communication_rating: ptCommunication,
+      coaching_quality_rating: ptCoaching,
+      motivation_rating: ptMotivation,
+      program_consistency: ptConsistent,
+      comments: ptComments.trim() || null,
+      continuation_choice: ptChoice,
+      requested_trainer_staff_profile_id: ptChoice === "change" ? ptRequestedTrainerId : null,
+      change_reason: ptChoice === "change" ? (ptChangeReason.trim() || null) : null,
+    };
+    const { data, error: submitError } = await supabase.from("pt_evaluations").insert(payload).select("membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,submitted_at").single();
+    if (submitError) {
+      setPtEvaluationError(submitError.message);
+    } else {
+      setPtEvaluations((previous) => [data as PtEvaluation, ...previous]);
+      setPtEvaluationMessage(ptChoice === "continue" ? "Thanks. Your feedback and request to continue with this trainer were sent to management." : ptChoice === "change" ? "Thanks. Your feedback and trainer-change request were sent to management." : "Thanks. Your PT feedback was sent to management.");
+    }
+    setPtEvaluationSaving(false);
+  }
 
   const stats = useMemo(() => {
     const currentWeekStart = startOfWeek(today);
@@ -422,16 +534,42 @@ export function MemberDashboardV2() {
             <Button variant="outline" className="h-12 rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => setShowPlans((value) => !value)}><RefreshCw className="size-4"/> Renew</Button>
           </div>
           {showPlans && <div className="mt-5 rounded-2xl bg-white p-4 text-[#20362a]">
-            <div className="grid gap-2 sm:grid-cols-2">{membershipPlans.map((plan) => <button key={plan.id} type="button" onClick={() => setSelectedPlan(plan.id)}
+            <div className="grid gap-2 sm:grid-cols-2">{membershipPlans.map((plan) => <button key={plan.id} type="button" onClick={() => { setSelectedPlan(plan.id); setPaymentError(""); }}
               className={(selectedPlan === plan.id ? "border-[#26743d] bg-[#eaf5e7]" : "border-[#dce6d9]") + " rounded-xl border p-3 text-left"}>
               <span className="flex items-start justify-between gap-2"><span className="font-display text-base font-black uppercase">{plan.name}</span><span className="text-sm font-black">{formatNaira(plan.price)}</span></span>
               <span className="mt-1 block text-[11px] text-[#6b786f]">{plan.duration}</span>
             </button>)}</div>
+            {selectedPlan === "personal-training" && <label className="mt-3 block text-xs font-black">Personal trainer<select value={selectedTrainerId} onChange={(event) => { setSelectedTrainerId(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm font-bold"><option value="">Choose a coach</option>{ptTrainers.map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select><span className="mt-1.5 block font-normal text-[#6b786f]">Your most recent PT coach is preselected when available. You can change the coach before checkout.</span></label>}
             <label className="mt-3 block text-xs font-black">Coupon code (optional)<input value={coupon} onChange={(event) => { setCoupon(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] px-3 py-3 text-sm" placeholder="Enter coupon code"/></label>
             {paymentError && <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">{paymentError}</p>}
             <Button className="mt-3 w-full rounded-xl" disabled={!selectedPlan || paymentLoading} onClick={handlePayment}>{paymentLoading ? <><Loader2 className="size-4 animate-spin"/> Preparing...</> : <>Continue to Paystack <CreditCard className="size-4"/></>}</Button>
           </div>}
         </section>
+
+        {ptEvaluationMembership && ptEvaluationAssignment && ptEvaluationCoach && <section className="rounded-[24px] border border-[#cfe0c9] bg-white p-5 sm:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Personal training review</p><h2 className="mt-1 font-display text-2xl font-black uppercase">How was training with {ptEvaluationCoach.display_name}?</h2><p className="mt-2 text-xs leading-5 text-[#68776c]">{evaluationDays !== null && evaluationDays >= 0 ? (evaluationDays === 0 ? "Your PT cycle expires today." : `Your PT cycle expires in ${evaluationDays} day${evaluationDays === 1 ? "" : "s"}.`) : `Your PT cycle ended ${Math.abs(evaluationDays || 0)} day${Math.abs(evaluationDays || 0) === 1 ? "" : "s"} ago.`} One evaluation is allowed for this PT cycle.</p></div><Star className="size-7 shrink-0 text-[#b58a2e]"/></div>
+          {ptEvaluationMessage ? <div className="mt-5 rounded-2xl bg-[#edf6e9] p-4 text-sm font-semibold text-[#356942]">{ptEvaluationMessage}</div> : <>
+            <div className="mt-5"><p className="text-xs font-black">Overall rating</p><div className="mt-2 flex gap-2">{[1,2,3,4,5].map((rating) => <button key={rating} type="button" aria-label={`Rate ${rating} out of 5`} onClick={() => { setPtOverall(rating); setPtEvaluationError(""); }} className={(ptOverall >= rating ? "bg-[#fff4c9] text-[#a97918] border-[#e4c46f]" : "bg-white text-[#a8afa9] border-[#d9e1d6]") + " grid size-10 place-items-center rounded-xl border"}><Star className="size-5" fill={ptOverall >= rating ? "currentColor" : "none"}/></button>)}</div></div>
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">{[
+              ["Professionalism", ptProfessionalism, setPtProfessionalism],
+              ["Punctuality", ptPunctuality, setPtPunctuality],
+              ["Communication", ptCommunication, setPtCommunication],
+              ["Coaching", ptCoaching, setPtCoaching],
+              ["Motivation", ptMotivation, setPtMotivation],
+            ].map(([label, value, setter]) => <label key={String(label)} className="text-[10px] font-black uppercase text-[#6c7b70]">{String(label)}<select value={Number(value)} onChange={(event) => (setter as (value:number)=>void)(Number(event.target.value))} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-2 py-2.5 text-sm font-black">{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}/5</option>)}</select></label>)}</div>
+            <label className="mt-4 flex items-start gap-3 rounded-xl bg-[#f4f7f1] p-4 text-xs leading-5"><input type="checkbox" checked={ptConsistent} onChange={(event) => setPtConsistent(event.target.checked)} className="mt-0.5 size-4"/><span><strong>Programme consistency:</strong> the trainer followed the agreed training programme consistently.</span></label>
+            <label className="mt-4 block text-xs font-black">Comments (optional)<textarea rows={3} maxLength={2000} value={ptComments} onChange={(event) => setPtComments(event.target.value)} placeholder="What went well, or what could be improved?" className="mt-1.5 w-full rounded-xl border border-[#dce6d9] p-3 text-sm font-normal outline-none"/></label>
+            <div className="mt-5"><p className="text-xs font-black">What would you like to do next?</p><div className="mt-2 grid gap-2 sm:grid-cols-3">{[
+              ["continue","Continue with " + ptEvaluationCoach.display_name],
+              ["change","Change trainer"],
+              ["finish","Finish PT"],
+            ].map(([value,label]) => <button key={value} type="button" onClick={() => { setPtChoice(value as "continue"|"change"|"finish"); setPtRequestedTrainerId(""); setPtEvaluationError(""); }} className={(ptChoice === value ? "border-[#2f7746] bg-[#eaf5e7] text-[#255f37]" : "border-[#dce6d9] bg-white") + " rounded-xl border px-3 py-3 text-xs font-black"}>{label}</button>)}</div></div>
+            {ptChoice === "change" && <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-black">Preferred trainer<select value={ptRequestedTrainerId} onChange={(event) => setPtRequestedTrainerId(event.target.value)} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm"><option value="">Choose another coach</option>{ptTrainers.filter((trainer) => trainer.staff_profile_id !== ptEvaluationAssignment.trainer_staff_profile_id).map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select></label><label className="text-xs font-black">Reason (optional)<input maxLength={1000} value={ptChangeReason} onChange={(event) => setPtChangeReason(event.target.value)} placeholder="Schedule, training style, progress..." className="mt-1.5 w-full rounded-xl border border-[#dce6d9] px-3 py-3 text-sm font-normal"/></label></div>}
+            {ptEvaluationError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{ptEvaluationError}</p>}
+            <Button className="mt-5 w-full rounded-xl" disabled={ptEvaluationSaving} onClick={() => void submitPtEvaluation()}>{ptEvaluationSaving ? <><Loader2 className="size-4 animate-spin"/> Sending feedback...</> : "Submit PT evaluation"}</Button>
+          </>}
+        </section>}
 
         <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
