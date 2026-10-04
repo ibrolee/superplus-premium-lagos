@@ -162,8 +162,8 @@ function ManagementMemberFeedback() {
 
   return (
     <AdminWorkspaceShell
-      title="Member Feedback"
-      subtitle="Review confidential suggestions and issue reports submitted by active Super Plus members."
+      title="Member Reports & Suggestions"
+      subtitle="Review confidential member suggestions and reports about coaches, staff, equipment, facilities, payments, safety and the gym experience."
       active="/management-member-feedback"
     >
       <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
