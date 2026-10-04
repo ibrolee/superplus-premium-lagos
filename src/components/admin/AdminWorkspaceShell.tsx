@@ -165,9 +165,10 @@ export const adminGroups: Group[] = [
       },
       {
         label: "Staff management",
-        href: "/staff-admin#staff",
+        href: "/management-staff-management",
         icon: ShieldCheck,
-        keywords: "staff profiles titles positions in-house coach part-time coach roles access employment",
+        ownerOrAdmin: true,
+        keywords: "staff profiles titles positions in-house coach part-time coach roles employment salary",
       },
     ],
   },
