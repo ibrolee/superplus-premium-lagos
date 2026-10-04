@@ -198,12 +198,14 @@ export const adminGroups: Group[] = [
       {
         label: "Payroll records",
         href: "/management-payroll",
+        ownerOrAdmin: true,
         icon: Wallet,
         keywords: "wages salaries salary payments",
       },
       {
         label: "Payroll export",
         href: "/management-payroll-export",
+        ownerOrAdmin: true,
         icon: FileDown,
         keywords: "download salary csv",
       },

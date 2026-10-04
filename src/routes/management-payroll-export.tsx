@@ -67,7 +67,7 @@ function PayrollExport() {
         if (authError || !auth.user) throw Error("Please sign in through the Staff Portal first.");
         const { data: account, error: accountError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
         if (accountError) throw accountError;
-        if (!account?.active || !["admin", "owner", "manager"].includes(String(account.role || "").toLowerCase())) throw Error("Only active management accounts can export salary records.");
+        if (!account?.active || !["admin", "owner"].includes(String(account.role || "").toLowerCase())) throw Error("Only active admin or owner accounts can export salary records.");
         const [profiles, salaries] = await Promise.all([
           allRows<Staff>("staff_profiles", "id,staff_id,full_name,position"),
           allRows<Salary>("staff_salary_records", "id,staff_profile_id,amount,currency,status,pay_period_start,pay_period_end,payment_date,created_at"),

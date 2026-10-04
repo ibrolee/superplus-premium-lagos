@@ -38,6 +38,7 @@ function ManagementPersonalTraining() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
+  const [canViewPayroll, setCanViewPayroll] = useState(false);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutPeriodStart, setPayoutPeriodStart] = useState(currentPayPeriodStart());
   const [payoutPool, setPayoutPool] = useState<string | null>(null);
@@ -60,6 +61,13 @@ function ManagementPersonalTraining() {
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
+
+    setCanViewPayroll(false);
+    const { data: auth } = await supabase.auth.getUser();
+    const { data: account } = auth.user
+      ? await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle()
+      : { data: null };
+    setCanViewPayroll(!!account?.active && ["admin", "owner"].includes(account.role));
 
     const [membershipResult, trainerResult, staffTitleResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
       supabase
@@ -619,7 +627,7 @@ function ManagementPersonalTraining() {
         )}
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
+      {canViewPayroll && <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
         <button
           type="button"
           aria-expanded={payoutOpen}
@@ -934,7 +942,7 @@ function ManagementPersonalTraining() {
             )}
           </>
         )}
-      </section>
+      </section>}
 
       <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
         <button
