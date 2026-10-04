@@ -244,12 +244,17 @@ function ManagementPersonalTraining() {
     const coachEvaluations = evaluations.filter(
       (row) => row.trainer_staff_profile_id === trainer.staff_profile_id,
     );
+    const traineeCount = memberships.filter(
+      (row) =>
+        isCurrent(row) &&
+        assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+    ).length;
     const average = coachEvaluations.length
       ? coachEvaluations.reduce((sum, row) => sum + Number(row.overall_rating || 0), 0) /
         coachEvaluations.length
       : 0;
     const continued = coachEvaluations.filter((row) => row.continuation_choice === "continue").length;
-    return { trainer, count: coachEvaluations.length, average, continued };
+    return { trainer, count: coachEvaluations.length, traineeCount, average, continued };
   });
 
   async function assignCoach(membershipId: string, trainerId: string) {
@@ -346,15 +351,20 @@ function ManagementPersonalTraining() {
           </button>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {trainerStats.map(({ trainer, count, average, continued }) => (
+          {trainerStats.map(({ trainer, count, traineeCount, average, continued }) => (
             <article key={trainer.staff_profile_id} className="rounded-2xl bg-[#f4f7f1] p-4">
               <div className="flex items-center gap-3">
                 <span className="grid size-10 place-items-center rounded-xl bg-[#193b2a] text-white">
                   <Dumbbell size={18} />
                 </span>
-                <div>
-                  <h3 className="font-black">{trainer.display_name}</h3>
-                  <p className="text-xs text-[#68796d]">{count} evaluation{count === 1 ? "" : "s"}</p>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-black">{trainer.display_name}</h3>
+                    <span className="rounded-full bg-[#dfeedd] px-2.5 py-1 text-[10px] font-black text-[#2f7746]">
+                      {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-[#68796d]">{count} evaluation{count === 1 ? "" : "s"}</p>
                 </div>
               </div>
               <p className="mt-4 text-2xl font-black">
