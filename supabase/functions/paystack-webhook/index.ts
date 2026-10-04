@@ -53,6 +53,17 @@ Deno.serve(async (request: Request) => {
         console.error('Webhook member finalization failed:', { reference, code: error?.code, message: error?.message });
         return json({ error: 'Member finalization failed; Paystack should retry' }, 503);
       }
+      if (meta.plan_id === 'personal-training' && typeof meta.trainer_staff_profile_id === 'string' && meta.trainer_staff_profile_id) {
+        const { error: trainerError } = await admin.rpc('ensure_pt_assignment_for_service', {
+          p_membership_id: data.membership_id,
+          p_trainer_staff_profile_id: meta.trainer_staff_profile_id,
+          p_assigned_by: meta.auth_user_id,
+        });
+        if (trainerError) {
+          console.error('Webhook PT trainer assignment failed:', { reference, code: trainerError.code, message: trainerError.message });
+          return json({ error: 'PT trainer assignment failed; Paystack should retry' }, 503);
+        }
+      }
       return json({ received: true, already_processed: data.already_processed === true });
     }
     if (meta.source === 'public_join') {
