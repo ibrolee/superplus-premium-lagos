@@ -37,6 +37,14 @@ Deno.serve(async (request: Request) => {
 
     const metadata:Record<string,unknown>={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
       plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null,client:mobileClient?'mobile':'web'};
+    if(planId==='personal-training'){
+      const trainerId=String(body?.trainerStaffProfileId||'').trim();
+      if(trainerId){
+        const {data:trainer,error:trainerError}=await admin.from('pt_trainers').select('staff_profile_id').eq('staff_profile_id',trainerId).eq('active',true).maybeSingle();
+        if(trainerError||!trainer)return response({error:'The selected personal trainer is not available. Choose another coach or assign later.'},409);
+        metadata.trainer_staff_profile_id=trainerId;
+      }
+    }
     if(planId==='family'){
       const {data:groups,error:groupError}=await admin.from('family_groups').select('id').eq('primary_member_id',member.id).order('created_at',{ascending:false}).limit(1);
       if(groupError)return response({error:'Family membership check is temporarily unavailable. No payment has started.'},503);

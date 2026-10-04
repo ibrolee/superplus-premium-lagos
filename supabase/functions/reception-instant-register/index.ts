@@ -54,7 +54,7 @@ Deno.serve(async (req: Request) => {
       return json(data as Record<string, unknown>, 201);
     }
 
-    const { data, error } = await admin.rpc('reception_complete_registration', {
+    const { data, error } = await admin.rpc('reception_complete_registration_with_pt', {
       p_actor_id: identity.user.id,
       p_full_name: String(body?.fullName || ''),
       p_email: String(body?.email || ''),
@@ -71,6 +71,7 @@ Deno.serve(async (req: Request) => {
       p_member_id: body?.memberId || null,
       p_coupon_code: String(body?.couponCode || ''),
       p_discount_percentage: Number(body?.discountPercentage ?? 0),
+      p_trainer_staff_profile_id: body?.trainerStaffProfileId || null,
     });
 
     if (error) return json({ error: error.message || 'Payment could not be recorded. Check the member directory before retrying.' }, 400);

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   ClipboardList,
   CreditCard,
+  Dumbbell,
   FileDown,
   Home,
   Images,
@@ -154,6 +155,18 @@ export const adminGroups: Group[] = [
         href: "/management-staff",
         icon: Users,
         keywords: "employees attendance report",
+      },
+    ],
+  },
+  {
+    name: "Personal Training",
+    icon: Dumbbell,
+    tools: [
+      {
+        label: "PT management",
+        href: "/management-personal-training",
+        icon: Dumbbell,
+        keywords: "personal training pt coaches trainers assignments evaluations renew change trainer expiry",
       },
     ],
   },

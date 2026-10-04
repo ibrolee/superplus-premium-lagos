@@ -36,8 +36,18 @@ Deno.serve(async(req:Request)=>{
    if(matches>1)return respond({error:'Multiple gym profiles use this email. Ask reception to correct the duplicate email records before paying online. No payment has started.'},409);
   }
 
+  let trainerId='';
+  if(planId==='personal-training'){
+   trainerId=String(body?.trainerStaffProfileId||'').trim();
+   if(trainerId){
+    const {data:trainer,error:trainerError}=await admin.from('pt_trainers').select('staff_profile_id').eq('staff_profile_id',trainerId).eq('active',true).maybeSingle();
+    if(trainerError||!trainer)return respond({error:'The selected personal trainer is not available. Choose another coach or assign later.'},409);
+   }
+  }
+
   const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
   const metadata:Record<string,unknown>={source:'public_join',reference,plan_id:planId,plan_name:plan.name,membership_amount_naira:pricing.membershipAmount,registration_amount_naira:pricing.registrationAmount,total_amount_naira:pricing.totalAmount,coupon_code:pricing.couponCode,duration_days:plan.durationDays};
+  if(trainerId)metadata.trainer_staff_profile_id=trainerId;
   if(familyMembers)metadata.family_members=familyMembers;
   else Object.assign(metadata,{full_name:name,email,phone,birth_day:birthDay,birth_month:birthMonth});
   const transaction=await fetch('https://api.paystack.co/transaction/initialize',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({email,amount:pricing.totalAmount*100,currency:'NGN',reference,callback_url:'https://superplusfitness.com/payment/public-callback',metadata})});

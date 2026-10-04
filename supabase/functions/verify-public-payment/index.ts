@@ -37,10 +37,11 @@ Deno.serve(async(req:Request)=>{
   const email=String(metadata.email||'').trim().toLowerCase(),name=String(metadata.full_name||'').trim(),phone=String(metadata.phone||'').trim();
   const day=Number(metadata.birth_day),month=Number(metadata.birth_month);
   if(!email.includes('@')||!name||!phone||!Number.isInteger(day)||day<1||day>31||!Number.isInteger(month)||month<1||month>12||String(txn.customer?.email||'').trim().toLowerCase()!==email)return respond({error:'Customer details do not match the verified transaction.'},400);
-  const {data,error}=await admin.rpc('finalize_public_join_payment',{
+  const {data,error}=await admin.rpc('finalize_public_join_payment_with_pt',{
    p_reference:reference,p_plan_id:planId,p_full_name:name,p_email:email,p_phone:phone,p_birth_day:day,p_birth_month:month,
    p_paid_at:txn.paid_at||null,p_channel:String(txn.channel||''),p_customer_code:String(txn.customer?.customer_code||''),
    p_coupon_code:pricing.couponCode||'',p_verified_amount_kobo:Number(txn.amount),
+   p_trainer_staff_profile_id:planId==='personal-training'?(metadata.trainer_staff_profile_id||null):null,
   });
   if(error){console.error('Verified Paystack payment could not be recorded',{reference,error});return respond({error:'Payment succeeded, but recording is not complete. Do not pay again. Contact the gym with your Paystack reference.'},503);}
   if(!data?.success)return respond({error:'Payment record is uncertain. Contact reception with your reference; do not pay again.'},503);
