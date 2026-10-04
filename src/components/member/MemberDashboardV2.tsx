@@ -160,6 +160,13 @@ export function MemberDashboardV2() {
   const [ptEvaluationSaving, setPtEvaluationSaving] = useState(false);
   const [ptEvaluationError, setPtEvaluationError] = useState("");
   const [ptEvaluationMessage, setPtEvaluationMessage] = useState("");
+  const [ptReportOpen, setPtReportOpen] = useState(false);
+  const [ptReportCategory, setPtReportCategory] = useState("training_quality");
+  const [ptReportDetails, setPtReportDetails] = useState("");
+  const [ptReportIncidentDate, setPtReportIncidentDate] = useState("");
+  const [ptReportSaving, setPtReportSaving] = useState(false);
+  const [ptReportError, setPtReportError] = useState("");
+  const [ptReportMessage, setPtReportMessage] = useState("");
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<DashboardTab>("home");
   const [showPlans, setShowPlans] = useState(false);
@@ -326,6 +333,13 @@ export function MemberDashboardV2() {
   const ptEvaluationAssignment = ptEvaluationMembership ? ptAssignmentMap.get(ptEvaluationMembership.id) || null : null;
   const ptEvaluationCoach = ptEvaluationAssignment ? ptTrainerMap.get(ptEvaluationAssignment.trainer_staff_profile_id) || null : null;
   const evaluationDays = ptEvaluationMembership?.end_date ? daysBetween(today, dateOnly(ptEvaluationMembership.end_date)) : null;
+  const ptReportMembership = ptMemberships.find((row) => {
+    const start = dateOnly(row.start_date);
+    const end = dateOnly(row.end_date);
+    return !!start && !!end && start <= today && today <= end && ptAssignmentMap.has(row.id);
+  }) || null;
+  const ptReportAssignment = ptReportMembership ? ptAssignmentMap.get(ptReportMembership.id) || null : null;
+  const ptReportCoach = ptReportAssignment ? ptTrainerMap.get(ptReportAssignment.trainer_staff_profile_id) || null : null;
   const isActive = Boolean(startDate && expiryDate && startDate <= today && today <= expiryDate);
   const daysRemaining = isActive ? Math.max(0, daysBetween(today, expiryDate) ?? 0) : 0;
   const totalDays = daysBetween(startDate, expiryDate);
@@ -381,6 +395,36 @@ export function MemberDashboardV2() {
       setPtEvaluationMessage(ptChoice === "continue" ? "Thanks. Your feedback and request to continue with this trainer were sent to management." : ptChoice === "change" ? "Thanks. Your feedback and trainer-change request were sent to management." : "Thanks. Your PT feedback was sent to management.");
     }
     setPtEvaluationSaving(false);
+  }
+
+  async function submitPtCoachReport() {
+    if (!member || !ptReportMembership || !ptReportAssignment) return;
+    const details = ptReportDetails.trim();
+    if (details.length < 10) {
+      setPtReportError("Please describe what happened in at least 10 characters.");
+      return;
+    }
+    setPtReportSaving(true);
+    setPtReportError("");
+    setPtReportMessage("");
+    const { error: reportError } = await supabase.from("pt_coach_reports").insert({
+      membership_id: ptReportMembership.id,
+      member_id: member.id,
+      coach_staff_profile_id: ptReportAssignment.trainer_staff_profile_id,
+      category: ptReportCategory,
+      details,
+      incident_date: ptReportIncidentDate || null,
+    });
+    if (reportError) {
+      setPtReportError(reportError.message);
+    } else {
+      setPtReportMessage("Your confidential report has been sent to Super Plus management.");
+      setPtReportDetails("");
+      setPtReportIncidentDate("");
+      setPtReportCategory("training_quality");
+      setPtReportOpen(false);
+    }
+    setPtReportSaving(false);
   }
 
   const stats = useMemo(() => {
@@ -690,7 +734,58 @@ export function MemberDashboardV2() {
           <div className="rounded-[24px] border border-[#d6e8d4] bg-white p-5">
             <div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Personal training</p><h2 className="mt-1 font-display text-2xl font-black uppercase">{isPtMember ? "Your PT access" : "Train with a coach"}</h2></div><Dumbbell className="size-6 text-[#2f7746]"/></div>
             <p className="mt-3 text-xs leading-5 text-[#68776c]">{isPtMember ? "Your current plan includes personal training. Request the next available session from the team." : "Personal training can add structured coaching, form guidance and accountability."}</p>
-            <div className="mt-4 flex flex-wrap gap-2"><a href={"https://wa.me/" + receptionPhone + "?text=" + encodeURIComponent(ptMessage)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1f6338] px-4 py-3 text-xs font-black text-white"><MessageCircle className="size-4"/> Request session</a><Link to="/personal-training" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#cfdccf] px-4 py-3 text-xs font-black">Learn more <ArrowRight className="size-4"/></Link></div>
+            {ptReportCoach && <p className="mt-3 rounded-xl bg-[#f3f7f1] px-3 py-2 text-xs font-semibold text-[#50645a]">Assigned coach: <strong>{ptReportCoach.display_name}</strong></p>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a href={"https://wa.me/" + receptionPhone + "?text=" + encodeURIComponent(ptMessage)} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[#1f6338] px-4 py-3 text-xs font-black text-white"><MessageCircle className="size-4"/> Request session</a>
+              <Link to="/personal-training" className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#cfdccf] px-4 py-3 text-xs font-black">Learn more <ArrowRight className="size-4"/></Link>
+              {ptReportMembership && ptReportAssignment && ptReportCoach && (
+                <button type="button" onClick={() => { setPtReportOpen((open) => !open); setPtReportError(""); setPtReportMessage(""); }} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-black text-red-700">
+                  <AlertCircle className="size-4"/> Report coach
+                </button>
+              )}
+            </div>
+
+            {!!ptReportMessage && <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">{ptReportMessage}</div>}
+
+            {ptReportOpen && ptReportMembership && ptReportAssignment && ptReportCoach && (
+              <div className="mt-4 rounded-2xl border border-red-100 bg-[#fff9f7] p-4">
+                <div className="flex items-start gap-3 rounded-xl border border-[#ead9d4] bg-white p-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white"><ShieldCheck className="size-4"/></span>
+                  <div>
+                    <p className="text-xs font-black text-[#244f32]">Confidential report to management</p>
+                    <p className="mt-1 text-xs leading-5 text-[#66746b]">Your coach cannot see this report, your written response, or who submitted it through the coach dashboard. Only Super Plus management can access the report and may contact you privately if follow-up is needed.</p>
+                  </div>
+                </div>
+                <p className="mt-3 text-xs leading-5 text-[#6b746d]">You can report any concern during your active PT membership, including conduct, safety, lateness, communication or training issues.</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-black">What is this about?
+                    <select value={ptReportCategory} onChange={(event) => setPtReportCategory(event.target.value)} className="mt-1.5 w-full rounded-xl border border-[#decfcb] bg-white px-3 py-3 text-sm font-semibold">
+                      <option value="training_quality">Training quality</option>
+                      <option value="punctuality">Punctuality / attendance</option>
+                      <option value="communication">Communication</option>
+                      <option value="conduct">Coach conduct</option>
+                      <option value="safety">Safety concern</option>
+                      <option value="inappropriate_behaviour">Inappropriate behaviour</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </label>
+                  <label className="text-xs font-black">Incident date <span className="font-normal text-[#7a837d]">(optional)</span>
+                    <input type="date" max={today} value={ptReportIncidentDate} onChange={(event) => setPtReportIncidentDate(event.target.value)} className="mt-1.5 w-full rounded-xl border border-[#decfcb] bg-white px-3 py-3 text-sm font-semibold"/>
+                  </label>
+                </div>
+                <label className="mt-3 block text-xs font-black">Tell management what happened
+                  <textarea value={ptReportDetails} onChange={(event) => { setPtReportDetails(event.target.value); setPtReportError(""); }} maxLength={3000} rows={5} placeholder="Describe the issue clearly. Include anything management should know..." className="mt-1.5 w-full resize-y rounded-xl border border-[#decfcb] bg-white p-3 text-sm font-normal leading-6"/>
+                </label>
+                <div className="mt-1 text-right text-[10px] text-[#7b837e]">{ptReportDetails.length}/3000</div>
+                {!!ptReportError && <p className="mt-3 rounded-xl bg-red-100 p-3 text-xs font-semibold text-red-800">{ptReportError}</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button disabled={ptReportSaving} onClick={() => void submitPtCoachReport()} className="rounded-xl bg-[#8f2f2f] hover:bg-[#7b2828]">
+                    {ptReportSaving ? <><Loader2 className="size-4 animate-spin"/> Sending report...</> : <><ShieldCheck className="size-4"/> Send confidential report</>}
+                  </Button>
+                  <Button variant="outline" disabled={ptReportSaving} onClick={() => { setPtReportOpen(false); setPtReportError(""); }}>Cancel</Button>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
