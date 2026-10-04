@@ -288,7 +288,6 @@ export function MemberDashboardV2() {
   }
   async function handlePayment() {
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
-    if (selectedPlan === "personal-training" && !selectedTrainerId) { setPaymentError("Please choose your personal trainer."); return; }
     if (selectedPlan === "family") { window.location.href = "/member-family"; return; }
     const cleanCoupon = coupon.trim().toUpperCase();
     setPaymentLoading(true);
@@ -539,7 +538,7 @@ export function MemberDashboardV2() {
               <span className="flex items-start justify-between gap-2"><span className="font-display text-base font-black uppercase">{plan.name}</span><span className="text-sm font-black">{formatNaira(plan.price)}</span></span>
               <span className="mt-1 block text-[11px] text-[#6b786f]">{plan.duration}</span>
             </button>)}</div>
-            {selectedPlan === "personal-training" && <label className="mt-3 block text-xs font-black">Personal trainer<select value={selectedTrainerId} onChange={(event) => { setSelectedTrainerId(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm font-bold"><option value="">Choose a coach</option>{ptTrainers.map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select><span className="mt-1.5 block font-normal text-[#6b786f]">Your most recent PT coach is preselected when available. You can change the coach before checkout.</span></label>}
+            {selectedPlan === "personal-training" && <label className="mt-3 block text-xs font-black">Personal trainer<select value={selectedTrainerId} onChange={(event) => { setSelectedTrainerId(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm font-bold"><option value="">Assign later</option>{ptTrainers.map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select><span className="mt-1.5 block font-normal text-[#6b786f]">Your most recent PT coach is preselected when available. You can change the coach or choose “Assign later”; management can assign one from PT Management.</span></label>}
             <label className="mt-3 block text-xs font-black">Coupon code (optional)<input value={coupon} onChange={(event) => { setCoupon(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] px-3 py-3 text-sm" placeholder="Enter coupon code"/></label>
             {paymentError && <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">{paymentError}</p>}
             <Button className="mt-3 w-full rounded-xl" disabled={!selectedPlan || paymentLoading} onClick={handlePayment}>{paymentLoading ? <><Loader2 className="size-4 animate-spin"/> Preparing...</> : <>Continue to Paystack <CreditCard className="size-4"/></>}</Button>
