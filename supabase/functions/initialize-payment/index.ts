@@ -46,7 +46,8 @@ Deno.serve(async (request: Request) => {
         const {data:assignment}=await admin.from('pt_assignments').select('trainer_staff_profile_id').eq('member_id',member.id).order('updated_at',{ascending:false}).limit(1).maybeSingle();
         if(assignment?.trainer_staff_profile_id)trainerId=String(assignment.trainer_staff_profile_id);
       }
-      if(trainerId)metadata.trainer_staff_profile_id=trainerId;
+      if(!trainerId)return response({error:'Choose your personal trainer before starting PT payment.'},400);
+      metadata.trainer_staff_profile_id=trainerId;
     }
     if(planId==='family'){
       const {data:groups,error:groupError}=await admin.from('family_groups').select('id').eq('primary_member_id',member.id).order('created_at',{ascending:false}).limit(1);
