@@ -26,6 +26,7 @@ type Trainer = {
   display_name: string;
   active: boolean;
   sort_order: number;
+  staff_title: string | null;
 };
 
 type Member = {
@@ -198,7 +199,7 @@ function ManagementPersonalTraining() {
     setLoading(true);
     setError("");
 
-    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
+    const [membershipResult, trainerResult, staffTitleResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -209,6 +210,9 @@ function ManagementPersonalTraining() {
         .from("pt_trainers")
         .select("staff_profile_id,display_name,active,sort_order")
         .order("sort_order", { ascending: true }),
+      supabase
+        .from("staff_profiles")
+        .select("id,position"),
       supabase
         .from("pt_assignments")
         .select("membership_id,member_id,trainer_staff_profile_id,updated_at")
@@ -230,7 +234,7 @@ function ManagementPersonalTraining() {
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
+      membershipResult.error || trainerResult.error || staffTitleResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -259,9 +263,18 @@ function ManagementPersonalTraining() {
       nextMembers = (memberResult.data || []) as Member[];
     }
 
+    const staffTitleMap = new Map(
+      (staffTitleResult.data || []).map((row) => [row.id, row.position || null] as const),
+    );
+
     setMemberships(nextMemberships);
     setMembers(nextMembers);
-    setTrainers((trainerResult.data || []) as Trainer[]);
+    setTrainers(
+      (trainerResult.data || []).map((trainer) => ({
+        ...trainer,
+        staff_title: staffTitleMap.get(trainer.staff_profile_id) || null,
+      })) as Trainer[],
+    );
     setAssignments((assignmentResult.data || []) as Assignment[]);
     setEvaluations((evaluationResult.data || []) as Evaluation[]);
     setCoachReports(nextReports);
@@ -394,7 +407,11 @@ function ManagementPersonalTraining() {
   });
 
   const payoutCalculation = useMemo(() => {
-    const activeTrainers = trainers.filter((trainer) => trainer.active);
+    const activeTrainers = trainers.filter(
+      (trainer) =>
+        trainer.active &&
+        trainer.staff_title?.trim().toLowerCase() === "in-house coach",
+    );
     const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
     const pool = Math.max(0, Number(payoutPool || 0));
     const measurementEnd = monthEnd < today ? monthEnd : today;
@@ -726,6 +743,16 @@ function ManagementPersonalTraining() {
                       <span className="rounded-full bg-[#dfeedd] px-2.5 py-1 text-[10px] font-black text-[#2f7746]">
                         {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
                       </span>
+                      <span
+                        className={
+                          "rounded-full px-2.5 py-1 text-[10px] font-black " +
+                          (trainer.staff_title?.trim().toLowerCase() === "part-time coach"
+                            ? "bg-violet-100 text-violet-800"
+                            : "bg-[#eef2eb] text-[#526357]")
+                        }
+                      >
+                        {trainer.staff_title || "Coach"}
+                      </span>
                     </div>
                     <p className="mt-0.5 text-xs text-[#68796d]">
                       {count} evaluation{count === 1 ? "" : "s"}
@@ -837,9 +864,10 @@ function ManagementPersonalTraining() {
         {payoutOpen && (
           <>
             <p className="mt-4 text-xs leading-5 text-[#67776c]">
-              Enter the amount management has decided is available to pay PT coaches for the month.
-              The calculator recommends a split using 50% equal team share, 30% assigned-trainee workload
-              and 20% performance. Cover sessions are not included.
+              Enter the amount management has decided is available for <strong>in-house coaches</strong> for the month.
+              The calculator splits only that in-house pool using 50% equal team share, 30% assigned-trainee workload
+              and 20% performance. Part-time coaches are excluded completely and are settled separately by management.
+              Cover sessions are not included.
             </p>
 
             <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
@@ -854,7 +882,7 @@ function ManagementPersonalTraining() {
             />
           </label>
           <label className="text-xs font-black">
-            Total PT coach payout amount
+            In-house coach payout pool
             <input
               type="number"
               min="0"
@@ -866,7 +894,7 @@ function ManagementPersonalTraining() {
               className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
             />
             <span className="mt-1.5 block font-normal text-[#728077]">
-              This is the amount available for coaches after Super Plus has done its own monthly calculations.
+              This amount is shared only among staff titled In-house Coach. Part-time coaches do not reduce or participate in this pool.
             </span>
           </label>
           <button
@@ -895,10 +923,11 @@ function ManagementPersonalTraining() {
         </div>
 
         <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
-          <strong className="text-[#33483a]">Performance rule:</strong> where enough data exists, the performance
-          score is 75% matured 90-day same-coach renewal rate and 25% established trainee rating. A rating only
-          counts after at least 3 evaluations. PT cycles that expired less than 7 days ago are not treated as
-          failed renewals yet. If a coach has no measurable data, the system uses a neutral team-average score.
+          <strong className="text-[#33483a]">In-house performance rule:</strong> only staff titled In-house Coach
+          participate in the 50/30/20 calculation. Where enough data exists, the performance score is 75% matured
+          90-day same-coach renewal rate and 25% established trainee rating. A rating only counts after at least 3
+          evaluations. PT cycles that expired less than 7 days ago are not treated as failed renewals yet. If an
+          in-house coach has no measurable data, the system uses a neutral in-house team-average score.
         </div>
 
         {payoutCalculation.unassignedCount > 0 && (
@@ -915,6 +944,12 @@ function ManagementPersonalTraining() {
           <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
             {payoutMessage}
           </p>
+        )}
+
+        {payoutCalculation.rows.length === 0 && (
+          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
+            No active staff currently have the <strong>In-house Coach</strong> title, so there is nobody to include in the 50/30/20 payout pool.
+          </div>
         )}
 
         <div className="mt-5 grid gap-3 xl:grid-cols-3">
@@ -963,13 +998,24 @@ function ManagementPersonalTraining() {
           ))}
         </div>
 
+        {trainers.some((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach") && (
+          <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-4 text-xs leading-5 text-violet-900">
+            <strong>Part-time coaches:</strong>{" "}
+            {trainers
+              .filter((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach")
+              .map((trainer) => trainer.display_name)
+              .join(", ")}{" "}
+            {trainers.filter((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach").length === 1 ? "is" : "are"} excluded from the 50/30/20 calculation. Management handles their payment separately.
+          </div>
+        )}
+
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#193b2a] px-4 py-3 text-white">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Management-entered payout pool</p>
+            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">In-house coach payout pool</p>
             <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
           </div>
           <p className="max-w-md text-right text-[10px] leading-4 text-white/70">
-            This is a recommendation for management. Saved monthly calculations can be updated later if assignments or figures change.
+            This recommendation covers in-house coaches only. Part-time coach payments remain separate and are not included in this saved split.
           </p>
         </div>
           </>
@@ -1215,7 +1261,7 @@ function ManagementPersonalTraining() {
                         <option value="">Unassigned</option>
                         {trainers.filter((trainer) => trainer.active).map((trainer) => (
                           <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>
-                            {trainer.display_name}
+                            {trainer.display_name}{trainer.staff_title ? ` — ${trainer.staff_title}` : ""}
                           </option>
                         ))}
                       </select>
