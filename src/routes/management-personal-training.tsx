@@ -244,17 +244,54 @@ function ManagementPersonalTraining() {
     const coachEvaluations = evaluations.filter(
       (row) => row.trainer_staff_profile_id === trainer.staff_profile_id,
     );
-    const traineeCount = memberships.filter(
-      (row) =>
-        isCurrent(row) &&
-        assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
-    ).length;
-    const average = coachEvaluations.length
-      ? coachEvaluations.reduce((sum, row) => sum + Number(row.overall_rating || 0), 0) /
-        coachEvaluations.length
+    const currentTraineeIds = new Set(
+      memberships
+        .filter(
+          (row) =>
+            isCurrent(row) &&
+            assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+        )
+        .map((row) => row.member_id),
+    );
+    const traineeCount = currentTraineeIds.size;
+    const count = coachEvaluations.length;
+    const averageOf = (pick: (evaluation: Evaluation) => number) =>
+      count
+        ? coachEvaluations.reduce((sum, row) => sum + Number(pick(row) || 0), 0) / count
+        : 0;
+    const average = averageOf((row) => row.overall_rating);
+    const professionalism = averageOf((row) => row.professionalism_rating);
+    const punctuality = averageOf((row) => row.punctuality_rating);
+    const communication = averageOf((row) => row.communication_rating);
+    const coachingQuality = averageOf((row) => row.coaching_quality_rating);
+    const motivation = averageOf((row) => row.motivation_rating);
+    const programConsistency = count
+      ? (coachEvaluations.filter((row) => row.program_consistency).length / count) * 100
       : 0;
     const continued = coachEvaluations.filter((row) => row.continuation_choice === "continue").length;
-    return { trainer, count: coachEvaluations.length, traineeCount, average, continued };
+    const changed = coachEvaluations.filter((row) => row.continuation_choice === "change").length;
+    const finished = coachEvaluations.filter((row) => row.continuation_choice === "finish").length;
+    const percent = (value: number) => (count ? Math.round((value / count) * 100) : 0);
+    const ratingReady = count >= 3;
+    return {
+      trainer,
+      count,
+      traineeCount,
+      average,
+      professionalism,
+      punctuality,
+      communication,
+      coachingQuality,
+      motivation,
+      programConsistency,
+      continued,
+      changed,
+      finished,
+      continueRate: percent(continued),
+      changeRate: percent(changed),
+      finishRate: percent(finished),
+      ratingReady,
+    };
   });
 
   async function assignCoach(membershipId: string, trainerId: string) {
@@ -350,31 +387,124 @@ function ManagementPersonalTraining() {
             <RefreshCw size={15} /> Refresh
           </button>
         </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {trainerStats.map(({ trainer, count, traineeCount, average, continued }) => (
-            <article key={trainer.staff_profile_id} className="rounded-2xl bg-[#f4f7f1] p-4">
-              <div className="flex items-center gap-3">
-                <span className="grid size-10 place-items-center rounded-xl bg-[#193b2a] text-white">
-                  <Dumbbell size={18} />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-black">{trainer.display_name}</h3>
-                    <span className="rounded-full bg-[#dfeedd] px-2.5 py-1 text-[10px] font-black text-[#2f7746]">
-                      {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
+        <div className="mt-5 grid gap-4 xl:grid-cols-3">
+          {trainerStats.map((stats) => {
+            const {
+              trainer,
+              count,
+              traineeCount,
+              average,
+              professionalism,
+              punctuality,
+              communication,
+              coachingQuality,
+              motivation,
+              programConsistency,
+              continueRate,
+              changeRate,
+              finishRate,
+              ratingReady,
+            } = stats;
+            const categories = [
+              ["Coaching quality", coachingQuality],
+              ["Professionalism", professionalism],
+              ["Communication", communication],
+              ["Punctuality", punctuality],
+              ["Motivation", motivation],
+            ] as const;
+
+            return (
+              <article key={trainer.staff_profile_id} className="rounded-2xl border border-[#e0e9dc] bg-[#f7f9f5] p-4 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white">
+                    <Dumbbell size={19} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-black">{trainer.display_name}</h3>
+                      <span className="rounded-full bg-[#dfeedd] px-2.5 py-1 text-[10px] font-black text-[#2f7746]">
+                        {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-[#68796d]">
+                      {count} evaluation{count === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-white p-4">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
+                        Overall coach rating
+                      </p>
+                      <p className="mt-1 text-3xl font-black">
+                        {count ? average.toFixed(1) : "—"} <span className="text-base text-[#9a7b20]">★</span>
+                      </p>
+                    </div>
+                    <span
+                      className={
+                        "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                        (ratingReady
+                          ? "bg-green-100 text-green-800"
+                          : "bg-amber-100 text-amber-800")
+                      }
+                    >
+                      {ratingReady ? "Established rating" : "Not enough feedback yet"}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-xs text-[#68796d]">{count} evaluation{count === 1 ? "" : "s"}</p>
+                  {!ratingReady && count > 0 && (
+                    <p className="mt-2 text-[11px] leading-5 text-[#6e7c72]">
+                      Rating is provisional until this coach has at least 3 evaluations.
+                    </p>
+                  )}
+                  {!count && (
+                    <p className="mt-2 text-[11px] leading-5 text-[#6e7c72]">
+                      The overall rating will appear after trainees submit feedback.
+                    </p>
+                  )}
                 </div>
-              </div>
-              <p className="mt-4 text-2xl font-black">
-                {count ? average.toFixed(1) : "—"} <span className="text-sm text-[#9a7b20]">★</span>
-              </p>
-              <p className="mt-1 text-xs text-[#68796d]">
-                {count ? `${continued} chose to continue with this trainer` : "No submitted evaluations yet"}
-              </p>
-            </article>
-          ))}
+
+                <div className="mt-4">
+                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
+                    Category averages
+                  </p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {categories.map(([label, value]) => (
+                      <div key={label} className="rounded-xl bg-white p-3">
+                        <p className="text-[9px] font-black uppercase leading-4 text-[#748078]">{label}</p>
+                        <p className="mt-1 text-base font-black">{count ? value.toFixed(1) : "—"} <span className="text-[10px] text-[#9a7b20]">★</span></p>
+                      </div>
+                    ))}
+                    <div className="rounded-xl bg-white p-3">
+                      <p className="text-[9px] font-black uppercase leading-4 text-[#748078]">Programme consistency</p>
+                      <p className="mt-1 text-base font-black">{count ? `${Math.round(programConsistency)}%` : "—"}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
+                    What trainees chose next
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-[#eaf5e7] p-3">
+                      <p className="text-lg font-black text-[#2f7746]">{count ? `${continueRate}%` : "—"}</p>
+                      <p className="mt-1 text-[9px] font-black uppercase text-[#55745d]">Continue</p>
+                    </div>
+                    <div className="rounded-xl bg-amber-50 p-3">
+                      <p className="text-lg font-black text-amber-800">{count ? `${changeRate}%` : "—"}</p>
+                      <p className="mt-1 text-[9px] font-black uppercase text-amber-700">Change</p>
+                    </div>
+                    <div className="rounded-xl bg-[#eef0ec] p-3">
+                      <p className="text-lg font-black text-[#58645d]">{count ? `${finishRate}%` : "—"}</p>
+                      <p className="mt-1 text-[9px] font-black uppercase text-[#6f7972]">Finish PT</p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
