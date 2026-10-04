@@ -162,6 +162,12 @@ const groupedActions = [
         icon: Users,
       },
       {
+        label: "Salary payments",
+        description: "Monthly salaries and both coach PT paydays.",
+        href: "/management-salary-payments",
+        icon: Wallet,
+      },
+      {
         label: "Payroll",
         description: "Salary records and exports.",
         href: "/management-payroll",
