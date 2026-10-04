@@ -100,8 +100,8 @@ type PtPayoutBreakdown = {
   payout_mode?: "full_50_30_20" | "trainee_commission" | "none";
   full_pool_eligible?: boolean;
   trainee_commission?: number;
-  commission_membership_count?: number;
-  commission_membership_ids?: string[];
+  payable_membership_count?: number;
+  payable_membership_ids?: string[];
   team_share: number;
   workload_share: number;
   performance_share: number;
@@ -112,6 +112,8 @@ type PtPayoutRun = {
   id: string;
   period_start: string;
   period_end: string;
+  pay_date: string;
+  auto_payout_pool: number;
   payout_pool: number;
   breakdown: PtPayoutBreakdown[];
   status: "pending" | "paid";
@@ -142,6 +144,53 @@ const addDays = (value: string, days: number) => {
   const date = new Date(value + "T12:00:00Z");
   date.setUTCDate(date.getUTCDate() + days);
   return date.toISOString().slice(0, 10);
+};
+const calendarDate = (year: number, monthIndex: number, day: number) =>
+  new Date(Date.UTC(year, monthIndex, day, 12)).toISOString().slice(0, 10);
+const payPeriodFromStart = (start: string) => {
+  const date = new Date(start + "T12:00:00Z");
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  if (date.getUTCDate() === 1) {
+    return {
+      start: calendarDate(year, month, 1),
+      end: calendarDate(year, month, 15),
+      payDate: calendarDate(year, month, 16),
+      salaryDay: false,
+    };
+  }
+  const nextMonth = calendarDate(year, month + 1, 1);
+  return {
+    start: calendarDate(year, month, 16),
+    end: addDays(nextMonth, -1),
+    payDate: nextMonth,
+    salaryDay: true,
+  };
+};
+const currentPayPeriodStart = () => {
+  const today = lagosToday();
+  const date = new Date(today + "T12:00:00Z");
+  return calendarDate(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate() <= 15 ? 1 : 16,
+  );
+};
+const previousPayPeriodStart = (start: string) => {
+  const date = new Date(start + "T12:00:00Z");
+  if (date.getUTCDate() === 16) {
+    return calendarDate(date.getUTCFullYear(), date.getUTCMonth(), 1);
+  }
+  return calendarDate(date.getUTCFullYear(), date.getUTCMonth() - 1, 16);
+};
+const buildPayPeriodStarts = (count = 14) => {
+  const starts: string[] = [];
+  let cursor = currentPayPeriodStart();
+  for (let index = 0; index < count; index += 1) {
+    starts.push(cursor);
+    cursor = previousPayPeriodStart(cursor);
+  }
+  return starts;
 };
 const formatDate = (value: string) =>
   new Intl.DateTimeFormat("en-NG", {
@@ -256,8 +305,8 @@ function ManagementPersonalTraining() {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
-  const [payoutPeriodStart, setPayoutPeriodStart] = useState(addDays(lagosToday(), -13));
-  const [payoutPool, setPayoutPool] = useState("");
+  const [payoutPeriodStart, setPayoutPeriodStart] = useState(currentPayPeriodStart());
+  const [payoutPool, setPayoutPool] = useState<string | null>(null);
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutMarkingId, setPayoutMarkingId] = useState<string | null>(null);
   const [payoutMessage, setPayoutMessage] = useState("");
@@ -300,8 +349,8 @@ function ManagementPersonalTraining() {
         .select("membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,management_note,submitted_at")
         .order("submitted_at", { ascending: false }),
       supabase
-        .from("pt_biweekly_payout_runs")
-        .select("id,period_start,period_end,payout_pool,breakdown,status,paid_at,created_by,updated_at")
+        .from("pt_semimonthly_payout_runs")
+        .select("id,period_start,period_end,pay_date,auto_payout_pool,payout_pool,breakdown,status,paid_at,created_by,updated_at")
         .order("period_start", { ascending: false })
         .limit(26),
       supabase
@@ -363,11 +412,6 @@ function ManagementPersonalTraining() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    const saved = payoutRuns.find((row) => row.period_start === payoutPeriodStart);
-    setPayoutPool(saved ? String(Number(saved.payout_pool)) : "");
-  }, [payoutPeriodStart, payoutRuns]);
 
   const today = lagosToday();
   const memberMap = useMemo(() => new Map(members.map((row) => [row.id, row])), [members]);
@@ -484,7 +528,8 @@ function ManagementPersonalTraining() {
     };
   });
 
-  const payoutPeriodEnd = addDays(payoutPeriodStart, 13);
+  const selectedPeriod = payPeriodFromStart(payoutPeriodStart);
+  const payoutPeriodOptions = useMemo(() => buildPayPeriodStarts(14), []);
   const selectedPayoutRun = payoutRuns.find(
     (row) => row.period_start === payoutPeriodStart,
   ) || null;
@@ -496,16 +541,17 @@ function ManagementPersonalTraining() {
         trainer.staff_title?.trim().toLowerCase() === "in-house coach",
     );
     const periodStart = payoutPeriodStart;
-    const periodEnd = addDays(periodStart, 13);
-    const pool = Math.max(0, Number(payoutPool || 0));
+    const period = payPeriodFromStart(periodStart);
+    const periodEnd = period.end;
+    const payDate = period.payDate;
     const measurementEnd = periodEnd < today ? periodEnd : today;
     const measurementCutoff = new Date(`${measurementEnd}T23:59:59+01:00`).getTime();
 
-    const previouslyCommissionedMembershipIds = new Set(
+    const previouslyPaidMembershipIds = new Set(
       payoutRuns
         .filter((run) => run.period_start !== periodStart)
         .flatMap((run) =>
-          (run.breakdown || []).flatMap((row) => row.commission_membership_ids || []),
+          (run.breakdown || []).flatMap((row) => row.payable_membership_ids || []),
         ),
     );
 
@@ -514,7 +560,7 @@ function ManagementPersonalTraining() {
         .filter(
           (row) =>
             row.payment_status === "paid" &&
-            row.start_date <= periodEnd &&
+            row.start_date <= measurementEnd &&
             row.end_date >= periodStart &&
             !assignmentMap.has(row.id),
         )
@@ -527,20 +573,20 @@ function ManagementPersonalTraining() {
           .filter(
             (row) =>
               row.payment_status === "paid" &&
-              row.start_date <= periodEnd &&
+              row.start_date <= measurementEnd &&
               row.end_date >= periodStart &&
               assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
           )
           .map((row) => row.member_id),
       );
 
-      const commissionMembershipIds = memberships
+      const payableMembershipIds = memberships
         .filter(
           (row) =>
             row.payment_status === "paid" &&
             row.start_date >= periodStart &&
-            row.start_date <= periodEnd &&
-            !previouslyCommissionedMembershipIds.has(row.id) &&
+            row.start_date <= measurementEnd &&
+            !previouslyPaidMembershipIds.has(row.id) &&
             assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
         )
         .map((row) => row.id);
@@ -551,8 +597,6 @@ function ManagementPersonalTraining() {
         trainer.staff_profile_id,
         measurementEnd,
       );
-      const eligibleRenewals = twoCycleRetention.eligibleClients;
-      const renewedSameTrainer = twoCycleRetention.retainedClients;
       const renewalRate = twoCycleRetention.retentionRate;
       const coachEvaluations = evaluations.filter(
         (row) =>
@@ -575,12 +619,12 @@ function ManagementPersonalTraining() {
       return {
         trainer,
         traineeCount: traineeIds.size,
-        renewalEligible: eligibleRenewals,
-        renewedSameTrainer,
+        renewalEligible: twoCycleRetention.eligibleClients,
+        renewedSameTrainer: twoCycleRetention.retainedClients,
         renewalRate,
         ratingCount: coachEvaluations.length,
         ratingAverage,
-        commissionMembershipIds,
+        payableMembershipIds,
         rawPerformanceIndex: performanceIndex,
       };
     });
@@ -588,6 +632,21 @@ function ManagementPersonalTraining() {
     const fullEligibleRows = rawRows.filter(
       (row) => row.traineeCount >= FULL_PAYOUT_MIN_TRAINEES,
     );
+
+    const autoPool =
+      fullEligibleRows.reduce(
+        (sum, row) => sum + row.payableMembershipIds.length,
+        0,
+      ) * LOW_VOLUME_TRAINEE_COMMISSION;
+
+    const defaultPool = selectedPayoutRun
+      ? Number(selectedPayoutRun.payout_pool)
+      : autoPool;
+    const pool = Math.max(
+      0,
+      payoutPool === null ? defaultPool : Number(payoutPool || 0),
+    );
+
     const measured = fullEligibleRows
       .map((row) => row.rawPerformanceIndex)
       .filter((value): value is number => value !== null);
@@ -608,7 +667,7 @@ function ManagementPersonalTraining() {
       const performanceIndex = row.rawPerformanceIndex ?? neutralPerformance;
       const traineeCommission = fullPoolEligible
         ? 0
-        : row.commissionMembershipIds.length * LOW_VOLUME_TRAINEE_COMMISSION;
+        : row.payableMembershipIds.length * LOW_VOLUME_TRAINEE_COMMISSION;
       const teamShare =
         fullPoolEligible && fullEligibleRows.length
           ? teamPool / fullEligibleRows.length
@@ -642,13 +701,13 @@ function ManagementPersonalTraining() {
         payout_mode:
           fullPoolEligible
             ? "full_50_30_20"
-            : row.commissionMembershipIds.length > 0
+            : row.payableMembershipIds.length > 0
               ? "trainee_commission"
               : "none",
         full_pool_eligible: fullPoolEligible,
         trainee_commission: traineeCommission,
-        commission_membership_count: fullPoolEligible ? 0 : row.commissionMembershipIds.length,
-        commission_membership_ids: fullPoolEligible ? [] : row.commissionMembershipIds,
+        payable_membership_count: row.payableMembershipIds.length,
+        payable_membership_ids: row.payableMembershipIds,
         team_share: teamShare,
         workload_share: workloadShare,
         performance_share: performanceShare,
@@ -658,37 +717,41 @@ function ManagementPersonalTraining() {
 
     return {
       pool,
+      autoPool,
+      poolOverridden: Math.abs(pool - autoPool) > 0.01,
       periodStart,
       periodEnd,
+      payDate,
       rows,
       fullEligibleCount: fullEligibleRows.length,
       commissionTotal: rows.reduce((sum, row) => sum + Number(row.trainee_commission || 0), 0),
       totalRecommended: rows.reduce((sum, row) => sum + row.recommended_payout, 0),
       unassignedCount: unassignedMemberIds.size,
-      workloadTotal,
       measurementEnd,
     };
-  }, [trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool, payoutRuns, today]);
+  }, [
+    trainers,
+    memberships,
+    evaluations,
+    assignmentMap,
+    payoutPeriodStart,
+    payoutPool,
+    payoutRuns,
+    selectedPayoutRun,
+    today,
+  ]);
 
   async function savePayoutRun() {
-    if (payoutCalculation.periodEnd > today) {
-      setError("Choose a completed 14-day payout period before saving.");
-      return;
-    }
     if (selectedPayoutRun?.status === "paid") {
-      setError("This 14-day PT payout has already been paid and is locked.");
-      return;
-    }
-    if (payoutCalculation.fullEligibleCount > 0 && payoutCalculation.pool <= 0) {
-      setError("Enter the 50/30/20 payout pool for coaches with 3 or more trainees.");
+      setError("This PT payout has already been paid and is locked.");
       return;
     }
     if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.pool > 0) {
-      setError("No in-house coach has 3 or more trainees in this 14-day period. Set the 50/30/20 pool to 0; only fixed PT membership commissions apply.");
+      setError("No in-house coach has 3 or more trainees in this pay period, so the 50/30/20 pool must be ₦0.");
       return;
     }
     if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.commissionTotal <= 0) {
-      setError("There is no PT payout to save for this 14-day period.");
+      setError("There is no PT payout to save for this pay period yet.");
       return;
     }
 
@@ -696,9 +759,10 @@ function ManagementPersonalTraining() {
     setError("");
     setPayoutMessage("");
     const { error: saveError } = await supabase.rpc(
-      "management_save_pt_biweekly_payout_run",
+      "management_save_pt_semimonthly_payout_run",
       {
         p_period_start: payoutCalculation.periodStart,
+        p_auto_payout_pool: payoutCalculation.autoPool,
         p_payout_pool: payoutCalculation.pool,
         p_breakdown: payoutCalculation.rows,
       },
@@ -708,8 +772,9 @@ function ManagementPersonalTraining() {
       setError(saveError.message);
     } else {
       setPayoutMessage(
-        `PT payout saved for ${formatDate(payoutCalculation.periodStart)} – ${formatDate(payoutCalculation.periodEnd)}. Total due: ${formatMoney(payoutCalculation.totalRecommended)}.`,
+        `PT payout saved for ${formatDate(payoutCalculation.periodStart)} – ${formatDate(payoutCalculation.periodEnd)}. Pay date: ${formatDate(payoutCalculation.payDate)}.`,
       );
+      setPayoutPool(null);
       await load();
     }
     setPayoutSaving(false);
@@ -717,12 +782,16 @@ function ManagementPersonalTraining() {
 
   async function markPayoutPaid(run: PtPayoutRun) {
     if (run.status === "paid" || payoutMarkingId) return;
+    if (today < run.pay_date) {
+      setError(`This PT payout is due on ${formatDate(run.pay_date)}.`);
+      return;
+    }
     const total = (run.breakdown || []).reduce(
       (sum, row) => sum + Number(row.recommended_payout || 0),
       0,
     );
     const confirmed = window.confirm(
-      `Mark the PT payout for ${formatDate(run.period_start)} – ${formatDate(run.period_end)} as PAID?\n\nTotal: ${formatMoney(total)}\n\nOnce paid, this 14-day calculation is locked.`,
+      `Mark the PT payout for ${formatDate(run.period_start)} – ${formatDate(run.period_end)} as PAID?\n\nPay date: ${formatDate(run.pay_date)}\nTotal: ${formatMoney(total)}\n\nOnce paid, this calculation is locked.`,
     );
     if (!confirmed) return;
 
@@ -730,7 +799,7 @@ function ManagementPersonalTraining() {
     setError("");
     setPayoutMessage("");
     const { error: markError } = await supabase.rpc(
-      "management_mark_pt_biweekly_payout_paid",
+      "management_mark_pt_semimonthly_payout_paid",
       { p_payout_run_id: run.id },
     );
     if (markError) {
@@ -1008,11 +1077,11 @@ function ManagementPersonalTraining() {
         >
           <div className="max-w-2xl">
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
-              Biweekly PT payout
+              PT payday calculator
             </p>
-            <h2 className="mt-1 text-xl font-black">Coach payout calculator</h2>
+            <h2 className="mt-1 text-xl font-black">Coach PT Payout</h2>
             <p className="mt-1 text-xs text-[#6c7a70]">
-              Calculate and pay the full PT earnings for each completed 14-day period.
+              Fixed paydays: 16th of every month, then 1st of the next month together with salary.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
@@ -1026,83 +1095,99 @@ function ManagementPersonalTraining() {
 
         {payoutOpen && (
           <>
-            <p className="mt-4 text-xs leading-5 text-[#67776c]">
-              Every 14 days, the system calculates a fresh PT payout. An in-house coach with
-              <strong> 3 or more assigned PT trainees</strong> enters that period&apos;s 50/30/20 pool.
-              A coach with 1–2 trainees receives <strong>₦10,000 once for each PT membership cycle</strong>
-              that starts in the period. The same membership cycle cannot earn the ₦10,000 again in a later payout.
-              A coach with 0 trainees gets ₦0. Part-time coaches remain outside this calculation.
-            </p>
+            <div className="mt-4 rounded-xl border border-[#dbe6d8] bg-[#f8faf6] p-4 text-xs leading-5 text-[#5e7064]">
+              <strong className="text-[#30483a]">Simple schedule:</strong>{" "}
+              PT work from the <strong>1st–15th</strong> is paid on the <strong>16th</strong>.
+              PT work from the <strong>16th–last day of the month</strong> is paid on the
+              <strong> 1st of the next month</strong> together with salary.
+            </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-[220px_minmax(0,1fr)_auto] md:items-end">
+            <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
               <label className="text-xs font-black">
-                14-day period starts
-                <input
-                  type="date"
-                  max={addDays(today, -13)}
+                Pay period
+                <select
                   value={payoutPeriodStart}
                   onChange={(event) => {
                     setPayoutPeriodStart(event.target.value);
+                    setPayoutPool(null);
                     setPayoutMessage("");
                     setError("");
                   }}
                   className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
-                />
+                >
+                  {payoutPeriodOptions.map((start) => {
+                    const period = payPeriodFromStart(start);
+                    return (
+                      <option key={start} value={start}>
+                        {formatDate(period.start)} – {formatDate(period.end)} · paid {formatDate(period.payDate)}
+                      </option>
+                    );
+                  })}
+                </select>
                 <span className="mt-1.5 block font-normal text-[#728077]">
-                  Ends {formatDate(payoutPeriodEnd)} · exactly 14 days
+                  {selectedPeriod.salaryDay
+                    ? `Pay date ${formatDate(selectedPeriod.payDate)} · together with salary`
+                    : `Pay date ${formatDate(selectedPeriod.payDate)}`}
                 </span>
               </label>
 
               <label className="text-xs font-black">
-                50/30/20 pool for this period
+                50/30/20 pool used
                 <input
                   type="number"
                   min="0"
                   step="1000"
                   inputMode="decimal"
-                  value={payoutPool}
+                  value={payoutPool ?? String(payoutCalculation.pool)}
                   onChange={(event) => setPayoutPool(event.target.value)}
-                  placeholder="e.g. 150000"
                   disabled={selectedPayoutRun?.status === "paid"}
-                  className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none disabled:bg-[#f1f3ef] disabled:text-[#788079]"
+                  className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none disabled:bg-[#f1f3ef]"
                 />
                 <span className="mt-1.5 block font-normal text-[#728077]">
-                  Shared only among in-house coaches with at least 3 assigned PT trainees during these 14 days.
+                  Auto-calculated: <strong>{formatMoney(payoutCalculation.autoPool)}</strong>
+                  {payoutCalculation.poolOverridden ? " · manually changed" : " · using automatic figure"}
                 </span>
               </label>
 
               <button
                 type="button"
-                disabled={payoutSaving || selectedPayoutRun?.status === "paid"}
-                onClick={() => void savePayoutRun()}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => setPayoutPool(String(payoutCalculation.autoPool))}
+                disabled={selectedPayoutRun?.status === "paid" || !payoutCalculation.poolOverridden}
+                className="inline-flex items-center justify-center rounded-xl border border-[#cbd8c8] bg-white px-4 py-3 text-xs font-black text-[#31543a] disabled:opacity-40"
               >
-                <Save size={15} /> {payoutSaving ? "Saving…" : selectedPayoutRun ? "Update 2-week payout" : "Save 2-week payout"}
+                Use auto figure
               </button>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-[#dfe7dc] bg-white p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#65806b]">Automatic pool</p>
+                  <p className="mt-1 text-2xl font-black text-[#193b2a]">{formatMoney(payoutCalculation.autoPool)}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#68766d]">
+                    Calculated automatically as ₦10,000 for each payable PT membership cycle belonging to coaches who qualify for the 50/30/20 pool in this pay period.
+                  </p>
+                </div>
+                <div className="rounded-xl bg-[#f4f7f1] px-4 py-3 text-xs leading-5 text-[#53665a]">
+                  <strong>3+ trainees:</strong> share this pool by 50/30/20.<br />
+                  <strong>1–2 trainees:</strong> get ₦10,000 per payable PT membership cycle directly.
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
               <div className="rounded-xl bg-[#edf5ea] p-3 text-center">
                 <p className="text-xl font-black text-[#2f7746]">50%</p>
-                <p className="text-[9px] font-black uppercase text-[#65766a]">Team share · 3+ only</p>
+                <p className="text-[9px] font-black uppercase text-[#65766a]">Team share</p>
               </div>
               <div className="rounded-xl bg-[#f3f5ed] p-3 text-center">
                 <p className="text-xl font-black text-[#52633f]">30%</p>
-                <p className="text-[9px] font-black uppercase text-[#65766a]">Workload · 3+ only</p>
+                <p className="text-[9px] font-black uppercase text-[#65766a]">Workload</p>
               </div>
               <div className="rounded-xl bg-[#fff6df] p-3 text-center">
                 <p className="text-xl font-black text-[#8b6d24]">20%</p>
-                <p className="text-[9px] font-black uppercase text-[#756b50]">Performance · 3+ only</p>
+                <p className="text-[9px] font-black uppercase text-[#756b50]">Performance</p>
               </div>
-            </div>
-
-            <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
-              <strong className="text-[#33483a]">How this payday works:</strong> the selected dates are one complete
-              14-day payroll period. Coaches with 3+ trainees are paid from that period&apos;s 50/30/20 pool.
-              Coaches with 1–2 trainees receive ₦10,000 for each new PT membership cycle that starts during those 14 days.
-              The commission is tied to the membership record, so it cannot be paid twice. Performance still uses 75%
-              two-cycle same-coach retention and 25% established trainee rating; ratings begin counting after 2 evaluations
-              and the renewal grace remains 3 days.
             </div>
 
             {payoutCalculation.unassignedCount > 0 && (
@@ -1110,59 +1195,41 @@ function ManagementPersonalTraining() {
                 <AlertCircle size={17} className="mt-0.5 shrink-0" />
                 <p>
                   <strong>{payoutCalculation.unassignedCount} paid PT trainee{payoutCalculation.unassignedCount === 1 ? "" : "s"}</strong>{" "}
-                  overlap this 14-day period without a coach assignment. Assign them before treating the payout as final.
+                  overlap this period without a coach assignment. Assign them before finalising payout.
                 </p>
               </div>
             )}
+
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                disabled={payoutSaving || selectedPayoutRun?.status === "paid"}
+                onClick={() => void savePayoutRun()}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Save size={15} /> {payoutSaving ? "Saving…" : selectedPayoutRun ? "Update payout calculation" : "Save payout calculation"}
+              </button>
+              {selectedPayoutRun?.status === "pending" && (
+                <button
+                  type="button"
+                  disabled={payoutMarkingId === selectedPayoutRun.id || today < selectedPayoutRun.pay_date}
+                  onClick={() => void markPayoutPaid(selectedPayoutRun)}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#193b2a] bg-white px-4 py-3 text-xs font-black text-[#193b2a] disabled:opacity-45"
+                >
+                  <CheckCircle2 size={15} />
+                  {today < selectedPayoutRun.pay_date
+                    ? `Pay on ${formatDate(selectedPayoutRun.pay_date)}`
+                    : payoutMarkingId === selectedPayoutRun.id
+                      ? "Saving…"
+                      : "Mark full payout paid"}
+                </button>
+              )}
+            </div>
 
             {!!payoutMessage && (
               <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
                 {payoutMessage}
               </p>
-            )}
-
-            {selectedPayoutRun && (
-              <div className="mt-4 rounded-2xl border border-[#dbe5d8] bg-[#fbfcf9] p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-black">
-                        Saved payout · {formatDate(selectedPayoutRun.period_start)} – {formatDate(selectedPayoutRun.period_end)}
-                      </p>
-                      <span className={
-                        "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
-                        (selectedPayoutRun.status === "paid"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-amber-100 text-amber-800")
-                      }>
-                        {selectedPayoutRun.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-[#68766d]">
-                      {selectedPayoutRun.status === "paid" && selectedPayoutRun.paid_at
-                        ? `Paid ${formatDateTime(selectedPayoutRun.paid_at)} · locked`
-                        : "Pending payment · figures can still be updated before payment"}
-                    </p>
-                  </div>
-                  {selectedPayoutRun.status === "pending" && (
-                    <button
-                      type="button"
-                      disabled={payoutMarkingId === selectedPayoutRun.id}
-                      onClick={() => void markPayoutPaid(selectedPayoutRun)}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:opacity-50"
-                    >
-                      <CheckCircle2 size={15} />
-                      {payoutMarkingId === selectedPayoutRun.id ? "Saving…" : "Mark full payout paid"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {payoutCalculation.rows.length === 0 && (
-              <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
-                No active staff currently have the <strong>In-house Coach</strong> title, so there is nobody to include in the 50/30/20 payout pool.
-              </div>
             )}
 
             <div className="mt-5 grid gap-3 xl:grid-cols-3">
@@ -1172,7 +1239,7 @@ function ManagementPersonalTraining() {
                     <div>
                       <h3 className="font-black">{row.trainer_name}</h3>
                       <p className="mt-1 text-xs text-[#6a786e]">
-                        {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in this 14-day period
+                        {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in this pay period
                       </p>
                       <span className={
                         "mt-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
@@ -1185,7 +1252,7 @@ function ManagementPersonalTraining() {
                         {row.full_pool_eligible
                           ? "50/30/20 eligible"
                           : row.trainee_count > 0
-                            ? "Fixed commission only"
+                            ? "₦10k membership commission"
                             : "No PT payout"}
                       </span>
                     </div>
@@ -1209,23 +1276,12 @@ function ManagementPersonalTraining() {
                     </div>
                   ) : (
                     <div className="mt-4 rounded-xl border border-[#dce7d9] bg-white p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[9px] font-black uppercase tracking-wider text-[#778178]">
-                            {row.trainee_count > 0 ? "Fixed PT membership commission" : "Not payout eligible"}
-                          </p>
-                          <p className="mt-1 text-xs text-[#68766d]">
-                            {Number(row.commission_membership_count || 0) > 0
-                              ? `₦10,000 × ${row.commission_membership_count} PT membership cycle${row.commission_membership_count === 1 ? "" : "s"} starting in this period`
-                              : row.trainee_count > 0
-                                ? "No new commissionable PT membership cycle starts in this period"
-                                : "0 assigned PT trainees in this period"}
-                          </p>
-                        </div>
-                        <p className="text-lg font-black text-[#193b2a]">
-                          {formatMoney(Number(row.trainee_commission || 0))}
-                        </p>
-                      </div>
+                      <p className="text-[9px] font-black uppercase tracking-wider text-[#778178]">Fixed commission</p>
+                      <p className="mt-1 text-xs text-[#68766d]">
+                        {Number(row.payable_membership_count || 0) > 0
+                          ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
+                          : "No new payable PT membership cycle in this period"}
+                      </p>
                     </div>
                   )}
 
@@ -1234,7 +1290,7 @@ function ManagementPersonalTraining() {
                       <span>Two-cycle retention</span>
                       <strong className="text-[#33483a]">
                         {row.renewal_rate === null
-                          ? "Not enough two-cycle data"
+                          ? "Not enough data"
                           : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
                       </strong>
                     </div>
@@ -1251,34 +1307,23 @@ function ManagementPersonalTraining() {
               ))}
             </div>
 
-            {trainers.some((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach") && (
-              <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50 p-4 text-xs leading-5 text-violet-900">
-                <strong>Part-time coaches:</strong>{" "}
-                {trainers
-                  .filter((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach")
-                  .map((trainer) => trainer.display_name)
-                  .join(", ")}{" "}
-                {trainers.filter((trainer) => trainer.active && trainer.staff_title?.trim().toLowerCase() === "part-time coach").length === 1 ? "is" : "are"} excluded from the 50/30/20 calculation. Management handles their payment separately.
-              </div>
-            )}
-
             <div className="mt-4 grid gap-2 rounded-xl bg-[#193b2a] p-4 text-white sm:grid-cols-3">
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">50/30/20 pool</p>
+                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Pool used</p>
                 <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
                 <p className="mt-1 text-[9px] text-white/60">
-                  {payoutCalculation.fullEligibleCount} fully eligible coach{payoutCalculation.fullEligibleCount === 1 ? "" : "es"}
+                  Auto {formatMoney(payoutCalculation.autoPool)}{payoutCalculation.poolOverridden ? " · overridden" : ""}
                 </p>
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">1–2 trainee commissions</p>
                 <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.commissionTotal)}</p>
-                <p className="mt-1 text-[9px] text-white/60">₦10,000 once per PT membership cycle</p>
+                <p className="mt-1 text-[9px] text-white/60">₦10,000 per payable PT membership cycle</p>
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Total due this payday</p>
+                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Total due</p>
                 <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.totalRecommended)}</p>
-                <p className="mt-1 text-[9px] text-white/60">Full 14-day PT payout · part-time coaches separate</p>
+                <p className="mt-1 text-[9px] text-white/60">Pay date {formatDate(payoutCalculation.payDate)}</p>
               </div>
             </div>
 
@@ -1297,6 +1342,7 @@ function ManagementPersonalTraining() {
                         key={run.id}
                         onClick={() => {
                           setPayoutPeriodStart(run.period_start);
+                          setPayoutPool(null);
                           setPayoutMessage("");
                           setError("");
                         }}
@@ -1307,7 +1353,8 @@ function ManagementPersonalTraining() {
                             {formatDate(run.period_start)} – {formatDate(run.period_end)}
                           </p>
                           <p className="mt-1 text-[10px] text-[#6e7b72]">
-                            {run.status === "paid" && run.paid_at ? `Paid ${formatDateTime(run.paid_at)}` : "Pending payment"}
+                            Pay date {formatDate(run.pay_date)}
+                            {run.status === "paid" && run.paid_at ? ` · paid ${formatDateTime(run.paid_at)}` : " · pending"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
