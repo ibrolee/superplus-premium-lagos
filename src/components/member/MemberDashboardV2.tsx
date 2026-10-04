@@ -209,7 +209,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
         if (!active) return;
         if (!session) { navigate({ to: "/login" }); return; }
 
-        let person: Record<string, unknown> | null = null;
+        let person: Member | null = null;
         if (previewMemberId) {
           const { data: staffUser, error: staffError } = await supabase
             .from("staff_users")
@@ -227,7 +227,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
             .eq("id", previewMemberId)
             .maybeSingle();
           if (previewMemberError) throw previewMemberError;
-          person = previewPerson;
+          person = previewPerson as Member | null;
           if (!person) throw new Error("Member profile not found.");
         } else {
           const { error: linkError } = await supabase.rpc("link_member_account");
@@ -238,7 +238,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
             .eq("auth_user_id", session.user.id)
             .maybeSingle();
           if (memberError) throw memberError;
-          person = linkedPerson;
+          person = linkedPerson as Member | null;
           if (!person) throw new Error("Your login was successful, but we could not find a member account connected to this email. Please contact Super Plus Fitness reception.");
         }
         if (!active) return;
