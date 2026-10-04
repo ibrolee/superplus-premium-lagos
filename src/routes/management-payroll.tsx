@@ -20,7 +20,7 @@ function displayDate(value: string | null) {
   return Number.isNaN(date.getTime()) ? "Invalid date" : new Intl.DateTimeFormat("en-NG", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(date);
 }
 function money(amount: number, currency: string) {
-  try { return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount); }
+  try { return new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 0 }).format(amount); }
   catch { return `${currency} ${amount.toLocaleString("en-NG")}`; }
 }
 async function readAll<T>(table: "staff_profiles" | "staff_salary_records", columns: string): Promise<T[]> {

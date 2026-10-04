@@ -163,7 +163,7 @@ function formatMoney(amount: number) {
   return new Intl.NumberFormat("en-NG", {
     style: "currency",
     currency: "NGN",
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(amount || 0);
 }
 
