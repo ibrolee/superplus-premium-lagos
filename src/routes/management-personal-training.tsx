@@ -4,8 +4,10 @@ import {
   AlertCircle,
   CalendarDays,
   CheckCircle2,
+  CircleDollarSign,
   Dumbbell,
   RefreshCw,
+  Save,
   Star,
   UserRound,
   Users,
@@ -69,6 +71,31 @@ type Evaluation = {
   submitted_at: string;
 };
 
+type PtPayoutBreakdown = {
+  trainer_staff_profile_id: string;
+  trainer_name: string;
+  trainee_count: number;
+  renewal_eligible: number;
+  renewed_same_trainer: number;
+  renewal_rate: number | null;
+  rating_count: number;
+  rating_average: number | null;
+  performance_index: number;
+  team_share: number;
+  workload_share: number;
+  performance_share: number;
+  recommended_payout: number;
+};
+
+type PtPayoutRun = {
+  id: string;
+  payout_month: string;
+  payout_pool: number;
+  breakdown: PtPayoutBreakdown[];
+  created_by: string | null;
+  updated_at: string;
+};
+
 type View = "current" | "expiring" | "unassigned" | "feedback" | "all";
 
 const DAY = 86400000;
@@ -103,6 +130,19 @@ const formatDateTime = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+const formatMoney = (value: number) =>
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(value) ? value : 0);
+const monthBounds = (month: string) => {
+  const start = `${month}-01`;
+  const next = new Date(start + "T12:00:00Z");
+  next.setUTCMonth(next.getUTCMonth() + 1);
+  next.setUTCDate(0);
+  return { start, end: next.toISOString().slice(0, 10) };
+};
 
 function ManagementPersonalTraining() {
   const [memberships, setMemberships] = useState<PtMembership[]>([]);
@@ -110,6 +150,11 @@ function ManagementPersonalTraining() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
+  const [payoutMonth, setPayoutMonth] = useState(lagosToday().slice(0, 7));
+  const [payoutPool, setPayoutPool] = useState("");
+  const [payoutSaving, setPayoutSaving] = useState(false);
+  const [payoutMessage, setPayoutMessage] = useState("");
   const [view, setView] = useState<View>("current");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -121,7 +166,7 @@ function ManagementPersonalTraining() {
     setLoading(true);
     setError("");
 
-    const [membershipResult, trainerResult, assignmentResult, evaluationResult] = await Promise.all([
+    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -140,10 +185,15 @@ function ManagementPersonalTraining() {
         .from("pt_evaluations")
         .select("membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,management_note,submitted_at")
         .order("submitted_at", { ascending: false }),
+      supabase
+        .from("pt_payout_runs")
+        .select("id,payout_month,payout_pool,breakdown,created_by,updated_at")
+        .order("payout_month", { ascending: false })
+        .limit(24),
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error;
+      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -173,12 +223,19 @@ function ManagementPersonalTraining() {
     setTrainers((trainerResult.data || []) as Trainer[]);
     setAssignments((assignmentResult.data || []) as Assignment[]);
     setEvaluations((evaluationResult.data || []) as Evaluation[]);
+    setPayoutRuns((payoutResult.data || []) as PtPayoutRun[]);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const saved = payoutRuns.find((row) => row.payout_month.slice(0, 7) === payoutMonth);
+    setPayoutPool(saved ? String(Number(saved.payout_pool)) : "");
+    setPayoutMessage("");
+  }, [payoutMonth, payoutRuns]);
 
   const today = lagosToday();
   const memberMap = useMemo(() => new Map(members.map((row) => [row.id, row])), [members]);
@@ -293,6 +350,179 @@ function ManagementPersonalTraining() {
       ratingReady,
     };
   });
+
+  const payoutCalculation = useMemo(() => {
+    const activeTrainers = trainers.filter((trainer) => trainer.active);
+    const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
+    const pool = Math.max(0, Number(payoutPool || 0));
+    const measurementEnd = monthEnd < today ? monthEnd : today;
+    const maturedRenewalEnd = addDays(measurementEnd, -30);
+    const renewalWindowStart = addDays(maturedRenewalEnd, -89);
+
+    const unassignedMemberIds = new Set(
+      memberships
+        .filter(
+          (row) =>
+            row.payment_status === "paid" &&
+            row.start_date <= monthEnd &&
+            row.end_date >= monthStart &&
+            !assignmentMap.has(row.id),
+        )
+        .map((row) => row.member_id),
+    );
+
+    const rawRows = activeTrainers.map((trainer) => {
+      const traineeIds = new Set(
+        memberships
+          .filter(
+            (row) =>
+              row.payment_status === "paid" &&
+              row.start_date <= monthEnd &&
+              row.end_date >= monthStart &&
+              assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+          )
+          .map((row) => row.member_id),
+      );
+
+      const eligibleRenewals = memberships.filter(
+        (row) =>
+          row.payment_status === "paid" &&
+          row.end_date >= renewalWindowStart &&
+          row.end_date <= maturedRenewalEnd &&
+          assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+      );
+
+      const renewedSameTrainer = eligibleRenewals.filter((cycle) =>
+        memberships.some(
+          (candidate) =>
+            candidate.id !== cycle.id &&
+            candidate.member_id === cycle.member_id &&
+            candidate.payment_status === "paid" &&
+            candidate.created_at > cycle.created_at &&
+            candidate.start_date <= addDays(cycle.end_date, 30) &&
+            assignmentMap.get(candidate.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+        ),
+      ).length;
+
+      const renewalRate = eligibleRenewals.length
+        ? renewedSameTrainer / eligibleRenewals.length
+        : null;
+      const coachEvaluations = evaluations.filter(
+        (row) => row.trainer_staff_profile_id === trainer.staff_profile_id,
+      );
+      const ratingAverage = coachEvaluations.length
+        ? coachEvaluations.reduce((sum, row) => sum + Number(row.overall_rating || 0), 0) /
+          coachEvaluations.length
+        : null;
+      const ratingScore =
+        coachEvaluations.length >= 3 && ratingAverage !== null ? ratingAverage / 5 : null;
+      const performanceIndex =
+        renewalRate !== null && ratingScore !== null
+          ? renewalRate * 0.75 + ratingScore * 0.25
+          : renewalRate ?? ratingScore;
+
+      return {
+        trainer,
+        traineeCount: traineeIds.size,
+        renewalEligible: eligibleRenewals.length,
+        renewedSameTrainer,
+        renewalRate,
+        ratingCount: coachEvaluations.length,
+        ratingAverage,
+        rawPerformanceIndex: performanceIndex,
+      };
+    });
+
+    const measured = rawRows
+      .map((row) => row.rawPerformanceIndex)
+      .filter((value): value is number => value !== null);
+    const neutralPerformance = measured.length
+      ? measured.reduce((sum, value) => sum + value, 0) / measured.length
+      : 1;
+    const workloadTotal = rawRows.reduce((sum, row) => sum + row.traineeCount, 0);
+    const performanceTotal = rawRows.reduce(
+      (sum, row) => sum + (row.rawPerformanceIndex ?? neutralPerformance),
+      0,
+    );
+    const teamPool = pool * 0.5;
+    const workloadPool = pool * 0.3;
+    const performancePool = pool * 0.2;
+
+    const rows: PtPayoutBreakdown[] = rawRows.map((row) => {
+      const performanceIndex = row.rawPerformanceIndex ?? neutralPerformance;
+      const teamShare = activeTrainers.length ? teamPool / activeTrainers.length : 0;
+      const workloadShare = workloadTotal
+        ? workloadPool * (row.traineeCount / workloadTotal)
+        : activeTrainers.length
+          ? workloadPool / activeTrainers.length
+          : 0;
+      const performanceShare = performanceTotal
+        ? performancePool * (performanceIndex / performanceTotal)
+        : activeTrainers.length
+          ? performancePool / activeTrainers.length
+          : 0;
+
+      return {
+        trainer_staff_profile_id: row.trainer.staff_profile_id,
+        trainer_name: row.trainer.display_name,
+        trainee_count: row.traineeCount,
+        renewal_eligible: row.renewalEligible,
+        renewed_same_trainer: row.renewedSameTrainer,
+        renewal_rate: row.renewalRate,
+        rating_count: row.ratingCount,
+        rating_average: row.ratingAverage,
+        performance_index: performanceIndex,
+        team_share: teamShare,
+        workload_share: workloadShare,
+        performance_share: performanceShare,
+        recommended_payout: teamShare + workloadShare + performanceShare,
+      };
+    });
+
+    return {
+      pool,
+      monthStart,
+      monthEnd,
+      rows,
+      unassignedCount: unassignedMemberIds.size,
+      workloadTotal,
+      maturedRenewalEnd,
+      renewalWindowStart,
+    };
+  }, [trainers, memberships, evaluations, assignmentMap, payoutMonth, payoutPool, today]);
+
+  async function savePayoutRun() {
+    if (!payoutCalculation.pool || payoutCalculation.pool <= 0) {
+      setError("Enter the monthly PT coach payout amount before saving.");
+      return;
+    }
+    setPayoutSaving(true);
+    setError("");
+    setPayoutMessage("");
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id || null;
+    const { error: saveError } = await supabase.from("pt_payout_runs").upsert(
+      {
+        payout_month: payoutCalculation.monthStart,
+        payout_pool: payoutCalculation.pool,
+        team_weight: 0.5,
+        workload_weight: 0.3,
+        performance_weight: 0.2,
+        breakdown: payoutCalculation.rows,
+        created_by: userId,
+        updated_by: userId,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "payout_month" },
+    );
+    if (saveError) {
+      setError(saveError.message);
+    } else {
+      setPayoutMessage("Monthly PT payout calculation saved.");
+      await load();
+    }
+    setPayoutSaving(false);
+  }
 
   async function assignCoach(membershipId: string, trainerId: string) {
     setSavingMembershipId(membershipId);
@@ -505,6 +735,154 @@ function ManagementPersonalTraining() {
               </article>
             );
           })}
+        </div>
+      </section>
+
+      <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
+              Monthly PT payout
+            </p>
+            <h2 className="mt-1 text-xl font-black">Coach payout calculator</h2>
+            <p className="mt-2 text-xs leading-5 text-[#67776c]">
+              Enter the amount management has decided is available to pay PT coaches for the month.
+              The calculator recommends a split using 50% equal team share, 30% assigned-trainee workload
+              and 20% performance. Cover sessions are not included.
+            </p>
+          </div>
+          <CircleDollarSign className="size-8 shrink-0 text-[#2f7746]" />
+        </div>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
+          <label className="text-xs font-black">
+            Payout month
+            <input
+              type="month"
+              max={today.slice(0, 7)}
+              value={payoutMonth}
+              onChange={(event) => setPayoutMonth(event.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
+            />
+          </label>
+          <label className="text-xs font-black">
+            Total PT coach payout amount
+            <input
+              type="number"
+              min="0"
+              step="1000"
+              inputMode="decimal"
+              value={payoutPool}
+              onChange={(event) => setPayoutPool(event.target.value)}
+              placeholder="e.g. 300000"
+              className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
+            />
+            <span className="mt-1.5 block font-normal text-[#728077]">
+              This is the amount available for coaches after Super Plus has done its own monthly calculations.
+            </span>
+          </label>
+          <button
+            type="button"
+            disabled={payoutSaving || payoutCalculation.pool <= 0}
+            onClick={() => void savePayoutRun()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Save size={15} /> {payoutSaving ? "Saving…" : "Save monthly payout"}
+          </button>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <div className="rounded-xl bg-[#edf5ea] p-3 text-center">
+            <p className="text-xl font-black text-[#2f7746]">50%</p>
+            <p className="text-[9px] font-black uppercase text-[#65766a]">Equal team share</p>
+          </div>
+          <div className="rounded-xl bg-[#f3f5ed] p-3 text-center">
+            <p className="text-xl font-black text-[#52633f]">30%</p>
+            <p className="text-[9px] font-black uppercase text-[#65766a]">Trainee workload</p>
+          </div>
+          <div className="rounded-xl bg-[#fff6df] p-3 text-center">
+            <p className="text-xl font-black text-[#8b6d24]">20%</p>
+            <p className="text-[9px] font-black uppercase text-[#756b50]">Performance</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
+          <strong className="text-[#33483a]">Performance rule:</strong> where enough data exists, the performance
+          score is 75% matured 90-day same-coach renewal rate and 25% established trainee rating. A rating only
+          counts after at least 3 evaluations. PT cycles that expired less than 30 days ago are not treated as
+          failed renewals yet. If a coach has no measurable data, the system uses a neutral team-average score.
+        </div>
+
+        {payoutCalculation.unassignedCount > 0 && (
+          <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
+            <AlertCircle size={17} className="mt-0.5 shrink-0" />
+            <p>
+              <strong>{payoutCalculation.unassignedCount} paid PT trainee{payoutCalculation.unassignedCount === 1 ? "" : "s"}</strong>{" "}
+              overlap this month without a coach assignment. Assign them before treating the workload split as final.
+            </p>
+          </div>
+        )}
+
+        {!!payoutMessage && (
+          <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
+            {payoutMessage}
+          </p>
+        )}
+
+        <div className="mt-5 grid gap-3 xl:grid-cols-3">
+          {payoutCalculation.rows.map((row) => (
+            <article key={row.trainer_staff_profile_id} className="rounded-2xl border border-[#dde7d9] bg-[#f8faf6] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-black">{row.trainer_name}</h3>
+                  <p className="mt-1 text-xs text-[#6a786e]">
+                    {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in selected month
+                  </p>
+                </div>
+                <p className="text-xl font-black text-[#193b2a]">{formatMoney(row.recommended_payout)}</p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-xl bg-white p-3">
+                  <p className="text-sm font-black">{formatMoney(row.team_share)}</p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Team</p>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <p className="text-sm font-black">{formatMoney(row.workload_share)}</p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Workload</p>
+                </div>
+                <div className="rounded-xl bg-white p-3">
+                  <p className="text-sm font-black">{formatMoney(row.performance_share)}</p>
+                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Performance</p>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2 text-xs text-[#5f7064]">
+                <div className="flex items-center justify-between gap-3">
+                  <span>90-day renewal</span>
+                  <strong className="text-[#33483a]">
+                    {row.renewal_rate === null ? "Not enough matured data" : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span>Trainee rating</span>
+                  <strong className="text-[#33483a]">
+                    {row.rating_average === null ? "No ratings" : `${row.rating_average.toFixed(1)}/5 · ${row.rating_count} review${row.rating_count === 1 ? "" : "s"}`}
+                  </strong>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#193b2a] px-4 py-3 text-white">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Management-entered payout pool</p>
+            <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
+          </div>
+          <p className="max-w-md text-right text-[10px] leading-4 text-white/70">
+            This is a recommendation for management. Saved monthly calculations can be updated later if assignments or figures change.
+          </p>
         </div>
       </section>
 
