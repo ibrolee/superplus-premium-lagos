@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Pencil, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, UserRound, X } from "lucide-react";
+import { ArrowRight, Eye, Pencil, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, UserRound, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AdminMemberEditDialog } from "@/components/admin/AdminMemberEditDialog";
@@ -150,7 +150,10 @@ function AdminMembers() {
                   <p className="mt-1 break-words text-xs text-[#637469]">{member.phone || "No phone"}{member.email ? ` · ${member.email}` : ""}</p>
                 </div>
                 <div className="col-span-2 flex w-full flex-wrap items-center gap-2 lg:col-span-1 lg:ml-auto lg:w-auto">
-                  <a href={`/reception-member/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2c5737]">
+                  <a href={`/management-member-preview/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2c5737]">
+                    <Eye size={15} /> View Dashboard
+                  </a>
+                  <a href={`/reception-member/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#b4c9b0] bg-white px-4 py-2.5 text-xs font-bold text-[#285a32] hover:bg-[#f1f8ed]">
                     View Profile <ArrowRight size={15} />
                   </a>
                   {isAdmin && <button type="button" disabled={openingMemberId !== null || deleting}

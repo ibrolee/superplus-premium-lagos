@@ -61,6 +61,11 @@ type PtEvaluation = {
 };
 type DashboardTab = "home" | "activity" | "community" | "profile";
 
+type MemberDashboardV2Props = {
+  previewMemberId?: string;
+  readOnly?: boolean;
+};
+
 const DAY = 86400000;
 const LAGOS = "Africa/Lagos";
 const whatsappGroup = "https://chat.whatsapp.com/FysNYsQkx3rAqlB5WS4k6s?s=cl&p=i&mlu=4&ilr=4";
@@ -137,8 +142,9 @@ function getContinuousMembership(memberships: Membership[]): Membership | null {
   return { ...current, start_date: start, end_date: end };
 }
 
-export function MemberDashboardV2() {
+export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberDashboardV2Props = {}) {
   const navigate = useNavigate();
+  const previewMode = Boolean(previewMemberId && readOnly);
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<Member | null>(null);
   const [membership, setMembership] = useState<Membership | null>(null);
@@ -202,12 +208,40 @@ export function MemberDashboardV2() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!active) return;
         if (!session) { navigate({ to: "/login" }); return; }
-        const { error: linkError } = await supabase.rpc("link_member_account");
-        if (linkError) console.error("Member account linking error:", linkError);
-        const { data: person, error: memberError } = await supabase.from("members").select("*").eq("auth_user_id", session.user.id).maybeSingle();
+
+        let person: Member | null = null;
+        if (previewMemberId) {
+          const { data: staffUser, error: staffError } = await supabase
+            .from("staff_users")
+            .select("role,active")
+            .eq("auth_user_id", session.user.id)
+            .maybeSingle();
+          if (staffError) throw staffError;
+          const staffRole = String(staffUser?.role || "").toLowerCase();
+          if (!staffUser?.active || !["admin", "owner", "manager"].includes(staffRole)) {
+            throw new Error("Only an active management account can preview a member dashboard.");
+          }
+          const { data: previewPerson, error: previewMemberError } = await supabase
+            .from("members")
+            .select("*")
+            .eq("id", previewMemberId)
+            .maybeSingle();
+          if (previewMemberError) throw previewMemberError;
+          person = previewPerson as Member | null;
+          if (!person) throw new Error("Member profile not found.");
+        } else {
+          const { error: linkError } = await supabase.rpc("link_member_account");
+          if (linkError) console.error("Member account linking error:", linkError);
+          const { data: linkedPerson, error: memberError } = await supabase
+            .from("members")
+            .select("*")
+            .eq("auth_user_id", session.user.id)
+            .maybeSingle();
+          if (memberError) throw memberError;
+          person = linkedPerson as Member | null;
+          if (!person) throw new Error("Your login was successful, but we could not find a member account connected to this email. Please contact Super Plus Fitness reception.");
+        }
         if (!active) return;
-        if (memberError) throw memberError;
-        if (!person) throw new Error("Your login was successful, but we could not find a member account connected to this email. Please contact Super Plus Fitness reception.");
         setMember(person as Member);
         const [membershipResult, assignmentResult, evaluationResult, trainerResult] = await Promise.all([
           supabase.from("memberships").select("*").eq("member_id", person.id).order("created_at", { ascending: false }),
@@ -225,7 +259,7 @@ export function MemberDashboardV2() {
         setPtEvaluations((evaluationResult.data || []) as PtEvaluation[]);
         setPtTrainers((trainerResult.data || []) as PtTrainer[]);
       } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : "Unable to load your account.");
+        if (active) setError(cause instanceof Error ? cause.message : previewMode ? "Unable to load this dashboard preview." : "Unable to load your account.");
       } finally {
         if (active) setLoading(false);
       }
@@ -235,21 +269,21 @@ export function MemberDashboardV2() {
       if (!session && active) navigate({ to: "/login" });
     });
     return () => { active = false; subscription.unsubscribe(); };
-  }, [navigate]);
+  }, [navigate, previewMemberId, previewMode]);
 
   useEffect(() => {
-    if (!member?.id) return;
+    if (readOnly || !member?.id) return;
     try {
       const saved = window.localStorage.getItem("spf-weekly-goal:" + member.id);
       if (saved && [2, 3, 4, 5, 6].includes(Number(saved))) setWeeklyGoal(Number(saved));
     } catch { /* local storage unavailable */ }
-  }, [member?.id]);
+  }, [member?.id, readOnly]);
 
   useEffect(() => {
-    if (!member?.id) return;
+    if (readOnly || !member?.id) return;
     try { window.localStorage.setItem("spf-weekly-goal:" + member.id, String(weeklyGoal)); }
     catch { /* local storage unavailable */ }
-  }, [member?.id, weeklyGoal]);
+  }, [member?.id, weeklyGoal, readOnly]);
 
   useEffect(() => {
     if (!member?.id) return;
@@ -299,10 +333,15 @@ export function MemberDashboardV2() {
   }, []);
 
   async function handleLogout() {
+    if (readOnly) return;
     await supabase.auth.signOut();
     navigate({ to: "/login" });
   }
   async function handlePayment() {
+    if (readOnly) {
+      setPaymentError("Payments are disabled in read-only admin preview.");
+      return;
+    }
     if (!selectedPlan) { setPaymentError("Please select a membership plan."); return; }
     if (selectedPlan === "family") { window.location.href = "/member-family"; return; }
     const cleanCoupon = coupon.trim().toUpperCase();
@@ -378,7 +417,7 @@ export function MemberDashboardV2() {
   }, [selectedPlan, selectedTrainerId, latestPtAssignment?.trainer_staff_profile_id]);
 
   async function submitPtEvaluation() {
-    if (!member || !ptEvaluationMembership || !ptEvaluationAssignment) return;
+    if (readOnly || !member || !ptEvaluationMembership || !ptEvaluationAssignment) return;
     if (ptOverall < 1 || ptOverall > 5) { setPtEvaluationError("Choose an overall rating from 1 to 5."); return; }
     if (!ptChoice) { setPtEvaluationError("Choose whether you want to continue, change trainer or finish PT."); return; }
     if (ptChoice === "change" && !ptRequestedTrainerId) { setPtEvaluationError("Choose the trainer you would like to change to."); return; }
@@ -412,7 +451,7 @@ export function MemberDashboardV2() {
   }
 
   async function submitPtCoachReport() {
-    if (!member || !ptReportMembership || !ptReportAssignment) return;
+    if (readOnly || !member || !ptReportMembership || !ptReportAssignment) return;
     const details = ptReportDetails.trim();
     if (details.length < 10) {
       setPtReportError("Please describe what happened in at least 10 characters.");
@@ -442,7 +481,7 @@ export function MemberDashboardV2() {
   }
 
   async function submitMemberFeedback() {
-    if (!member || !activeFeedbackMembership) return;
+    if (readOnly || !member || !activeFeedbackMembership) return;
     const details = memberFeedbackDetails.trim();
     if (details.length < 10) {
       setMemberFeedbackError("Please add a little more detail so management can understand your submission.");
@@ -556,7 +595,7 @@ export function MemberDashboardV2() {
   ];
 
   useEffect(() => {
-    if (!member?.id || attendanceLoading) return;
+    if (readOnly || !member?.id || attendanceLoading) return;
     const unlocked = achievements.filter((item) => item.unlocked).map((item) => item.key);
     try {
       const storageKey = "spf-achievements:" + member.id;
@@ -565,7 +604,7 @@ export function MemberDashboardV2() {
       window.localStorage.setItem(storageKey, JSON.stringify(Array.from(new Set([...seen, ...unlocked]))));
       if (fresh) setCelebration(fresh.label);
     } catch { /* storage unavailable */ }
-  }, [member?.id, attendanceLoading, totalVisits, stats.thisMonthCount, stats.weeklyVisits, stats.streak, weeklyGoal]);
+  }, [member?.id, attendanceLoading, totalVisits, stats.thisMonthCount, stats.weeklyVisits, stats.streak, weeklyGoal, readOnly]);
 
   const nextMilestone = [25, 50, 100, 200, 300].find((value) => (totalVisits ?? 0) < value);
   const milestoneRemaining = nextMilestone ? nextMilestone - (totalVisits ?? 0) : 0;
@@ -580,8 +619,8 @@ export function MemberDashboardV2() {
     return { days, mondayOffset, visitDays };
   }, [visits, today]);
 
-  if (loading) return <main className="min-h-[75vh] bg-[#f5f7f2] py-20"><div className="section-shell flex min-h-[50vh] items-center justify-center gap-3 text-sm font-bold uppercase"><Loader2 className="size-5 animate-spin"/> Loading your account...</div></main>;
-  if (error || !member) return <main className="min-h-[75vh] bg-muted py-16 sm:py-24"><div className="section-shell"><div className="mx-auto max-w-2xl rounded-2xl border border-border bg-background p-8 shadow-sm sm:p-12"><AlertCircle className="size-10 text-destructive"/><h1 className="display-title mt-6 text-4xl sm:text-5xl">Account Issue</h1><p className="mt-5 text-sm leading-7 text-muted-foreground">{error || "Unable to load your account."}</p><div className="mt-8 flex flex-wrap gap-3"><Button asChild><Link to="/login">Back to Login</Link></Button><Button variant="outline" onClick={handleLogout}>Log Out</Button></div></div></div></main>;
+  if (loading) return <main className="min-h-[75vh] bg-[#f5f7f2] py-20"><div className="section-shell flex min-h-[50vh] items-center justify-center gap-3 text-sm font-bold uppercase"><Loader2 className="size-5 animate-spin"/> {previewMode ? "Loading member preview..." : "Loading your account..."}</div></main>;
+  if (error || !member) return <main className="min-h-[75vh] bg-muted py-16 sm:py-24"><div className="section-shell"><div className="mx-auto max-w-2xl rounded-2xl border border-border bg-background p-8 shadow-sm sm:p-12"><AlertCircle className="size-10 text-destructive"/><h1 className="display-title mt-6 text-4xl sm:text-5xl">{previewMode ? "Preview Issue" : "Account Issue"}</h1><p className="mt-5 text-sm leading-7 text-muted-foreground">{error || (previewMode ? "Unable to load this member dashboard preview." : "Unable to load your account.")}</p><div className="mt-8 flex flex-wrap gap-3">{previewMode ? <Button asChild><Link to="/admin-members">Back to Members</Link></Button> : <><Button asChild><Link to="/login">Back to Login</Link></Button><Button variant="outline" onClick={handleLogout}>Log Out</Button></>}</div></div></div></main>;
 
   const tabButton = (tab: DashboardTab, label: string, Icon: typeof Home) => (
     <button type="button" onClick={() => { setActiveTab(tab); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -601,7 +640,7 @@ export function MemberDashboardV2() {
       </div>
     </div>}
 
-    <div className="mx-auto max-w-6xl px-4 py-5 sm:px-7 sm:py-9">
+    <div className={"mx-auto max-w-6xl px-4 py-5 sm:px-7 sm:py-9" + (readOnly ? " pointer-events-none" : "")}>
       <header className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[.18em] text-[#488253]">Super Plus member</p>
@@ -1048,7 +1087,7 @@ export function MemberDashboardV2() {
       <div className="mx-auto flex max-w-lg items-end">
         {tabButton("home", "Home", Home)}
         {tabButton("activity", "Activity", Activity)}
-        <Link to="/my-qr" className="-mt-5 flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] font-black text-[#193b2a]"><span className="grid size-14 place-items-center rounded-full border-4 border-white bg-[#b8ee73] shadow-lg"><QrCode className="size-6"/></span><span>QR</span></Link>
+        {readOnly ? <span className="-mt-5 flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] font-black text-[#193b2a]"><span className="grid size-14 place-items-center rounded-full border-4 border-white bg-[#dfe6dc] shadow-lg"><QrCode className="size-6"/></span><span>QR</span></span> : <Link to="/my-qr" className="-mt-5 flex min-w-0 flex-1 flex-col items-center justify-center gap-1 text-[10px] font-black text-[#193b2a]"><span className="grid size-14 place-items-center rounded-full border-4 border-white bg-[#b8ee73] shadow-lg"><QrCode className="size-6"/></span><span>QR</span></Link>}
         {tabButton("community", "Community", Megaphone)}
         {tabButton("profile", "Profile", UserRound)}
       </div>
