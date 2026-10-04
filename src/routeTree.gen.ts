@@ -13,40 +13,51 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin-announcements'
 import { Route as AdminApprovalsRouteImport } from './routes/admin-approvals'
+import { Route as AdminEngagementRouteImport } from './routes/admin-engagement'
 import { Route as AdminMembersRouteImport } from './routes/admin-members'
 import { Route as AdminWorkspaceRouteImport } from './routes/admin-workspace'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as FacilitiesRouteImport } from './routes/facilities'
+import { Route as FamilyJoinRouteImport } from './routes/family-join'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as HmoRouteImport } from './routes/hmo'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ManagementAttendanceRouteImport } from './routes/management-attendance'
 import { Route as ManagementAttendanceExportRouteImport } from './routes/management-attendance-export'
+import { Route as ManagementBookingsRouteImport } from './routes/management-bookings'
 import { Route as ManagementCommunicationsRouteImport } from './routes/management-communications'
 import { Route as ManagementCustomPlanRouteImport } from './routes/management-custom-plan'
+import { Route as ManagementFamilyRouteImport } from './routes/management-family'
 import { Route as ManagementMemberCardRouteImport } from './routes/management-member-card'
 import { Route as ManagementMemberCardsRouteImport } from './routes/management-member-cards'
+import { Route as ManagementMemberFeedbackRouteImport } from './routes/management-member-feedback'
 import { Route as ManagementMembersRouteImport } from './routes/management-members'
 import { Route as ManagementNewMemberIntakeRouteImport } from './routes/management-new-member-intake'
-import { Route as ManagementPersonalTrainingRouteImport } from './routes/management-personal-training'
 import { Route as ManagementOperationsRouteImport } from './routes/management-operations'
 import { Route as ManagementPaymentDeskRouteImport } from './routes/management-payment-desk'
 import { Route as ManagementPayrollRouteImport } from './routes/management-payroll'
 import { Route as ManagementPayrollExportRouteImport } from './routes/management-payroll-export'
+import { Route as ManagementPersonalTrainingRouteImport } from './routes/management-personal-training'
 import { Route as ManagementPreviewRouteImport } from './routes/management-preview'
 import { Route as ManagementProfilesRouteImport } from './routes/management-profiles'
 import { Route as ManagementRevenueRouteImport } from './routes/management-revenue'
+import { Route as ManagementSalaryPaymentsRouteImport } from './routes/management-salary-payments'
 import { Route as ManagementStaffRouteImport } from './routes/management-staff'
+import { Route as ManagementStaffManagementRouteImport } from './routes/management-staff-management'
 import { Route as ManagementStaffMonthlyRouteImport } from './routes/management-staff-monthly'
 import { Route as ManagementStaffReviewRouteImport } from './routes/management-staff-review'
+import { Route as ManagementStaffSupportRouteImport } from './routes/management-staff-support'
 import { Route as ManagementStandardPlanRouteImport } from './routes/management-standard-plan'
 import { Route as MemberRouteImport } from './routes/member'
+import { Route as MemberFamilyRouteImport } from './routes/member-family'
 import { Route as MembershipRouteImport } from './routes/membership'
 import { Route as MyQrRouteImport } from './routes/my-qr'
 import { Route as PersonalTrainingRouteImport } from './routes/personal-training'
 import { Route as PortalRouteImport } from './routes/portal'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ReceptionCheckinRouteImport } from './routes/reception-checkin'
 import { Route as ReceptionDashboardRouteImport } from './routes/reception-dashboard'
 import { Route as ReceptionRegisterRouteImport } from './routes/reception-register'
@@ -61,11 +72,14 @@ import { Route as StaffBlogRouteImport } from './routes/staff-blog'
 import { Route as StaffGalleryRouteImport } from './routes/staff-gallery'
 import { Route as StaffMissedScansRouteImport } from './routes/staff-missed-scans'
 import { Route as StaffResetPasswordRouteImport } from './routes/staff-reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthConfirmRouteImport } from './routes/auth.confirm'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as BlogArticleRouteImport } from './routes/blog.article'
+import { Route as ManagementMemberPreviewMemberIdRouteImport } from './routes/management-member-preview.$memberId'
 import { Route as PaymentCallbackRouteImport } from './routes/payment.callback'
+import { Route as PaymentMobileReturnRouteImport } from './routes/payment.mobile-return'
 import { Route as PaymentPublicCallbackRouteImport } from './routes/payment.public-callback'
 import { Route as PortalAdminRouteImport } from './routes/portal.admin'
 import { Route as PortalReceptionRouteImport } from './routes/portal.reception'
@@ -92,6 +106,11 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
   path: '/admin-approvals',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminEngagementRoute = AdminEngagementRouteImport.update({
+  id: '/admin-engagement',
+  path: '/admin-engagement',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMembersRoute = AdminMembersRouteImport.update({
   id: '/admin-members',
   path: '/admin-members',
@@ -112,9 +131,19 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeleteAccountRoute = DeleteAccountRouteImport.update({
+  id: '/delete-account',
+  path: '/delete-account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FacilitiesRoute = FacilitiesRouteImport.update({
   id: '/facilities',
   path: '/facilities',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FamilyJoinRoute = FamilyJoinRouteImport.update({
+  id: '/family-join',
+  path: '/family-join',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -148,6 +177,11 @@ const ManagementAttendanceExportRoute =
     path: '/management-attendance-export',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ManagementBookingsRoute = ManagementBookingsRouteImport.update({
+  id: '/management-bookings',
+  path: '/management-bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagementCommunicationsRoute =
   ManagementCommunicationsRouteImport.update({
     id: '/management-communications',
@@ -157,6 +191,11 @@ const ManagementCommunicationsRoute =
 const ManagementCustomPlanRoute = ManagementCustomPlanRouteImport.update({
   id: '/management-custom-plan',
   path: '/management-custom-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagementFamilyRoute = ManagementFamilyRouteImport.update({
+  id: '/management-family',
+  path: '/management-family',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagementMemberCardRoute = ManagementMemberCardRouteImport.update({
@@ -169,6 +208,12 @@ const ManagementMemberCardsRoute = ManagementMemberCardsRouteImport.update({
   path: '/management-member-cards',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementMemberFeedbackRoute =
+  ManagementMemberFeedbackRouteImport.update({
+    id: '/management-member-feedback',
+    path: '/management-member-feedback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManagementMembersRoute = ManagementMembersRouteImport.update({
   id: '/management-members',
   path: '/management-members',
@@ -180,11 +225,6 @@ const ManagementNewMemberIntakeRoute =
     path: '/management-new-member-intake',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ManagementPersonalTrainingRoute = ManagementPersonalTrainingRouteImport.update({
-  id: '/management-personal-training',
-  path: '/management-personal-training',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ManagementOperationsRoute = ManagementOperationsRouteImport.update({
   id: '/management-operations',
   path: '/management-operations',
@@ -205,6 +245,12 @@ const ManagementPayrollExportRoute = ManagementPayrollExportRouteImport.update({
   path: '/management-payroll-export',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementPersonalTrainingRoute =
+  ManagementPersonalTrainingRouteImport.update({
+    id: '/management-personal-training',
+    path: '/management-personal-training',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManagementPreviewRoute = ManagementPreviewRouteImport.update({
   id: '/management-preview',
   path: '/management-preview',
@@ -220,11 +266,23 @@ const ManagementRevenueRoute = ManagementRevenueRouteImport.update({
   path: '/management-revenue',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementSalaryPaymentsRoute =
+  ManagementSalaryPaymentsRouteImport.update({
+    id: '/management-salary-payments',
+    path: '/management-salary-payments',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManagementStaffRoute = ManagementStaffRouteImport.update({
   id: '/management-staff',
   path: '/management-staff',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementStaffManagementRoute =
+  ManagementStaffManagementRouteImport.update({
+    id: '/management-staff-management',
+    path: '/management-staff-management',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ManagementStaffMonthlyRoute = ManagementStaffMonthlyRouteImport.update({
   id: '/management-staff-monthly',
   path: '/management-staff-monthly',
@@ -235,6 +293,11 @@ const ManagementStaffReviewRoute = ManagementStaffReviewRouteImport.update({
   path: '/management-staff-review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManagementStaffSupportRoute = ManagementStaffSupportRouteImport.update({
+  id: '/management-staff-support',
+  path: '/management-staff-support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagementStandardPlanRoute = ManagementStandardPlanRouteImport.update({
   id: '/management-standard-plan',
   path: '/management-standard-plan',
@@ -243,6 +306,11 @@ const ManagementStandardPlanRoute = ManagementStandardPlanRouteImport.update({
 const MemberRoute = MemberRouteImport.update({
   id: '/member',
   path: '/member',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberFamilyRoute = MemberFamilyRouteImport.update({
+  id: '/member-family',
+  path: '/member-family',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MembershipRoute = MembershipRouteImport.update({
@@ -263,6 +331,11 @@ const PersonalTrainingRoute = PersonalTrainingRouteImport.update({
 const PortalRoute = PortalRouteImport.update({
   id: '/portal',
   path: '/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReceptionCheckinRoute = ReceptionCheckinRouteImport.update({
@@ -335,6 +408,11 @@ const StaffResetPasswordRoute = StaffResetPasswordRouteImport.update({
   path: '/staff-reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthConfirmRoute = AuthConfirmRouteImport.update({
   id: '/auth/confirm',
   path: '/auth/confirm',
@@ -355,9 +433,20 @@ const BlogArticleRoute = BlogArticleRouteImport.update({
   path: '/article',
   getParentRoute: () => BlogRoute,
 } as any)
+const ManagementMemberPreviewMemberIdRoute =
+  ManagementMemberPreviewMemberIdRouteImport.update({
+    id: '/management-member-preview/$memberId',
+    path: '/management-member-preview/$memberId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PaymentCallbackRoute = PaymentCallbackRouteImport.update({
   id: '/payment/callback',
   path: '/payment/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PaymentMobileReturnRoute = PaymentMobileReturnRouteImport.update({
+  id: '/payment/mobile-return',
+  path: '/payment/mobile-return',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentPublicCallbackRoute = PaymentPublicCallbackRouteImport.update({
@@ -391,40 +480,51 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
+  '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
+  '/family-join': typeof FamilyJoinRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/management-attendance': typeof ManagementAttendanceRoute
   '/management-attendance-export': typeof ManagementAttendanceExportRoute
+  '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
+  '/management-member-feedback': typeof ManagementMemberFeedbackRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
-  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
   '/management-payroll-export': typeof ManagementPayrollExportRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-preview': typeof ManagementPreviewRoute
   '/management-profiles': typeof ManagementProfilesRoute
   '/management-revenue': typeof ManagementRevenueRoute
+  '/management-salary-payments': typeof ManagementSalaryPaymentsRoute
   '/management-staff': typeof ManagementStaffRoute
+  '/management-staff-management': typeof ManagementStaffManagementRoute
   '/management-staff-monthly': typeof ManagementStaffMonthlyRoute
   '/management-staff-review': typeof ManagementStaffReviewRoute
+  '/management-staff-support': typeof ManagementStaffSupportRoute
   '/management-standard-plan': typeof ManagementStandardPlanRoute
   '/member': typeof MemberRoute
+  '/member-family': typeof MemberFamilyRoute
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
   '/portal': typeof PortalRouteWithChildren
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
@@ -439,10 +539,13 @@ export interface FileRoutesByFullPath {
   '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
   '/staff-reset-password': typeof StaffResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
+  '/management-member-preview/$memberId': typeof ManagementMemberPreviewMemberIdRoute
   '/payment/callback': typeof PaymentCallbackRoute
+  '/payment/mobile-return': typeof PaymentMobileReturnRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
   '/portal/admin': typeof PortalAdminRoute
   '/portal/reception': typeof PortalReceptionRoute
@@ -455,39 +558,50 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
+  '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/contact': typeof ContactRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
+  '/family-join': typeof FamilyJoinRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/management-attendance': typeof ManagementAttendanceRoute
   '/management-attendance-export': typeof ManagementAttendanceExportRoute
+  '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
+  '/management-member-feedback': typeof ManagementMemberFeedbackRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
-  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
   '/management-payroll-export': typeof ManagementPayrollExportRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-preview': typeof ManagementPreviewRoute
   '/management-profiles': typeof ManagementProfilesRoute
   '/management-revenue': typeof ManagementRevenueRoute
+  '/management-salary-payments': typeof ManagementSalaryPaymentsRoute
   '/management-staff': typeof ManagementStaffRoute
+  '/management-staff-management': typeof ManagementStaffManagementRoute
   '/management-staff-monthly': typeof ManagementStaffMonthlyRoute
   '/management-staff-review': typeof ManagementStaffReviewRoute
+  '/management-staff-support': typeof ManagementStaffSupportRoute
   '/management-standard-plan': typeof ManagementStandardPlanRoute
   '/member': typeof MemberRoute
+  '/member-family': typeof MemberFamilyRoute
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
   '/portal': typeof PortalRouteWithChildren
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
@@ -502,10 +616,13 @@ export interface FileRoutesByTo {
   '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
   '/staff-reset-password': typeof StaffResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
+  '/management-member-preview/$memberId': typeof ManagementMemberPreviewMemberIdRoute
   '/payment/callback': typeof PaymentCallbackRoute
+  '/payment/mobile-return': typeof PaymentMobileReturnRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
   '/portal/admin': typeof PortalAdminRoute
   '/portal/reception': typeof PortalReceptionRoute
@@ -519,40 +636,51 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
+  '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
+  '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
+  '/family-join': typeof FamilyJoinRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
   '/login': typeof LoginRoute
   '/management-attendance': typeof ManagementAttendanceRoute
   '/management-attendance-export': typeof ManagementAttendanceExportRoute
+  '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
+  '/management-member-feedback': typeof ManagementMemberFeedbackRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
-  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
   '/management-payroll-export': typeof ManagementPayrollExportRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-preview': typeof ManagementPreviewRoute
   '/management-profiles': typeof ManagementProfilesRoute
   '/management-revenue': typeof ManagementRevenueRoute
+  '/management-salary-payments': typeof ManagementSalaryPaymentsRoute
   '/management-staff': typeof ManagementStaffRoute
+  '/management-staff-management': typeof ManagementStaffManagementRoute
   '/management-staff-monthly': typeof ManagementStaffMonthlyRoute
   '/management-staff-review': typeof ManagementStaffReviewRoute
+  '/management-staff-support': typeof ManagementStaffSupportRoute
   '/management-standard-plan': typeof ManagementStandardPlanRoute
   '/member': typeof MemberRoute
+  '/member-family': typeof MemberFamilyRoute
   '/membership': typeof MembershipRoute
   '/my-qr': typeof MyQrRoute
   '/personal-training': typeof PersonalTrainingRoute
   '/portal': typeof PortalRouteWithChildren
+  '/privacy-policy': typeof PrivacyPolicyRoute
   '/reception-checkin': typeof ReceptionCheckinRoute
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
@@ -567,10 +695,13 @@ export interface FileRoutesById {
   '/staff-gallery': typeof StaffGalleryRoute
   '/staff-missed-scans': typeof StaffMissedScansRoute
   '/staff-reset-password': typeof StaffResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/auth/confirm': typeof AuthConfirmRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/article': typeof BlogArticleRoute
+  '/management-member-preview/$memberId': typeof ManagementMemberPreviewMemberIdRoute
   '/payment/callback': typeof PaymentCallbackRoute
+  '/payment/mobile-return': typeof PaymentMobileReturnRoute
   '/payment/public-callback': typeof PaymentPublicCallbackRoute
   '/portal/admin': typeof PortalAdminRoute
   '/portal/reception': typeof PortalReceptionRoute
@@ -585,40 +716,51 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin-announcements'
     | '/admin-approvals'
+    | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
     | '/blog'
     | '/contact'
+    | '/delete-account'
     | '/facilities'
+    | '/family-join'
     | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
     | '/management-attendance'
     | '/management-attendance-export'
+    | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
+    | '/management-member-feedback'
     | '/management-members'
     | '/management-new-member-intake'
-    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
     | '/management-payroll-export'
+    | '/management-personal-training'
     | '/management-preview'
     | '/management-profiles'
     | '/management-revenue'
+    | '/management-salary-payments'
     | '/management-staff'
+    | '/management-staff-management'
     | '/management-staff-monthly'
     | '/management-staff-review'
+    | '/management-staff-support'
     | '/management-standard-plan'
     | '/member'
+    | '/member-family'
     | '/membership'
     | '/my-qr'
     | '/personal-training'
     | '/portal'
+    | '/privacy-policy'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-register'
@@ -633,10 +775,13 @@ export interface FileRouteTypes {
     | '/staff-gallery'
     | '/staff-missed-scans'
     | '/staff-reset-password'
+    | '/terms'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
+    | '/management-member-preview/$memberId'
     | '/payment/callback'
+    | '/payment/mobile-return'
     | '/payment/public-callback'
     | '/portal/admin'
     | '/portal/reception'
@@ -649,39 +794,50 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin-announcements'
     | '/admin-approvals'
+    | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
     | '/contact'
+    | '/delete-account'
     | '/facilities'
+    | '/family-join'
     | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
     | '/management-attendance'
     | '/management-attendance-export'
+    | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
+    | '/management-member-feedback'
     | '/management-members'
     | '/management-new-member-intake'
-    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
     | '/management-payroll-export'
+    | '/management-personal-training'
     | '/management-preview'
     | '/management-profiles'
     | '/management-revenue'
+    | '/management-salary-payments'
     | '/management-staff'
+    | '/management-staff-management'
     | '/management-staff-monthly'
     | '/management-staff-review'
+    | '/management-staff-support'
     | '/management-standard-plan'
     | '/member'
+    | '/member-family'
     | '/membership'
     | '/my-qr'
     | '/personal-training'
     | '/portal'
+    | '/privacy-policy'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-register'
@@ -696,10 +852,13 @@ export interface FileRouteTypes {
     | '/staff-gallery'
     | '/staff-missed-scans'
     | '/staff-reset-password'
+    | '/terms'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
+    | '/management-member-preview/$memberId'
     | '/payment/callback'
+    | '/payment/mobile-return'
     | '/payment/public-callback'
     | '/portal/admin'
     | '/portal/reception'
@@ -712,40 +871,51 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin-announcements'
     | '/admin-approvals'
+    | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
     | '/blog'
     | '/contact'
+    | '/delete-account'
     | '/facilities'
+    | '/family-join'
     | '/gallery'
     | '/hmo'
     | '/join'
     | '/login'
     | '/management-attendance'
     | '/management-attendance-export'
+    | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
+    | '/management-member-feedback'
     | '/management-members'
     | '/management-new-member-intake'
-    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
     | '/management-payroll-export'
+    | '/management-personal-training'
     | '/management-preview'
     | '/management-profiles'
     | '/management-revenue'
+    | '/management-salary-payments'
     | '/management-staff'
+    | '/management-staff-management'
     | '/management-staff-monthly'
     | '/management-staff-review'
+    | '/management-staff-support'
     | '/management-standard-plan'
     | '/member'
+    | '/member-family'
     | '/membership'
     | '/my-qr'
     | '/personal-training'
     | '/portal'
+    | '/privacy-policy'
     | '/reception-checkin'
     | '/reception-dashboard'
     | '/reception-register'
@@ -760,10 +930,13 @@ export interface FileRouteTypes {
     | '/staff-gallery'
     | '/staff-missed-scans'
     | '/staff-reset-password'
+    | '/terms'
     | '/auth/confirm'
     | '/blog/$slug'
     | '/blog/article'
+    | '/management-member-preview/$memberId'
     | '/payment/callback'
+    | '/payment/mobile-return'
     | '/payment/public-callback'
     | '/portal/admin'
     | '/portal/reception'
@@ -777,40 +950,51 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
+  AdminEngagementRoute: typeof AdminEngagementRoute
   AdminMembersRoute: typeof AdminMembersRoute
   AdminWorkspaceRoute: typeof AdminWorkspaceRoute
   BlogRoute: typeof BlogRouteWithChildren
   ContactRoute: typeof ContactRoute
+  DeleteAccountRoute: typeof DeleteAccountRoute
   FacilitiesRoute: typeof FacilitiesRoute
+  FamilyJoinRoute: typeof FamilyJoinRoute
   GalleryRoute: typeof GalleryRoute
   HmoRoute: typeof HmoRoute
   JoinRoute: typeof JoinRoute
   LoginRoute: typeof LoginRoute
   ManagementAttendanceRoute: typeof ManagementAttendanceRoute
   ManagementAttendanceExportRoute: typeof ManagementAttendanceExportRoute
+  ManagementBookingsRoute: typeof ManagementBookingsRoute
   ManagementCommunicationsRoute: typeof ManagementCommunicationsRoute
   ManagementCustomPlanRoute: typeof ManagementCustomPlanRoute
+  ManagementFamilyRoute: typeof ManagementFamilyRoute
   ManagementMemberCardRoute: typeof ManagementMemberCardRoute
   ManagementMemberCardsRoute: typeof ManagementMemberCardsRoute
+  ManagementMemberFeedbackRoute: typeof ManagementMemberFeedbackRoute
   ManagementMembersRoute: typeof ManagementMembersRoute
   ManagementNewMemberIntakeRoute: typeof ManagementNewMemberIntakeRoute
-  ManagementPersonalTrainingRoute: typeof ManagementPersonalTrainingRoute
   ManagementOperationsRoute: typeof ManagementOperationsRoute
   ManagementPaymentDeskRoute: typeof ManagementPaymentDeskRoute
   ManagementPayrollRoute: typeof ManagementPayrollRoute
   ManagementPayrollExportRoute: typeof ManagementPayrollExportRoute
+  ManagementPersonalTrainingRoute: typeof ManagementPersonalTrainingRoute
   ManagementPreviewRoute: typeof ManagementPreviewRoute
   ManagementProfilesRoute: typeof ManagementProfilesRoute
   ManagementRevenueRoute: typeof ManagementRevenueRoute
+  ManagementSalaryPaymentsRoute: typeof ManagementSalaryPaymentsRoute
   ManagementStaffRoute: typeof ManagementStaffRoute
+  ManagementStaffManagementRoute: typeof ManagementStaffManagementRoute
   ManagementStaffMonthlyRoute: typeof ManagementStaffMonthlyRoute
   ManagementStaffReviewRoute: typeof ManagementStaffReviewRoute
+  ManagementStaffSupportRoute: typeof ManagementStaffSupportRoute
   ManagementStandardPlanRoute: typeof ManagementStandardPlanRoute
   MemberRoute: typeof MemberRoute
+  MemberFamilyRoute: typeof MemberFamilyRoute
   MembershipRoute: typeof MembershipRoute
   MyQrRoute: typeof MyQrRoute
   PersonalTrainingRoute: typeof PersonalTrainingRoute
   PortalRoute: typeof PortalRouteWithChildren
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ReceptionCheckinRoute: typeof ReceptionCheckinRoute
   ReceptionDashboardRoute: typeof ReceptionDashboardRoute
   ReceptionRegisterRoute: typeof ReceptionRegisterRoute
@@ -825,8 +1009,11 @@ export interface RootRouteChildren {
   StaffGalleryRoute: typeof StaffGalleryRoute
   StaffMissedScansRoute: typeof StaffMissedScansRoute
   StaffResetPasswordRoute: typeof StaffResetPasswordRoute
+  TermsRoute: typeof TermsRoute
   AuthConfirmRoute: typeof AuthConfirmRoute
+  ManagementMemberPreviewMemberIdRoute: typeof ManagementMemberPreviewMemberIdRoute
   PaymentCallbackRoute: typeof PaymentCallbackRoute
+  PaymentMobileReturnRoute: typeof PaymentMobileReturnRoute
   PaymentPublicCallbackRoute: typeof PaymentPublicCallbackRoute
   ReceptionMemberMemberIdRoute: typeof ReceptionMemberMemberIdRoute
 }
@@ -861,6 +1048,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminApprovalsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin-engagement': {
+      id: '/admin-engagement'
+      path: '/admin-engagement'
+      fullPath: '/admin-engagement'
+      preLoaderRoute: typeof AdminEngagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin-members': {
       id: '/admin-members'
       path: '/admin-members'
@@ -889,11 +1083,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/delete-account': {
+      id: '/delete-account'
+      path: '/delete-account'
+      fullPath: '/delete-account'
+      preLoaderRoute: typeof DeleteAccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/facilities': {
       id: '/facilities'
       path: '/facilities'
       fullPath: '/facilities'
       preLoaderRoute: typeof FacilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/family-join': {
+      id: '/family-join'
+      path: '/family-join'
+      fullPath: '/family-join'
+      preLoaderRoute: typeof FamilyJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -938,6 +1146,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementAttendanceExportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management-bookings': {
+      id: '/management-bookings'
+      path: '/management-bookings'
+      fullPath: '/management-bookings'
+      preLoaderRoute: typeof ManagementBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management-communications': {
       id: '/management-communications'
       path: '/management-communications'
@@ -950,6 +1165,13 @@ declare module '@tanstack/react-router' {
       path: '/management-custom-plan'
       fullPath: '/management-custom-plan'
       preLoaderRoute: typeof ManagementCustomPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management-family': {
+      id: '/management-family'
+      path: '/management-family'
+      fullPath: '/management-family'
+      preLoaderRoute: typeof ManagementFamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/management-member-card': {
@@ -966,6 +1188,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementMemberCardsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management-member-feedback': {
+      id: '/management-member-feedback'
+      path: '/management-member-feedback'
+      fullPath: '/management-member-feedback'
+      preLoaderRoute: typeof ManagementMemberFeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management-members': {
       id: '/management-members'
       path: '/management-members'
@@ -978,13 +1207,6 @@ declare module '@tanstack/react-router' {
       path: '/management-new-member-intake'
       fullPath: '/management-new-member-intake'
       preLoaderRoute: typeof ManagementNewMemberIntakeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/management-personal-training': {
-      id: '/management-personal-training'
-      path: '/management-personal-training'
-      fullPath: '/management-personal-training'
-      preLoaderRoute: typeof ManagementPersonalTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/management-operations': {
@@ -1015,6 +1237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementPayrollExportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management-personal-training': {
+      id: '/management-personal-training'
+      path: '/management-personal-training'
+      fullPath: '/management-personal-training'
+      preLoaderRoute: typeof ManagementPersonalTrainingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management-preview': {
       id: '/management-preview'
       path: '/management-preview'
@@ -1036,11 +1265,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementRevenueRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management-salary-payments': {
+      id: '/management-salary-payments'
+      path: '/management-salary-payments'
+      fullPath: '/management-salary-payments'
+      preLoaderRoute: typeof ManagementSalaryPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management-staff': {
       id: '/management-staff'
       path: '/management-staff'
       fullPath: '/management-staff'
       preLoaderRoute: typeof ManagementStaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management-staff-management': {
+      id: '/management-staff-management'
+      path: '/management-staff-management'
+      fullPath: '/management-staff-management'
+      preLoaderRoute: typeof ManagementStaffManagementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/management-staff-monthly': {
@@ -1057,6 +1300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagementStaffReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/management-staff-support': {
+      id: '/management-staff-support'
+      path: '/management-staff-support'
+      fullPath: '/management-staff-support'
+      preLoaderRoute: typeof ManagementStaffSupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/management-standard-plan': {
       id: '/management-standard-plan'
       path: '/management-standard-plan'
@@ -1069,6 +1319,13 @@ declare module '@tanstack/react-router' {
       path: '/member'
       fullPath: '/member'
       preLoaderRoute: typeof MemberRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member-family': {
+      id: '/member-family'
+      path: '/member-family'
+      fullPath: '/member-family'
+      preLoaderRoute: typeof MemberFamilyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/membership': {
@@ -1097,6 +1354,13 @@ declare module '@tanstack/react-router' {
       path: '/portal'
       fullPath: '/portal'
       preLoaderRoute: typeof PortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reception-checkin': {
@@ -1197,6 +1461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StaffResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/confirm': {
       id: '/auth/confirm'
       path: '/auth/confirm'
@@ -1225,11 +1496,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogArticleRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/management-member-preview/$memberId': {
+      id: '/management-member-preview/$memberId'
+      path: '/management-member-preview/$memberId'
+      fullPath: '/management-member-preview/$memberId'
+      preLoaderRoute: typeof ManagementMemberPreviewMemberIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/payment/callback': {
       id: '/payment/callback'
       path: '/payment/callback'
       fullPath: '/payment/callback'
       preLoaderRoute: typeof PaymentCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/payment/mobile-return': {
+      id: '/payment/mobile-return'
+      path: '/payment/mobile-return'
+      fullPath: '/payment/mobile-return'
+      preLoaderRoute: typeof PaymentMobileReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payment/public-callback': {
@@ -1304,40 +1589,51 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
+  AdminEngagementRoute: AdminEngagementRoute,
   AdminMembersRoute: AdminMembersRoute,
   AdminWorkspaceRoute: AdminWorkspaceRoute,
   BlogRoute: BlogRouteWithChildren,
   ContactRoute: ContactRoute,
+  DeleteAccountRoute: DeleteAccountRoute,
   FacilitiesRoute: FacilitiesRoute,
+  FamilyJoinRoute: FamilyJoinRoute,
   GalleryRoute: GalleryRoute,
   HmoRoute: HmoRoute,
   JoinRoute: JoinRoute,
   LoginRoute: LoginRoute,
   ManagementAttendanceRoute: ManagementAttendanceRoute,
   ManagementAttendanceExportRoute: ManagementAttendanceExportRoute,
+  ManagementBookingsRoute: ManagementBookingsRoute,
   ManagementCommunicationsRoute: ManagementCommunicationsRoute,
   ManagementCustomPlanRoute: ManagementCustomPlanRoute,
+  ManagementFamilyRoute: ManagementFamilyRoute,
   ManagementMemberCardRoute: ManagementMemberCardRoute,
   ManagementMemberCardsRoute: ManagementMemberCardsRoute,
+  ManagementMemberFeedbackRoute: ManagementMemberFeedbackRoute,
   ManagementMembersRoute: ManagementMembersRoute,
   ManagementNewMemberIntakeRoute: ManagementNewMemberIntakeRoute,
-  ManagementPersonalTrainingRoute: ManagementPersonalTrainingRoute,
   ManagementOperationsRoute: ManagementOperationsRoute,
   ManagementPaymentDeskRoute: ManagementPaymentDeskRoute,
   ManagementPayrollRoute: ManagementPayrollRoute,
   ManagementPayrollExportRoute: ManagementPayrollExportRoute,
+  ManagementPersonalTrainingRoute: ManagementPersonalTrainingRoute,
   ManagementPreviewRoute: ManagementPreviewRoute,
   ManagementProfilesRoute: ManagementProfilesRoute,
   ManagementRevenueRoute: ManagementRevenueRoute,
+  ManagementSalaryPaymentsRoute: ManagementSalaryPaymentsRoute,
   ManagementStaffRoute: ManagementStaffRoute,
+  ManagementStaffManagementRoute: ManagementStaffManagementRoute,
   ManagementStaffMonthlyRoute: ManagementStaffMonthlyRoute,
   ManagementStaffReviewRoute: ManagementStaffReviewRoute,
+  ManagementStaffSupportRoute: ManagementStaffSupportRoute,
   ManagementStandardPlanRoute: ManagementStandardPlanRoute,
   MemberRoute: MemberRoute,
+  MemberFamilyRoute: MemberFamilyRoute,
   MembershipRoute: MembershipRoute,
   MyQrRoute: MyQrRoute,
   PersonalTrainingRoute: PersonalTrainingRoute,
   PortalRoute: PortalRouteWithChildren,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
   ReceptionCheckinRoute: ReceptionCheckinRoute,
   ReceptionDashboardRoute: ReceptionDashboardRoute,
   ReceptionRegisterRoute: ReceptionRegisterRoute,
@@ -1352,21 +1648,14 @@ const rootRouteChildren: RootRouteChildren = {
   StaffGalleryRoute: StaffGalleryRoute,
   StaffMissedScansRoute: StaffMissedScansRoute,
   StaffResetPasswordRoute: StaffResetPasswordRoute,
+  TermsRoute: TermsRoute,
   AuthConfirmRoute: AuthConfirmRoute,
+  ManagementMemberPreviewMemberIdRoute: ManagementMemberPreviewMemberIdRoute,
   PaymentCallbackRoute: PaymentCallbackRoute,
+  PaymentMobileReturnRoute: PaymentMobileReturnRoute,
   PaymentPublicCallbackRoute: PaymentPublicCallbackRoute,
   ReceptionMemberMemberIdRoute: ReceptionMemberMemberIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,3 +1,4 @@
+import { StaffSupportRequests } from "@/components/StaffSupportRequests";
 import { StaffSalaryAdvance } from "@/components/StaffSalaryAdvance";
 import { PrivateStaffContractTerms } from "@/components/PrivateStaffContractTerms";
 import { useEffect, useMemo, useState } from "react";
@@ -20,6 +21,7 @@ import {
   Wallet,
   XCircle,
   KeyRound,
+  MessageSquareWarning,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -1258,10 +1260,12 @@ function StaffPage() {
           )}
         </section>
 
+        <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={() => setActiveSection("support")}><MessageSquareWarning />Request or complaint</Button>
+
         <Tabs value={activeSection} onValueChange={setActiveSection} className="mt-5">
           <TabsList
             aria-label="Staff dashboard sections"
-            className={`grid h-auto w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0 sm:grid-cols-3 ${coachPerformance ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}
+            className={`grid h-auto w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0 sm:grid-cols-3 ${coachPerformance ? "lg:grid-cols-7" : "lg:grid-cols-6"}`}
           >
             {[
               { value: "personal", label: "Personal Information", icon: UserRound },
@@ -1272,6 +1276,7 @@ function StaffPage() {
                 : []),
               { value: "payments", label: "Payments", icon: Wallet },
               { value: "identification", label: "Staff QR Code", icon: QrCode },
+              { value: "support", label: "Requests & complaints", icon: MessageSquareWarning },
             ].map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -1283,6 +1288,7 @@ function StaffPage() {
               </TabsTrigger>
             ))}
           </TabsList>
+          <TabsContent value="support" className="mt-4 min-w-0 border border-border bg-card"><StaffSupportRequests key={profile.id} staffProfileId={profile.id} readOnly={previewMode} /></TabsContent>
           <TabsContent value="personal" className="mt-4 min-w-0 border border-border bg-card">
             <div className="border-b border-border px-4 py-4 sm:px-6">
               <h2 className="font-display text-2xl font-bold uppercase">Personal Information</h2>
