@@ -9,6 +9,7 @@ import {
   Dumbbell,
   RefreshCw,
   Save,
+  ShieldAlert,
   Star,
   UserRound,
   Users,
@@ -72,6 +73,19 @@ type Evaluation = {
   submitted_at: string;
 };
 
+type CoachReport = {
+  id: string;
+  membership_id: string;
+  member_id: string;
+  coach_staff_profile_id: string;
+  category: string;
+  details: string;
+  incident_date: string | null;
+  status: "pending" | "reviewed" | "resolved";
+  submitted_at: string;
+  updated_at: string;
+};
+
 type PtPayoutBreakdown = {
   trainer_staff_profile_id: string;
   trainer_name: string;
@@ -131,6 +145,17 @@ const formatDateTime = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+const coachReportCategoryLabel = (value: string) =>
+  ({
+    training_quality: "Training quality",
+    punctuality: "Punctuality / attendance",
+    communication: "Communication",
+    conduct: "Coach conduct",
+    safety: "Safety concern",
+    inappropriate_behaviour: "Inappropriate behaviour",
+    other: "Other",
+  })[value] || value.replaceAll("_", " ");
+
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -151,6 +176,7 @@ function ManagementPersonalTraining() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutMonth, setPayoutMonth] = useState(lagosToday().slice(0, 7));
   const [payoutPool, setPayoutPool] = useState("");
@@ -165,12 +191,14 @@ function ManagementPersonalTraining() {
   const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [savingReportId, setSavingReportId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
 
-    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult] = await Promise.all([
+    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -194,10 +222,15 @@ function ManagementPersonalTraining() {
         .select("id,payout_month,payout_pool,breakdown,created_by,updated_at")
         .order("payout_month", { ascending: false })
         .limit(24),
+      supabase
+        .from("pt_coach_reports")
+        .select("id,membership_id,member_id,coach_staff_profile_id,category,details,incident_date,status,submitted_at,updated_at")
+        .order("submitted_at", { ascending: false })
+        .limit(300),
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error;
+      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -206,7 +239,11 @@ function ManagementPersonalTraining() {
     }
 
     const nextMemberships = (membershipResult.data || []) as PtMembership[];
-    const memberIds = Array.from(new Set(nextMemberships.map((row) => row.member_id)));
+    const nextReports = (reportResult.data || []) as CoachReport[];
+    const memberIds = Array.from(new Set([
+      ...nextMemberships.map((row) => row.member_id),
+      ...nextReports.map((row) => row.member_id),
+    ]));
     let nextMembers: Member[] = [];
 
     if (memberIds.length) {
@@ -227,6 +264,7 @@ function ManagementPersonalTraining() {
     setTrainers((trainerResult.data || []) as Trainer[]);
     setAssignments((assignmentResult.data || []) as Assignment[]);
     setEvaluations((evaluationResult.data || []) as Evaluation[]);
+    setCoachReports(nextReports);
     setPayoutRuns((payoutResult.data || []) as PtPayoutRun[]);
     setLoading(false);
   }, []);
@@ -271,6 +309,7 @@ function ManagementPersonalTraining() {
   const pendingFeedbackCount = evaluations.filter(
     (row) => row.management_status === "pending",
   ).length;
+  const pendingCoachReportsCount = coachReports.filter((row) => row.status === "pending").length;
 
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
