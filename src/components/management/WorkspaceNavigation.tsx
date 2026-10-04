@@ -1,8 +1,13 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { useRouterState } from '@tanstack/react-router';
 import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ActionSearch } from './ActionSearch';
+
+function StaffToolLink({href,className,readOnly,children}:{href:string;className:string;readOnly:boolean;children:ReactNode}){
+ if(readOnly)return <span aria-disabled="true" title="Read-only staff preview" className={`${className} cursor-not-allowed`}>{children}</span>;
+ return <a href={href} className={className}>{children}</a>;
+}
 
 /** Secondary bar remains for older management pages; reception sidebar supersedes it on front-desk routes. */
 export function WorkspaceNavigation(){
@@ -10,9 +15,28 @@ export function WorkspaceNavigation(){
  const onReception=pathname==='/reception-workspace',onStaff=['/staff','/staff-attendance','/staff-admin','/reception-checkin','/staff-missed-scans'].includes(pathname);
  const inWorkspace=onReception||onStaff||['/management-preview','/management-members','/management-attendance','/management-operations','/management-custom-plan','/management-standard-plan','/management-payment-desk','/management-profiles','/management-member-cards','/management-communications','/management-revenue','/management-staff','/management-staff-monthly','/management-staff-review','/management-payroll','/management-attendance-export','/management-payroll-export','/management-new-member-intake','/management-family'].includes(pathname);
  const[role,setRole]=useState<string|null>(null);
- useEffect(()=>{let cancelled=false;setRole(null);if(!inWorkspace)return()=>{cancelled=true;};void(async()=>{const{data:auth,error:authError}=await supabase.auth.getUser();if(authError||!auth.user)return;const{data:staff,error}=await supabase.from('staff_users').select('role,active').eq('auth_user_id',auth.user.id).maybeSingle();if(!error&&staff?.active&&!cancelled)setRole(String(staff.role||'').toLowerCase());})();return()=>{cancelled=true;};},[inWorkspace]);
+ const[staffPreview,setStaffPreview]=useState(false);
+ useEffect(()=>{let cancelled=false;setRole(null);setStaffPreview(false);if(!inWorkspace)return()=>{cancelled=true;};void(async()=>{
+  const{data:auth,error:authError}=await supabase.auth.getUser();if(authError||!auth.user)return;
+  const{data:staff,error}=await supabase.from('staff_users').select('role,active').eq('auth_user_id',auth.user.id).maybeSingle();if(error||!staff?.active)return;
+  const signedInRole=String(staff.role||'').toLowerCase();
+  const previewId=pathname==='/staff'&&typeof window!=='undefined'?new URLSearchParams(window.location.search).get('preview'):null;
+  if(!previewId){if(!cancelled)setRole(signedInRole);return;}
+  if(!['admin','owner'].includes(signedInRole)){if(!cancelled)setRole(signedInRole);return;}
+
+  if(!cancelled)setStaffPreview(true);
+  const{data:profile,error:profileError}=await supabase.from('staff_profiles').select('auth_user_id,role').eq('id',previewId).maybeSingle();
+  if(profileError||!profile){if(!cancelled)setRole(null);return;}
+
+  let targetRole=String(profile.role||'staff').toLowerCase();
+  if(profile.auth_user_id){
+   const{data:targetAccount,error:targetError}=await supabase.from('staff_users').select('role,active').eq('auth_user_id',profile.auth_user_id).maybeSingle();
+   if(!targetError&&targetAccount?.active)targetRole=String(targetAccount.role||targetRole).toLowerCase();
+  }
+  if(!cancelled)setRole(targetRole);
+ })();return()=>{cancelled=true;};},[inWorkspace,pathname]);
  if(!inWorkspace)return null;const management=['admin','owner','manager'].includes(role||''),admin=role==='admin',reception=management||role==='reception';
- if(onReception||onStaff)return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">Staff tools</span>{role&&<ActionSearch role={role}/>}</div><div className="flex flex-wrap gap-2 text-xs font-bold">{reception&&<a href="/reception-workspace" className="rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]">Reception</a>}{reception&&<a href="/reception-register" className="rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]">Register / renew</a>}<a href="/staff-attendance" className="rounded-lg border border-white/25 px-3 py-2">Clock in / out</a><a href="/staff-missed-scans" className="rounded-lg border border-white/25 px-3 py-2">Missed scan</a>{admin&&<a href="/management-staff-review" className="rounded-lg border border-white/25 px-3 py-2">Staff QR review</a>}{admin&&<a href="/management-member-cards" className="inline-flex items-center gap-1 rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]"><CreditCard size={14}/> ID cards</a>}{reception&&<a href="/management-communications" className="inline-flex items-center gap-1 rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326]"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></a>}</div></div></nav>;
+ if(onReception||onStaff)return <nav aria-label="Staff and reception action navigation" className="relative z-30 border-b border-[#365139] bg-[#173326] px-4 py-3 text-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3"><div className="flex min-w-0 flex-1 flex-wrap items-center gap-3"><span className="text-xs font-black uppercase tracking-wider text-[#b8ee73]">{staffPreview?'Staff tools · preview':'Staff tools'}</span>{role&&<ActionSearch role={role} readOnly={staffPreview}/>}</div><div className="flex flex-wrap gap-2 text-xs font-bold">{reception&&<StaffToolLink href="/reception-workspace" readOnly={staffPreview} className="rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]">Reception</StaffToolLink>}{reception&&<StaffToolLink href="/reception-register" readOnly={staffPreview} className="rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]">Register / renew</StaffToolLink>}<StaffToolLink href="/staff-attendance" readOnly={staffPreview} className="rounded-lg border border-white/25 px-3 py-2">Clock in / out</StaffToolLink><StaffToolLink href="/staff-missed-scans" readOnly={staffPreview} className="rounded-lg border border-white/25 px-3 py-2">Missed scan</StaffToolLink>{admin&&<StaffToolLink href="/management-staff-review" readOnly={staffPreview} className="rounded-lg border border-white/25 px-3 py-2">Staff QR review</StaffToolLink>}{admin&&<StaffToolLink href="/management-member-cards" readOnly={staffPreview} className="inline-flex items-center gap-1 rounded-lg border border-[#b8ee73] px-3 py-2 text-[#b8ee73]"><CreditCard size={14}/> ID cards</StaffToolLink>}{reception&&<StaffToolLink href="/management-communications" readOnly={staffPreview} className="inline-flex items-center gap-1 rounded-lg bg-[#b8ee73] px-3 py-2 text-[#173326]"><Cake size={14}/> Reminders <ArrowUpRight size={13}/></StaffToolLink>}</div></div></nav>;
  if(!reception||!role)return null;
  const pages=[
   {label:'Overview',href:'/management-preview',icon:LayoutDashboard},

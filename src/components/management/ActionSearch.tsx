@@ -5,7 +5,7 @@ import "./admin-search-layout.css";
 
 /** Search only offers destinations allowed by the signed-in workspace role.
  * Destination route guards and Supabase permissions still determine actual access. */
-export function ActionSearch({ role }: { role: string }) {
+export function ActionSearch({ role, readOnly = false }: { role: string; readOnly?: boolean }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -25,12 +25,13 @@ export function ActionSearch({ role }: { role: string }) {
         aria-label="Search available actions"
         aria-expanded={open}
         aria-controls="staff-action-results"
-        className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white placeholder:text-white/65 outline-none"
+        disabled={readOnly}
+        className="min-w-0 flex-1 bg-transparent py-3 text-sm text-white placeholder:text-white/65 outline-none disabled:cursor-not-allowed disabled:opacity-80"
       />
-      {query && <button type="button" aria-label="Clear search" onClick={() => { setQuery(""); setOpen(true); input.current?.focus(); }} className="rounded p-1 hover:bg-white/10"><X size={15} /></button>}
-      {open && <button type="button" onClick={() => setOpen(false)} aria-label="Close search results" className="rounded px-2 py-1 text-xs font-bold text-[#d3f9a4] hover:bg-white/10">Close</button>}
+      {!readOnly && query && <button type="button" aria-label="Clear search" onClick={() => { setQuery(""); setOpen(true); input.current?.focus(); }} className="rounded p-1 hover:bg-white/10"><X size={15} /></button>}
+      {!readOnly && open && <button type="button" onClick={() => setOpen(false)} aria-label="Close search results" className="rounded px-2 py-1 text-xs font-bold text-[#d3f9a4] hover:bg-white/10">Close</button>}
     </div>
-    {open && <section id="staff-action-results" aria-label="Action search results" className="mt-3 max-h-[min(54dvh,460px)] overflow-y-auto overscroll-contain rounded-2xl border border-[#d9e6d2] bg-white p-2 text-[#193d2b] shadow-xl">
+    {!readOnly && open && <section id="staff-action-results" aria-label="Action search results" className="mt-3 max-h-[min(54dvh,460px)] overflow-y-auto overscroll-contain rounded-2xl border border-[#d9e6d2] bg-white p-2 text-[#193d2b] shadow-xl">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
         <p role="status" className="text-[11px] font-bold uppercase tracking-wider text-[#718172]">{query.trim() ? `${matches.length} matching actions` : "Suggested actions"}</p>
         <span className="text-[11px] text-[#718172]">Tap a result to open it</span>
