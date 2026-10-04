@@ -905,10 +905,10 @@ function ManagementPersonalTraining() {
         {payoutOpen && (
           <>
             <p className="mt-4 text-xs leading-5 text-[#67776c]">
-              Enter the amount management has decided is available for <strong>in-house coaches</strong> for the month.
-              The calculator splits only that in-house pool using 50% equal team share, 30% assigned-trainee workload
-              and 20% performance. Part-time coaches are excluded completely and are settled separately by management.
-              Cover sessions are not included.
+              Only an in-house coach with <strong>3 or more assigned PT trainees</strong> enters the 50/30/20 pool.
+              An in-house coach with 1–2 trainees gets a fixed <strong>₦10,000 per trainee</strong> instead, and a coach
+              with 0 trainees gets ₦0. Those fixed commissions are separate and do not reduce the 50/30/20 pool.
+              Part-time coaches are excluded completely and are settled separately by management. Cover sessions are not included.
             </p>
 
             <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
@@ -923,7 +923,7 @@ function ManagementPersonalTraining() {
             />
           </label>
           <label className="text-xs font-black">
-            In-house coach payout pool
+            50/30/20 eligible coach pool
             <input
               type="number"
               min="0"
@@ -935,12 +935,12 @@ function ManagementPersonalTraining() {
               className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
             />
             <span className="mt-1.5 block font-normal text-[#728077]">
-              This amount is shared only among staff titled In-house Coach. Part-time coaches do not reduce or participate in this pool.
+              This amount is shared only among in-house coaches who have at least 3 assigned PT trainees in the selected month.
             </span>
           </label>
           <button
             type="button"
-            disabled={payoutSaving || payoutCalculation.pool <= 0}
+            disabled={payoutSaving}
             onClick={() => void savePayoutRun()}
             className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -951,24 +951,24 @@ function ManagementPersonalTraining() {
         <div className="mt-4 grid grid-cols-3 gap-2">
           <div className="rounded-xl bg-[#edf5ea] p-3 text-center">
             <p className="text-xl font-black text-[#2f7746]">50%</p>
-            <p className="text-[9px] font-black uppercase text-[#65766a]">Equal team share</p>
+            <p className="text-[9px] font-black uppercase text-[#65766a]">Team share · 3+ only</p>
           </div>
           <div className="rounded-xl bg-[#f3f5ed] p-3 text-center">
             <p className="text-xl font-black text-[#52633f]">30%</p>
-            <p className="text-[9px] font-black uppercase text-[#65766a]">Trainee workload</p>
+            <p className="text-[9px] font-black uppercase text-[#65766a]">Workload · 3+ only</p>
           </div>
           <div className="rounded-xl bg-[#fff6df] p-3 text-center">
             <p className="text-xl font-black text-[#8b6d24]">20%</p>
-            <p className="text-[9px] font-black uppercase text-[#756b50]">Performance</p>
+            <p className="text-[9px] font-black uppercase text-[#756b50]">Performance · 3+ only</p>
           </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
-          <strong className="text-[#33483a]">In-house performance rule:</strong> only staff titled In-house Coach
-          participate in the 50/30/20 calculation. Where enough data exists, the performance score is 75% matured
-          90-day same-coach renewal rate and 25% established trainee rating. A rating only counts after at least 3
-          evaluations. PT cycles that expired less than 7 days ago are not treated as failed renewals yet. If an
-          in-house coach has no measurable data, the system uses a neutral in-house team-average score.
+          <strong className="text-[#33483a]">Payout eligibility:</strong> an in-house coach needs at least 3 assigned
+          PT trainees in the selected month to enter the 50/30/20 calculation. With 1–2 trainees, the coach receives
+          only ₦10,000 per trainee; with 0, the PT payout is ₦0. For fully eligible coaches, performance is 75% matured
+          90-day same-coach renewal rate and 25% established trainee rating. A rating counts after at least 3 evaluations.
+          Renewal grace is 3 days, so a PT cycle is not treated as a failed renewal until more than 3 days after expiry.
         </div>
 
         {payoutCalculation.unassignedCount > 0 && (
@@ -1002,24 +1002,58 @@ function ManagementPersonalTraining() {
                   <p className="mt-1 text-xs text-[#6a786e]">
                     {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in selected month
                   </p>
+                  <span className={
+                    "mt-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                    (row.full_pool_eligible
+                      ? "bg-green-100 text-green-800"
+                      : row.trainee_count > 0
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-slate-100 text-slate-700")
+                  }>
+                    {row.full_pool_eligible
+                      ? "50/30/20 eligible"
+                      : row.trainee_count > 0
+                        ? "Fixed commission only"
+                        : "No PT payout"}
+                  </span>
                 </div>
                 <p className="text-xl font-black text-[#193b2a]">{formatMoney(row.recommended_payout)}</p>
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-xl bg-white p-3">
-                  <p className="text-sm font-black">{formatMoney(row.team_share)}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Team</p>
+              {row.full_pool_eligible ? (
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-white p-3">
+                    <p className="text-sm font-black">{formatMoney(row.team_share)}</p>
+                    <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Team</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <p className="text-sm font-black">{formatMoney(row.workload_share)}</p>
+                    <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Workload</p>
+                  </div>
+                  <div className="rounded-xl bg-white p-3">
+                    <p className="text-sm font-black">{formatMoney(row.performance_share)}</p>
+                    <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Performance</p>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-white p-3">
-                  <p className="text-sm font-black">{formatMoney(row.workload_share)}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Workload</p>
+              ) : (
+                <div className="mt-4 rounded-xl border border-[#dce7d9] bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-black uppercase tracking-wider text-[#778178]">
+                        {row.trainee_count > 0 ? "Fixed trainee commission" : "Not payout eligible"}
+                      </p>
+                      <p className="mt-1 text-xs text-[#68766d]">
+                        {row.trainee_count > 0
+                          ? `₦10,000 × ${row.trainee_count} trainee${row.trainee_count === 1 ? "" : "s"}`
+                          : "0 assigned PT trainees this month"}
+                      </p>
+                    </div>
+                    <p className="text-lg font-black text-[#193b2a]">
+                      {formatMoney(Number(row.trainee_commission || 0))}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-white p-3">
-                  <p className="text-sm font-black">{formatMoney(row.performance_share)}</p>
-                  <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Performance</p>
-                </div>
-              </div>
+              )}
 
               <div className="mt-4 space-y-2 text-xs text-[#5f7064]">
                 <div className="flex items-center justify-between gap-3">
@@ -1050,14 +1084,24 @@ function ManagementPersonalTraining() {
           </div>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#193b2a] px-4 py-3 text-white">
+        <div className="mt-4 grid gap-2 rounded-xl bg-[#193b2a] p-4 text-white sm:grid-cols-3">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">In-house coach payout pool</p>
+            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">50/30/20 pool</p>
             <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
+            <p className="mt-1 text-[9px] text-white/60">
+              {payoutCalculation.fullEligibleCount} fully eligible coach{payoutCalculation.fullEligibleCount === 1 ? "" : "es"}
+            </p>
           </div>
-          <p className="max-w-md text-right text-[10px] leading-4 text-white/70">
-            This recommendation covers in-house coaches only. Part-time coach payments remain separate and are not included in this saved split.
-          </p>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">1–2 trainee commissions</p>
+            <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.commissionTotal)}</p>
+            <p className="mt-1 text-[9px] text-white/60">₦10,000 per trainee</p>
+          </div>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Recommended PT payout total</p>
+            <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.totalRecommended)}</p>
+            <p className="mt-1 text-[9px] text-white/60">Part-time coach payments remain separate</p>
+          </div>
         </div>
           </>
         )}
