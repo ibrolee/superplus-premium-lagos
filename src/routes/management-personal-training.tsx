@@ -9,6 +9,7 @@ import {
   Dumbbell,
   RefreshCw,
   Save,
+  ShieldAlert,
   Star,
   UserRound,
   Users,
@@ -72,6 +73,19 @@ type Evaluation = {
   submitted_at: string;
 };
 
+type CoachReport = {
+  id: string;
+  membership_id: string;
+  member_id: string;
+  coach_staff_profile_id: string;
+  category: string;
+  details: string;
+  incident_date: string | null;
+  status: "pending" | "reviewed" | "resolved";
+  submitted_at: string;
+  updated_at: string;
+};
+
 type PtPayoutBreakdown = {
   trainer_staff_profile_id: string;
   trainer_name: string;
@@ -131,6 +145,17 @@ const formatDateTime = (value: string) =>
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+const coachReportCategoryLabel = (value: string) =>
+  ({
+    training_quality: "Training quality",
+    punctuality: "Punctuality / attendance",
+    communication: "Communication",
+    conduct: "Coach conduct",
+    safety: "Safety concern",
+    inappropriate_behaviour: "Inappropriate behaviour",
+    other: "Other",
+  })[value] || value.replaceAll("_", " ");
+
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-NG", {
     style: "currency",
@@ -151,6 +176,7 @@ function ManagementPersonalTraining() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
+  const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutMonth, setPayoutMonth] = useState(lagosToday().slice(0, 7));
   const [payoutPool, setPayoutPool] = useState("");
@@ -165,12 +191,14 @@ function ManagementPersonalTraining() {
   const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
   const [membersOpen, setMembersOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [savingReportId, setSavingReportId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
 
-    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult] = await Promise.all([
+    const [membershipResult, trainerResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -194,10 +222,15 @@ function ManagementPersonalTraining() {
         .select("id,payout_month,payout_pool,breakdown,created_by,updated_at")
         .order("payout_month", { ascending: false })
         .limit(24),
+      supabase
+        .from("pt_coach_reports")
+        .select("id,membership_id,member_id,coach_staff_profile_id,category,details,incident_date,status,submitted_at,updated_at")
+        .order("submitted_at", { ascending: false })
+        .limit(300),
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error;
+      membershipResult.error || trainerResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -206,7 +239,11 @@ function ManagementPersonalTraining() {
     }
 
     const nextMemberships = (membershipResult.data || []) as PtMembership[];
-    const memberIds = Array.from(new Set(nextMemberships.map((row) => row.member_id)));
+    const nextReports = (reportResult.data || []) as CoachReport[];
+    const memberIds = Array.from(new Set([
+      ...nextMemberships.map((row) => row.member_id),
+      ...nextReports.map((row) => row.member_id),
+    ]));
     let nextMembers: Member[] = [];
 
     if (memberIds.length) {
@@ -227,6 +264,7 @@ function ManagementPersonalTraining() {
     setTrainers((trainerResult.data || []) as Trainer[]);
     setAssignments((assignmentResult.data || []) as Assignment[]);
     setEvaluations((evaluationResult.data || []) as Evaluation[]);
+    setCoachReports(nextReports);
     setPayoutRuns((payoutResult.data || []) as PtPayoutRun[]);
     setLoading(false);
   }, []);
@@ -271,6 +309,7 @@ function ManagementPersonalTraining() {
   const pendingFeedbackCount = evaluations.filter(
     (row) => row.management_status === "pending",
   ).length;
+  const pendingCoachReportsCount = coachReports.filter((row) => row.status === "pending").length;
 
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -566,38 +605,53 @@ function ManagementPersonalTraining() {
     }
   }
 
+  async function updateCoachReport(reportId: string, status: "reviewed" | "resolved") {
+    setSavingReportId(reportId);
+    setError("");
+    setMessage("");
+    const { error: updateError } = await supabase
+      .from("pt_coach_reports")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", reportId);
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setMessage(status === "resolved" ? "Coach report marked resolved." : "Coach report marked reviewed.");
+      await load();
+    }
+    setSavingReportId(null);
+  }
+
   return (
     <AdminWorkspaceShell
       title="Personal Training"
       subtitle="Assign coaches, monitor PT expiries, review coach evaluations and handle continuation or change requests."
       active="/management-personal-training"
     >
-      <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-5">
         {[
-          { label: "Current PT", value: currentCount, icon: Users },
-          { label: "Expiring in 7 days", value: expiringCount, icon: CalendarDays },
-          { label: "Unassigned", value: unassignedCount, icon: AlertCircle },
-          { label: "Feedback to review", value: pendingFeedbackCount, icon: Star },
-        ].map(({ label, value, icon: Icon }) => (
+          { label: "Current PT", value: currentCount, icon: Users, targetView: "current" as View },
+          { label: "Expiring in 7 days", value: expiringCount, icon: CalendarDays, targetView: "expiring" as View },
+          { label: "Unassigned", value: unassignedCount, icon: AlertCircle, targetView: "unassigned" as View },
+          { label: "Feedback to review", value: pendingFeedbackCount, icon: Star, targetView: "feedback" as View },
+          { label: "Confidential reports", value: pendingCoachReportsCount, icon: ShieldAlert, targetView: null },
+        ].map(({ label, value, icon: Icon, targetView }) => (
           <button
             type="button"
             key={label}
-            onClick={() =>
-              setView(
-                label === "Current PT"
-                  ? "current"
-                  : label === "Expiring in 7 days"
-                    ? "expiring"
-                    : label === "Unassigned"
-                      ? "unassigned"
-                      : "feedback",
-              )
-            }
+            onClick={() => {
+              if (targetView) {
+                setView(targetView);
+                setMembersOpen(true);
+              } else {
+                setReportsOpen(true);
+              }
+            }}
             className="rounded-2xl border border-[#dce7d8] bg-white p-4 text-left"
           >
             <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">{label}</p>
-              <Icon size={17} className="text-[#2f7746]" />
+              <Icon size={17} className={label === "Confidential reports" && value > 0 ? "text-[#9a3939]" : "text-[#2f7746]"} />
             </div>
             <p className="mt-3 text-3xl font-black">{value}</p>
           </button>
@@ -919,6 +973,117 @@ function ManagementPersonalTraining() {
           </p>
         </div>
           </>
+        )}
+      </section>
+
+      <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
+        <button
+          type="button"
+          aria-expanded={reportsOpen}
+          onClick={() => setReportsOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-4 text-left"
+        >
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#8c4a43]">Confidential</p>
+            <h2 className="mt-1 text-xl font-black">Coach Reports</h2>
+            <p className="mt-1 text-xs text-[#6c7a70]">
+              Private concerns submitted by active PT members. Coaches cannot access these reports.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            {pendingCoachReportsCount > 0 && (
+              <span className="rounded-full bg-red-100 px-2.5 py-1 text-[10px] font-black text-red-800">
+                {pendingCoachReportsCount} pending
+              </span>
+            )}
+            <ChevronDown
+              size={22}
+              className={`text-[#6a4945] transition-transform ${reportsOpen ? "rotate-180" : ""}`}
+            />
+          </div>
+        </button>
+
+        {reportsOpen && (
+          <div className="mt-5 space-y-3">
+            {!coachReports.length ? (
+              <p className="rounded-xl border border-dashed border-[#d8e2d5] p-7 text-center text-sm text-[#647468]">
+                No confidential coach reports have been submitted.
+              </p>
+            ) : (
+              coachReports.map((report) => {
+                const member = memberMap.get(report.member_id);
+                const coach = trainerMap.get(report.coach_staff_profile_id);
+                return (
+                  <article key={report.id} className="rounded-2xl border border-[#eadbd7] bg-[#fffaf8] p-4 sm:p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-black">{coachReportCategoryLabel(report.category)}</h3>
+                          <span
+                            className={
+                              "rounded-full px-2.5 py-1 text-[10px] font-black uppercase " +
+                              (report.status === "pending"
+                                ? "bg-red-100 text-red-800"
+                                : report.status === "reviewed"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-green-100 text-green-800")
+                            }
+                          >
+                            {report.status}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-[#66746b]">
+                          Submitted {formatDateTime(report.submitted_at)}
+                          {report.incident_date ? ` · Incident ${formatDate(report.incident_date)}` : ""}
+                        </p>
+                      </div>
+                      <ShieldAlert size={21} className="shrink-0 text-[#974a43]" />
+                    </div>
+
+                    <div className="mt-4 grid gap-3 rounded-xl bg-white p-4 text-xs sm:grid-cols-2">
+                      <div>
+                        <p className="font-black uppercase tracking-wider text-[#7a827d]">Member</p>
+                        <p className="mt-1 text-sm font-bold">{member?.full_name || "Unknown member"}</p>
+                        <p className="mt-0.5 text-[#68766d]">{member?.phone || member?.email || "No contact"}</p>
+                      </div>
+                      <div>
+                        <p className="font-black uppercase tracking-wider text-[#7a827d]">Reported coach</p>
+                        <p className="mt-1 text-sm font-bold">{coach?.display_name || "Coach"}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 rounded-xl bg-white p-4">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">Member's report</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#46564c]">{report.details}</p>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {report.status === "pending" && (
+                        <button
+                          type="button"
+                          disabled={savingReportId === report.id}
+                          onClick={() => void updateCoachReport(report.id, "reviewed")}
+                          className="inline-flex items-center gap-2 rounded-xl border border-[#d8c8c4] bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={15} /> Mark reviewed
+                        </button>
+                      )}
+                      {report.status !== "resolved" && (
+                        <button
+                          type="button"
+                          disabled={savingReportId === report.id}
+                          onClick={() => void updateCoachReport(report.id, "resolved")}
+                          className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          <CheckCircle2 size={15} /> Resolve
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
         )}
       </section>
 
