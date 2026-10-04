@@ -1,3 +1,4 @@
+import { StaffSalaryAdvance } from "@/components/StaffSalaryAdvance";
 import { PrivateStaffContractTerms } from "@/components/PrivateStaffContractTerms";
 import { useEffect, useMemo, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -1513,6 +1514,7 @@ function StaffPage() {
               <h2 className="font-display text-2xl font-bold uppercase">Payment History</h2>
             </div>
             <div className="p-4 sm:p-6">
+              <StaffSalaryAdvance staffProfileId={profile.id} readOnly={previewMode} />
               <PrivateStaffContractTerms staffProfileId={previewMode ? profile.id : undefined} />
               {salaryRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
@@ -1695,3 +1697,4 @@ function StaffPage() {
     </main>
   );
 }
+
