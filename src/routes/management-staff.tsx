@@ -7,6 +7,7 @@ import { isLateArrival, lateRuleApplies, recordedWorkMinutes, workDuration, type
 
 export const Route = createFileRoute("/management-staff")({ component: ManagementStaff });
 type Staff = { id: string; staff_id: string | null; full_name: string | null; position: string | null; department: string | null; role: string | null; status: string | null };
+type SalarySetting = { staff_profile_id: string; current_monthly_salary: number; currency: string; updated_at: string };
 type Scan = StaffScan;
 const PAGE_SIZE = 500;
 const LAGOS = "Africa/Lagos";
@@ -17,6 +18,13 @@ function todayInLagos() {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 function tomorrow(day: string) { const date = new Date(`${day}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + 1); return date.toISOString().slice(0, 10); }
+function formatMoney(amount: number, currency = "NGN") {
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(Number(amount) || 0);
+}
 function clock(value: string | null) {
   if (!value) return "Not recorded";
   const date = new Date(value);
@@ -33,6 +41,14 @@ async function readStaff(): Promise<Staff[]> {
     if (batch.length < PAGE_SIZE) return result;
   }
 }
+async function readSalarySettings(): Promise<SalarySetting[]> {
+  const { data, error } = await supabase
+    .from("staff_salary_settings")
+    .select("staff_profile_id,current_monthly_salary,currency,updated_at")
+    .order("staff_profile_id", { ascending: true });
+  if (error) throw error;
+  return (data || []) as SalarySetting[];
+}
 async function readScans(date: string): Promise<Scan[]> {
   const result: Scan[] = [];
   for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -48,6 +64,7 @@ async function readScans(date: string): Promise<Scan[]> {
 
 function ManagementStaff() {
   const [staff, setStaff] = useState<Staff[]>([]);
+  const [salarySettings, setSalarySettings] = useState<SalarySetting[]>([]);
   const [scans, setScans] = useState<Scan[]>([]);
   const [date, setDate] = useState(todayInLagos);
   const [search, setSearch] = useState("");
@@ -55,26 +72,106 @@ function ManagementStaff() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [authorized, setAuthorized] = useState(false);
+  const [canManageSalary, setCanManageSalary] = useState(false);
+  const [editingSalaryId, setEditingSalaryId] = useState<string | null>(null);
+  const [salaryDraft, setSalaryDraft] = useState("");
+  const [salarySavingId, setSalarySavingId] = useState<string | null>(null);
+  const [salaryMessage, setSalaryMessage] = useState("");
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      setLoading(true); setError(""); setAuthorized(false); setStaff([]); setScans([]);
+      setLoading(true); setError(""); setAuthorized(false); setCanManageSalary(false); setStaff([]); setSalarySettings([]); setScans([]);
       try {
         const { data: auth, error: authError } = await supabase.auth.getUser();
         if (authError || !auth.user) throw Error("Sign in through the Staff Portal to view staff management.");
         const { data: user, error: staffError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
         if (staffError) throw staffError;
-        if (!user?.active || !["admin", "owner", "manager"].includes(String(user.role || "").toLowerCase())) throw Error("Only active management accounts can access staff records.");
-        const [profiles, attendance] = await Promise.all([readStaff(), readScans(date)]);
-        if (!cancelled) { setStaff(profiles); setScans(attendance); setAuthorized(true); }
+        const managementRole = String(user?.role || "").toLowerCase();
+        if (!user?.active || !["admin", "owner", "manager"].includes(managementRole)) throw Error("Only active management accounts can access staff records.");
+        const salaryAdmin = ["admin", "owner"].includes(managementRole);
+        const [profiles, attendance, salaries] = await Promise.all([
+          readStaff(),
+          readScans(date),
+          salaryAdmin ? readSalarySettings() : Promise.resolve([] as SalarySetting[]),
+        ]);
+        if (!cancelled) {
+          setStaff(profiles);
+          setScans(attendance);
+          setSalarySettings(salaries);
+          setCanManageSalary(salaryAdmin);
+          setAuthorized(true);
+        }
       } catch (cause) { if (!cancelled) setError(cause instanceof Error ? cause.message : "Unable to load staff information."); }
       finally { if (!cancelled) setLoading(false); }
     }
     void load();
     return () => { cancelled = true; };
   }, [date, reload]);
+
+  const salaryMap = useMemo(
+    () => new Map(salarySettings.map((row) => [row.staff_profile_id, row])),
+    [salarySettings],
+  );
+
+  async function saveCurrentSalary(staffProfileId: string) {
+    const amount = Number(salaryDraft.replace(/,/g, "").trim());
+    if (!Number.isFinite(amount) || amount < 0) {
+      setError("Enter a valid current monthly salary.");
+      return;
+    }
+    setSalarySavingId(staffProfileId);
+    setError("");
+    setSalaryMessage("");
+    const { data, error: salaryError } = await supabase
+      .from("staff_salary_settings")
+      .upsert(
+        {
+          staff_profile_id: staffProfileId,
+          current_monthly_salary: amount,
+          currency: "NGN",
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "staff_profile_id" },
+      )
+      .select("staff_profile_id,current_monthly_salary,currency,updated_at")
+      .single();
+
+    if (salaryError) {
+      setError(salaryError.message);
+    } else {
+      const saved = data as SalarySetting;
+      setSalarySettings((current) => [
+        ...current.filter((row) => row.staff_profile_id !== staffProfileId),
+        saved,
+      ]);
+      setEditingSalaryId(null);
+      setSalaryDraft("");
+      setSalaryMessage("Current monthly salary saved. This does not create a salary payment record.");
+    }
+    setSalarySavingId(null);
+  }
+
+  async function clearCurrentSalary(staffProfileId: string) {
+    if (!window.confirm("Clear this staff member's current monthly salary?")) return;
+    setSalarySavingId(staffProfileId);
+    setError("");
+    setSalaryMessage("");
+    const { error: salaryError } = await supabase
+      .from("staff_salary_settings")
+      .delete()
+      .eq("staff_profile_id", staffProfileId);
+    if (salaryError) {
+      setError(salaryError.message);
+    } else {
+      setSalarySettings((current) => current.filter((row) => row.staff_profile_id !== staffProfileId));
+      setEditingSalaryId(null);
+      setSalaryDraft("");
+      setSalaryMessage("Current monthly salary cleared.");
+    }
+    setSalarySavingId(null);
+  }
 
   const byStaff = useMemo(() => {
     const grouped = new Map<string, Scan[]>();
@@ -89,7 +186,7 @@ function ManagementStaff() {
   }).sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
 
   return <AdminWorkspaceShell title="Staff attendance report" subtitle="Daily attendance for all staff, QR sessions, punctuality and recorded work hours." active="/management-staff"><div className="mx-auto max-w-6xl">
-    <div className="flex flex-wrap items-start justify-between gap-4"><div><a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={16}/> Operations hub</a><p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Staff & attendance</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Team directory, punctuality and recorded QR work hours for a selected Lagos date. Staff administration and payroll stay in the original admin system.</p></div><button type="button" disabled={loading} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""}/> Refresh</button></div>
+    <div className="flex flex-wrap items-start justify-between gap-4"><div><a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={16}/> Operations hub</a><p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[#62905b]">Super Plus / Management</p><h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Staff & attendance</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">Team directory, current salary settings, punctuality and recorded QR work hours for a selected Lagos date. Current salary is a base monthly value and does not itself record a payment.</p></div><button type="button" disabled={loading} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"><RefreshCw size={16} className={loading ? "animate-spin" : ""}/> Refresh</button></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[#607264]"><Loader2 size={20} className="animate-spin"/> Verifying management access and loading staff records…</div>}
     {!loading && error && <div role="alert" className="mt-8 rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-800">{error} <a href="/portal/staff" className="font-bold underline">Staff login</a></div>}
     {!loading && authorized && <>
@@ -102,10 +199,12 @@ function ManagementStaff() {
         { label: "Open clock-ins", value: scans.filter((item) => !item.checked_out_at).length, note: "Unfinished sessions", icon: Clock3, late: false },
       ].map(({label,value,note,icon:Icon,late}) => <div key={label} className={`rounded-[22px] border bg-white p-5 ${late && value > 0 ? "border-red-300 bg-red-50" : "border-[#e1e8dd]"}`}><div className="flex justify-between gap-2"><span className={`text-xs font-bold ${late && value > 0 ? "text-red-800" : "text-[#627468]"}`}>{label}</span><Icon size={19} className={late && value > 0 ? "text-red-600" : "text-[#3b6b38]"}/></div><p className={`mt-5 text-4xl font-black tabular-nums ${late && value > 0 ? "text-red-700" : ""}`}>{value.toLocaleString("en-NG")}</p><p className="mt-2 text-xs text-[#748276]">{note}</p></div>)}</section>
       <section className="mt-5 rounded-[20px] border border-[#e1e8dd] bg-white p-3 sm:p-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><h2 className="text-xl font-black">Staff directory</h2><p className="mt-2 text-xs text-[#748276]">First clock-in, last recorded clock-out, punctuality and completed work hours.</p></div><label className="text-xs font-bold text-[#617567]"><span className="mb-1 block">Attendance date · Lagos</span><input type="date" value={date} max={todayInLagos()} onChange={(event) => { if (/^\d{4}-\d{2}-\d{2}$/.test(event.target.value) && event.target.value <= todayInLagos()) setDate(event.target.value); }} className="rounded-xl border border-[#d8e2d5] px-3 py-2.5 text-sm"/></label></div>
+        {canManageSalary && <div className="mt-5 flex items-start gap-3 rounded-2xl border border-[#d9e6d2] bg-[#f5f8f3] p-4 text-xs leading-5 text-[#526357]"><ShieldCheck className="mt-0.5 shrink-0 text-[#356942]" size={18}/><p><strong>Current monthly salary:</strong> only Admin/Owner accounts can view or change these amounts here. Staff can see only their own salary on their Staff Portal. Saving a current salary does not create a salary payment or mark anything as paid.</p></div>}
+        {!!salaryMessage && <p role="status" className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">{salaryMessage}</p>}
         <div className="mt-6 flex flex-wrap gap-3"><label className="relative min-w-0 flex-1"><Search size={17} className="pointer-events-none absolute left-3 top-3.5 text-[#79907b]"/><span className="sr-only">Search staff</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, staff ID, role or department" className="w-full rounded-xl border border-[#d8e2d5] bg-[#f8faf6] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#63915f]"/></label><label><span className="sr-only">Filter employment status</span><select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)} className="rounded-xl border border-[#d8e2d5] bg-white px-3 py-3 text-sm">{(["all", "approved", "pending", "suspended", "inactive"] as const).map((value) => <option key={value} value={value}>{value === "all" ? "All statuses" : value.charAt(0).toUpperCase() + value.slice(1)}</option>)}</select></label></div>
         <div className="mt-4 overflow-hidden rounded-xl border border-[#e1e8dd]">
-          <div className="hidden grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px] gap-2 bg-[#f4f7f1] px-3 py-2 text-[10px] font-black uppercase tracking-wide text-[#607264] md:grid">
-            <span>Staff</span><span>Status</span><span>First in</span><span>Last out</span><span>Worked</span><span>Attendance</span>
+          <div className={`hidden gap-2 bg-[#f4f7f1] px-3 py-2 text-[10px] font-black uppercase tracking-wide text-[#607264] md:grid ${canManageSalary ? "grid-cols-[minmax(150px,1.4fr)_90px_125px_90px_90px_105px_110px]" : "grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px]"}`}>
+            <span>Staff</span><span>Status</span>{canManageSalary && <span>Current salary</span>}<span>First in</span><span>Last out</span><span>Worked</span><span>Attendance</span>
           </div>
           <div className="divide-y divide-[#e7ede4]">{visible.map((member) => {
             const records = byStaff.get(member.id) || [];
@@ -115,12 +214,14 @@ function ManagementStaff() {
             const isLate = isLateArrival(member.full_name, date, first?.checked_in_at || null);
             const assessed = lateRuleApplies(member.full_name, date);
             const attendance = !records.length ? "No scan" : isLate ? "Late" : assessed ? "On time" : "Exempt";
-            return <div key={member.id} className={`grid grid-cols-[minmax(0,1.6fr)_minmax(0,.9fr)] gap-x-3 gap-y-2 px-3 py-3 text-xs md:grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px] md:items-center md:gap-2 ${isLate ? "border-l-4 border-red-500 bg-red-50" : "bg-white"}`}>
+            const currentSalary = salaryMap.get(member.id);
+            return <div key={member.id} className={`grid grid-cols-[minmax(0,1.6fr)_minmax(0,.9fr)] gap-x-3 gap-y-2 px-3 py-3 text-xs md:items-center md:gap-2 ${canManageSalary ? "md:grid-cols-[minmax(150px,1.4fr)_90px_125px_90px_90px_105px_110px]" : "md:grid-cols-[minmax(150px,1.5fr)_90px_90px_90px_105px_110px]"} ${isLate ? "border-l-4 border-red-500 bg-red-50" : "bg-white"}`}>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black text-[#203426]">{member.full_name || "Unnamed staff"}</p>
                 <p className="mt-0.5 truncate text-[10px] text-[#718172]">{[member.position || member.role, member.department].filter(Boolean).join(" · ") || "Staff"}</p>
               </div>
               <div className="text-right md:text-left"><span className="rounded-full bg-[#edf3e9] px-2 py-1 text-[10px] font-bold capitalize text-[#426548]">{member.status || "Unknown"}</span></div>
+              {canManageSalary && <div className="col-span-2 border-t border-[#edf1eb] pt-2 md:col-span-1 md:border-0 md:pt-0"><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Current salary</span>{editingSalaryId === member.id ? <div className="flex min-w-0 flex-col gap-1.5"><input autoFocus type="number" min="0" step="1000" value={salaryDraft} onChange={(event) => setSalaryDraft(event.target.value)} placeholder="₦ monthly" className="w-full rounded-lg border border-[#cdd9ca] bg-white px-2 py-1.5 text-[11px] font-semibold outline-none focus:border-[#4d8157]"/><div className="flex gap-1"><button type="button" disabled={salarySavingId===member.id} onClick={() => void saveCurrentSalary(member.id)} className="rounded-md bg-[#193d2b] px-2 py-1 text-[9px] font-black text-white disabled:opacity-50">Save</button><button type="button" disabled={salarySavingId===member.id} onClick={() => { setEditingSalaryId(null); setSalaryDraft(""); }} className="rounded-md border border-[#d8e2d5] px-2 py-1 text-[9px] font-black disabled:opacity-50">Cancel</button>{currentSalary && <button type="button" disabled={salarySavingId===member.id} onClick={() => void clearCurrentSalary(member.id)} className="rounded-md border border-red-200 px-2 py-1 text-[9px] font-black text-red-700 disabled:opacity-50">Clear</button>}</div></div> : <button type="button" onClick={() => { setEditingSalaryId(member.id); setSalaryDraft(currentSalary ? String(Number(currentSalary.current_monthly_salary)) : ""); setError(""); setSalaryMessage(""); }} className="text-left"><span className="block font-black text-[#264d30]">{currentSalary ? formatMoney(currentSalary.current_monthly_salary,currentSalary.currency) : "Not set"}</span><span className="mt-0.5 block text-[9px] font-bold text-[#63806b]">{currentSalary ? "Edit" : "Set salary"}</span></button>}</div>}
               <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">First in</span><span className={`font-semibold ${isLate ? "text-red-700" : "text-[#3f5946]"}`}>{records.length ? clock(first!.checked_in_at) : "—"}</span></div>
               <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Last out</span><span className="font-semibold text-[#3f5946]">{lastCompleted ? clock(lastCompleted.checked_out_at) : "—"}</span></div>
               <div><span className="block text-[9px] font-bold uppercase text-[#879287] md:hidden">Worked</span><span className="font-bold text-[#264d30]">{worked.completed ? workDuration(worked.minutes) : worked.open ? "Open" : "—"}</span></div>
@@ -128,7 +229,7 @@ function ManagementStaff() {
             </div>;
           })}{visible.length === 0 && <p className="py-8 text-center text-sm text-[#748276]">No staff match this search and status filter.</p>}</div>
         </div>
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ede4] pt-5"><p className="text-xs text-[#748276]">Showing {visible.length} of {staff.length} staff profiles · {scans.length} recorded sessions on {date}. Work hours update after clock-out and refresh.</p><div className="flex flex-wrap gap-2"><a href="/staff-admin" className="inline-flex items-center gap-2 rounded-xl bg-[#193d2b] px-4 py-3 text-xs font-bold text-white">Staff admin & payroll <ArrowRight size={15}/></a><a href="/staff-attendance" className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-xs font-bold text-[#356942]">Staff QR scanner <ArrowRight size={15}/></a></div></div>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#e7ede4] pt-5"><p className="text-xs text-[#748276]">Showing {visible.length} of {staff.length} staff profiles · {scans.length} recorded sessions on {date}. Work hours update after clock-out and refresh.{canManageSalary ? " Current salary values are monthly base amounts for future payroll calculations." : ""}</p><div className="flex flex-wrap gap-2"><a href="/staff-admin" className="inline-flex items-center gap-2 rounded-xl bg-[#193d2b] px-4 py-3 text-xs font-bold text-white">Staff admin & payroll <ArrowRight size={15}/></a><a href="/staff-attendance" className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-xs font-bold text-[#356942]">Staff QR scanner <ArrowRight size={15}/></a></div></div>
       </section>
     </>}
   </div></AdminWorkspaceShell>;
