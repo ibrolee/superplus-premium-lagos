@@ -38,6 +38,16 @@ type PlanOption = {
   durationDays: number;
 };
 
+type PtCoachAssignment = {
+  membership_id: string;
+  trainer_staff_profile_id: string;
+};
+
+type PtCoach = {
+  staff_profile_id: string;
+  display_name: string;
+};
+
 const planIdByName: Record<string, string> = {
   "Daily Plan": "daily",
   "Weekly Plan": "weekly",
@@ -72,6 +82,12 @@ export default function MembershipScreen() {
   const [paymentMessage, setPaymentMessage] = useState("");
   const [reminderBusy, setReminderBusy] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [ptCoach, setPtCoach] = useState<PtCoach | null>(null);
+  const [ptAssignment, setPtAssignment] = useState<PtCoachAssignment | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportCategory, setReportCategory] = useState("training_quality");
+  const [reportDetails, setReportDetails] = useState("");
+  const [reportBusy, setReportBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -132,6 +148,90 @@ export default function MembershipScreen() {
     [plans, selectedPlanId],
   );
 
+  const today = lagosToday();
+  const activePtMembership = useMemo(
+    () =>
+      memberships.find(
+        (item) =>
+          item.payment_status === "paid" &&
+          /^Personal Training(?: Only)?$/i.test(item.plan_name ?? "") &&
+          item.start_date <= today &&
+          item.end_date >= today,
+      ) ?? null,
+    [memberships, today],
+  );
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      setPtAssignment(null);
+      setPtCoach(null);
+      setReportOpen(false);
+      if (!activePtMembership || !member?.id) return;
+
+      const { data: assignmentRow, error: assignmentError } = await supabase
+        .from("pt_assignments")
+        .select("membership_id,trainer_staff_profile_id")
+        .eq("membership_id", activePtMembership.id)
+        .eq("member_id", member.id)
+        .maybeSingle();
+
+      if (!active || assignmentError || !assignmentRow) return;
+
+      const assignment = assignmentRow as PtCoachAssignment;
+      setPtAssignment(assignment);
+
+      const { data: coachRow, error: coachError } = await supabase
+        .from("pt_trainers")
+        .select("staff_profile_id,display_name")
+        .eq("staff_profile_id", assignment.trainer_staff_profile_id)
+        .maybeSingle();
+
+      if (!active || coachError || !coachRow) return;
+      setPtCoach(coachRow as PtCoach);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [activePtMembership?.id, member?.id]);
+
+  async function submitCoachReport() {
+    if (!member || !activePtMembership || !ptAssignment || !ptCoach) return;
+    const details = reportDetails.trim();
+    if (details.length < 10) {
+      Alert.alert("Add more detail", "Please describe what happened in at least 10 characters.");
+      return;
+    }
+
+    setReportBusy(true);
+    try {
+      const { error } = await supabase.from("pt_coach_reports").insert({
+        membership_id: activePtMembership.id,
+        member_id: member.id,
+        coach_staff_profile_id: ptAssignment.trainer_staff_profile_id,
+        category: reportCategory,
+        details,
+      });
+      if (error) throw error;
+
+      setReportDetails("");
+      setReportCategory("training_quality");
+      setReportOpen(false);
+      Alert.alert(
+        "Report sent confidentially",
+        "Your report was sent to Super Plus management. Your coach cannot see the report or who submitted it through the coach dashboard.",
+      );
+    } catch (cause) {
+      Alert.alert(
+        "Report could not be sent",
+        cause instanceof Error ? cause.message : "Please try again.",
+      );
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   if (dataLoading) return <LoadingView />;
   if (!member) {
     return (
@@ -141,7 +241,6 @@ export default function MembershipScreen() {
     );
   }
 
-  const today = lagosToday();
   const currentPhase = currentMembership
     ? currentMembership.start_date > today
       ? "UPCOMING"
@@ -365,6 +464,92 @@ export default function MembershipScreen() {
         </Card>
       ) : (
         <EmptyState>No membership is attached to this account yet.</EmptyState>
+      )}
+
+      {!!activePtMembership && !!ptAssignment && !!ptCoach && (
+        <>
+          <SectionTitle title="Personal Training" />
+          <Card>
+            <View style={styles.ptHeader}>
+              <View style={styles.ptCoachIcon}>
+                <Ionicons name="barbell-outline" size={21} color="#FFFFFF" />
+              </View>
+              <View style={styles.grow}>
+                <Text style={styles.ptLabel}>ASSIGNED COACH</Text>
+                <Text style={styles.ptCoachName}>{ptCoach.display_name}</Text>
+              </View>
+            </View>
+            <Text style={styles.reportIntro}>
+              If anything feels wrong with your coaching, you can report it directly to Super Plus management at any time during your active PT membership.
+            </Text>
+            <View style={styles.confidentialBox}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.green2} />
+              <Text style={styles.confidentialText}>
+                Confidential: your coach cannot see the report, your written response, or who submitted it through the coach dashboard. Only Super Plus management can access it.
+              </Text>
+            </View>
+            <Pressable
+              style={styles.reportButton}
+              disabled={reportBusy}
+              onPress={() => setReportOpen((open) => !open)}
+            >
+              <Ionicons name="alert-circle-outline" size={18} color="#8F2F2F" />
+              <Text style={styles.reportButtonText}>{reportOpen ? "Close report form" : "Report coach"}</Text>
+            </Pressable>
+
+            {reportOpen && (
+              <View style={styles.reportForm}>
+                <Text style={styles.inputLabel}>What is this about?</Text>
+                <View style={styles.categoryGrid}>
+                  {[
+                    ["training_quality", "Training quality"],
+                    ["punctuality", "Punctuality"],
+                    ["communication", "Communication"],
+                    ["conduct", "Coach conduct"],
+                    ["safety", "Safety concern"],
+                    ["inappropriate_behaviour", "Inappropriate behaviour"],
+                    ["other", "Other"],
+                  ].map(([value, label]) => {
+                    const selected = reportCategory === value;
+                    return (
+                      <Pressable
+                        key={value}
+                        disabled={reportBusy}
+                        onPress={() => setReportCategory(value)}
+                        style={[styles.categoryChip, selected && styles.categoryChipSelected]}
+                      >
+                        <Text style={[styles.categoryChipText, selected && styles.categoryChipTextSelected]}>{label}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <Text style={styles.inputLabel}>Tell management what happened</Text>
+                <TextInput
+                  value={reportDetails}
+                  onChangeText={setReportDetails}
+                  multiline
+                  maxLength={3000}
+                  editable={!reportBusy}
+                  placeholder="Describe the issue clearly. Include anything management should know…"
+                  placeholderTextColor="#95A098"
+                  style={styles.reportTextArea}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.reportCount}>{reportDetails.length}/3000</Text>
+
+                <Pressable
+                  style={[styles.sendReportButton, reportBusy && styles.disabled]}
+                  disabled={reportBusy}
+                  onPress={() => void submitCoachReport()}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.sendReportButtonText}>{reportBusy ? "Sending report…" : "Send confidential report"}</Text>
+                </Pressable>
+              </View>
+            )}
+          </Card>
+        </>
       )}
 
       {!!currentMembership?.end_date && (
@@ -691,4 +876,80 @@ const styles = StyleSheet.create({
   historyBorder: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 5, paddingTop: 13 },
   historyPlan: { color: colors.ink, fontSize: 13, fontWeight: "900" },
   historyDates: { color: colors.muted, fontSize: 11, marginTop: 3 },
+  ptHeader: { alignItems: "center", flexDirection: "row", gap: 11 },
+  ptCoachIcon: {
+    alignItems: "center",
+    backgroundColor: colors.green,
+    borderRadius: 12,
+    height: 42,
+    justifyContent: "center",
+    width: 42,
+  },
+  ptLabel: { color: colors.muted, fontSize: 9, fontWeight: "900", letterSpacing: 0.9 },
+  ptCoachName: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 3 },
+  reportIntro: { color: colors.muted, fontSize: 12, lineHeight: 19, marginTop: 14 },
+  confidentialBox: {
+    alignItems: "flex-start",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.line,
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 9,
+    marginTop: 13,
+    padding: 12,
+  },
+  confidentialText: { color: colors.ink, flex: 1, fontSize: 11, lineHeight: 18 },
+  reportButton: {
+    alignItems: "center",
+    backgroundColor: "#FFF3F0",
+    borderColor: "#EACAC3",
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 13,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  reportButtonText: { color: "#8F2F2F", fontSize: 12, fontWeight: "900" },
+  reportForm: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 15, paddingTop: 4 },
+  categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 3, marginTop: 8 },
+  categoryChip: {
+    backgroundColor: "#FAFCF9",
+    borderColor: colors.line,
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 9,
+  },
+  categoryChipSelected: { backgroundColor: colors.surfaceMuted, borderColor: colors.green2 },
+  categoryChipText: { color: colors.muted, fontSize: 10, fontWeight: "800" },
+  categoryChipTextSelected: { color: colors.green2 },
+  reportTextArea: {
+    backgroundColor: "#FAFCF9",
+    borderColor: colors.line,
+    borderRadius: 13,
+    borderWidth: 1,
+    color: colors.ink,
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+    minHeight: 120,
+    padding: 13,
+  },
+  reportCount: { color: colors.muted, fontSize: 9, marginTop: 4, textAlign: "right" },
+  sendReportButton: {
+    alignItems: "center",
+    backgroundColor: "#8F2F2F",
+    borderRadius: 13,
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+    marginTop: 12,
+    minHeight: 48,
+    paddingHorizontal: 14,
+  },
+  sendReportButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
 });
