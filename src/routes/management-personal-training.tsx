@@ -234,7 +234,6 @@ function ManagementPersonalTraining() {
   useEffect(() => {
     const saved = payoutRuns.find((row) => row.payout_month.slice(0, 7) === payoutMonth);
     setPayoutPool(saved ? String(Number(saved.payout_pool)) : "");
-    setPayoutMessage("");
   }, [payoutMonth, payoutRuns]);
 
   const today = lagosToday();
@@ -761,7 +760,7 @@ function ManagementPersonalTraining() {
               type="month"
               max={today.slice(0, 7)}
               value={payoutMonth}
-              onChange={(event) => setPayoutMonth(event.target.value)}
+              onChange={(event) => { setPayoutMonth(event.target.value); setPayoutMessage(""); }}
               className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
             />
           </label>
