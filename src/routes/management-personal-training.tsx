@@ -120,6 +120,7 @@ type View = "current" | "expiring" | "unassigned" | "feedback" | "all";
 const FULL_PAYOUT_MIN_TRAINEES = 3;
 const LOW_VOLUME_TRAINEE_COMMISSION = 10_000;
 const RENEWAL_GRACE_DAYS = 3;
+const RATING_MIN_EVALUATIONS = 2;
 
 const DAY = 86400000;
 const lagosToday = () => {
@@ -176,6 +177,77 @@ const monthBounds = (month: string) => {
   next.setUTCMonth(next.getUTCMonth() + 1);
   next.setUTCDate(0);
   return { start, end: next.toISOString().slice(0, 10) };
+};
+
+const twoCycleRetentionForCoach = (
+  memberships: PtMembership[],
+  assignmentMap: Map<string, Assignment>,
+  trainerId: string,
+  measurementEnd: string,
+) => {
+  const maturedSecondCycleEnd = addDays(measurementEnd, -RENEWAL_GRACE_DAYS);
+  const byMember = new Map<string, PtMembership[]>();
+
+  memberships
+    .filter(
+      (row) =>
+        row.payment_status === "paid" &&
+        row.start_date <= measurementEnd,
+    )
+    .forEach((row) => {
+      const current = byMember.get(row.member_id) || [];
+      current.push(row);
+      byMember.set(row.member_id, current);
+    });
+
+  let eligibleClients = 0;
+  let retainedClients = 0;
+
+  byMember.forEach((memberCycles) => {
+    const cycles = [...memberCycles].sort(
+      (a, b) =>
+        a.start_date.localeCompare(b.start_date) ||
+        a.created_at.localeCompare(b.created_at) ||
+        a.id.localeCompare(b.id),
+    );
+
+    let eligible = false;
+    let retained = false;
+
+    for (let index = 0; index < cycles.length - 1; index += 1) {
+      const first = cycles[index];
+      const second = cycles[index + 1];
+      if (
+        assignmentMap.get(first.id)?.trainer_staff_profile_id !== trainerId ||
+        assignmentMap.get(second.id)?.trainer_staff_profile_id !== trainerId ||
+        second.end_date <= first.end_date ||
+        second.start_date > addDays(first.end_date, RENEWAL_GRACE_DAYS) ||
+        second.end_date > maturedSecondCycleEnd
+      ) {
+        continue;
+      }
+
+      eligible = true;
+      const third = cycles[index + 2];
+      if (
+        third &&
+        assignmentMap.get(third.id)?.trainer_staff_profile_id === trainerId &&
+        third.end_date > second.end_date &&
+        third.start_date <= addDays(second.end_date, RENEWAL_GRACE_DAYS)
+      ) {
+        retained = true;
+      }
+    }
+
+    if (eligible) eligibleClients += 1;
+    if (retained) retainedClients += 1;
+  });
+
+  return {
+    eligibleClients,
+    retainedClients,
+    retentionRate: eligibleClients ? retainedClients / eligibleClients : null,
+  };
 };
 
 function ManagementPersonalTraining() {
@@ -391,7 +463,7 @@ function ManagementPersonalTraining() {
     const changed = coachEvaluations.filter((row) => row.continuation_choice === "change").length;
     const finished = coachEvaluations.filter((row) => row.continuation_choice === "finish").length;
     const percent = (value: number) => (count ? Math.round((value / count) * 100) : 0);
-    const ratingReady = count >= 3;
+    const ratingReady = count >= RATING_MIN_EVALUATIONS;
     return {
       trainer,
       count,
@@ -422,8 +494,6 @@ function ManagementPersonalTraining() {
     const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
     const pool = Math.max(0, Number(payoutPool || 0));
     const measurementEnd = monthEnd < today ? monthEnd : today;
-    const maturedRenewalEnd = addDays(measurementEnd, -RENEWAL_GRACE_DAYS);
-    const renewalWindowStart = addDays(maturedRenewalEnd, -89);
 
     const unassignedMemberIds = new Set(
       memberships
@@ -450,29 +520,15 @@ function ManagementPersonalTraining() {
           .map((row) => row.member_id),
       );
 
-      const eligibleRenewals = memberships.filter(
-        (row) =>
-          row.payment_status === "paid" &&
-          row.end_date >= renewalWindowStart &&
-          row.end_date <= maturedRenewalEnd &&
-          assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
+      const twoCycleRetention = twoCycleRetentionForCoach(
+        memberships,
+        assignmentMap,
+        trainer.staff_profile_id,
+        measurementEnd,
       );
-
-      const renewedSameTrainer = eligibleRenewals.filter((cycle) =>
-        memberships.some(
-          (candidate) =>
-            candidate.id !== cycle.id &&
-            candidate.member_id === cycle.member_id &&
-            candidate.payment_status === "paid" &&
-            candidate.created_at > cycle.created_at &&
-            candidate.start_date <= addDays(cycle.end_date, RENEWAL_GRACE_DAYS) &&
-            assignmentMap.get(candidate.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
-        ),
-      ).length;
-
-      const renewalRate = eligibleRenewals.length
-        ? renewedSameTrainer / eligibleRenewals.length
-        : null;
+      const eligibleRenewals = twoCycleRetention.eligibleClients;
+      const renewedSameTrainer = twoCycleRetention.retainedClients;
+      const renewalRate = twoCycleRetention.retentionRate;
       const coachEvaluations = evaluations.filter(
         (row) => row.trainer_staff_profile_id === trainer.staff_profile_id,
       );
@@ -481,7 +537,7 @@ function ManagementPersonalTraining() {
           coachEvaluations.length
         : null;
       const ratingScore =
-        coachEvaluations.length >= 3 && ratingAverage !== null ? ratingAverage / 5 : null;
+        coachEvaluations.length >= RATING_MIN_EVALUATIONS && ratingAverage !== null ? ratingAverage / 5 : null;
       const performanceIndex =
         renewalRate !== null && ratingScore !== null
           ? renewalRate * 0.75 + ratingScore * 0.25
@@ -490,7 +546,7 @@ function ManagementPersonalTraining() {
       return {
         trainer,
         traineeCount: traineeIds.size,
-        renewalEligible: eligibleRenewals.length,
+        renewalEligible: eligibleRenewals,
         renewedSameTrainer,
         renewalRate,
         ratingCount: coachEvaluations.length,
@@ -578,8 +634,7 @@ function ManagementPersonalTraining() {
       totalRecommended: rows.reduce((sum, row) => sum + row.recommended_payout, 0),
       unassignedCount: unassignedMemberIds.size,
       workloadTotal,
-      maturedRenewalEnd,
-      renewalWindowStart,
+      measurementEnd,
     };
   }, [trainers, memberships, evaluations, assignmentMap, payoutMonth, payoutPool, today]);
 
@@ -824,7 +879,7 @@ function ManagementPersonalTraining() {
                   </div>
                   {!ratingReady && count > 0 && (
                     <p className="mt-2 text-[11px] leading-5 text-[#6e7c72]">
-                      Rating is provisional until this coach has at least 3 evaluations.
+                      Rating is provisional until this coach has at least 2 evaluations.
                     </p>
                   )}
                   {!count && (
@@ -966,9 +1021,10 @@ function ManagementPersonalTraining() {
         <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
           <strong className="text-[#33483a]">Payout eligibility:</strong> an in-house coach needs at least 3 assigned
           PT trainees in the selected month to enter the 50/30/20 calculation. With 1–2 trainees, the coach receives
-          only ₦10,000 per trainee; with 0, the PT payout is ₦0. For fully eligible coaches, performance is 75% matured
-          90-day same-coach renewal rate and 25% established trainee rating. A rating counts after at least 3 evaluations.
-          Renewal grace is 3 days, so a PT cycle is not treated as a failed renewal until more than 3 days after expiry.
+          only ₦10,000 per trainee; with 0, the PT payout is ₦0. For fully eligible coaches, performance is 75%
+          two-cycle same-coach retention and 25% established trainee rating. Retention counts a client as successful only
+          after they renew twice with the same coach; the second renewal keeps the same 3-day grace. A rating counts after
+          at least 2 evaluations.
         </div>
 
         {payoutCalculation.unassignedCount > 0 && (
@@ -1057,9 +1113,9 @@ function ManagementPersonalTraining() {
 
               <div className="mt-4 space-y-2 text-xs text-[#5f7064]">
                 <div className="flex items-center justify-between gap-3">
-                  <span>90-day renewal</span>
+                  <span>Two-cycle retention</span>
                   <strong className="text-[#33483a]">
-                    {row.renewal_rate === null ? "Not enough matured data" : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
+                    {row.renewal_rate === null ? "Not enough two-cycle data" : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
                   </strong>
                 </div>
                 <div className="flex items-center justify-between gap-3">
