@@ -364,9 +364,9 @@ function ManagementStaffManagement() {
       }
     }
 
-    setMessage("Staff profile and current salary saved successfully.");
     setSaving(false);
     await load();
+    setMessage("Staff profile and current salary saved successfully.");
   }
 
   return (
