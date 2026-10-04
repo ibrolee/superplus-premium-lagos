@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, RefreshCw, Wallet } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
+import { IfeanyiContractPayroll, type ContractSummary } from "@/components/admin/IfeanyiContractPayroll";
 import { supabase } from "@/lib/supabase";
 import { calculatePtPayout, calendarDate, lagosToday, formatDate, formatMoney, type Trainer, type PtMembership, type Assignment, type Evaluation, type PtPayoutRun } from "@/lib/pt-payroll";
 
@@ -33,6 +34,7 @@ async function readAll<T>(table: string, columns: string, ptOnly = false): Promi
 }
 function SalaryPayments() {
   const [data, setData] = useState<Data>(empty);
+  const [contractSummary, setContractSummary] = useState<ContractSummary>({ total: 0, paid: 0 });
   const [month, setMonth] = useState(() => lagosToday().slice(0, 7));
   const [loading, setLoading] = useState(true);
   const [authorized, setAuthorized] = useState(false);
@@ -83,7 +85,7 @@ function SalaryPayments() {
     return () => { cancelled = true; };
   }, [reload]);
   const salaryRows = useMemo(() => data.staff.filter((staff) => staff.status === "approved" && !excluded(staff)).map((staff) => {
-    const records = data.payments.filter((payment) => payment.staff_profile_id === staff.id && payment.pay_period_start === start && payment.pay_period_end === end && payment.status !== "cancelled" && payment.payroll_kind !== "pt_commission");
+    const records = data.payments.filter((payment) => payment.staff_profile_id === staff.id && payment.pay_period_start === start && payment.pay_period_end === end && payment.status !== "cancelled" && (payment.payroll_kind === null || payment.payroll_kind === "monthly_salary"));
     const record = records[0];
     const setting = data.settings.find((setting) => setting.staff_profile_id === staff.id);
     return { staff, record, conflict: records.length > 1, amount: record ? Number(record.amount) : setting ? Number(setting.current_monthly_salary) : null,
@@ -106,8 +108,9 @@ function SalaryPayments() {
     const entry = (currency: string) => byCurrency[currency] ||= { salary: 0, pt: 0, paid: 0, due: 0 };
     salaryRows.forEach((row) => { if (row.amount !== null && !row.conflict) { const total = entry(row.currency); total.salary += row.amount; if (row.paid) total.paid += row.amount; else total.due += row.amount; } });
     ptPeriods.forEach((period) => period.rows.forEach((row) => { const total = entry("NGN"); const amount = cents(row.recommended_payout); total.pt += amount; if (row.payment || period.run?.status === "paid") total.paid += amount; else total.due += amount; }));
+    const contract = entry("NGN"); contract.pt += contractSummary.total; contract.paid += contractSummary.paid; contract.due += contractSummary.total - contractSummary.paid;
     return Object.entries(byCurrency);
-  }, [salaryRows, ptPeriods]);
+  }, [salaryRows, ptPeriods, contractSummary]);
   async function act(key: string, confirmation: string | null, action: () => PromiseLike<{ error: { message: string } | null }>) {
     if (loading || busy || (confirmation && !window.confirm(confirmation))) return;
     setBusy(key); setError(""); setMessage("");
@@ -136,7 +139,8 @@ function SalaryPayments() {
         <p className="text-xs font-bold text-white/70">Total outstanding · {currency}</p><p className="mt-1 text-3xl font-black">{money(total.due, currency)}</p>
         <p className="mt-3 text-xs leading-6 text-white/75">Monthly salary {money(total.salary, currency)} · PT {money(total.pt, currency)}<br />Marked paid {money(total.paid, currency)}</p>
       </div>)}</div>
-      <p className="mt-3 text-xs leading-5 text-[#647468]">Current-month amounts are provisional until the period closes. Monthly salaries use saved staff salary settings. Coach Ifeanyi is excluded pending his contract.</p>
+      <p className="mt-3 text-xs leading-5 text-[#647468]">Current-month amounts are provisional until the period closes. Monthly salaries use saved staff salary settings. Ifeanyi’s commission-only contract payments are listed separately below.</p>
+      <IfeanyiContractPayroll month={month} reload={reload} onSummary={setContractSummary} />
       <label className="mt-5 block"><span className="sr-only">Search staff</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search staff name" className="w-full rounded-xl border bg-white p-3 text-sm" /></label>
       <section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
         <h2 className="flex items-center gap-2 text-xl font-black"><Wallet size={20} />Monthly salaries</h2>

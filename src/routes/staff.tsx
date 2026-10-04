@@ -1454,7 +1454,7 @@ function StaffPage() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                            {record.payroll_kind === "pt_commission" ? "PT payout" : record.payroll_kind === "monthly_salary" ? "Monthly salary" : "Salary payment"}
+                            {record.payroll_kind === "contract_commission" ? "Contract commission" : record.payroll_kind === "pt_commission" ? "PT payout" : record.payroll_kind === "monthly_salary" ? "Monthly salary" : "Salary payment"}
                           </p>
 
                           <p className="mt-1 font-display text-2xl font-bold">

@@ -1,0 +1,70 @@
+begin;
+do $$
+declare v_admin uuid; v_coach uuid; v_member uuid; v_pt_member uuid; v_gym_member uuid;
+ v_regular uuid; v_renewal uuid; v_pt uuid; v_gym uuid; v_result jsonb; v_rows jsonb; v_blocked boolean; v_total numeric;
+begin
+ select auth_user_id into v_admin from public.staff_users where active and role in ('owner','admin') limit 1;
+ perform set_config('request.jwt.claim.sub',v_admin::text,true);
+ v_coach:=private.ifeanyi_staff_id();
+ insert into public.members(full_name,source) values('Commission test regular','manual') returning id into v_member;
+ insert into public.members(full_name,source) values('Commission test PT','manual') returning id into v_pt_member;
+ insert into public.members(full_name,source) values('Commission test Gym','manual') returning id into v_gym_member;
+ insert into public.memberships(member_id,plan_name,start_date,end_date,status,payment_status) values(v_member,'Monthly Plan','2026-09-01','2026-09-30','expired','paid') returning id into v_regular;
+ insert into public.memberships(member_id,plan_name,start_date,end_date,status,payment_status) values(v_member,'Monthly Plan','2026-10-01','2026-10-30','active','paid') returning id into v_renewal;
+ insert into public.memberships(member_id,plan_name,start_date,end_date,status,payment_status) values(v_pt_member,'Personal Training','2026-09-01','2026-09-30','expired','paid') returning id into v_pt;
+ insert into public.memberships(member_id,plan_name,start_date,end_date,status,payment_status) values(v_gym_member,'Personal Training','2026-09-16','2026-10-15','active','paid') returning id into v_gym;
+ insert into public.payments(member_id,membership_id,amount,currency,status,metadata) values
+ (v_member,v_regular,34000,'NGN','success','{"membership_amount_naira":27000,"registration_amount_naira":7000}'),
+ (v_member,v_renewal,27000,'NGN','success','{}'),
+ (v_pt_member,v_pt,64000,'NGN','success','{"membership_amount_naira":57000,"registration_amount_naira":7000}'),
+ (v_gym_member,v_gym,57000,'NGN','success','{}');
+ insert into public.pt_assignments(membership_id,member_id,trainer_staff_profile_id,assigned_by) values(v_pt,v_pt_member,v_coach,v_admin),(v_gym,v_gym_member,v_coach,v_admin);
+ perform public.management_review_ifeanyi_cycle(v_regular,'coach',null);
+ perform public.management_review_ifeanyi_cycle(v_pt,'coach',null);
+ perform public.management_review_ifeanyi_cycle(v_gym,'gym',30000);
+ v_rows:=private.ifeanyi_commission_rows('2026-09-01');
+ select (item->>'commission')::numeric into v_total from jsonb_array_elements(v_rows) item where item->>'membership_id'=v_regular::text;
+ if v_total<>9450 then raise exception '35%% referral or registration exclusion failed: %',v_total; end if;
+ select (item->>'commission')::numeric into v_total from jsonb_array_elements(v_rows) item where item->>'membership_id'=v_pt::text;
+ if v_total<>22800 then raise exception '40%% whole PT package failed: %',v_total; end if;
+ v_rows:=private.ifeanyi_commission_rows('2026-10-01');
+ select (item->>'commission')::numeric into v_total from jsonb_array_elements(v_rows) item where item->>'membership_id'=v_renewal::text;
+ if v_total<>9450 then raise exception 'Referral did not carry across renewal: %',v_total; end if;
+ v_rows:=private.ifeanyi_commission_rows('2026-09-16');
+ select (item->>'commission')::numeric into v_total from jsonb_array_elements(v_rows) item where item->>'membership_id'=v_gym::text;
+ if v_total<>12000 then raise exception '40%% PT-fee-only failed: %',v_total; end if;
+ perform public.management_save_ifeanyi_payout('2026-09-16');
+ perform public.management_review_ifeanyi_cycle(v_gym,'gym',25000);
+ v_blocked:=false;
+ begin perform public.management_mark_ifeanyi_payout_paid('2026-09-16',12000);
+ exception when others then if sqlerrm not like '%changed%' then raise; end if; v_blocked:=true; end;
+ if not v_blocked then raise exception 'Stale payout accepted'; end if;
+ perform public.management_review_ifeanyi_cycle(v_gym,'gym',30000);
+ perform public.management_save_ifeanyi_payout('2026-09-16');
+ perform public.management_mark_ifeanyi_payout_paid('2026-09-16',12000);
+ v_result:=public.management_mark_ifeanyi_payout_paid('2026-09-16',12000);
+ if not (v_result->>'already_paid')::boolean then raise exception 'Duplicate payout accepted'; end if;
+ if not exists(select 1 from public.staff_salary_records where staff_profile_id=v_coach and payroll_kind='contract_commission' and pay_period_start='2026-09-16' and amount=12000 and scheduled_pay_date='2026-10-01') then raise exception 'Staff history sync or 1st payday failed'; end if;
+ v_blocked:=false;
+ begin perform public.management_review_ifeanyi_cycle(v_gym,'gym',1);
+ exception when others then if sqlerrm not like '%locked%' then raise; end if; v_blocked:=true; end;
+ if not v_blocked then raise exception 'Paid period was editable'; end if;
+ v_blocked:=false;
+ begin update public.staff_salary_records set amount=1 where staff_profile_id=v_coach and payroll_kind='contract_commission' and pay_period_start='2026-09-16';
+ exception when others then v_blocked:=true; end;
+ if not v_blocked then raise exception 'Paid history was editable'; end if;
+ perform public.management_save_ifeanyi_payout('2026-09-01');
+ perform public.management_mark_ifeanyi_payout_paid('2026-09-01',32250);
+ if not exists(select 1 from public.staff_salary_records where staff_profile_id=v_coach and payroll_kind='contract_commission' and pay_period_start='2026-09-01' and amount=32250 and scheduled_pay_date='2026-09-16') then raise exception '16th payday failed'; end if;
+ perform public.management_save_ifeanyi_payout('2026-10-01');
+ v_blocked:=false;
+ begin perform public.management_mark_ifeanyi_payout_paid('2026-10-01',9450);
+ exception when others then if sqlerrm not like '%not due%' then raise; end if; v_blocked:=true; end;
+ if not v_blocked then raise exception 'Future payday accepted'; end if;
+ perform set_config('request.jwt.claim.sub','',true);
+ v_blocked:=false;
+ begin perform public.management_get_ifeanyi_payroll('2026-10-01'); exception when insufficient_privilege then v_blocked:=true; end;
+ if not v_blocked then raise exception 'Unauthenticated access accepted'; end if;
+end $$;
+rollback;
+select 'PASS: every renewal, all commission rates, registration exclusion, stale calculation rejection, both fixed paydays, staff history, duplicate prevention, paid locks, future due date and auth guard. All fixtures rolled back.' as result;
