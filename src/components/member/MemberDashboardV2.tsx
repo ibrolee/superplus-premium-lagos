@@ -27,6 +27,7 @@ type Membership = {
   start_date: string | null;
   end_date: string | null;
   created_at: string;
+  payment_status?: string | null;
 };
 type BlogPreview = {
   id: string;
