@@ -297,6 +297,56 @@ function ReceptionMemberProfile() {
    }
  }
  
+ async function setMembershipExpiry(membership: Membership) {
+   if (!isAdmin || processingMembershipId) return;
+
+   const currentEndDate = getDateOnly(membership.end_date) ?? "";
+   const answer = window.prompt(
+     `Set a new expiry date for ${membership.plan_name || "this membership"}.\n\nYou can move the expiry date backward or forward. Enter the date in YYYY-MM-DD format.`,
+     currentEndDate,
+   );
+   if (answer === null) return;
+
+   const newEndDate = answer.trim();
+   if (!/^\d{4}-\d{2}-\d{2}$/.test(newEndDate) ||
+       Number.isNaN(Date.parse(`${newEndDate}T00:00:00`))) {
+     window.alert("Enter a valid date in YYYY-MM-DD format.");
+     return;
+   }
+
+   if (currentEndDate === newEndDate) {
+     window.alert("That is already the current expiry date.");
+     return;
+   }
+
+   const startDate = getDateOnly(membership.start_date);
+   if (startDate && newEndDate < startDate) {
+     window.alert(`Expiry date cannot be earlier than the start date (${formatDate(startDate)}).`);
+     return;
+   }
+
+   const confirmed = window.confirm(
+     `Change expiry date for ${member?.full_name || "this member"}?\n\nPlan: ${membership.plan_name || "Membership"}\nCurrent expiry: ${formatDate(membership.end_date)}\nNew expiry: ${formatDate(newEndDate)}\n\nThis can shorten or extend the membership.`,
+   );
+   if (!confirmed) return;
+
+   setProcessingMembershipId(membership.id);
+   try {
+     const { data, error: actionError } = await supabase.rpc("reception_set_membership_expiry", {
+       p_membership_id: membership.id,
+       p_end_date: newEndDate,
+     });
+     if (actionError) throw new Error(actionError.message);
+     if (!data?.success) throw new Error("The expiry date change was not confirmed.");
+     window.alert(`Expiry date updated successfully to ${formatDate(newEndDate)}.`);
+     window.location.reload();
+   } catch (cause) {
+     window.alert(cause instanceof Error ? cause.message : "Unable to change this expiry date.");
+   } finally {
+     setProcessingMembershipId(null);
+   }
+ }
+
  async function downloadQr() {
    if (!member?.qr_token) return;
    setDownloadingQr(true);
@@ -453,7 +503,10 @@ function ReceptionMemberProfile() {
                              <Button type="button" variant="outline" disabled={processingMembershipId !== null} onClick={() => manageMembership(membership, "resume")}>Resume</Button>
                            )}
                            {membership.payment_status === "paid" && membershipStatus !== "cancelled" && (
-                             <Button type="button" variant="outline" disabled={processingMembershipId !== null} onClick={() => manageMembership(membership, "extend")}>Extend</Button>
+                             <>
+                               <Button type="button" variant="outline" disabled={processingMembershipId !== null} onClick={() => setMembershipExpiry(membership)}>Change Expiry</Button>
+                               <Button type="button" variant="outline" disabled={processingMembershipId !== null} onClick={() => manageMembership(membership, "extend")}>Extend</Button>
+                             </>
                            )}
                            {membershipStatus !== "cancelled" && (
                              <Button type="button" variant="destructive" disabled={processingMembershipId !== null} onClick={() => manageMembership(membership, "cancel")}>Cancel Membership</Button>
