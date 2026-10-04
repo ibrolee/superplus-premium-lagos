@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 15534)
-Total output lines: 1700
-
 import { StaffSalaryAdvance } from "@/components/StaffSalaryAdvance";
 import { PrivateStaffContractTerms } from "@/components/PrivateStaffContractTerms";
 import { useEffect, useMemo, useState } from "react";
@@ -1006,7 +1003,65 @@ function StaffPage() {
                   </Button>
                 </form>
 
-                {(loginType === "admin" || …534 tokens truncated…e.status)}
+                {(loginType === "admin" || loginMode) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordMode(true);
+                      setResetEmail(email);
+                      setError("");
+                      setSuccess("");
+                    }}
+                    className="mt-5 w-full text-center text-sm font-bold text-primary underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </>
+            )}
+
+            {loginType === "staff" && !loginMode && (
+              <div className="mt-6 border border-orange-500/30 bg-orange-500/10 p-4 text-sm text-orange-800">
+                <strong className="block">Staff approval required</strong>
+
+                <p className="mt-1">
+                  Your registration will be reviewed by Super Plus Fitness management before your
+                  staff account becomes active.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (profile.status !== "approved") {
+    return (
+      <main className="min-h-screen bg-background">
+        <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+          <div className="border border-border bg-card p-6 sm:p-10">
+            <div className="text-center">
+              {profile.status === "pending" ? (
+                <Clock3 className="mx-auto h-14 w-14 text-primary" />
+              ) : (
+                <XCircle className="mx-auto h-14 w-14 text-red-600" />
+              )}
+
+              <p className="mt-6 text-xs font-bold uppercase tracking-[0.25em] text-primary">
+                Super Plus Fitness
+              </p>
+
+              <h1 className="mt-3 font-display text-4xl font-bold uppercase sm:text-6xl">
+                Staff Portal
+              </h1>
+
+              <div
+                className={`mx-auto mt-8 w-fit rounded-full border px-4 py-2 text-xs font-bold uppercase ${statusClass(
+                  profile.status,
+                )}`}
+              >
+                {statusLabel(profile.status)}
               </div>
 
               <h2 className="mt-8 font-display text-2xl font-bold uppercase">
