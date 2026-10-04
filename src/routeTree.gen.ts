@@ -30,6 +30,7 @@ import { Route as ManagementMemberCardRouteImport } from './routes/management-me
 import { Route as ManagementMemberCardsRouteImport } from './routes/management-member-cards'
 import { Route as ManagementMembersRouteImport } from './routes/management-members'
 import { Route as ManagementNewMemberIntakeRouteImport } from './routes/management-new-member-intake'
+import { Route as ManagementPersonalTrainingRouteImport } from './routes/management-personal-training'
 import { Route as ManagementOperationsRouteImport } from './routes/management-operations'
 import { Route as ManagementPaymentDeskRouteImport } from './routes/management-payment-desk'
 import { Route as ManagementPayrollRouteImport } from './routes/management-payroll'
@@ -179,6 +180,11 @@ const ManagementNewMemberIntakeRoute =
     path: '/management-new-member-intake',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ManagementPersonalTrainingRoute = ManagementPersonalTrainingRouteImport.update({
+  id: '/management-personal-training',
+  path: '/management-personal-training',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagementOperationsRoute = ManagementOperationsRouteImport.update({
   id: '/management-operations',
   path: '/management-operations',
@@ -402,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/management-member-cards': typeof ManagementMemberCardsRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
@@ -464,6 +471,7 @@ export interface FileRoutesByTo {
   '/management-member-cards': typeof ManagementMemberCardsRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
@@ -528,6 +536,7 @@ export interface FileRoutesById {
   '/management-member-cards': typeof ManagementMemberCardsRoute
   '/management-members': typeof ManagementMembersRoute
   '/management-new-member-intake': typeof ManagementNewMemberIntakeRoute
+  '/management-personal-training': typeof ManagementPersonalTrainingRoute
   '/management-operations': typeof ManagementOperationsRoute
   '/management-payment-desk': typeof ManagementPaymentDeskRoute
   '/management-payroll': typeof ManagementPayrollRoute
@@ -593,6 +602,7 @@ export interface FileRouteTypes {
     | '/management-member-cards'
     | '/management-members'
     | '/management-new-member-intake'
+    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
@@ -655,6 +665,7 @@ export interface FileRouteTypes {
     | '/management-member-cards'
     | '/management-members'
     | '/management-new-member-intake'
+    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
@@ -718,6 +729,7 @@ export interface FileRouteTypes {
     | '/management-member-cards'
     | '/management-members'
     | '/management-new-member-intake'
+    | '/management-personal-training'
     | '/management-operations'
     | '/management-payment-desk'
     | '/management-payroll'
@@ -782,6 +794,7 @@ export interface RootRouteChildren {
   ManagementMemberCardsRoute: typeof ManagementMemberCardsRoute
   ManagementMembersRoute: typeof ManagementMembersRoute
   ManagementNewMemberIntakeRoute: typeof ManagementNewMemberIntakeRoute
+  ManagementPersonalTrainingRoute: typeof ManagementPersonalTrainingRoute
   ManagementOperationsRoute: typeof ManagementOperationsRoute
   ManagementPaymentDeskRoute: typeof ManagementPaymentDeskRoute
   ManagementPayrollRoute: typeof ManagementPayrollRoute
@@ -965,6 +978,13 @@ declare module '@tanstack/react-router' {
       path: '/management-new-member-intake'
       fullPath: '/management-new-member-intake'
       preLoaderRoute: typeof ManagementNewMemberIntakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management-personal-training': {
+      id: '/management-personal-training'
+      path: '/management-personal-training'
+      fullPath: '/management-personal-training'
+      preLoaderRoute: typeof ManagementPersonalTrainingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/management-operations': {
@@ -1301,6 +1321,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManagementMemberCardsRoute: ManagementMemberCardsRoute,
   ManagementMembersRoute: ManagementMembersRoute,
   ManagementNewMemberIntakeRoute: ManagementNewMemberIntakeRoute,
+  ManagementPersonalTrainingRoute: ManagementPersonalTrainingRoute,
   ManagementOperationsRoute: ManagementOperationsRoute,
   ManagementPaymentDeskRoute: ManagementPaymentDeskRoute,
   ManagementPayrollRoute: ManagementPayrollRoute,
