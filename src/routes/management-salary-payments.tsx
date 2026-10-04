@@ -11,7 +11,12 @@ type Setting = { staff_profile_id: string; current_monthly_salary: number; curre
 type Payment = { id: string; staff_profile_id: string; amount: number; currency: string; pay_period_start: string | null; pay_period_end: string | null; payment_date: string | null; scheduled_pay_date: string | null; status: string; payroll_kind: string | null; pt_payout_run_id: string | null; notes: string | null };
 type Data = { staff: Staff[]; settings: Setting[]; payments: Payment[]; trainers: Trainer[]; memberships: PtMembership[]; assignments: Assignment[]; evaluations: Evaluation[]; runs: PtPayoutRun[] };
 const empty: Data = { staff: [], settings: [], payments: [], trainers: [], memberships: [], assignments: [], evaluations: [], runs: [] };
-const excluded = (staff: Staff) => /ifeanyi/i.test(staff.full_name);
+// These are test/admin accounts, not employees on payroll.
+const DUMMY_STAFF_IDS = new Set([
+  "143517a5-46ec-4f57-85f0-a700c8ffbcd0", // Ibrahim Alli
+  "48031602-21f1-4210-945e-2fefd83e6f52", // Super Plus Fitness Admin
+]);
+const excluded = (staff: Staff) => DUMMY_STAFF_IDS.has(staff.id) || /ifeanyi/i.test(staff.full_name);
 const money = (amount: number, currency = "NGN") => new Intl.NumberFormat("en-NG", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
 const cents = (amount: number) => Math.round(Number(amount) * 100) / 100;
 async function readAll<T>(table: string, columns: string, ptOnly = false): Promise<T[]> {
