@@ -307,6 +307,7 @@ function ManagementPersonalTraining() {
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutPeriodStart, setPayoutPeriodStart] = useState(currentPayPeriodStart());
   const [payoutPool, setPayoutPool] = useState<string | null>(null);
+  const [adjustPoolOpen, setAdjustPoolOpen] = useState(false);
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutMarkingId, setPayoutMarkingId] = useState<string | null>(null);
   const [payoutMessage, setPayoutMessage] = useState("");
@@ -529,12 +530,33 @@ function ManagementPersonalTraining() {
   });
 
   const selectedPeriod = payPeriodFromStart(payoutPeriodStart);
-  const payoutPeriodOptions = useMemo(() => buildPayPeriodStarts(14), []);
+  const payoutPeriodOptions = useMemo(
+    () => [...new Set([...buildPayPeriodStarts(26), ...payoutRuns.map((run) => run.period_start)])].sort((a, b) => b.localeCompare(a)),
+    [payoutRuns],
+  );
   const selectedPayoutRun = payoutRuns.find(
     (row) => row.period_start === payoutPeriodStart,
   ) || null;
 
   const payoutCalculation = useMemo(() => {
+    // Paid history must always display the immutable database snapshot.
+    if (selectedPayoutRun?.status === "paid") {
+      const rows = selectedPayoutRun.breakdown || [];
+      const pool = Number(selectedPayoutRun.payout_pool);
+      const autoPool = Number(selectedPayoutRun.auto_payout_pool);
+      return {
+        pool, autoPool, poolOverridden: Math.abs(pool - autoPool) > 0.01,
+        periodStart: selectedPayoutRun.period_start,
+        periodEnd: selectedPayoutRun.period_end,
+        payDate: selectedPayoutRun.pay_date,
+        rows,
+        fullEligibleCount: rows.filter((row) => row.full_pool_eligible).length,
+        commissionTotal: rows.reduce((sum, row) => sum + Number(row.trainee_commission || 0), 0),
+        totalRecommended: rows.reduce((sum, row) => sum + Number(row.recommended_payout || 0), 0),
+        unassignedCount: 0,
+        measurementEnd: selectedPayoutRun.period_end,
+      };
+    }
     const activeTrainers = trainers.filter(
       (trainer) =>
         trainer.active &&
@@ -639,9 +661,9 @@ function ManagementPersonalTraining() {
         0,
       ) * LOW_VOLUME_TRAINEE_COMMISSION;
 
-    const defaultPool = selectedPayoutRun
-      ? Number(selectedPayoutRun.payout_pool)
-      : autoPool;
+    const savedOverride = selectedPayoutRun &&
+      Math.abs(Number(selectedPayoutRun.payout_pool) - Number(selectedPayoutRun.auto_payout_pool)) > 0.01;
+    const defaultPool = savedOverride ? Number(selectedPayoutRun.payout_pool) : autoPool;
     const pool = Math.max(
       0,
       payoutPool === null ? defaultPool : Number(payoutPool || 0),
@@ -741,7 +763,17 @@ function ManagementPersonalTraining() {
     today,
   ]);
 
+  const invalidPool = payoutPool !== null &&
+    (!payoutPool.trim() || !Number.isFinite(Number(payoutPool)) || Number(payoutPool) < 0);
+  const payoutBusy = loading || payoutSaving || payoutMarkingId !== null;
+  const payoutNeedsSave = selectedPayoutRun?.status === "pending" && (
+    Math.abs(Number(selectedPayoutRun.payout_pool) - payoutCalculation.pool) > 0.01 ||
+    Math.abs(Number(selectedPayoutRun.auto_payout_pool) - payoutCalculation.autoPool) > 0.01 ||
+    JSON.stringify(selectedPayoutRun.breakdown) !== JSON.stringify(payoutCalculation.rows)
+  );
+
   async function savePayoutRun() {
+    if (payoutBusy || invalidPool) return;
     if (selectedPayoutRun?.status === "paid") {
       setError("This PT payout has already been paid and is locked.");
       return;
@@ -781,7 +813,11 @@ function ManagementPersonalTraining() {
   }
 
   async function markPayoutPaid(run: PtPayoutRun) {
-    if (run.status === "paid" || payoutMarkingId) return;
+    if (run.status === "paid" || payoutBusy || invalidPool) return;
+    if (payoutNeedsSave) {
+      setError("The calculation has changed. Save PT payout before marking it paid.");
+      return;
+    }
     if (today < run.pay_date) {
       setError(`This PT payout is due on ${formatDate(run.pay_date)}.`);
       return;
@@ -1102,13 +1138,15 @@ function ManagementPersonalTraining() {
               <strong> 1st of the next month</strong> together with salary.
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+            <div className="mt-5 grid gap-3 md:max-w-xl">
               <label className="text-xs font-black">
-                Pay period
+                PT Pay Period
                 <select
                   value={payoutPeriodStart}
+                  disabled={payoutBusy}
                   onChange={(event) => {
                     setPayoutPeriodStart(event.target.value);
+                    setAdjustPoolOpen(false);
                     setPayoutPool(null);
                     setPayoutMessage("");
                     setError("");
@@ -1119,7 +1157,7 @@ function ManagementPersonalTraining() {
                     const period = payPeriodFromStart(start);
                     return (
                       <option key={start} value={start}>
-                        {formatDate(period.start)} – {formatDate(period.end)} · paid {formatDate(period.payDate)}
+                        {formatDate(period.start)} – {formatDate(period.end)} · pay date {formatDate(period.payDate)}
                       </option>
                     );
                   })}
@@ -1131,50 +1169,44 @@ function ManagementPersonalTraining() {
                 </span>
               </label>
 
-              <label className="text-xs font-black">
-                50/30/20 pool used
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  inputMode="decimal"
-                  value={payoutPool ?? String(payoutCalculation.pool)}
-                  onChange={(event) => setPayoutPool(event.target.value)}
-                  disabled={selectedPayoutRun?.status === "paid"}
-                  className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none disabled:bg-[#f1f3ef]"
-                />
-                <span className="mt-1.5 block font-normal text-[#728077]">
-                  Auto-calculated: <strong>{formatMoney(payoutCalculation.autoPool)}</strong>
-                  {payoutCalculation.poolOverridden ? " · manually changed" : " · using automatic figure"}
-                </span>
-              </label>
-
-              <button
-                type="button"
-                onClick={() => setPayoutPool(String(payoutCalculation.autoPool))}
-                disabled={selectedPayoutRun?.status === "paid" || !payoutCalculation.poolOverridden}
-                className="inline-flex items-center justify-center rounded-xl border border-[#cbd8c8] bg-white px-4 py-3 text-xs font-black text-[#31543a] disabled:opacity-40"
-              >
-                Use auto figure
-              </button>
             </div>
 
             <div className="mt-4 rounded-xl border border-[#dfe7dc] bg-white p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#65806b]">Automatic pool</p>
-                  <p className="mt-1 text-2xl font-black text-[#193b2a]">{formatMoney(payoutCalculation.autoPool)}</p>
-                  <p className="mt-1 text-xs leading-5 text-[#68766d]">
-                    Calculated automatically as ₦10,000 for each payable PT membership cycle belonging to coaches who qualify for the 50/30/20 pool in this pay period.
-                  </p>
+              <p className="text-xs font-black text-[#65806b]">Automatic 50/30/20 pool</p>
+              <p className="mt-1 text-2xl font-black text-[#193b2a]">{formatMoney(payoutCalculation.autoPool)}</p>
+              <p className="mt-1 text-xs text-[#68766d]">₦10,000 × payable membership cycles assigned to eligible coaches.</p>
+              {payoutCalculation.poolOverridden && (
+                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-900">
+                  Manually adjusted pool: {formatMoney(payoutCalculation.pool)} · Automatic: {formatMoney(payoutCalculation.autoPool)}
+                </p>
+              )}
+              {selectedPayoutRun?.status !== "paid" && (
+                <div className="mt-3 space-y-3">
+                  <button type="button" disabled={payoutBusy || payoutCalculation.fullEligibleCount === 0}
+                    onClick={() => setAdjustPoolOpen((open) => !open)}
+                    aria-expanded={adjustPoolOpen}
+                    className="rounded-xl border border-[#cbd8c8] px-4 py-2 text-xs font-black disabled:opacity-40">
+                    {adjustPoolOpen ? "Hide adjustment" : "Adjust pool"}
+                  </button>
+                  {adjustPoolOpen && (
+                    <label className="block text-xs font-black">
+                      Override amount (₦)
+                      <input type="number" min="0" step="0.01" inputMode="decimal"
+                        value={payoutPool ?? String(payoutCalculation.pool)}
+                        onChange={(event) => setPayoutPool(event.target.value)} disabled={payoutBusy}
+                        className="mt-1.5 w-full rounded-xl border border-[#cedbc9] px-3 py-3 text-sm" />
+                    </label>
+                  )}
+                  {(payoutCalculation.poolOverridden || payoutPool !== null) && (
+                    <button type="button" disabled={payoutBusy}
+                      onClick={() => { setPayoutPool(String(payoutCalculation.autoPool)); setAdjustPoolOpen(false); }}
+                      className="text-xs font-bold underline">Use automatic amount</button>
+                  )}
+                  {invalidPool && <p role="alert" className="text-xs text-red-800">Enter a valid amount of ₦0 or more, or use the automatic amount.</p>}
                 </div>
-                <div className="rounded-xl bg-[#f4f7f1] px-4 py-3 text-xs leading-5 text-[#53665a]">
-                  <strong>3+ trainees:</strong> share this pool by 50/30/20.<br />
-                  <strong>1–2 trainees:</strong> get ₦10,000 per payable PT membership cycle directly.
-                </div>
-              </div>
+              )}
+              <p className="mt-3 text-xs leading-5 text-[#68766d]">3+ trainees: 50/30/20 pool. 1–2 trainees: ₦10,000 once per payable membership cycle. 0 trainees: ₦0. Part-time coaches are handled separately.</p>
             </div>
-
             <div className="mt-4 grid grid-cols-3 gap-2">
               <div className="rounded-xl bg-[#edf5ea] p-3 text-center">
                 <p className="text-xl font-black text-[#2f7746]">50%</p>
@@ -1203,16 +1235,16 @@ function ManagementPersonalTraining() {
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                disabled={payoutSaving || selectedPayoutRun?.status === "paid"}
+                disabled={payoutBusy || invalidPool || selectedPayoutRun?.status === "paid"}
                 onClick={() => void savePayoutRun()}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <Save size={15} /> {payoutSaving ? "Saving…" : selectedPayoutRun ? "Update payout calculation" : "Save payout calculation"}
+                <Save size={15} /> {payoutSaving ? "Saving…" : selectedPayoutRun?.status === "paid" ? "Paid · figures locked" : "Save PT payout"}
               </button>
               {selectedPayoutRun?.status === "pending" && (
                 <button
                   type="button"
-                  disabled={payoutMarkingId === selectedPayoutRun.id || today < selectedPayoutRun.pay_date}
+                  disabled={payoutBusy || invalidPool || payoutNeedsSave || today < selectedPayoutRun.pay_date}
                   onClick={() => void markPayoutPaid(selectedPayoutRun)}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#193b2a] bg-white px-4 py-3 text-xs font-black text-[#193b2a] disabled:opacity-45"
                 >
@@ -1221,11 +1253,17 @@ function ManagementPersonalTraining() {
                     ? `Pay on ${formatDate(selectedPayoutRun.pay_date)}`
                     : payoutMarkingId === selectedPayoutRun.id
                       ? "Saving…"
-                      : "Mark full payout paid"}
+                      : "Mark payout paid"}
                 </button>
               )}
             </div>
 
+            {payoutNeedsSave && (
+              <p role="status" className="mt-3 text-xs text-amber-900">Calculation updated. Save PT payout before marking it paid.</p>
+            )}
+            {selectedPayoutRun?.status === "paid" && (
+              <p className="mt-3 text-xs font-bold text-green-800">Paid · these saved financial figures are locked.</p>
+            )}
             {!!payoutMessage && (
               <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
                 {payoutMessage}
@@ -1260,17 +1298,17 @@ function ManagementPersonalTraining() {
                   </div>
 
                   {row.full_pool_eligible ? (
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="mt-4 grid grid-cols-3 gap-1 text-center">
                       <div className="rounded-xl bg-white p-3">
-                        <p className="text-sm font-black">{formatMoney(row.team_share)}</p>
+                        <p className="break-words text-xs font-black">{formatMoney(row.team_share)}</p>
                         <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Team</p>
                       </div>
                       <div className="rounded-xl bg-white p-3">
-                        <p className="text-sm font-black">{formatMoney(row.workload_share)}</p>
+                        <p className="break-words text-xs font-black">{formatMoney(row.workload_share)}</p>
                         <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Workload</p>
                       </div>
                       <div className="rounded-xl bg-white p-3">
-                        <p className="text-sm font-black">{formatMoney(row.performance_share)}</p>
+                        <p className="break-words text-xs font-black">{formatMoney(row.performance_share)}</p>
                         <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Performance</p>
                       </div>
                     </div>
@@ -1321,7 +1359,7 @@ function ManagementPersonalTraining() {
                 <p className="mt-1 text-[9px] text-white/60">₦10,000 per payable PT membership cycle</p>
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Total due</p>
+                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Total PT payroll due</p>
                 <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.totalRecommended)}</p>
                 <p className="mt-1 text-[9px] text-white/60">Pay date {formatDate(payoutCalculation.payDate)}</p>
               </div>
@@ -1340,8 +1378,10 @@ function ManagementPersonalTraining() {
                       <button
                         type="button"
                         key={run.id}
+                        disabled={payoutBusy}
                         onClick={() => {
                           setPayoutPeriodStart(run.period_start);
+                          setAdjustPoolOpen(false);
                           setPayoutPool(null);
                           setPayoutMessage("");
                           setError("");
