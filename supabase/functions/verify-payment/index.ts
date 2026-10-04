@@ -52,28 +52,18 @@ Deno.serve(async (request: Request) => {
           p_channel:String(transaction.channel||'paystack'),p_customer_code:transaction.customer?.customer_code||null,
           p_transaction_id:transaction.id,
         })
-      : service.rpc('finalize_member_paystack_payment',{
+      : service.rpc('finalize_member_paystack_payment_with_pt',{
           p_reference:reference,p_member_id:member.id,p_auth_user_id:user.id,
           p_plan_id:String(meta.plan_id||''),p_amount_kobo:transaction.amount,
           p_currency:transaction.currency,p_paid_at:transaction.paid_at,
           p_channel:String(transaction.channel||'paystack'),p_customer_code:transaction.customer?.customer_code||null,
           p_transaction_id:transaction.id,
+          p_trainer_staff_profile_id:String(meta.plan_id||'')==='personal-training'?(meta.trainer_staff_profile_id||null):null,
         });
     const { data, error } = await call;
     if (error) {
       console.error('Payment finalization failed:', { reference, code: error.code, message: error.message });
       return respond({ error: 'Your payment was received but activation could not finish. Please retry with this reference or contact reception. Do not pay again.' }, 503);
-    }
-    if (String(meta.plan_id || '') === 'personal-training' && typeof meta.trainer_staff_profile_id === 'string' && meta.trainer_staff_profile_id) {
-      const { error: trainerError } = await service.rpc('ensure_pt_assignment_for_service', {
-        p_membership_id: data.membership_id,
-        p_trainer_staff_profile_id: meta.trainer_staff_profile_id,
-        p_assigned_by: user.id,
-      });
-      if (trainerError) {
-        console.error('PT trainer assignment failed:', { reference, code: trainerError.code, message: trainerError.message });
-        return respond({ error: 'Your payment was received but the trainer assignment could not finish. Retry with the same reference or contact reception. Do not pay again.' }, 503);
-      }
     }
     return respond(data);
   } catch (error) {
