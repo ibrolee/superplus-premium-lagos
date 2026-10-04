@@ -164,6 +164,7 @@ function ManagementPersonalTraining() {
   const [message, setMessage] = useState("");
   const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
   const [payoutOpen, setPayoutOpen] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -933,8 +934,31 @@ function ManagementPersonalTraining() {
       )}
 
       <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          aria-expanded={membersOpen}
+          onClick={() => setMembersOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-4 text-left"
+        >
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
+              PT members
+            </p>
+            <h2 className="mt-1 text-xl font-black">Personal Training Members</h2>
+            <p className="mt-1 text-xs text-[#6c7a70]">
+              Coach assignments, renewals, feedback and PT membership records.
+            </p>
+          </div>
+          <ChevronDown
+            size={22}
+            className={`shrink-0 text-[#42634a] transition-transform ${membersOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {membersOpen && (
+          <>
+            <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-wrap gap-2">
             {(["current", "expiring", "unassigned", "feedback", "all"] as View[]).map((item) => (
               <button
                 key={item}
@@ -1117,6 +1141,8 @@ function ManagementPersonalTraining() {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </section>
     </AdminWorkspaceShell>
