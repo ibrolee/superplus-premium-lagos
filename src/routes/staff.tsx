@@ -68,6 +68,8 @@ type SalaryRecord = {
   status: "pending" | "paid" | "cancelled";
   notes: string | null;
   created_at: string;
+  payroll_kind: string | null;
+  scheduled_pay_date: string | null;
 };
 
 type AttendanceRecord = {
@@ -327,6 +329,8 @@ function StaffPage() {
           payment_date,
           status,
           notes,
+          payroll_kind,
+          scheduled_pay_date,
           created_at
         `,
         )
@@ -653,6 +657,22 @@ function StaffPage() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Refresh payment history when staff return to the page or open this tab.
+  useEffect(() => {
+    if (!profile || activeSection !== "payments") return;
+    let cancelled = false;
+    const refreshPayments = async () => {
+      const { data, error: paymentError } = await supabase.from("staff_salary_records")
+        .select("id,amount,currency,pay_period_start,pay_period_end,payment_date,status,notes,created_at,payroll_kind,scheduled_pay_date")
+        .eq("staff_profile_id", profile.id).order("created_at", { ascending: false });
+      if (!cancelled && !paymentError) setSalaryRecords((data || []) as SalaryRecord[]);
+    };
+    void refreshPayments();
+    window.addEventListener("focus", refreshPayments);
+    const timer = window.setInterval(() => void refreshPayments(), 60_000);
+    return () => { cancelled = true; window.removeEventListener("focus", refreshPayments); window.clearInterval(timer); };
+  }, [profile?.id, activeSection]);
 
   // Match the scanner's midnight reset in Lagos, including an open dashboard.
   useEffect(() => {
@@ -1420,12 +1440,12 @@ function StaffPage() {
 
           <TabsContent value="payments" className="mt-4 min-w-0 border border-border bg-card">
             <div className="border-b border-border px-4 py-4 sm:px-6">
-              <h2 className="font-display text-2xl font-bold uppercase">Salary History</h2>
+              <h2 className="font-display text-2xl font-bold uppercase">Payment History</h2>
             </div>
             <div className="p-4 sm:p-6">
               {salaryRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  No salary records available yet.
+                  No payment records available yet.
                 </p>
               ) : (
                 <div className="grid gap-4">
@@ -1434,7 +1454,7 @@ function StaffPage() {
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                           <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                            Amount
+                            {record.payroll_kind === "pt_commission" ? "PT payout" : record.payroll_kind === "monthly_salary" ? "Monthly salary" : "Salary payment"}
                           </p>
 
                           <p className="mt-1 font-display text-2xl font-bold">

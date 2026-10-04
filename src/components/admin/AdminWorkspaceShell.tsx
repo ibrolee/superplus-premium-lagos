@@ -189,6 +189,13 @@ export const adminGroups: Group[] = [
     icon: Wallet,
     tools: [
       {
+        label: "Salary payments",
+        href: "/management-salary-payments",
+        icon: Wallet,
+        ownerOrAdmin: true,
+        keywords: "salary calculator monthly wages coach pt first second half mark paid",
+      },
+      {
         label: "Payroll records",
         href: "/management-payroll",
         icon: Wallet,
