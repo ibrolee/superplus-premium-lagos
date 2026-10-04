@@ -44,7 +44,7 @@ export function IfeanyiContractPayroll({ month, reload, onSummary }: { month: st
   }
   return <section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
     <h2 className="text-xl font-black">Coach Ifeanyi · Contract commissions</h2>
-    <p className="mt-2 text-xs leading-5 text-[#647468]">Part-time coach · commission only. Personally sourced PT: 40% of the package. Personally sourced regular membership: 35% on every paid renewal. Gym-assigned PT: 40% of the PT fee. Registration fees are excluded.</p>
+    <p className="mt-2 text-xs leading-5 text-[#647468]">Part-time coach · commission only · paid on the 1st of the following month. Personally sourced PT: 40% of the package. Personally sourced regular membership: 35% on every paid renewal. Gym-assigned PT: 40% of the PT fee. Registration fees are excluded.</p>
     <p className="mt-2 text-xs leading-5 text-[#647468]">Current prices: ₦57,000 PT package → ₦22,800 sourced commission; ₦27,000 monthly membership → ₦9,450; ₦30,000 PT fee → ₦12,000 gym-assigned commission. Calculations use actual recorded payments.</p>
     <label className="mt-4 block text-xs font-bold">Approve client sources
       <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search member name to approve a referral" className="mt-2 w-full rounded-xl border p-3 text-sm" />
@@ -53,7 +53,7 @@ export function IfeanyiContractPayroll({ month, reload, onSummary }: { month: st
     {loading && <p role="status" className="mt-4 text-sm">Loading contract commissions…</p>}
     {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
     {message && <p role="status" className="mt-4 rounded-xl bg-green-50 p-3 text-sm text-green-800">{message}</p>}
-    {!loading && periods.map((period, index) => {
+    {!loading && periods.map((period) => {
       const paid = period.run?.status === "paid";
       const total = period.rows.reduce((sum, row) => sum + Number(row.commission), 0);
       const dirty = !!period.run && !paid && JSON.stringify(period.run.breakdown) !== JSON.stringify(period.rows);
@@ -61,8 +61,8 @@ export function IfeanyiContractPayroll({ month, reload, onSummary }: { month: st
       const needsReview = relevant.filter((row) => row.review_status !== "Ready" && row.review_status !== "Previously commissioned");
       const visible = period.rows.filter((row) => row.commission > 0 || (!paid && (row.source === "coach" || row.assigned_to_ifeanyi || (search.trim().length >= 2 && row.member_name.toLowerCase().includes(search.trim().toLowerCase())))));
       return <div key={period.period_start} className="mt-5 rounded-xl border p-4">
-        <h3 className="text-sm font-black">{index === 0 ? "First half" : "Second half"} · {formatDate(period.period_start)} – {formatDate(period.period_end)}</h3>
-        <p className="mt-1 text-xs text-[#647468]">Pay date: {formatDate(period.pay_date)}{index === 1 ? " · with salary" : ""}</p>
+        <h3 className="text-sm font-black">Monthly commissions · {formatDate(period.period_start)} – {formatDate(period.period_end)}</h3>
+        <p className="mt-1 text-xs text-[#647468]">Pay date: {formatDate(period.pay_date)} · monthly payment</p>
         <p className="mt-3 text-2xl font-black">{formatMoney(total)}</p>
         {needsReview.length > 0 && !paid && <p className="mt-2 rounded-lg bg-amber-50 p-3 text-xs text-amber-900">{needsReview.length} client cycles need review and contribute ₦0 until resolved.</p>}
         {paid ? <p className="mt-2 text-xs font-bold text-green-800">Paid · figures locked · recorded in staff history</p> : <div className="mt-3 flex flex-wrap gap-2">
