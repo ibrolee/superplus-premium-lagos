@@ -5,6 +5,7 @@ import {
   CalendarDays,
   CheckCircle2,
   CircleDollarSign,
+  ChevronDown,
   Dumbbell,
   RefreshCw,
   Save,
@@ -161,6 +162,8 @@ function ManagementPersonalTraining() {
   const [savingMembershipId, setSavingMembershipId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
+  const [payoutOpen, setPayoutOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -565,7 +568,7 @@ function ManagementPersonalTraining() {
   return (
     <AdminWorkspaceShell
       title="Personal Training"
-      subtitle="Assign coaches, monitor PT expiries, review trainer evaluations and handle continuation or change requests."
+      subtitle="Assign coaches, monitor PT expiries, review coach evaluations and handle continuation or change requests."
       active="/management-personal-training"
     >
       <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-4">
@@ -601,22 +604,36 @@ function ManagementPersonalTraining() {
       </section>
 
       <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <button
+          type="button"
+          aria-expanded={coachPerformanceOpen}
+          onClick={() => setCoachPerformanceOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-4 text-left"
+        >
           <div>
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
-              Trainer performance
+              Coach performance
             </p>
             <h2 className="mt-1 text-xl font-black">Evaluation overview</h2>
+            <p className="mt-1 text-xs text-[#6c7a70]">Ratings, trainee retention and performance breakdown.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
-          >
-            <RefreshCw size={15} /> Refresh
-          </button>
-        </div>
-        <div className="mt-5 grid gap-4 xl:grid-cols-3">
+          <ChevronDown
+            size={22}
+            className={`shrink-0 text-[#42634a] transition-transform ${coachPerformanceOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {coachPerformanceOpen && (
+          <>
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => void load()}
+                className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
+              >
+                <RefreshCw size={15} /> Refresh
+              </button>
+            </div>
+            <div className="mt-5 grid gap-4 xl:grid-cols-3">
           {trainerStats.map((stats) => {
             const {
               trainer,
@@ -734,26 +751,43 @@ function ManagementPersonalTraining() {
               </article>
             );
           })}
-        </div>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <button
+          type="button"
+          aria-expanded={payoutOpen}
+          onClick={() => setPayoutOpen((open) => !open)}
+          className="flex w-full items-center justify-between gap-4 text-left"
+        >
           <div className="max-w-2xl">
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
               Monthly PT payout
             </p>
             <h2 className="mt-1 text-xl font-black">Coach payout calculator</h2>
-            <p className="mt-2 text-xs leading-5 text-[#67776c]">
+            <p className="mt-1 text-xs text-[#6c7a70]">Monthly coach payout recommendations and saved calculations.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <CircleDollarSign className="size-7 text-[#2f7746]" />
+            <ChevronDown
+              size={22}
+              className={`text-[#42634a] transition-transform ${payoutOpen ? "rotate-180" : ""}`}
+            />
+          </div>
+        </button>
+
+        {payoutOpen && (
+          <>
+            <p className="mt-4 text-xs leading-5 text-[#67776c]">
               Enter the amount management has decided is available to pay PT coaches for the month.
               The calculator recommends a split using 50% equal team share, 30% assigned-trainee workload
               and 20% performance. Cover sessions are not included.
             </p>
-          </div>
-          <CircleDollarSign className="size-8 shrink-0 text-[#2f7746]" />
-        </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
+            <div className="mt-5 grid gap-3 md:grid-cols-[180px_minmax(0,1fr)_auto] md:items-end">
           <label className="text-xs font-black">
             Payout month
             <input
@@ -883,6 +917,8 @@ function ManagementPersonalTraining() {
             This is a recommendation for management. Saved monthly calculations can be updated later if assignments or figures change.
           </p>
         </div>
+          </>
+        )}
       </section>
 
       {!!error && (
@@ -995,7 +1031,7 @@ function ManagementPersonalTraining() {
                         ))}
                       </select>
                       <span className="mt-1 block font-normal text-[#718075]">
-                        {assignedTrainer ? "Saved for this PT cycle." : "Choose the member’s actual trainer."}
+                        {assignedTrainer ? "Saved for this PT cycle." : "Choose the member’s actual coach."}
                       </span>
                     </label>
                   </div>
@@ -1005,7 +1041,7 @@ function ManagementPersonalTraining() {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
-                            Trainer evaluation
+                            Coach evaluation
                           </p>
                           <p className="mt-1 text-xl font-black">
                             {evaluation.overall_rating}/5 <span className="text-[#b28a2d]">★</span>
@@ -1039,9 +1075,9 @@ function ManagementPersonalTraining() {
                         <p>
                           <strong>Next step:</strong>{" "}
                           {evaluation.continuation_choice === "continue"
-                            ? `Continue with ${trainerMap.get(evaluation.trainer_staff_profile_id)?.display_name || "same trainer"}`
+                            ? `Continue with ${trainerMap.get(evaluation.trainer_staff_profile_id)?.display_name || "same coach"}`
                             : evaluation.continuation_choice === "change"
-                              ? `Change to ${trainerMap.get(evaluation.requested_trainer_staff_profile_id || "")?.display_name || "another trainer"}`
+                              ? `Change to ${trainerMap.get(evaluation.requested_trainer_staff_profile_id || "")?.display_name || "another coach"}`
                               : "Finish personal training"}
                         </p>
                         {evaluation.change_reason && (
