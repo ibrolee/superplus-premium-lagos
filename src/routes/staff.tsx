@@ -1412,7 +1412,7 @@ function StaffPage() {
                 )}
 
                 <div className="mt-5 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
-                  Renewal rate uses PT cycles from the matured 90-day window and gives members a 7-day renewal grace period. Monthly payout calculations and other coaches’ figures remain management-only.
+                  Renewal rate uses PT cycles from the matured 90-day window and gives members a 3-day renewal grace period. Monthly payout calculations and other coaches’ figures remain management-only.
                 </div>
               </div>
             </TabsContent>
