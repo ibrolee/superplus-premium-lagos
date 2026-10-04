@@ -355,7 +355,7 @@ function ManagementPersonalTraining() {
     const { start: monthStart, end: monthEnd } = monthBounds(payoutMonth);
     const pool = Math.max(0, Number(payoutPool || 0));
     const measurementEnd = monthEnd < today ? monthEnd : today;
-    const maturedRenewalEnd = addDays(measurementEnd, -30);
+    const maturedRenewalEnd = addDays(measurementEnd, -7);
     const renewalWindowStart = addDays(maturedRenewalEnd, -89);
 
     const unassignedMemberIds = new Set(
@@ -398,7 +398,7 @@ function ManagementPersonalTraining() {
             candidate.member_id === cycle.member_id &&
             candidate.payment_status === "paid" &&
             candidate.created_at > cycle.created_at &&
-            candidate.start_date <= addDays(cycle.end_date, 30) &&
+            candidate.start_date <= addDays(cycle.end_date, 7) &&
             assignmentMap.get(candidate.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
         ),
       ).length;
@@ -808,7 +808,7 @@ function ManagementPersonalTraining() {
         <div className="mt-4 rounded-xl border border-[#e1e7dd] bg-[#fafbf8] p-4 text-xs leading-5 text-[#637168]">
           <strong className="text-[#33483a]">Performance rule:</strong> where enough data exists, the performance
           score is 75% matured 90-day same-coach renewal rate and 25% established trainee rating. A rating only
-          counts after at least 3 evaluations. PT cycles that expired less than 30 days ago are not treated as
+          counts after at least 3 evaluations. PT cycles that expired less than 7 days ago are not treated as
           failed renewals yet. If a coach has no measurable data, the system uses a neutral team-average score.
         </div>
 
