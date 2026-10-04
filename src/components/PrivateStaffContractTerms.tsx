@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type PrivateStaffContractTermsProps = {
-  staffProfileId?: string;
+  staffProfileId?: string | undefined;
 };
 
 export function PrivateStaffContractTerms({ staffProfileId }: PrivateStaffContractTermsProps) {
