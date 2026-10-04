@@ -51,6 +51,13 @@ type StaffProfile = {
   created_at: string;
 };
 
+type StaffSalarySetting = {
+  staff_profile_id: string;
+  current_monthly_salary: number;
+  currency: string;
+  updated_at: string;
+};
+
 type SalaryRecord = {
   id: string;
   amount: number;
@@ -192,6 +199,7 @@ function StaffPage() {
   const [success, setSuccess] = useState("");
 
   const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [currentSalary, setCurrentSalary] = useState<StaffSalarySetting | null>(null);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
   const [coachPerformance, setCoachPerformance] = useState<CoachPerformance | null>(null);
@@ -226,6 +234,7 @@ function StaffPage() {
 
     if (userError || !user) {
       setProfile(null);
+      setCurrentSalary(null);
       setSalaryRecords([]);
       setAttendanceRecords([]);
       setCoachPerformance(null);
@@ -299,7 +308,13 @@ function StaffPage() {
     setEditPhone(staff.phone || "");
     setEditAddress(staff.address || "");
 
-    const [salaryResult, attendanceResult, coachPerformanceResult] = await Promise.all([
+    const [salarySettingResult, salaryResult, attendanceResult, coachPerformanceResult] = await Promise.all([
+      supabase
+        .from("staff_salary_settings")
+        .select("staff_profile_id,current_monthly_salary,currency,updated_at")
+        .eq("staff_profile_id", staff.id)
+        .maybeSingle(),
+
       supabase
         .from("staff_salary_records")
         .select(
@@ -336,6 +351,12 @@ function StaffPage() {
       supabase.rpc("get_my_pt_coaching_performance"),
     ]);
 
+    if (salarySettingResult.error) {
+      setError(salarySettingResult.error.message);
+      setLoading(false);
+      return;
+    }
+
     if (salaryResult.error) {
       setError(salaryResult.error.message);
       setLoading(false);
@@ -348,6 +369,7 @@ function StaffPage() {
       return;
     }
 
+    setCurrentSalary((salarySettingResult.data || null) as StaffSalarySetting | null);
     setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
 
     setAttendanceRecords((attendanceResult.data || []) as AttendanceRecord[]);
@@ -517,6 +539,7 @@ function StaffPage() {
     await supabase.auth.signOut();
 
     setProfile(null);
+    setCurrentSalary(null);
     setSalaryRecords([]);
     setAttendanceRecords([]);
     setCoachPerformance(null);
@@ -1282,6 +1305,7 @@ function StaffPage() {
                   ["Position", profile.position || "Not assigned"],
                   ["Department", profile.department || "Not assigned"],
                   ["Employment Type", profile.employment_type || "Not assigned"],
+                  ["Current Monthly Salary", currentSalary ? formatMoney(Number(currentSalary.current_monthly_salary), currentSalary.currency) : "Not set"],
                   ["Employment Date", formatDate(profile.employment_date)],
                   ["System Role", getRoleLabel(profile.role)],
                   ["Staff Status", statusLabel(profile.status)],
