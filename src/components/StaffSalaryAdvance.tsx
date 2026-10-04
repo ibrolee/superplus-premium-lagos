@@ -44,7 +44,7 @@ export function StaffSalaryAdvance({ staffProfileId, readOnly = false }: { staff
   }
   return <section className="mb-6 border border-border bg-muted/10 p-4 sm:p-5">
     <h3 className="font-display text-xl font-bold uppercase">Salary advance</h3>
-    <p className="mt-2 text-sm text-muted-foreground">One request each month, only on the 15th in Nigerian time. Maximum: 40% of your fixed monthly salary. Paid advances are deducted from that month’s salary, paid on the following 1st.</p>
+    <p className="mt-2 text-sm text-muted-foreground">One request each month, from the 15th through the last day of the month in Nigerian time. Maximum: 40% of your fixed monthly salary. Paid advances are deducted from that month’s salary, paid on the following 1st.</p>
     {loading && <p className="mt-3 text-sm" role="status">Loading advance details…</p>}
     {error && <p className="mt-3 text-sm text-red-700" role="alert">{error}</p>}
     {success && <p className="mt-3 text-sm text-green-700" role="status">{success}</p>}
@@ -54,7 +54,7 @@ export function StaffSalaryAdvance({ staffProfileId, readOnly = false }: { staff
         <label className="block text-sm font-bold">Amount ({summary.currency})<input type="number" required min="0.01" step="0.01" max={summary.maximum} value={amount} disabled={busy} onChange={(event) => setAmount(event.target.value)} className="mt-1 block w-full border border-border bg-background p-3" /></label>
         <label className="block text-sm font-bold">Reason (optional)<textarea maxLength={1000} value={reason} disabled={busy} onChange={(event) => setReason(event.target.value)} className="mt-1 block w-full border border-border bg-background p-3" /></label>
         <button disabled={busy} className="bg-primary px-4 py-3 text-sm font-bold text-primary-foreground disabled:opacity-40">{busy ? "Submitting…" : "Request advance"}</button>
-      </form> : <p className="mt-4 text-sm text-muted-foreground">{summary.requests.some((request) => request.salary_month === summary.month) ? "Your request for this month is recorded below." : summary.maximum <= 0 ? "A fixed monthly salary must be set before requesting an advance." : "Requests open on the 15th of each month."}</p>}
+      </form> : <p className="mt-4 text-sm text-muted-foreground">{summary.requests.some((request) => request.salary_month === summary.month) ? "Your request for this month is recorded below." : summary.maximum <= 0 ? "A fixed monthly salary must be set before requesting an advance." : "Requests are available from the 15th through the last day of each month."}</p>}
       <div className="mt-4 space-y-3">{summary.requests.map((request) => <article key={request.id} className="border border-border bg-background p-3 text-sm">
         <div className="flex flex-wrap justify-between gap-2"><strong>{formatMoney(request.amount, request.currency)}</strong><span className="font-bold capitalize">{request.status}</span></div>
         <p className="mt-1 text-xs text-muted-foreground">Salary month: {request.salary_month.slice(0, 7)} · Requested {formatDate(request.requested_at.slice(0, 10))}</p>

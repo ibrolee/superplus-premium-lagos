@@ -6,7 +6,7 @@ export function SalaryAdvanceRequests({ requests, staff, busy, onAction }: { req
   const [notes, setNotes] = useState<Record<string, string>>({});
   return <section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
     <h2 className="text-xl font-black">Salary advance requests</h2>
-    <p className="mt-2 text-xs text-[#647468]">Requests open on the 15th (Nigerian time), up to 40% of base salary. Approval reserves the request; only marking it paid deducts it from salary. Mark paid after making the actual transfer.</p>
+    <p className="mt-2 text-xs text-[#647468]">Requests are open from the 15th through the last day of each month (Nigerian time), up to 40% of base salary. Approval reserves the request; only marking it paid deducts it from salary. Mark paid after making the actual transfer.</p>
     {requests.length === 0 && <p className="mt-4 text-sm text-[#647468]">No advance requests for this salary month.</p>}
     <div className="mt-4 space-y-3">{requests.map((request) => <article key={request.id} className="rounded-xl border bg-[#f8faf6] p-4">
       <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{staff.find((person) => person.id === request.staff_profile_id)?.full_name || "Staff"}</h3><p className="mt-1 text-xs text-[#647468]">Requested {formatDate(request.requested_at.slice(0, 10))} · salary {formatMoney(request.salary_snapshot, request.currency)}</p></div><div><strong>{formatMoney(request.amount, request.currency)}</strong><p className="mt-1 text-xs font-bold capitalize">{request.status}</p></div></div>
