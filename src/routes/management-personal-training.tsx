@@ -217,6 +217,7 @@ const twoCycleRetentionForCoach = (
     for (let index = 0; index < cycles.length - 1; index += 1) {
       const first = cycles[index];
       const second = cycles[index + 1];
+      if (!first || !second) continue;
       if (
         assignmentMap.get(first.id)?.trainer_staff_profile_id !== trainerId ||
         assignmentMap.get(second.id)?.trainer_staff_profile_id !== trainerId ||
