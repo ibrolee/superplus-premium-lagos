@@ -221,6 +221,7 @@ function StaffPage() {
 
   const [activeSection, setActiveSection] = useState("personal");
   const [now, setNow] = useState(() => Date.now());
+  const [previewMode, setPreviewMode] = useState(false);
 
   const [editContact, setEditContact] = useState(false);
   const [editPhone, setEditPhone] = useState("");
@@ -241,6 +242,7 @@ function StaffPage() {
       setSalaryRecords([]);
       setAttendanceRecords([]);
       setCoachPerformance(null);
+      setPreviewMode(false);
       setLoading(false);
       return;
     }
@@ -258,15 +260,31 @@ function StaffPage() {
     }
 
     const role = String(staffUser?.role || "").toLowerCase();
+    const previewStaffId = new URLSearchParams(window.location.search).get("preview");
+    const isManagement =
+      staffUser?.active === true && ["admin", "owner", "manager"].includes(role);
+    const canPreviewStaff =
+      staffUser?.active === true && ["admin", "owner"].includes(role);
 
-    if (staffUser?.active === true && ["admin", "owner", "manager"].includes(role)) {
+    if (previewStaffId && !canPreviewStaff) {
       setProfile(null);
+      setPreviewMode(false);
+      setError("Only active Admin or Owner accounts can preview staff dashboards.");
+      setLoading(false);
+      return;
+    }
+
+    if (!previewStaffId && isManagement) {
+      setProfile(null);
+      setPreviewMode(false);
       setLoading(false);
       window.location.replace("/staff-admin");
       return;
     }
 
-    const { data: staffProfile, error: profileError } = await supabase
+    setPreviewMode(Boolean(previewStaffId));
+
+    const profileQuery = supabase
       .from("staff_profiles")
       .select(
         `
@@ -288,9 +306,11 @@ function StaffPage() {
           qr_token,
           created_at
         `,
-      )
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
+      );
+
+    const { data: staffProfile, error: profileError } = previewStaffId
+      ? await profileQuery.eq("id", previewStaffId).maybeSingle()
+      : await profileQuery.eq("auth_user_id", user.id).maybeSingle();
 
     if (profileError) {
       setError(profileError.message);
@@ -300,7 +320,11 @@ function StaffPage() {
 
     if (!staffProfile) {
       setProfile(null);
-      setError("No staff profile was found for this account. Please contact management.");
+      setError(
+        previewStaffId
+          ? "The selected staff profile could not be found."
+          : "No staff profile was found for this account. Please contact management.",
+      );
       setLoading(false);
       return;
     }
@@ -353,7 +377,11 @@ function StaffPage() {
         .order("checked_in_at", { ascending: false })
         .limit(100),
 
-      supabase.rpc("get_my_pt_coaching_performance"),
+      previewStaffId
+        ? supabase.rpc("management_get_staff_pt_coaching_performance", {
+            p_staff_profile_id: staff.id,
+          })
+        : supabase.rpc("get_my_pt_coaching_performance"),
     ]);
 
     if (salarySettingResult.error) {
@@ -541,6 +569,7 @@ function StaffPage() {
   }
 
   async function logout() {
+    if (previewMode) return;
     await supabase.auth.signOut();
 
     setProfile(null);
@@ -557,7 +586,7 @@ function StaffPage() {
   }
 
   async function updateContactInformation() {
-    if (!profile) return;
+    if (!profile || previewMode) return;
 
     setSaving(true);
     setError("");
@@ -589,6 +618,7 @@ function StaffPage() {
   }
 
   async function downloadQr() {
+    if (previewMode) return;
     const svg = document.querySelector("#staff-profile-qr") as SVGElement | null;
 
     if (!svg || !profile) {
@@ -1055,10 +1085,16 @@ function StaffPage() {
                 <p className="mt-2 font-display text-2xl font-bold">{profile.staff_id}</p>
               </div>
 
-              <Button variant="outline" className="mt-6" onClick={() => void logout()}>
-                <LogOut />
-                Logout
-              </Button>
+              {previewMode ? (
+                <Button asChild variant="outline" className="mt-6">
+                  <a href="/management-staff">Exit preview</a>
+                </Button>
+              ) : (
+                <Button variant="outline" className="mt-6" onClick={() => void logout()}>
+                  <LogOut />
+                  Logout
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -1069,6 +1105,15 @@ function StaffPage() {
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+        {previewMode && (
+          <div className="sticky top-0 z-50 mb-3 flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-sm">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="size-4 shrink-0" />
+              <p><strong>Read-only Admin preview.</strong> You are viewing this staff dashboard as the selected staff member sees it. Staff actions are disabled.</p>
+            </div>
+            <a href="/management-staff" className="font-bold underline underline-offset-4">Exit preview</a>
+          </div>
+        )}
         <header className="flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-4">
           <div className="flex min-w-0 items-center gap-3">
             <img
@@ -1086,16 +1131,27 @@ function StaffPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link to="/">
-                <Home className="size-4" />
-                Home
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => void logout()}>
-              <LogOut className="size-4" />
-              Logout
-            </Button>
+            {previewMode ? (
+              <Button asChild variant="outline" size="sm">
+                <a href="/management-staff">
+                  <Home className="size-4" />
+                  Back to Staff
+                </a>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/">
+                    <Home className="size-4" />
+                    Home
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => void logout()}>
+                  <LogOut className="size-4" />
+                  Logout
+                </Button>
+              </>
+            )}
           </div>
         </header>
 
@@ -1168,12 +1224,19 @@ function StaffPage() {
                   : "Scan the attendance QR at the gym to clock in or out."}
               </p>
             </div>
-            <Button asChild className="w-full shrink-0 sm:w-auto">
-              <Link to="/staff-attendance">
-                <ScanLine />
-                Scan Attendance QR
-              </Link>
-            </Button>
+            {previewMode ? (
+              <Button disabled className="w-full shrink-0 sm:w-auto">
+                <ShieldCheck />
+                Read-only preview
+              </Button>
+            ) : (
+              <Button asChild className="w-full shrink-0 sm:w-auto">
+                <Link to="/staff-attendance">
+                  <ScanLine />
+                  Scan Attendance QR
+                </Link>
+              </Button>
+            )}
           </div>
           {missedClockOuts > 0 && (
             <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-primary/20 pt-3 text-sm">
@@ -1182,12 +1245,14 @@ function StaffPage() {
                 {missedClockOuts} earlier {missedClockOuts === 1 ? "shift has" : "shifts have"} a
                 missing clock-out.
               </p>
-              <Link
-                to="/staff-missed-scans"
-                className="font-bold text-primary underline underline-offset-4"
-              >
-                Report missed scan
-              </Link>
+              {!previewMode && (
+                <Link
+                  to="/staff-missed-scans"
+                  className="font-bold text-primary underline underline-offset-4"
+                >
+                  Report missed scan
+                </Link>
+              )}
             </div>
           )}
         </section>
@@ -1265,7 +1330,11 @@ function StaffPage() {
                 </div>
               </div>
 
-              {!editContact ? (
+              {previewMode ? (
+                <p className="mt-5 text-xs font-semibold text-muted-foreground">
+                  Contact editing is disabled in Admin preview.
+                </p>
+              ) : !editContact ? (
                 <Button
                   variant="outline"
                   className="mt-5"
@@ -1444,7 +1513,7 @@ function StaffPage() {
               <h2 className="font-display text-2xl font-bold uppercase">Payment History</h2>
             </div>
             <div className="p-4 sm:p-6">
-              <PrivateStaffContractTerms />
+              <PrivateStaffContractTerms staffProfileId={previewMode ? profile.id : undefined} />
               {salaryRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   No payment records available yet.
@@ -1516,9 +1585,11 @@ function StaffPage() {
             <div className="p-4 sm:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-muted-foreground">Your latest 100 scans · Lagos time</p>
-                <Button asChild variant="outline">
-                  <Link to="/staff-missed-scans">Report a missed scan</Link>
-                </Button>
+                {!previewMode && (
+                  <Button asChild variant="outline">
+                    <Link to="/staff-missed-scans">Report a missed scan</Link>
+                  </Button>
+                )}
               </div>
               {attendanceRecords.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
@@ -1589,10 +1660,12 @@ function StaffPage() {
             <div className="p-4 sm:p-6">
               <div className="mx-auto max-w-md text-center">
                 <p className="text-sm text-muted-foreground">
-                  This is your personal staff identification QR.
+                  {previewMode
+                    ? "The staff QR is hidden in Admin preview to prevent accidental attendance scans."
+                    : "This is your personal staff identification QR."}
                 </p>
 
-                <div className="mt-6 flex justify-center bg-white p-3 sm:p-6">
+                <div className={`mt-6 justify-center bg-white p-3 sm:p-6 ${previewMode ? "hidden" : "flex"}`}>
                   <QRCodeSVG
                     id="staff-profile-qr"
                     className="h-auto max-w-full"
@@ -1605,10 +1678,12 @@ function StaffPage() {
 
                 <p className="mt-4 font-display text-xl font-bold">{profile.staff_id}</p>
 
-                <Button variant="outline" className="mt-5" onClick={() => void downloadQr()}>
-                  <Download />
-                  Download QR Code
-                </Button>
+                {!previewMode && (
+                  <Button variant="outline" className="mt-5" onClick={() => void downloadQr()}>
+                    <Download />
+                    Download QR Code
+                  </Button>
+                )}
               </div>
             </div>
           </TabsContent>
