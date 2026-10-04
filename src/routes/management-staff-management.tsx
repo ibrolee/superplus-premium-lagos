@@ -453,7 +453,7 @@ function ManagementStaffManagement() {
               ))}
             </div>
 
-            <div className="mt-4 max-h-[720px] space-y-2 overflow-y-auto pr-1">
+            <div className="mt-4 space-y-2 xl:max-h-[720px] xl:overflow-y-auto xl:overscroll-contain xl:pr-1">
               {visible.map((profile) => {
                 const salary = salaryMap.get(profile.id);
                 const selected = selectedId === profile.id;
