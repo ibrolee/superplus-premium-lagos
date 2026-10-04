@@ -163,6 +163,12 @@ export const adminGroups: Group[] = [
         icon: Users,
         keywords: "employees attendance report",
       },
+      {
+        label: "Staff management",
+        href: "/staff-admin#staff",
+        icon: ShieldCheck,
+        keywords: "staff profiles titles positions in-house coach part-time coach roles access employment",
+      },
     ],
   },
   {
@@ -192,12 +198,6 @@ export const adminGroups: Group[] = [
         href: "/management-payroll-export",
         icon: FileDown,
         keywords: "download salary csv",
-      },
-      {
-        label: "Manage staff profiles",
-        href: "/staff-admin#staff",
-        icon: ShieldCheck,
-        keywords: "roles salaries compensation legacy",
       },
     ],
   },
