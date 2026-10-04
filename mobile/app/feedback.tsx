@@ -63,6 +63,10 @@ export default function FeedbackScreen() {
   }
 
   async function submit() {
+    if (!member) {
+      Alert.alert("Member account required", "Please sign in again and try once more.");
+      return;
+    }
     if (!activeMembership) {
       Alert.alert(
         "Active membership required",
