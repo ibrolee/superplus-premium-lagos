@@ -4,7 +4,7 @@ import {
   Activity, AlertCircle, ArrowRight, Award, BarChart3, BookOpen, CalendarDays,
   CheckCircle2, Clock3, CreditCard, Dumbbell, ExternalLink, Flame, Home,
   Loader2, LogOut, Medal, Megaphone, MessageCircle, PencilLine, QrCode,
-  RefreshCw, Sparkles, Star, Target, Trophy, UserRound, Users,
+  RefreshCw, ShieldCheck, Sparkles, Star, Target, Trophy, UserRound, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnnouncementSurface } from "@/components/announcements/AnnouncementSurface";
@@ -548,6 +548,13 @@ export function MemberDashboardV2() {
         {ptEvaluationMembership && ptEvaluationAssignment && ptEvaluationCoach && <section className="rounded-[24px] border border-[#cfe0c9] bg-white p-5 sm:p-6">
           <div className="flex items-start justify-between gap-3">
             <div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Personal training review</p><h2 className="mt-1 font-display text-2xl font-black uppercase">How was training with {ptEvaluationCoach.display_name}?</h2><p className="mt-2 text-xs leading-5 text-[#68776c]">{evaluationDays !== null && evaluationDays >= 0 ? (evaluationDays === 0 ? "Your PT cycle expires today." : `Your PT cycle expires in ${evaluationDays} day${evaluationDays === 1 ? "" : "s"}.`) : `Your PT cycle ended ${Math.abs(evaluationDays || 0)} day${Math.abs(evaluationDays || 0) === 1 ? "" : "s"} ago.`} One evaluation is allowed for this PT cycle.</p></div><Star className="size-7 shrink-0 text-[#b58a2e]"/></div>
+          {!ptEvaluationMessage && <div className="mt-4 flex items-start gap-3 rounded-2xl border border-[#d8e6d4] bg-[#f3f8f0] p-4">
+            <span className="mt-0.5 grid size-9 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white"><ShieldCheck className="size-4"/></span>
+            <div>
+              <p className="text-xs font-black text-[#244f32]">Your feedback is private</p>
+              <p className="mt-1 text-xs leading-5 text-[#607366]">Your trainer will not see your individual ratings, comments, or trainer-change request. This feedback is only available to Super Plus management and is used to improve our Personal Training service.</p>
+            </div>
+          </div>}
           {ptEvaluationMessage ? <div className="mt-5 rounded-2xl bg-[#edf6e9] p-4 text-sm font-semibold text-[#356942]">{ptEvaluationMessage}</div> : <>
             <div className="mt-5"><p className="text-xs font-black">Overall rating</p><div className="mt-2 flex gap-2">{[1,2,3,4,5].map((rating) => <button key={rating} type="button" aria-label={`Rate ${rating} out of 5`} onClick={() => { setPtOverall(rating); setPtEvaluationError(""); }} className={(ptOverall >= rating ? "bg-[#fff4c9] text-[#a97918] border-[#e4c46f]" : "bg-white text-[#a8afa9] border-[#d9e1d6]") + " grid size-10 place-items-center rounded-xl border"}><Star className="size-5" fill={ptOverall >= rating ? "currentColor" : "none"}/></button>)}</div></div>
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">{[
@@ -566,7 +573,8 @@ export function MemberDashboardV2() {
             ].map(([value,label]) => <button key={value} type="button" onClick={() => { setPtChoice(value as "continue"|"change"|"finish"); setPtRequestedTrainerId(""); setPtEvaluationError(""); }} className={(ptChoice === value ? "border-[#2f7746] bg-[#eaf5e7] text-[#255f37]" : "border-[#dce6d9] bg-white") + " rounded-xl border px-3 py-3 text-xs font-black"}>{label}</button>)}</div></div>
             {ptChoice === "change" && <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className="text-xs font-black">Preferred trainer<select value={ptRequestedTrainerId} onChange={(event) => setPtRequestedTrainerId(event.target.value)} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm"><option value="">Choose another coach</option>{ptTrainers.filter((trainer) => trainer.staff_profile_id !== ptEvaluationAssignment.trainer_staff_profile_id).map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select></label><label className="text-xs font-black">Reason (optional)<input maxLength={1000} value={ptChangeReason} onChange={(event) => setPtChangeReason(event.target.value)} placeholder="Schedule, training style, progress..." className="mt-1.5 w-full rounded-xl border border-[#dce6d9] px-3 py-3 text-sm font-normal"/></label></div>}
             {ptEvaluationError && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{ptEvaluationError}</p>}
-            <Button className="mt-5 w-full rounded-xl" disabled={ptEvaluationSaving} onClick={() => void submitPtEvaluation()}>{ptEvaluationSaving ? <><Loader2 className="size-4 animate-spin"/> Sending feedback...</> : "Submit PT evaluation"}</Button>
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#6a786e]"><ShieldCheck className="size-3.5"/> Confidential — visible to management only.</div>
+            <Button className="mt-2.5 w-full rounded-xl" disabled={ptEvaluationSaving} onClick={() => void submitPtEvaluation()}>{ptEvaluationSaving ? <><Loader2 className="size-4 animate-spin"/> Sending feedback...</> : "Submit PT evaluation"}</Button>
           </>}
         </section>}
 
