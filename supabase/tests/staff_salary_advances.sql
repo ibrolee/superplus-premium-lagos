@@ -65,11 +65,32 @@ blocked:=false; begin perform public.get_staff_salary_advance_summary(); excepti
 if not blocked then raise exception 'Anonymous summary exposed'; end if;
 end $$;
 reset role;
-create or replace function private.salary_advance_today() returns date language sql stable set search_path='' as $$select date '2000-01-16'$$;
-do $$ declare f record; blocked boolean:=false; begin
+create or replace function private.salary_advance_today() returns date language sql stable set search_path='' as $$select date '2000-02-16'$$;
+set local role authenticated;
+do $$ declare f record; summary jsonb; begin
 select * into f from advance_fixture; perform set_config('request.jwt.claim.sub',f.staff_auth::text,true);
+summary:=public.get_staff_salary_advance_summary();
+if (summary->>'can_request')::boolean is not true then raise exception '16th summary window closed'; end if;
+perform public.request_staff_salary_advance(1,'After the 15th test');
+end $$;
+reset role;
+create or replace function private.salary_advance_today() returns date language sql stable set search_path='' as $$select date '2000-03-31'$$;
+set local role authenticated;
+do $$ declare f record; summary jsonb; begin
+select * into f from advance_fixture; perform set_config('request.jwt.claim.sub',f.staff_auth::text,true);
+summary:=public.get_staff_salary_advance_summary();
+if (summary->>'can_request')::boolean is not true then raise exception 'Last day summary window closed'; end if;
+perform public.request_staff_salary_advance(1,'Last day test');
+end $$;
+reset role;
+create or replace function private.salary_advance_today() returns date language sql stable set search_path='' as $$select date '2000-04-01'$$;
+set local role authenticated;
+do $$ declare f record; blocked boolean:=false; summary jsonb; begin
+select * into f from advance_fixture; perform set_config('request.jwt.claim.sub',f.staff_auth::text,true);
+summary:=public.get_staff_salary_advance_summary();
+if (summary->>'can_request')::boolean is not false then raise exception 'New month summary window open'; end if;
 begin perform public.request_staff_salary_advance(1,'Test'); exception when others then if sqlerrm not like '%15th%' then raise; end if; blocked:=true; end;
-if not blocked then raise exception '16th allowed'; end if;
+if not blocked then raise exception '1st of next month allowed'; end if;
 end $$;
 rollback;
-select 'PASS: date window, cap, duplicate request, privacy, admin controls, approval vs payment, net salary, idempotency; fixtures rolled back' result;
+select 'PASS: 14th blocked, 15th/16th/month end allowed, new month resets, cap, duplicate request, privacy, admin controls, approval vs payment, net salary, idempotency; fixtures rolled back' result;
