@@ -90,7 +90,7 @@ export const adminGroups: Group[] = [
         keywords: "print card svg pdf batch",
       },
       {
-        label: "Member feedback",
+        label: "Member Reports & Suggestions",
         href: "/management-member-feedback",
         icon: MessageSquareWarning,
         keywords: "confidential suggestions complaints issues equipment coach staff safety feedback",
