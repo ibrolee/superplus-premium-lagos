@@ -13,6 +13,7 @@ import {
   QrCode,
   ScanLine,
   ShieldCheck,
+  Star,
   UserRound,
   Wallet,
   XCircle,
@@ -68,6 +69,25 @@ type AttendanceRecord = {
   checked_out_at: string | null;
   notes: string | null;
   created_at: string;
+};
+
+type CoachPerformance = {
+  staff_profile_id: string;
+  coach_name: string;
+  current_trainees: number;
+  evaluation_count: number;
+  rating_established: boolean;
+  overall_rating: number | null;
+  professionalism_rating: number | null;
+  punctuality_rating: number | null;
+  communication_rating: number | null;
+  coaching_quality_rating: number | null;
+  motivation_rating: number | null;
+  program_consistency_percent: number | null;
+  continue_rate: number | null;
+  renewal_eligible: number;
+  renewed_same_coach: number;
+  renewal_rate: number | null;
 };
 
 function formatDate(value: string | null | undefined) {
@@ -154,7 +174,7 @@ function getRoleLabel(role: string) {
   const labels: Record<string, string> = {
     staff: "Staff",
     reception: "Reception",
-    trainer: "Trainer",
+    trainer: "Coach",
     spa_staff: "Spa Staff",
     manager: "Manager",
     admin: "Admin",
@@ -174,6 +194,7 @@ function StaffPage() {
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [salaryRecords, setSalaryRecords] = useState<SalaryRecord[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [coachPerformance, setCoachPerformance] = useState<CoachPerformance | null>(null);
 
   const [loginType, setLoginType] = useState<LoginType>("staff");
   const [loginMode, setLoginMode] = useState(true);
@@ -207,6 +228,7 @@ function StaffPage() {
       setProfile(null);
       setSalaryRecords([]);
       setAttendanceRecords([]);
+      setCoachPerformance(null);
       setLoading(false);
       return;
     }
@@ -277,7 +299,7 @@ function StaffPage() {
     setEditPhone(staff.phone || "");
     setEditAddress(staff.address || "");
 
-    const [salaryResult, attendanceResult] = await Promise.all([
+    const [salaryResult, attendanceResult, coachPerformanceResult] = await Promise.all([
       supabase
         .from("staff_salary_records")
         .select(
@@ -310,6 +332,8 @@ function StaffPage() {
         .eq("staff_profile_id", staff.id)
         .order("checked_in_at", { ascending: false })
         .limit(100),
+
+      supabase.rpc("get_my_pt_coaching_performance"),
     ]);
 
     if (salaryResult.error) {
@@ -327,6 +351,13 @@ function StaffPage() {
     setSalaryRecords((salaryResult.data || []) as SalaryRecord[]);
 
     setAttendanceRecords((attendanceResult.data || []) as AttendanceRecord[]);
+
+    if (coachPerformanceResult.error) {
+      setCoachPerformance(null);
+    } else {
+      const performanceRows = (coachPerformanceResult.data || []) as CoachPerformance[];
+      setCoachPerformance(performanceRows[0] || null);
+    }
 
     setLoading(false);
   }
@@ -488,6 +519,7 @@ function StaffPage() {
     setProfile(null);
     setSalaryRecords([]);
     setAttendanceRecords([]);
+    setCoachPerformance(null);
     setError("");
     setSuccess("");
     setLoginType("staff");
@@ -1119,12 +1151,15 @@ function StaffPage() {
         <Tabs value={activeSection} onValueChange={setActiveSection} className="mt-5">
           <TabsList
             aria-label="Staff dashboard sections"
-            className="grid h-auto w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0 sm:grid-cols-3 lg:grid-cols-5"
+            className={`grid h-auto w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0 sm:grid-cols-3 ${coachPerformance ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}
           >
             {[
               { value: "personal", label: "Personal Information", icon: UserRound },
               { value: "employment", label: "Employment", icon: BriefcaseBusiness },
               { value: "attendance", label: "Attendance", icon: CalendarDays },
+              ...(coachPerformance
+                ? [{ value: "coaching", label: "Coaching Performance", icon: Star }]
+                : []),
               { value: "payments", label: "Payments", icon: Wallet },
               { value: "identification", label: "Staff QR Code", icon: QrCode },
             ].map(({ value, label, icon: Icon }) => (
@@ -1262,6 +1297,102 @@ function StaffPage() {
               </div>
             </div>
           </TabsContent>
+
+          {coachPerformance && (
+            <TabsContent value="coaching" className="mt-4 min-w-0 border border-border bg-card">
+              <div className="border-b border-border px-4 py-4 sm:px-6">
+                <p className="text-xs font-bold uppercase tracking-widest text-primary">Personal Training</p>
+                <h2 className="mt-1 font-display text-2xl font-bold uppercase">My Coaching Performance</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+                  Your own PT performance summary. Individual trainee ratings, comments, change requests and identities remain private to management.
+                </p>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="border border-border bg-muted/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current trainees</p>
+                    <p className="mt-2 font-display text-3xl font-bold">{coachPerformance.current_trainees}</p>
+                  </div>
+                  <div className="border border-border bg-muted/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">90-day renewal rate</p>
+                    <p className="mt-2 font-display text-3xl font-bold">
+                      {coachPerformance.renewal_rate === null ? "—" : `${Number(coachPerformance.renewal_rate).toFixed(0)}%`}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {coachPerformance.renewal_eligible
+                        ? `${coachPerformance.renewed_same_coach}/${coachPerformance.renewal_eligible} matured renewals`
+                        : "No matured renewals yet"}
+                    </p>
+                  </div>
+                  <div className="border border-border bg-muted/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Overall rating</p>
+                    <p className="mt-2 font-display text-3xl font-bold">
+                      {coachPerformance.rating_established && coachPerformance.overall_rating !== null
+                        ? `${Number(coachPerformance.overall_rating).toFixed(1)}/5`
+                        : "—"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {coachPerformance.rating_established
+                        ? `${coachPerformance.evaluation_count} anonymised evaluations`
+                        : `${coachPerformance.evaluation_count}/3 evaluations before ratings appear`}
+                    </p>
+                  </div>
+                  <div className="border border-border bg-muted/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Continue with me</p>
+                    <p className="mt-2 font-display text-3xl font-bold">
+                      {coachPerformance.rating_established && coachPerformance.continue_rate !== null
+                        ? `${Number(coachPerformance.continue_rate).toFixed(0)}%`
+                        : "—"}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Shown only after at least 3 evaluations.
+                    </p>
+                  </div>
+                </div>
+
+                {!coachPerformance.rating_established ? (
+                  <div className="mt-5 border border-primary/20 bg-primary/5 p-4 text-sm leading-6">
+                    <div className="flex items-start gap-3">
+                      <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-primary" />
+                      <p>
+                        <strong>Feedback privacy is protected.</strong> Your category ratings and continuation percentage will appear only after at least 3 trainee evaluations, so a single trainee’s response cannot be identified.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Rating breakdown</p>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {[
+                        ["Coaching Quality", coachPerformance.coaching_quality_rating, "/5"],
+                        ["Professionalism", coachPerformance.professionalism_rating, "/5"],
+                        ["Communication", coachPerformance.communication_rating, "/5"],
+                        ["Punctuality", coachPerformance.punctuality_rating, "/5"],
+                        ["Motivation", coachPerformance.motivation_rating, "/5"],
+                        ["Programme Consistency", coachPerformance.program_consistency_percent, "%"],
+                      ].map(([label, value, suffix]) => (
+                        <div key={String(label)} className="border border-border p-4">
+                          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                          <p className="mt-2 text-xl font-bold">
+                            {value === null
+                              ? "—"
+                              : suffix === "%"
+                                ? `${Number(value).toFixed(0)}%`
+                                : `${Number(value).toFixed(1)}/5`}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-5 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+                  Renewal rate uses PT cycles from the matured 90-day window and gives members a 7-day renewal grace period. Monthly payout calculations and other coaches’ figures remain management-only.
+                </div>
+              </div>
+            </TabsContent>
+          )}
 
           <TabsContent value="payments" className="mt-4 min-w-0 border border-border bg-card">
             <div className="border-b border-border px-4 py-4 sm:px-6">
