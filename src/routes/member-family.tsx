@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FamilyMemberFields, emptyFamilyMember, familyMemberPayload, familyMemberValid, type FamilyMemberInput } from "@/components/family/FamilyMemberFields";
 import { formatNaira, membershipPlans } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/member-family")({ component: MemberFamilyPage });
 
@@ -67,11 +68,11 @@ function MemberFamilyPage() {
       const body: Record<string, unknown> = { planId: "family" };
       if (!completeExistingGroup) body['familyMembers'] = [familyMemberPayload(slot2), familyMemberPayload(slot3)];
       const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", { body });
-      if (functionError) throw new Error(data?.error || functionError.message || "Unable to start Family Plan payment.");
+      if (functionError) throw new Error(data?.error || await getFunctionErrorMessage(functionError, "Unable to start Family Plan payment."));
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to start Paystack checkout.");
       window.location.href = data.authorization_url;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to start payment.");
+      setError(getUserErrorMessage(cause, "Unable to start payment."));
       setPaying(false);
     }
   }
