@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle2, ChevronDown, Edit3, FileText, Loader2, LogO
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 type BlogPost = { id: string; title: string; slug: string; excerpt: string | null; content: string; featured_image: string | null; category: string; author_name: string; status: "draft" | "scheduled" | "published"; featured: boolean; published_at: string | null; created_at: string; updated_at: string };
 type PublishMode = "draft" | "published" | "scheduled";
@@ -131,7 +132,7 @@ function StaffBlogPage() {
     const { error: saveError } = selectedPost ? await supabase.from("blog_posts").update(payload).eq("id", selectedPost.id) : await supabase.from("blog_posts").insert(payload);
     if (saveError) { setError(saveError.message.toLowerCase().includes("duplicate") ? "That URL slug is already being used. Please choose another one." : saveError.message); setSaving(false); return; }
 
-    let notificationFailed = false;
+    let notificationError = "";
     if (shouldNotify) {
       const { error: pushError } = await supabase.functions.invoke("send-member-push", {
         body: {
@@ -142,7 +143,7 @@ function StaffBlogPage() {
           send_push: true,
         },
       });
-      notificationFailed = !!pushError;
+      if (pushError) notificationError = await getFunctionErrorMessage(pushError, "Member push notification could not be sent.");
     } else if (shouldScheduleInApp && publishedAt) {
       const { error: scheduleError } = await supabase.functions.invoke("send-member-push", {
         body: {
@@ -154,12 +155,12 @@ function StaffBlogPage() {
           send_push: false,
         },
       });
-      notificationFailed = !!scheduleError;
+      if (scheduleError) notificationError = await getFunctionErrorMessage(scheduleError, "Scheduled member notification could not be created.");
     }
 
     setSuccess(
-      notificationFailed
-        ? "Blog post saved, but the member push notification could not be sent."
+      notificationError
+        ? `Blog post saved, but notification failed: ${notificationError}`
         : selectedPost ? "Blog post updated successfully." : "Blog post created successfully.",
     );
     await loadPosts(); setSaving(false); window.setTimeout(() => { setShowEditor(false); resetEditor(); }, 700);
