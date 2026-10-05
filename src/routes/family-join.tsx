@@ -5,22 +5,9 @@ import { Button } from "@/components/ui/button";
 import { FamilyMemberFields, emptyFamilyMember, familyMemberPayload, familyMemberValid, type FamilyMemberInput } from "@/components/family/FamilyMemberFields";
 import { formatNaira, membershipPlans } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/family-join")({ component: FamilyJoinPage });
-
-async function getFunctionErrorMessage(functionError: unknown, fallback: string) {
-  const context = (functionError as { context?: Response } | null)?.context;
-  if (context) {
-    try {
-      const payload = await context.clone().json() as { error?: unknown; message?: unknown };
-      const message = typeof payload?.error === "string" ? payload.error : typeof payload?.message === "string" ? payload.message : "";
-      if (message.trim()) return message.trim();
-    } catch {
-      // Fall back to the client error below.
-    }
-  }
-  return functionError instanceof Error && functionError.message ? functionError.message : fallback;
-}
 
 function FamilyJoinPage() {
   const plan = useMemo(() => membershipPlans.find((item) => item.id === "family"), []);
