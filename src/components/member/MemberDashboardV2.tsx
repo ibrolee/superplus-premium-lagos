@@ -352,7 +352,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate({ to: "/login" }); return; }
       const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", {
-        body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}), ...(selectedPlan === "personal-training" ? { trainerStaffProfileId: selectedTrainerId } : {}) },
+        body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}), ...((selectedPlan === "personal-training" || selectedPlan === "personal-training-only") ? { trainerStaffProfileId: selectedTrainerId } : {}) },
       });
       if (functionError) throw new Error(await getFunctionErrorMessage(functionError, "Unable to start payment."));
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to create Paystack payment.");
@@ -395,6 +395,14 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
     return row.payment_status === "paid" && !!start && !!end && start <= today && today <= end;
   }) || null;
   const isActive = Boolean(startDate && expiryDate && startDate <= today && today <= expiryDate);
+  const hasActiveGymMembership = membershipHistory.some((row) =>
+    row.payment_status === "paid" && row.start_date && row.end_date &&
+    row.start_date <= today && row.end_date >= today &&
+    row.plan_name !== "Personal Training Only"
+  );
+  const dashboardPlans = hasActiveGymMembership
+    ? [...membershipPlans, { id: "personal-training-only", name: "Personal Training Only", price: 30000, duration: "30 days · coaching only; uses your existing gym membership" }]
+    : membershipPlans;
   const daysRemaining = isActive ? Math.max(0, daysBetween(today, expiryDate) ?? 0) : 0;
   const totalDays = daysBetween(startDate, expiryDate);
   const elapsedDays = daysBetween(startDate, today);
@@ -408,7 +416,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
   });
 
   useEffect(() => {
-    if (selectedPlan !== "personal-training") {
+    if (selectedPlan !== "personal-training" && selectedPlan !== "personal-training-only") {
       if (selectedTrainerId) setSelectedTrainerId("");
       return;
     }
@@ -666,13 +674,14 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
             <Button asChild className="h-12 rounded-xl bg-[#b8ee73] text-[#193b2a] hover:bg-[#d1faa3]"><Link to="/my-qr"><QrCode className="size-5"/> Open QR</Link></Button>
             <Button variant="outline" className="h-12 rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => setShowPlans((value) => !value)}><RefreshCw className="size-4"/> Renew</Button>
           </div>
+          {hasActiveGymMembership && <Button variant="outline" className="mt-2 h-12 w-full rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => { setShowPlans(true); setSelectedPlan("personal-training-only"); setPaymentError(""); }}><Dumbbell className="size-4"/> Add Personal Training Only · {formatNaira(30000)}</Button>}
           {showPlans && <div className="mt-5 rounded-2xl bg-white p-4 text-[#20362a]">
-            <div className="grid gap-2 sm:grid-cols-2">{membershipPlans.map((plan) => <button key={plan.id} type="button" onClick={() => { setSelectedPlan(plan.id); setPaymentError(""); }}
+            <div className="grid gap-2 sm:grid-cols-2">{dashboardPlans.map((plan) => <button key={plan.id} type="button" onClick={() => { setSelectedPlan(plan.id); setPaymentError(""); }}
               className={(selectedPlan === plan.id ? "border-[#26743d] bg-[#eaf5e7]" : "border-[#dce6d9]") + " rounded-xl border p-3 text-left"}>
               <span className="flex items-start justify-between gap-2"><span className="font-display text-base font-black uppercase">{plan.name}</span><span className="text-sm font-black">{formatNaira(plan.price)}</span></span>
               <span className="mt-1 block text-[11px] text-[#6b786f]">{plan.duration}</span>
             </button>)}</div>
-            {selectedPlan === "personal-training" && <label className="mt-3 block text-xs font-black">Personal trainer<select value={selectedTrainerId} onChange={(event) => { setSelectedTrainerId(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm font-bold"><option value="">Assign later</option>{ptTrainers.map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select><span className="mt-1.5 block font-normal text-[#6b786f]">Your most recent PT coach is preselected when available. You can change the coach or choose “Assign later”; management can assign one from PT Management.</span></label>}
+            {(selectedPlan === "personal-training" || selectedPlan === "personal-training-only") && <label className="mt-3 block text-xs font-black">Personal trainer<select value={selectedTrainerId} onChange={(event) => { setSelectedTrainerId(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] bg-white px-3 py-3 text-sm font-bold"><option value="">Assign later</option>{ptTrainers.map((trainer) => <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>{trainer.display_name}</option>)}</select><span className="mt-1.5 block font-normal text-[#6b786f]">Your most recent PT coach is preselected when available. You can change the coach or choose “Assign later”; management can assign one from PT Management.</span></label>}
             <label className="mt-3 block text-xs font-black">Coupon code (optional)<input value={coupon} onChange={(event) => { setCoupon(event.target.value); setPaymentError(""); }} className="mt-1.5 w-full rounded-xl border border-[#dce6d9] px-3 py-3 text-sm" placeholder="Enter coupon code"/></label>
             {paymentError && <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">{paymentError}</p>}
             <Button className="mt-3 w-full rounded-xl" disabled={!selectedPlan || paymentLoading} onClick={handlePayment}>{paymentLoading ? <><Loader2 className="size-4 animate-spin"/> Preparing...</> : <>Continue to Paystack <CreditCard className="size-4"/></>}</Button>

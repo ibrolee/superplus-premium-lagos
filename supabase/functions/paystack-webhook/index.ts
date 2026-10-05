@@ -48,7 +48,7 @@ Deno.serve(async (request: Request) => {
         p_plan_id: meta.plan_id, p_amount_kobo: transaction.amount, p_currency: transaction.currency,
         p_paid_at: transaction.paid_at, p_channel: transaction.channel || 'paystack',
         p_customer_code: transaction.customer?.customer_code || null, p_transaction_id: transaction.id,
-        p_trainer_staff_profile_id: meta.plan_id === 'personal-training' ? (meta.trainer_staff_profile_id || null) : null,
+        p_trainer_staff_profile_id: ['personal-training','personal-training-only'].includes(meta.plan_id) ? (meta.trainer_staff_profile_id || null) : null,
       });
       if (error || !data?.success) {
         console.error('Webhook member finalization failed:', { reference, code: error?.code, message: error?.message });

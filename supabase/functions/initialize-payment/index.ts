@@ -7,6 +7,7 @@ const plans: Record<string, { name:string; price:number; duration:number }> = {
   'semi-annual':{name:'Semi-Annual',price:150000,duration:180}, yearly:{name:'Yearly',price:285000,duration:365},
   'vip-silver':{name:'Monthly VIP Silver',price:55000,duration:30}, 'vip-gold':{name:'Monthly VIP Gold',price:85000,duration:30},
   family:{name:'Family Plan',price:75000,duration:30}, 'personal-training':{name:'Personal Training',price:57000,duration:30},
+  'personal-training-only':{name:'Personal Training Only',price:30000,duration:30},
 };
 const registrationFeeCoupons = new Set(['REGOFF','REGSF']);
 Deno.serve(async (request: Request) => {
@@ -37,7 +38,15 @@ Deno.serve(async (request: Request) => {
 
     const metadata:Record<string,unknown>={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
       plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null,client:mobileClient?'mobile':'web'};
-    if(planId==='personal-training'){
+    if(planId==='personal-training-only'){
+      const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+      const part=(type:string)=>parts.find(value=>value.type===type)?.value||'';
+      const today=`${part('year')}-${part('month')}-${part('day')}`;
+      const {data:gym,error:gymError}=await admin.from('memberships').select('id').eq('member_id',member.id).eq('payment_status','paid').eq('status','active').neq('plan_name','Personal Training Only').lte('start_date',today).gte('end_date',today).limit(1);
+      if(gymError)return response({error:'Unable to check your gym membership. No payment has started. Please retry.'},503);
+      if(!gym?.length)return response({error:'Personal Training Only requires an active paid gym membership. Renew your gym plan or choose Personal Training with gym access included.'},409);
+    }
+    if(planId==='personal-training'||planId==='personal-training-only'){
       const trainerId=String(body?.trainerStaffProfileId||'').trim();
       if(trainerId){
         const {data:trainer,error:trainerError}=await admin.from('pt_trainers').select('staff_profile_id').eq('staff_profile_id',trainerId).eq('active',true).maybeSingle();

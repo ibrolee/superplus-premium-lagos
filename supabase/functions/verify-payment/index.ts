@@ -58,7 +58,7 @@ Deno.serve(async (request: Request) => {
           p_currency:transaction.currency,p_paid_at:transaction.paid_at,
           p_channel:String(transaction.channel||'paystack'),p_customer_code:transaction.customer?.customer_code||null,
           p_transaction_id:transaction.id,
-          p_trainer_staff_profile_id:String(meta.plan_id||'')==='personal-training'?(meta.trainer_staff_profile_id||null):null,
+          p_trainer_staff_profile_id:['personal-training','personal-training-only'].includes(String(meta.plan_id||''))?(meta.trainer_staff_profile_id||null):null,
         });
     const { data, error } = await call;
     if (error) {
