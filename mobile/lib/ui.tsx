@@ -13,17 +13,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandLogo } from "./BrandLogo";
 
 export const colors = {
-  background: "#F4F6F1",
+  background: "#F8F6F3",
   surface: "#FFFFFF",
-  surfaceMuted: "#EDF4E9",
-  green: "#20432B",
-  green2: "#356942",
-  ink: "#173225",
-  muted: "#647369",
-  line: "#DCE8D7",
+  surfaceMuted: "#FFF1EA",
+  green: "#111111",
+  green2: "#E44824",
+  ink: "#161616",
+  muted: "#6F6A66",
+  line: "#EEE3DC",
   success: "#287A45",
-  amber: "#9A6414",
-  danger: "#A23A32",
+  amber: "#A96500",
+  danger: "#C13228",
 };
 
 export function lagosToday() {
@@ -156,7 +156,7 @@ export function LoadingView({ label = "Loading your account…" }: { label?: str
   return (
     <SafeAreaView style={styles.loading}>
       <BrandLogo size={200} style={styles.loadingLogo} />
-      <ActivityIndicator size="small" color="#EF2B2D" />
+      <ActivityIndicator size="small" color={colors.green2} />
       <Text style={styles.loadingText}>{label}</Text>
     </SafeAreaView>
   );
