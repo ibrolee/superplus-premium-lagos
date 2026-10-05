@@ -709,7 +709,7 @@ function AdminEngagement() {
       setError(updateError.message);
     } else {
       const rewardName = item.reward?.name || "reward";
-      await supabase.functions.invoke("send-member-push", {
+      const { error: pushError } = await supabase.functions.invoke("send-member-push", {
         body: {
           title:
             status === "approved"
@@ -730,7 +730,11 @@ function AdminEngagement() {
         },
       });
 
-      setSuccess(`Redemption marked ${status}.`);
+      setSuccess(
+        pushError
+          ? `Redemption marked ${status}, but notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`
+          : `Redemption marked ${status}.`,
+      );
       await load();
     }
 
@@ -773,7 +777,7 @@ function AdminEngagement() {
             ? `Your ${item.service_name} request could not be confirmed.${note.trim() ? ` ${note.trim()}` : ""}`
             : `Your ${item.service_name} was marked completed. We hope you enjoyed it.`;
 
-      await supabase.functions.invoke("send-member-push", {
+      const { error: pushError } = await supabase.functions.invoke("send-member-push", {
         body: {
           title,
           body,
@@ -783,9 +787,14 @@ function AdminEngagement() {
           send_push: true,
         },
       });
+      if (pushError) {
+        setSuccess(`Session request marked ${status}, but notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`);
+      } else {
+        setSuccess(`Session request marked ${status}.`);
+      }
+    } else {
+      setSuccess(`Session request marked ${status}.`);
     }
-
-    setSuccess(`Session request marked ${status}.`);
     await load();
     setBusy("");
   }
