@@ -1,0 +1,36 @@
+name: Publish Android preview APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-preview-apk.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download successful APK artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: super-plus-fitness-android-preview
+          path: apk
+          run-id: 37321024134
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename APK
+        run: mv apk/app-debug.apk apk/Super-Plus-Fitness.apk
+
+      - name: Publish public GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create spf-preview-2026-10-05 apk/Super-Plus-Fitness.apk             --title "Super Plus Fitness Android Preview"             --notes "Installable Android preview build for Super Plus Fitness."
