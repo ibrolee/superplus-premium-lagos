@@ -1,9 +1,8 @@
-# Saved app changes — awaiting testing approval
+# App testing release — 1.0.3
 
-Keep this work on its feature branch. Do not bump app versions, merge into main,
-build/publish APKs, deploy the website/functions, or apply database migrations
-until the owner explicitly requests testing or launch. Main has automatic builds
-and deployment hooks.
+The owner authorised deployment and an Android APK on 5 October 2026. This
+release uses app version 1.0.3 / Android version code 4. Future APKs and APK
+download links require a new explicit request.
 
 ## Prepared behavior
 
@@ -26,12 +25,10 @@ The owner authorised applying the two migrations on 5 October 2026. Both are
 applied to Supabase project sytcvezkryjcxwqdimuz. Daily/spin calls and duplicate
 claim protection passed checks in rolled-back transactions; no permanent test
 points were added. Reward tables have RLS and clients cannot insert claims or
-change payouts. The mobile code remains on this feature branch, with no version
-bump, APK build, main merge, or website deployment.
+change payouts. The mobile code is being published as the authorised 1.0.3 testing release.
 
-An Expo Go preview tunnel was attempted but automatic approval review blocked
-exposing the development bundle through ngrok. Obtain explicit authorisation
-for that temporary tunnel before retrying; no preview URL is available yet.
+A temporary Expo Go tunnel was explicitly authorised but failed to connect
+from this workspace. The owner requested the standalone Android APK instead.
 
 ## Checks
 

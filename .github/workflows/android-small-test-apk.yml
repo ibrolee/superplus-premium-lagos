@@ -48,10 +48,10 @@ jobs:
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/release/app-release.apk Super-Plus-Fitness-1.0.2.apk
+        run: mv android/app/build/outputs/apk/release/app-release.apk Super-Plus-Fitness-1.0.3.apk
 
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-pt-only-2026-10-05 Super-Plus-Fitness-1.0.2.apk             --title "Super Plus Fitness 1.0.2 — PT Only Checkout"             --notes "Fresh standalone Android APK with Personal Training Only checkout for active gym members, premium membership cards and free accounts. For modern arm64 Android phones."
+          gh release create spf-daily-rewards-1.0.3-2026-10-05 Super-Plus-Fitness-1.0.3.apk             --title "Super Plus Fitness 1.0.3 — Daily Rewards and Blog"             --notes "Fresh standalone Android APK with compact membership cards, actual signup names, Blog navigation, daily streak claims and a weekly SP Points wheel. Includes free accounts and Personal Training Only checkout. For modern arm64 Android phones."
