@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, Edit3, ImagePlus, Megaphone, Plus, Save, Shie
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AnnouncementVisual } from "@/components/announcements/AnnouncementSurface";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 import {
   ANNOUNCEMENT_BUCKET, MAX_ANNOUNCEMENT_IMAGE_BYTES, announcementImageUrl,
   formatAnnouncementDate, isAnnouncementLive, lagosInputFromIso, lagosInputToIso,
@@ -181,7 +182,7 @@ function AdminAnnouncements() {
         transitioningToPublished && Date.parse(startsAt) <= Date.now() + 5000;
       const shouldScheduleInApp =
         transitioningToPublished && Date.parse(startsAt) > Date.now() + 5000;
-      let notificationFailed = false;
+      let notificationError = "";
 
       if (shouldNotifyMembers) {
         const { error: pushError } = await supabase.functions.invoke("send-member-push", {
@@ -194,7 +195,7 @@ function AdminAnnouncements() {
             send_push: true,
           },
         });
-        notificationFailed = !!pushError;
+        if (pushError) notificationError = await getFunctionErrorMessage(pushError, "Member push notification could not be sent.");
       } else if (shouldScheduleInApp) {
         const { error: scheduleError } = await supabase.functions.invoke("send-member-push", {
           body: {
@@ -207,13 +208,13 @@ function AdminAnnouncements() {
             send_push: false,
           },
         });
-        notificationFailed = !!scheduleError;
+        if (scheduleError) notificationError = await getFunctionErrorMessage(scheduleError, "Scheduled member notification could not be created.");
       }
 
       setEditorOpen(false); setEditing(null); setFile(null);
       setSuccess(
-        notificationFailed
-          ? "Announcement published, but the member push notification could not be sent."
+        notificationError
+          ? `Announcement saved, but notification failed: ${notificationError}`
           : form.status === "draft" ? "Draft saved. It is not visible on the website." :
             Date.parse(startsAt) > Date.now() ? "Scheduled. It will appear automatically at the chosen Lagos time." :
               "Announcement published and members were notified."
@@ -221,11 +222,11 @@ function AdminAnnouncements() {
       await loadItems();
       if (editing?.image_path && editing.image_path !== payload.image_path) {
         const { error: cleanupError } = await supabase.storage.from(ANNOUNCEMENT_BUCKET).remove([editing.image_path]);
-        if (cleanupError) setSuccess("Saved, but the old image could not be removed from storage.");
+        if (cleanupError) setSuccess(`Saved, but old image cleanup failed: ${getUserErrorMessage(cleanupError, "Storage cleanup failed.")}`);
       }
     } catch (cause) {
       if (uploadedPath) await supabase.storage.from(ANNOUNCEMENT_BUCKET).remove([uploadedPath]);
-      setError(cause instanceof Error ? cause.message : "Could not save announcement.");
+      setError(getUserErrorMessage(cause, "Could not save announcement."));
     } finally { setSaving(false); }
   }
 
