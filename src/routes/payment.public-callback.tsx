@@ -3,6 +3,7 @@ import { useEffect,useState } from 'react';
 import { CheckCircle2,Loader2,XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 type PaymentResult={success?:boolean;already_processed?:boolean;error?:string;reference?:string;member_id?:string;auth_user_id?:string;membership_id?:string;payment_id?:string;plan_name?:string;start_date?:string;end_date?:string;email?:string};
 export const Route=createFileRoute('/payment/public-callback')({component:PublicPaymentCallback});
 function PublicPaymentCallback(){
@@ -11,10 +12,10 @@ function PublicPaymentCallback(){
   const params=new URLSearchParams(window.location.search),reference=params.get('reference')||params.get('trxref');
   if(!reference)throw Error('No payment reference was found.');
   const{data,error}=await supabase.functions.invoke('verify-public-payment',{body:{reference}});
-  if(error)throw Error(error.message||'Could not confirm payment.');
+  if(error)throw Error(await getFunctionErrorMessage(error,'Could not confirm payment.'));
   if(!data?.success)throw Error(data?.error||'Could not confirm payment.');
   if(!cancelled)setResult(data);
- }catch(error){console.error('Public payment callback error:',error);if(!cancelled)setResult({success:false,error:error instanceof Error?error.message:'Unable to confirm payment. If Paystack charged you, do not pay again; contact reception with your payment reference.'});}
+ }catch(error){console.error('Public payment callback error:',error);if(!cancelled)setResult({success:false,error:getUserErrorMessage(error,'Unable to confirm payment. If Paystack charged you, do not pay again; contact reception with your payment reference.')});}
  finally{if(!cancelled)setLoading(false);}})();return()=>{cancelled=true;};},[]);
  if(loading)return <main className="flex min-h-screen items-center justify-center bg-background px-6"><div className="w-full max-w-md text-center"><Loader2 className="mx-auto size-9 animate-spin"/><h1 className="mt-6 text-2xl font-semibold">Confirming your payment</h1><p className="mt-3 text-muted-foreground">Please wait while we verify your transaction with Paystack.</p></div></main>;
  if(!result?.success)return <main className="flex min-h-screen items-center justify-center bg-background px-6"><div className="w-full max-w-md text-center"><XCircle className="mx-auto size-10 text-destructive"/><h1 className="mt-6 text-2xl font-semibold">Payment could not be confirmed</h1><p className="mt-3 text-muted-foreground">{result?.error||'If you have been charged, do not pay again. Contact reception with your Paystack reference.'}</p><div className="mt-8 flex flex-wrap justify-center gap-3"><Button asChild><Link to="/join">Back to membership</Link></Button><Button asChild variant="outline"><Link to="/">Back to website</Link></Button></div></div></main>;
