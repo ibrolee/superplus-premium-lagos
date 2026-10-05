@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -18,7 +18,13 @@ import { Card, colors, money, Screen, sharedStyles } from "../lib/ui";
 
 export default function PublicJoinScreen() {
   const { member, session } = useApp();
-  const [selectedPlanId, setSelectedPlanId] = useState("monthly");
+  const params = useLocalSearchParams<{ planId?: string }>();
+  const requestedPlanId =
+    typeof params.planId === "string" &&
+    publicMembershipPlans.some((plan) => plan.id === params.planId)
+      ? params.planId
+      : "monthly";
+  const [selectedPlanId, setSelectedPlanId] = useState(requestedPlanId);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
