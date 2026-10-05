@@ -9,7 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
-import { getFunctionErrorMessage } from "@/lib/user-error";
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/payment/callback")({
   head: () => ({
@@ -139,9 +139,7 @@ function PaymentCallback() {
 
         setStatus("error");
         setMessage(
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while confirming your payment.",
+          getUserErrorMessage(error, "Payment confirmation failed."),
         );
       }
     }
