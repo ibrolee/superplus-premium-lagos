@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
-import { Card, colors, dateTimeLabel, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, dateTimeLabel, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 type Exercise = {
   id: string;
@@ -30,29 +30,33 @@ type WorkoutSession = {
   completed_at: string | null;
 };
 
-const templates: Array<{ key: string; title: string; icon: keyof typeof Ionicons.glyphMap; exercises: string[] }> = [
+const templates: Array<{ key: string; title: string; icon: keyof typeof Ionicons.glyphMap; tone: { bg: string; fg: string }; exercises: string[] }> = [
   {
     key: "full_body",
     title: "Full Body",
     icon: "body-outline",
+    tone: iconPalette.orange,
     exercises: ["Squat or Leg Press", "Chest Press", "Lat Pulldown", "Shoulder Press", "Leg Curl", "Core / Plank"],
   },
   {
     key: "upper",
     title: "Upper Body",
     icon: "barbell-outline",
+    tone: iconPalette.red,
     exercises: ["Chest Press", "Lat Pulldown", "Shoulder Press", "Seated Cable Row", "Biceps Curl", "Triceps Pushdown"],
   },
   {
     key: "lower",
     title: "Lower Body",
     icon: "walk-outline",
+    tone: iconPalette.purple,
     exercises: ["Squat or Leg Press", "Romanian Deadlift", "Leg Curl", "Leg Extension", "Calf Raise", "Core"],
   },
   {
     key: "cardio",
     title: "Cardio",
     icon: "heart-outline",
+    tone: iconPalette.teal,
     exercises: ["Warm-up", "Treadmill", "Bike or Elliptical", "Mobility", "Cool-down"],
   },
 ];
@@ -313,8 +317,8 @@ export default function WorkoutsScreen() {
                 onPress={() => void startWorkout(template.key)}
                 style={styles.templateCard}
               >
-                <View style={styles.templateIcon}>
-                  <Ionicons name={template.icon} size={24} color={colors.green} />
+                <View style={[styles.templateIcon, { backgroundColor: template.tone.bg }]}>
+                  <Ionicons name={template.icon} size={24} color={template.tone.fg} />
                 </View>
                 <Text style={styles.templateTitle}>{template.title}</Text>
                 <Text style={styles.templateMeta}>{template.exercises.length} items</Text>
@@ -326,8 +330,8 @@ export default function WorkoutsScreen() {
               onPress={() => void startWorkout(null)}
               style={styles.templateCard}
             >
-              <View style={styles.templateIcon}>
-                <Ionicons name="create-outline" size={24} color={colors.green} />
+              <View style={[styles.templateIcon, { backgroundColor: iconPalette.blue.bg }]}>
+                <Ionicons name="create-outline" size={24} color={iconPalette.blue.fg} />
               </View>
               <Text style={styles.templateTitle}>Custom</Text>
               <Text style={styles.templateMeta}>Build your own</Text>
@@ -341,8 +345,8 @@ export default function WorkoutsScreen() {
                 const done = item.exercises.filter((exercise) => exercise.done).length;
                 return (
                   <View key={item.id} style={[styles.historyRow, index > 0 && styles.border]}>
-                    <View style={styles.historyIcon}>
-                      <Ionicons name="barbell-outline" size={18} color={colors.green} />
+                    <View style={[styles.historyIcon, { backgroundColor: iconPalette.teal.bg }]}>
+                      <Ionicons name="barbell-outline" size={18} color={iconPalette.teal.fg} />
                     </View>
                     <View style={styles.exerciseCopy}>
                       <Text style={styles.historyTitle}>{item.title}</Text>

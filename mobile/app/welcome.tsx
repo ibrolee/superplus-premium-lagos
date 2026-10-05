@@ -8,7 +8,7 @@ import {
   publicFacilities,
   publicHours,
 } from "../lib/public-site";
-import { Card, colors, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 async function openSite(path: string) {
   await WebBrowser.openBrowserAsync(`https://www.superplusfitness.com${path}`);
@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
         <BrandLogo size={116} />
         <View style={styles.brandCopy}>
           <Text style={sharedStyles.kicker}>SUPER PLUS FITNESS</Text>
-          <Text style={styles.tagline}>Train. Recover. Belong.</Text>
+          <Text style={styles.tagline}>Fitness That Fits Your Life.</Text>
           <Text style={sharedStyles.subtitle}>
             Discover the gym, join a membership, read our latest articles or
             sign in to your member account.
@@ -50,25 +50,33 @@ export default function WelcomeScreen() {
 
       <View style={styles.quickGrid}>
         <Pressable style={styles.quickCard} onPress={() => router.push("/blog")}>
-          <Ionicons name="newspaper-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.purple.bg }]}>
+            <Ionicons name="newspaper-outline" size={24} color={iconPalette.purple.fg} />
+          </View>
           <Text style={styles.quickTitle}>Blog</Text>
           <Text style={styles.quickText}>Fitness, recovery and gym life.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/membership")}>
-          <Ionicons name="card-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.blue.bg }]}>
+            <Ionicons name="card-outline" size={24} color={iconPalette.blue.fg} />
+          </View>
           <Text style={styles.quickTitle}>Memberships</Text>
           <Text style={styles.quickText}>Compare plans and benefits.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/spa-recovery")}>
-          <Ionicons name="sparkles-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.pink.bg }]}>
+            <Ionicons name="sparkles-outline" size={24} color={iconPalette.pink.fg} />
+          </View>
           <Text style={styles.quickTitle}>Spa & recovery</Text>
           <Text style={styles.quickText}>Massage and wellness services.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/contact")}>
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.teal.bg }]}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={iconPalette.teal.fg} />
+          </View>
           <Text style={styles.quickTitle}>Contact</Text>
           <Text style={styles.quickText}>Questions? Reach the gym team.</Text>
         </Pressable>
@@ -151,15 +159,16 @@ const styles = StyleSheet.create({
   brandCopy: { flex: 1, gap: 6 },
   tagline: { color: colors.ink, fontSize: 25, fontWeight: "900", letterSpacing: -0.6, lineHeight: 29 },
   hero: { backgroundColor: colors.green, borderRadius: 26, padding: 22 },
-  heroEyebrow: { color: "#BFD3C3", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
+  heroEyebrow: { color: "#F4B7A8", fontSize: 10, fontWeight: "900", letterSpacing: 1.4 },
   heroTitle: { color: "#FFFFFF", fontSize: 31, fontWeight: "900", letterSpacing: -0.9, lineHeight: 36, marginTop: 9 },
-  heroText: { color: "#D7E4D9", fontSize: 14, lineHeight: 21, marginTop: 10 },
-  primaryButton: { alignItems: "center", backgroundColor: "#EF2B2D", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 20, minHeight: 54, paddingHorizontal: 16 },
+  heroText: { color: "#E9E4E0", fontSize: 14, lineHeight: 21, marginTop: 10 },
+  primaryButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 20, minHeight: 54, paddingHorizontal: 16 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
   loginButton: { alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 10, minHeight: 50, paddingHorizontal: 16 },
   loginButtonText: { color: colors.green, fontSize: 13, fontWeight: "900" },
   quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   quickCard: { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: 1, minHeight: 142, padding: 15, width: "48.5%" },
+  quickIcon: { alignItems: "center", borderRadius: 13, height: 46, justifyContent: "center", width: 46 },
   quickTitle: { color: colors.ink, fontSize: 14, fontWeight: "900", marginTop: 12 },
   quickText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
   sectionTitle: { color: colors.ink, fontSize: 19, fontWeight: "900", marginTop: 2 },

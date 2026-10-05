@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
-import { Card, colors, dateTimeLabel, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, dateTimeLabel, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 type AppNotification = {
   id: string;
@@ -155,13 +155,21 @@ export default function NotificationsScreen() {
         <View style={styles.list}>
           {items.map((item) => {
             const isUnread = !readIds.has(item.id);
+            const tone =
+              item.kind === "blog"
+                ? iconPalette.purple
+                : item.kind === "challenge"
+                  ? iconPalette.gold
+                  : item.kind === "booking"
+                    ? iconPalette.blue
+                    : iconPalette.orange;
             return (
               <Pressable
                 key={item.id}
                 onPress={() => void openItem(item)}
                 style={[styles.item, isUnread && styles.itemUnread]}
               >
-                <View style={[styles.iconWrap, isUnread && styles.iconWrapUnread]}>
+                <View style={[styles.iconWrap, { backgroundColor: tone.bg }, isUnread && styles.iconWrapUnread]}>
                   <Ionicons
                     name={
                       item.kind === "blog"
@@ -173,7 +181,7 @@ export default function NotificationsScreen() {
                             : "notifications-outline"
                     }
                     size={20}
-                    color={colors.green}
+                    color={tone.fg}
                   />
                 </View>
                 <View style={styles.itemCopy}>
@@ -232,7 +240,7 @@ const styles = StyleSheet.create({
     gap: 11,
     padding: 14,
   },
-  itemUnread: { backgroundColor: "#F0F7EC", borderColor: "#C8DDBF" },
+  itemUnread: { backgroundColor: "#FFF9F6", borderColor: "#F1CFC0" },
   iconWrap: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,
@@ -241,11 +249,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 42,
   },
-  iconWrapUnread: { backgroundColor: "#FFFFFF" },
+  iconWrapUnread: { borderColor: "rgba(0,0,0,0.04)", borderWidth: 1 },
   itemCopy: { flex: 1 },
   itemTitleRow: { alignItems: "center", flexDirection: "row", gap: 7 },
   itemTitle: { color: colors.ink, flex: 1, fontSize: 13, fontWeight: "900" },
-  unreadDot: { backgroundColor: colors.green, borderRadius: 99, height: 7, width: 7 },
+  unreadDot: { backgroundColor: colors.green2, borderRadius: 99, height: 7, width: 7 },
   itemBody: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
   itemDate: { color: colors.muted, fontSize: 9, marginTop: 6 },
   emptyTitle: { color: colors.ink, fontSize: 16, fontWeight: "900", textAlign: "center" },

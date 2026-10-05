@@ -12,6 +12,7 @@ import {
   AccountLinkRequired,
   Card,
   colors,
+  iconPalette,
   dateTimeLabel,
   EmptyState,
   lagosToday,
@@ -139,7 +140,7 @@ export default function ActivityScreen() {
       {goalProgress && (
         <View style={styles.timeCard}>
           <View style={styles.timeIcon}>
-            <Ionicons name="time-outline" size={22} color={colors.green} />
+            <Ionicons name="time-outline" size={22} color={iconPalette.blue.fg} />
           </View>
           <View style={styles.grow}>
             <Text style={styles.timeTitle}>
@@ -159,8 +160,8 @@ export default function ActivityScreen() {
         <Card>
           {attendance.slice(0, 30).map((visit, index) => (
             <View key={visit.id} style={[styles.row, index > 0 && styles.border]}>
-              <View style={styles.iconBox}>
-                <Ionicons name="enter-outline" size={19} color={colors.green} />
+              <View style={[styles.iconBox, { backgroundColor: iconPalette.teal.bg }]}>
+                <Ionicons name="enter-outline" size={19} color={iconPalette.teal.fg} />
               </View>
               <View style={styles.grow}>
                 <Text style={styles.primary}>{dateTimeLabel(visit.checked_in_at)}</Text>
@@ -182,8 +183,8 @@ export default function ActivityScreen() {
         <Card>
           {payments.map((payment, index) => (
             <View key={payment.id} style={[styles.row, index > 0 && styles.border]}>
-              <View style={styles.iconBox}>
-                <Ionicons name="receipt-outline" size={19} color={colors.green} />
+              <View style={[styles.iconBox, { backgroundColor: iconPalette.gold.bg }]}>
+                <Ionicons name="receipt-outline" size={19} color={iconPalette.gold.fg} />
               </View>
               <View style={styles.grow}>
                 <Text style={styles.primary}>{money(Number(payment.amount))}</Text>
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     width: 34,
   },
   dayPlanned: { borderColor: colors.green2, borderWidth: 2 },
-  dayVisited: { backgroundColor: colors.green, borderColor: colors.green },
+  dayVisited: { backgroundColor: colors.green2, borderColor: colors.green2 },
   dayNumber: { color: colors.muted, fontSize: 10, fontWeight: "900" },
   dayNumberPlanned: { color: colors.green },
   goalTrack: {
@@ -244,14 +245,14 @@ const styles = StyleSheet.create({
     marginTop: 18,
     overflow: "hidden",
   },
-  goalFill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  goalFill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
   goalFooter: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", gap: 8, marginTop: 9 },
   goalText: { color: colors.ink, flex: 1, fontSize: 11, fontWeight: "800" },
-  streak: { color: colors.green, fontSize: 10, fontWeight: "900" },
+  streak: { color: colors.green2, fontSize: 10, fontWeight: "900" },
   goalPrompt: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 16 },
   timeCard: {
     alignItems: "center",
-    backgroundColor: "#EEF5EA",
+    backgroundColor: "#FFF9F6",
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,
@@ -261,7 +262,7 @@ const styles = StyleSheet.create({
   },
   timeIcon: {
     alignItems: "center",
-    backgroundColor: colors.surface,
+    backgroundColor: iconPalette.blue.bg,
     borderRadius: 12,
     height: 44,
     justifyContent: "center",
@@ -273,7 +274,7 @@ const styles = StyleSheet.create({
   border: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 5, paddingTop: 14 },
   iconBox: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.teal.bg,
     borderRadius: 12,
     height: 41,
     justifyContent: "center",

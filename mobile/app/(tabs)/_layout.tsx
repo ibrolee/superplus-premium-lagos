@@ -1,13 +1,39 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { View } from "react-native";
 import { useApp } from "../../lib/AppContext";
-import { colors, LoadingView } from "../../lib/ui";
+import { colors, iconPalette, LoadingView } from "../../lib/ui";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
-function TabIcon({ name, color }: { name: IconName; color: ComponentProps<typeof Ionicons>["color"] }) {
-  return <Ionicons name={name} color={color} size={23} />;
+function TabIcon({
+  name,
+  color,
+  focused,
+  tone,
+}: {
+  name: IconName;
+  color: ComponentProps<typeof Ionicons>["color"];
+  focused: boolean;
+  tone: { bg: string; fg: string };
+}) {
+  if (!focused) return <Ionicons name={name} color={color} size={22} />;
+
+  return (
+    <View
+      style={{
+        alignItems: "center",
+        backgroundColor: tone.bg,
+        borderRadius: 12,
+        height: 34,
+        justifyContent: "center",
+        width: 42,
+      }}
+    >
+      <Ionicons name={name} color={tone.fg} size={22} />
+    </View>
+  );
 }
 
 export default function TabsLayout() {
@@ -20,7 +46,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.green,
+        tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: "#849188",
         tabBarLabelStyle: { fontSize: 10, fontWeight: "800", marginBottom: 4 },
         tabBarStyle: {
@@ -36,7 +62,7 @@ export default function TabsLayout() {
         options={{
           title: "Home",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? "home" : "home-outline"} color={color} />
+            <TabIcon name={focused ? "home" : "home-outline"} color={color} focused={focused} tone={iconPalette.orange} />
           ),
         }}
       />
@@ -45,7 +71,7 @@ export default function TabsLayout() {
         options={{
           title: "Membership",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? "card" : "card-outline"} color={color} />
+            <TabIcon name={focused ? "card" : "card-outline"} color={color} focused={focused} tone={iconPalette.blue} />
           ),
         }}
       />
@@ -57,6 +83,8 @@ export default function TabsLayout() {
             <TabIcon
               name={focused ? "stats-chart" : "stats-chart-outline"}
               color={color}
+              focused={focused}
+              tone={iconPalette.teal}
             />
           ),
         }}
@@ -69,6 +97,8 @@ export default function TabsLayout() {
             <TabIcon
               name={focused ? "person-circle" : "person-circle-outline"}
               color={color}
+              focused={focused}
+              tone={iconPalette.purple}
             />
           ),
         }}

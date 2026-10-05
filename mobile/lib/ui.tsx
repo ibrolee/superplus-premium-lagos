@@ -13,17 +13,28 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandLogo } from "./BrandLogo";
 
 export const colors = {
-  background: "#F4F6F1",
+  background: "#F8F6F3",
   surface: "#FFFFFF",
-  surfaceMuted: "#EDF4E9",
-  green: "#20432B",
-  green2: "#356942",
-  ink: "#173225",
-  muted: "#647369",
-  line: "#DCE8D7",
+  surfaceMuted: "#FFF1EA",
+  green: "#111111",
+  green2: "#E44824",
+  ink: "#161616",
+  muted: "#6F6A66",
+  line: "#EEE3DC",
   success: "#287A45",
-  amber: "#9A6414",
-  danger: "#A23A32",
+  amber: "#A96500",
+  danger: "#C13228",
+};
+
+export const iconPalette = {
+  orange: { bg: "#FFF0E8", fg: "#E44824" },
+  red: { bg: "#FDEBEC", fg: "#C92A36" },
+  blue: { bg: "#EAF3FF", fg: "#2F6FDB" },
+  purple: { bg: "#F3ECFF", fg: "#7950C7" },
+  gold: { bg: "#FFF5D8", fg: "#A96500" },
+  teal: { bg: "#E7F7F4", fg: "#167A6C" },
+  green: { bg: "#EAF7ED", fg: "#287A45" },
+  pink: { bg: "#FDEBF4", fg: "#B83A78" },
 };
 
 export function lagosToday() {
@@ -156,7 +167,7 @@ export function LoadingView({ label = "Loading your account…" }: { label?: str
   return (
     <SafeAreaView style={styles.loading}>
       <BrandLogo size={200} style={styles.loadingLogo} />
-      <ActivityIndicator size="small" color="#EF2B2D" />
+      <ActivityIndicator size="small" color={colors.green2} />
       <Text style={styles.loadingText}>{label}</Text>
     </SafeAreaView>
   );

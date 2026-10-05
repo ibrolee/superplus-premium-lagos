@@ -9,10 +9,20 @@ import {
   AccountLinkRequired,
   Card,
   colors,
+  iconPalette,
   LoadingView,
   Screen,
   sharedStyles,
 } from "../../lib/ui";
+
+function toneForIcon(icon: string) {
+  if (icon.includes("mail")) return iconPalette.blue;
+  if (icon.includes("call") || icon.includes("whatsapp")) return iconPalette.teal;
+  if (icon.includes("card")) return iconPalette.orange;
+  if (icon.includes("shield")) return iconPalette.purple;
+  if (icon.includes("document")) return iconPalette.gold;
+  return iconPalette.orange;
+}
 
 function DetailRow({
   icon,
@@ -25,8 +35,8 @@ function DetailRow({
 }) {
   return (
     <View style={styles.detailRow}>
-      <View style={styles.iconBox}>
-        <Ionicons name={icon} size={18} color={colors.green} />
+      <View style={[styles.iconBox, { backgroundColor: toneForIcon(icon).bg }]}>
+        <Ionicons name={icon} size={18} color={toneForIcon(icon).fg} />
       </View>
       <View style={styles.grow}>
         <Text style={styles.detailLabel}>{label}</Text>
@@ -55,8 +65,14 @@ function SupportLink({
 }) {
   return (
     <Pressable style={styles.supportRow} onPress={onPress}>
-      <View style={[styles.iconBox, danger && styles.dangerIconBox]}>
-        <Ionicons name={icon} size={18} color={danger ? colors.danger : colors.green} />
+      <View
+        style={[
+          styles.iconBox,
+          { backgroundColor: danger ? "#FFF2F0" : toneForIcon(icon).bg },
+          danger && styles.dangerIconBox,
+        ]}
+      >
+        <Ionicons name={icon} size={18} color={danger ? colors.danger : toneForIcon(icon).fg} />
       </View>
       <Text style={[styles.supportText, danger && styles.dangerText]}>{label}</Text>
       <Ionicons
@@ -211,7 +227,7 @@ export default function ProfileScreen() {
         style={styles.websiteButton}
         onPress={() => void Linking.openURL("https://www.superplusfitness.com")}
       >
-        <Ionicons name="globe-outline" size={19} color={colors.green} />
+        <Ionicons name="globe-outline" size={19} color={iconPalette.blue.fg} />
         <Text style={styles.websiteText}>Open superplusfitness.com</Text>
         <Ionicons name="open-outline" size={18} color={colors.green2} />
       </Pressable>
@@ -251,7 +267,7 @@ const styles = StyleSheet.create({
   profileCard: { alignItems: "center", paddingVertical: 25 },
   avatar: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 28,
     height: 70,
     justifyContent: "center",
