@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock3, RefreshCw, XCircle } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/management-bookings")({
   component: ManagementBookings,
@@ -109,7 +110,7 @@ function ManagementBookings() {
             ? `Your ${booking.service_name} request could not be confirmed.${note.trim() ? ` ${note.trim()}` : ""}`
             : `Your ${booking.service_name} was marked completed. We hope you enjoyed it.`;
 
-      await supabase.functions.invoke("send-member-push", {
+      const { error: pushError } = await supabase.functions.invoke("send-member-push", {
         body: {
           title,
           body,
@@ -119,6 +120,9 @@ function ManagementBookings() {
           send_push: true,
         },
       });
+      if (pushError) {
+        setError(`Booking updated, but member notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`);
+      }
     }
 
     await load();
