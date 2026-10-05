@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { membershipPlans, formatNaira } from '@/lib/site-data';
 import { supabase } from '@/lib/supabase';
-import { getFunctionErrorMessage } from '@/lib/user-error';
+import { getFunctionErrorMessage, getUserErrorMessage } from '@/lib/user-error';
 
 export const Route = createFileRoute('/join')({ component: JoinPage });
 type Trainer = { staff_profile_id: string; display_name: string };
@@ -29,7 +29,7 @@ function JoinPage() {
    const returnedMembership=Number(data.membership_amount),returnedRegistration=Number(data.registration_amount),returnedTotal=Number(data.total_amount);
    if(returnedMembership!==selectedPlan.price||returnedTotal!==returnedMembership+returnedRegistration||(!cleanCoupon&&returnedRegistration!==registrationFee))throw Error('Checkout total does not match the selected plan. Payment was not started.');
    window.location.href=data.authorization_url;
-  }catch(cause){setError(cause instanceof Error?cause.message:'Unable to start payment.');setLoading(false);}
+  }catch(cause){setError(getUserErrorMessage(cause,'Unable to start payment.'));setLoading(false);}
  }
  return <main className="min-h-screen bg-background"><section className="border-b bg-card"><div className="mx-auto max-w-7xl px-6 py-5 lg:px-8"><Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4"/> Back to Super Plus Fitness</Link></div></section>
  <section className="px-6 py-10 sm:py-14 lg:px-8"><div className="mx-auto max-w-6xl"><div className="mx-auto max-w-2xl text-center"><p className="text-sm font-semibold uppercase tracking-[.18em] text-primary">Membership</p><h1 className="mt-3 text-3xl font-bold sm:text-5xl">Join Super Plus Fitness</h1><p className="mt-4 text-base text-muted-foreground">Choose a plan and pay securely through Paystack. Existing members with a profile can <Link to="/login" className="font-semibold text-primary underline">log in and renew</Link> without a registration fee.</p></div>
