@@ -20,12 +20,18 @@ and deployment hooks.
 - Amounts and availability are configurable through app_daily_reward_settings.
   Claims cannot set payouts or write the points ledger from the client.
 
-## Pending database work
+## Database status
 
-The two migrations beginning 202610052000 are saved, not applied. They add the
-reward RPCs and signup metadata fallback. Older backends show a future-release
-message rather than allowing unsupported claims. These migrations must be
-reviewed and applied to a test environment before testing the complete app flow.
+The owner authorised applying the two migrations on 5 October 2026. Both are
+applied to Supabase project sytcvezkryjcxwqdimuz. Daily/spin calls and duplicate
+claim protection passed checks in rolled-back transactions; no permanent test
+points were added. Reward tables have RLS and clients cannot insert claims or
+change payouts. The mobile code remains on this feature branch, with no version
+bump, APK build, main merge, or website deployment.
+
+An Expo Go preview tunnel was attempted but automatic approval review blocked
+exposing the development bundle through ngrok. Obtain explicit authorisation
+for that temporary tunnel before retrying; no preview URL is available yet.
 
 ## Checks
 
