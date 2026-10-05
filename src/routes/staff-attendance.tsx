@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/staff-attendance")({
   component: StaffAttendancePage,
@@ -142,7 +143,7 @@ function StaffAttendancePage() {
       setAuthorized(true);
     } catch (err) {
       console.error(err);
-      setError("Unable to verify your staff account.");
+      setError(getUserErrorMessage(err, "Unable to verify your staff account."));
     } finally {
       setLoading(false);
     }
@@ -201,12 +202,7 @@ function StaffAttendancePage() {
           } catch (err) {
             console.error(err);
 
-            const message =
-              err instanceof Error
-                ? err.message
-                : "Unable to record attendance.";
-
-            setError(message);
+            setError(getUserErrorMessage(err, "Unable to record attendance."));
             scanLockedRef.current = false;
           } finally {
             setProcessing(false);
@@ -228,7 +224,7 @@ function StaffAttendancePage() {
       scannerRunningRef.current = false;
 
       setError(
-        "Unable to start the camera. Please allow camera access and try again.",
+        getUserErrorMessage(err, "Unable to start the camera. Please allow camera access and try again."),
       );
 
       try {
