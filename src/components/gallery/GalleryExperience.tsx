@@ -15,7 +15,7 @@ type GalleryItem = {
   sort_order: number;
   created_at: string;
 };
-type DisplayItem = {
+export type GalleryDisplayItem = {
   id: string;
   title: string;
   category: string;
@@ -26,10 +26,12 @@ type DisplayItem = {
 const categories = ["All", "Gym", "Equipment", "Training", "Classes", "Spa & Recovery", "Events"];
 
 /** Only show uploaded and published media, never hardcoded placeholders. */
-function useGallery() {
-  const [items, setItems] = useState<DisplayItem[]>([]);
-  const [loading, setLoading] = useState(true);
+function useGallery(initialItems?: GalleryDisplayItem[], refresh = true) {
+  const hasInitialItems = initialItems !== undefined;
+  const [items, setItems] = useState<GalleryDisplayItem[]>(initialItems ?? []);
+  const [loading, setLoading] = useState(!hasInitialItems);
   useEffect(() => {
+    if (hasInitialItems && !refresh) return;
     let alive = true;
     void (async () => {
       try {
@@ -68,7 +70,7 @@ function useGallery() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [hasInitialItems, refresh]);
   return { items, loading };
 }
 
@@ -77,7 +79,7 @@ function GalleryImage({
   className,
   priority,
 }: {
-  item: DisplayItem;
+  item: GalleryDisplayItem;
   className: string;
   priority: boolean;
 }) {
@@ -109,7 +111,7 @@ function MediaTile({
   onOpen,
   priority,
 }: {
-  item: DisplayItem;
+  item: GalleryDisplayItem;
   onOpen: () => void;
   priority: boolean;
 }) {
@@ -153,7 +155,7 @@ function MediaTile({
     </button>
   );
 }
-function Viewer({ item, close }: { item: DisplayItem; close: () => void }) {
+function Viewer({ item, close }: { item: GalleryDisplayItem; close: () => void }) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
@@ -219,10 +221,19 @@ function Viewer({ item, close }: { item: DisplayItem; close: () => void }) {
     document.body,
   );
 }
-export function GalleryExperience({ compact = false }: { compact?: boolean }) {
-  const { items, loading } = useGallery();
+export function GalleryExperience({
+  compact = false,
+  initialItems,
+}: {
+  compact?: boolean;
+  initialItems?: GalleryDisplayItem[];
+}) {
+  // The homepage receives its first four items from the route loader so the
+  // image URLs are already present in server-rendered HTML. The full gallery
+  // keeps its live client refresh behavior.
+  const { items, loading } = useGallery(initialItems, !compact);
   const [filter, setFilter] = useState("All");
-  const [selected, setSelected] = useState<DisplayItem | null>(null);
+  const [selected, setSelected] = useState<GalleryDisplayItem | null>(null);
   const visible = (
     filter === "All" ? items : items.filter((item) => item.category === filter)
   ).slice(0, compact ? 4 : undefined);

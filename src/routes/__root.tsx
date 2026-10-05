@@ -83,7 +83,16 @@ function GlobalUnhandledErrorToasts() {
     let lastShownAt = 0;
     const show = (value: unknown) => {
       const message = getUserErrorMessage(value, "An unexpected website error occurred.");
-      if (!message || /ResizeObserver loop/i.test(message)) return;
+      // Recoverable React hydration diagnostics are developer-facing. In particular,
+      // iOS Safari can alter detected phone/date/address text before React hydrates.
+      // Keep real application/action errors visible, but do not expose React internals
+      // such as "Minified React error #418" to visitors.
+      if (
+        !message ||
+        /ResizeObserver loop/i.test(message) ||
+        /Minified React error #(418|423)/i.test(message) ||
+        /hydration (failed|mismatch)/i.test(message)
+      ) return;
       const now = Date.now();
       if (message === lastMessage && now - lastShownAt < 2500) return;
       lastMessage = message;
@@ -135,6 +144,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "format-detection",
+        content: "telephone=no,date=no,email=no,address=no",
+      },
       { title: "Super Plus Fitness & Spa | Gym, Spa & Fitness Centre in Shomolu, Lagos" },
       {
         name: "description",
