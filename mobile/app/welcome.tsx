@@ -8,7 +8,7 @@ import {
   publicFacilities,
   publicHours,
 } from "../lib/public-site";
-import { Card, colors, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 async function openSite(path: string) {
   await WebBrowser.openBrowserAsync(`https://www.superplusfitness.com${path}`);
@@ -50,25 +50,33 @@ export default function WelcomeScreen() {
 
       <View style={styles.quickGrid}>
         <Pressable style={styles.quickCard} onPress={() => router.push("/blog")}>
-          <Ionicons name="newspaper-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.purple.bg }]}>
+            <Ionicons name="newspaper-outline" size={24} color={iconPalette.purple.fg} />
+          </View>
           <Text style={styles.quickTitle}>Blog</Text>
           <Text style={styles.quickText}>Fitness, recovery and gym life.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/membership")}>
-          <Ionicons name="card-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.blue.bg }]}>
+            <Ionicons name="card-outline" size={24} color={iconPalette.blue.fg} />
+          </View>
           <Text style={styles.quickTitle}>Memberships</Text>
           <Text style={styles.quickText}>Compare plans and benefits.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/spa-recovery")}>
-          <Ionicons name="sparkles-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.pink.bg }]}>
+            <Ionicons name="sparkles-outline" size={24} color={iconPalette.pink.fg} />
+          </View>
           <Text style={styles.quickTitle}>Spa & recovery</Text>
           <Text style={styles.quickText}>Massage and wellness services.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/contact")}>
-          <Ionicons name="chatbubble-ellipses-outline" size={24} color={colors.green} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.teal.bg }]}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={iconPalette.teal.fg} />
+          </View>
           <Text style={styles.quickTitle}>Contact</Text>
           <Text style={styles.quickText}>Questions? Reach the gym team.</Text>
         </Pressable>
@@ -160,6 +168,7 @@ const styles = StyleSheet.create({
   loginButtonText: { color: colors.green, fontSize: 13, fontWeight: "900" },
   quickGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   quickCard: { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: 1, minHeight: 142, padding: 15, width: "48.5%" },
+  quickIcon: { alignItems: "center", borderRadius: 13, height: 46, justifyContent: "center", width: 46 },
   quickTitle: { color: colors.ink, fontSize: 14, fontWeight: "900", marginTop: 12 },
   quickText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
   sectionTitle: { color: colors.ink, fontSize: 19, fontWeight: "900", marginTop: 2 },
