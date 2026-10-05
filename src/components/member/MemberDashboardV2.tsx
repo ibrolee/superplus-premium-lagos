@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AnnouncementSurface } from "@/components/announcements/AnnouncementSurface";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 import { membershipPlans, formatNaira } from "@/lib/site-data";
 
 type Member = {
@@ -353,11 +354,11 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
       const { data, error: functionError } = await supabase.functions.invoke("initialize-payment", {
         body: { planId: selectedPlan, ...(cleanCoupon ? { couponCode: cleanCoupon } : {}), ...(selectedPlan === "personal-training" ? { trainerStaffProfileId: selectedTrainerId } : {}) },
       });
-      if (functionError) throw new Error(functionError.message || "Unable to start payment.");
+      if (functionError) throw new Error(await getFunctionErrorMessage(functionError, "Unable to start payment."));
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to create Paystack payment.");
       window.location.href = data.authorization_url;
     } catch (cause) {
-      setPaymentError(cause instanceof Error ? cause.message : "Unable to start payment. Please try again.");
+      setPaymentError(getUserErrorMessage(cause, "Unable to start payment. Please try again."));
       setPaymentLoading(false);
     }
   }
