@@ -23,8 +23,8 @@ export default function WelcomeScreen() {
           <Text style={sharedStyles.kicker}>SUPER PLUS FITNESS</Text>
           <Text style={styles.tagline}>Fitness That Fits Your Life.</Text>
           <Text style={sharedStyles.subtitle}>
-            Discover the gym, join a membership, read our latest articles or
-            sign in to your member account.
+            Create a free account, explore the app, read our latest articles
+            and choose a membership whenever you’re ready.
           </Text>
         </View>
       </View>
@@ -33,18 +33,18 @@ export default function WelcomeScreen() {
         <Text style={styles.heroEyebrow}>SHOMOLU · LAGOS</Text>
         <Text style={styles.heroTitle}>Your fitness journey can start here.</Text>
         <Text style={styles.heroText}>
-          Join Super Plus directly from the app, then use the same account for
-          membership, attendance, rewards, bookings and more.
+          Your Super Plus account is free. Explore workouts, articles, rewards
+          and more first, then activate a gym membership whenever you’re ready.
         </Text>
 
-        <Pressable style={styles.primaryButton} onPress={() => router.push("/join")}>
-          <Text style={styles.primaryButtonText}>Join Super Plus Fitness</Text>
+        <Pressable style={styles.primaryButton} onPress={() => router.push("/create-account")}>
+          <Text style={styles.primaryButtonText}>Create free account</Text>
           <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
         </Pressable>
 
         <Pressable style={styles.loginButton} onPress={() => router.push("/login")}>
           <Ionicons name="person-circle-outline" size={19} color={colors.green} />
-          <Text style={styles.loginButtonText}>Already a member? Sign in</Text>
+          <Text style={styles.loginButtonText}>Already have an account? Sign in</Text>
         </Pressable>
       </View>
 
