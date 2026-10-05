@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Clock3, Dumbbell, HeartPulse, Search, Sparkles, Utensils, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 type BlogPost = {
   id: string;
@@ -60,7 +61,7 @@ function ArticleCard({ post, featured }: { post: BlogPost; featured: boolean }) 
 export default function BlogIndexV2() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [search, setSearch] = useState("");
   const [topic, setTopic] = useState("All");
@@ -69,14 +70,14 @@ export default function BlogIndexV2() {
     let active = true;
     async function load() {
       setLoading(true);
-      setError(false);
+      setError("");
       const { data, error: fetchError } = await supabase.from("blog_posts")
         .select("id,title,slug,excerpt,content,featured_image,category,author_name,featured,published_at")
         .eq("status", "published").not("published_at", "is", null)
         .lte("published_at", new Date().toISOString())
         .order("featured", { ascending: false }).order("published_at", { ascending: false });
       if (!active) return;
-      setError(!!fetchError);
+      setError(fetchError ? getUserErrorMessage(fetchError, "Could not load the articles.") : "");
       setPosts(fetchError ? [] : (data || []) as BlogPost[]);
       setLoading(false);
     }
@@ -114,7 +115,7 @@ export default function BlogIndexV2() {
 
     <main className="mx-auto max-w-[1280px] px-5 pb-10 pt-2 sm:px-10 sm:pb-14 sm:pt-4">
       {loading ? <div role="status" aria-label="Loading articles" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[1, 2, 3, 4].map(n => <div key={n} className="h-28 animate-pulse bg-[#e8e3da] motion-reduce:animate-none sm:h-60" />)}</div>
-      : error ? <div role="alert" className="mx-auto max-w-xl border border-[#e2d8d0] bg-white px-6 py-10 text-center"><BookOpen className="mx-auto size-8 text-[#db4d39]" /><h2 className="mt-3 font-display text-2xl font-bold uppercase">Couldn't load the articles</h2><p className="mt-2 text-sm text-[#716e67]">Please check your connection and try again.</p><button type="button" onClick={() => setAttempt(n => n + 1)} className="mt-4 min-h-11 bg-[#df4c38] px-6 text-xs font-bold uppercase text-white">Try again</button></div>
+      : error ? <div role="alert" className="mx-auto max-w-xl border border-[#e2d8d0] bg-white px-6 py-10 text-center"><BookOpen className="mx-auto size-8 text-[#db4d39]" /><h2 className="mt-3 font-display text-2xl font-bold uppercase">Couldn't load the articles</h2><p className="mt-2 break-words text-sm text-[#716e67]">{error}</p><button type="button" onClick={() => setAttempt(n => n + 1)} className="mt-4 min-h-11 bg-[#df4c38] px-6 text-xs font-bold uppercase text-white">Try again</button></div>
       : ordered.length === 0 ? <div className="mx-auto max-w-2xl border border-[#e4e0d8] bg-white px-6 py-10 text-center"><BookOpen className="mx-auto size-8 text-[#df4c38]" /><h2 className="mt-3 font-display text-2xl font-bold uppercase">{posts.length === 0 ? "New articles coming soon." : "No matching articles."}</h2><p className="mt-2 text-sm text-[#716e67]">{posts.length === 0 ? "We're preparing useful, practical articles for the Super Plus community." : "Try another search or explore all topics."}</p>{hasFilters && <button type="button" className="mt-4 min-h-11 border border-[#df4c38] px-6 text-xs font-extrabold uppercase text-[#df4c38]" onClick={() => { setSearch(""); setTopic("All"); }}>Clear filters</button>}</div>
       : <div aria-labelledby="article-list-heading">
         <div className="mb-2 flex items-center justify-between gap-3"><h2 id="article-list-heading" className="font-display text-xl font-bold uppercase sm:text-2xl">Browse posts<span className="text-[#df4c38]">.</span></h2><span className="text-xs text-[#817e77]">{ordered.length} {ordered.length === 1 ? "article" : "articles"}</span></div>
