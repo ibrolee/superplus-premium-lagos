@@ -1,0 +1,59 @@
+name: Small Android test APK
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/android-small-test-apk.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Use Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Verify TypeScript
+        run: npm run typecheck
+
+      - name: Generate Android project
+        run: npx expo prebuild --no-install --platform android
+
+      - name: Build smaller release APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
+
+      - name: Rename APK
+        run: mv android/app/build/outputs/apk/release/app-release.apk Super-Plus-Fitness-Small.apk
+
+      - name: Publish direct-download release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete spf-small-preview-2026-10-05 --yes || true
+          git push --delete origin spf-small-preview-2026-10-05 || true
+          gh release create spf-small-preview-2026-10-05 Super-Plus-Fitness-Small.apk             --title "Super Plus Fitness Small Android Preview"             --notes "Smaller arm64 release-style APK for direct testing on modern Android phones."
