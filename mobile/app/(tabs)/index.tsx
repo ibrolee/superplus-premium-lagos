@@ -202,15 +202,17 @@ export default function HomeScreen() {
         )}
       </Pressable>
 
-      <View style={styles.cardReminder}>
-        <View style={styles.cardReminderIcon}>
-          <Ionicons name="card-outline" size={22} color={iconPalette.blue.fg} />
+      {phase === "active" && (
+        <View style={styles.cardReminder}>
+          <View style={styles.cardReminderIcon}>
+            <Ionicons name="card-outline" size={22} color={iconPalette.blue.fg} />
+          </View>
+          <View style={styles.qrCopy}>
+            <Text style={styles.qrTitle}>Bring your membership card</Text>
+            <Text style={styles.qrText}>Your physical card is used to scan in and out at reception.</Text>
+          </View>
         </View>
-        <View style={styles.qrCopy}>
-          <Text style={styles.qrTitle}>Bring your membership card</Text>
-          <Text style={styles.qrText}>Your physical card is used to scan in and out at reception.</Text>
-        </View>
-      </View>
+      )}
 
       {phase === "active" && (
         <Pressable style={styles.feedbackCard} onPress={() => router.push("/feedback")}>
