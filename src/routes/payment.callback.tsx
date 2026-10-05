@@ -9,6 +9,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/payment/callback")({
   head: () => ({
@@ -98,8 +99,10 @@ function PaymentCallback() {
 
           setStatus("error");
           setMessage(
-            error.message ||
+            await getFunctionErrorMessage(
+              error,
               "We could not verify your payment. If money was deducted, please contact reception.",
+            ),
           );
           return;
         }
