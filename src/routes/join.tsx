@@ -4,20 +4,10 @@ import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { membershipPlans, formatNaira } from '@/lib/site-data';
 import { supabase } from '@/lib/supabase';
+import { getFunctionErrorMessage } from '@/lib/user-error';
 
 export const Route = createFileRoute('/join')({ component: JoinPage });
 type Trainer = { staff_profile_id: string; display_name: string };
-async function getFunctionErrorMessage(functionError: unknown, fallback: string) {
- const context=(functionError as {context?: Response}|null)?.context;
- if(context){
-  try{
-   const payload=await context.clone().json() as {error?: unknown; message?: unknown};
-   const message=typeof payload?.error==='string'?payload.error:typeof payload?.message==='string'?payload.message:'';
-   if(message.trim())return message.trim();
-  }catch{/* Fall back to the client error below. */}
- }
- return functionError instanceof Error&&functionError.message?functionError.message:fallback;
-}
 function JoinPage() {
  const [selectedPlanId,setSelectedPlanId]=useState('monthly');
  const [fullName,setFullName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
