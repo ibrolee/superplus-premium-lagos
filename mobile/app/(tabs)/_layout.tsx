@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View } from "react-native";
 import { useApp } from "../../lib/AppContext";
 import { colors, iconPalette, LoadingView } from "../../lib/ui";
@@ -38,6 +39,7 @@ function TabIcon({
 
 export default function TabsLayout() {
   const { authLoading, session } = useApp();
+  const insets = useSafeAreaInsets();
 
   if (authLoading) return <LoadingView />;
   if (!session) return <Redirect href="/login" />;
@@ -52,7 +54,8 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: "#FFFFFF",
           borderTopColor: colors.line,
-          height: 70,
+          height: 62 + Math.max(insets.bottom, 8),
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 7,
         },
       }}
@@ -89,6 +92,10 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="blog" options={{
+        title: "Blog",
+        tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? "book" : "book-outline"} color={color} focused={focused} tone={iconPalette.gold} />,
+      }} />
       <Tabs.Screen
         name="profile"
         options={{

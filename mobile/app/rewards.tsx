@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { DailyRewardsCard } from "../lib/DailyRewardsCard";
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
 import { uniqueVisitDates } from "../lib/visit-goals";
@@ -172,6 +173,8 @@ export default function RewardsScreen() {
           {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward, plus 5 points whenever you register or renew a paid membership plan. Multiple scans on the same day do not earn extra visit points, and you can also earn badge and challenge bonuses.
         </Text>
       </View>
+
+      {!!member && <DailyRewardsCard onAward={() => void load()} />}
 
       {loading ? (
         <Card style={styles.loadingCard}>

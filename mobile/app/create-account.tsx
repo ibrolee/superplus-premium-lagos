@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useApp } from "../lib/AppContext";
 import { BrandLogo } from "../lib/BrandLogo";
 import { supabase } from "../lib/supabase";
 import { colors } from "../lib/ui";
@@ -20,6 +21,7 @@ import { colors } from "../lib/ui";
 type Step = "details" | "verify";
 
 export default function CreateAccountScreen() {
+  const { refresh } = useApp();
   const [step, setStep] = useState<Step>("details");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -34,7 +36,7 @@ export default function CreateAccountScreen() {
   }
 
   function validateDetails() {
-    const name = fullName.trim();
+    const name = fullName.trim().replace(/\s+/g, " ");
     const mobile = phone.trim();
     const mail = cleanEmail();
 
@@ -78,6 +80,8 @@ export default function CreateAccountScreen() {
           shouldCreateUser: true,
           data: {
             signup_source: "mobile_free_account",
+            full_name: details.name,
+            phone: details.mobile,
           },
         },
       });
@@ -117,7 +121,7 @@ export default function CreateAccountScreen() {
       const { data: profileData, error: profileError } = await supabase.rpc(
         "ensure_app_member_profile",
         {
-          p_full_name: fullName.trim(),
+          p_full_name: fullName.trim().replace(/\s+/g, " "),
           p_phone: phone.trim(),
         },
       );
@@ -140,9 +144,11 @@ export default function CreateAccountScreen() {
 
       const { error: passwordError } = await supabase.auth.updateUser({
         password: password.toLowerCase(),
+        data: { full_name: fullName.trim().replace(/\s+/g, " "), phone: phone.trim() },
       });
       if (passwordError) throw passwordError;
 
+      await refresh();
       router.replace("/(tabs)");
     } catch (cause) {
       Alert.alert(

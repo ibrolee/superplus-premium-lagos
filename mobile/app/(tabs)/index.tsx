@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { DailyRewardsCard } from "../../lib/DailyRewardsCard";
 import { MembershipCard } from "../../lib/MembershipCard";
 import { BrandLogo } from "../../lib/BrandLogo";
 import { loadHomeHighlights, type HomeHighlight } from "../../lib/home-highlights";
@@ -124,6 +125,8 @@ export default function HomeScreen() {
 
       <MembershipCard member={member} membership={currentMembership} phase={phase}
         onChoosePlan={() => router.push("/(tabs)/membership")} />
+
+      <DailyRewardsCard compact onAward={() => { void loadHomeHighlights(member.id, attendance).then(setHighlights).catch(() => {}); }} />
 
       <Pressable style={styles.goalCard} onPress={() => router.push("/goal")}>
         <View style={styles.goalTop}>
@@ -269,7 +272,7 @@ export default function HomeScreen() {
 
       <SectionTitle title="Explore Super Plus" />
       <View style={styles.exploreGrid}>
-        <Pressable style={styles.exploreCard} onPress={() => router.push("/blog")}>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/(tabs)/blog")}>
           <View style={[styles.exploreIcon, { backgroundColor: iconPalette.purple.bg }]}>
             <Ionicons name="newspaper-outline" size={22} color={iconPalette.purple.fg} />
           </View>

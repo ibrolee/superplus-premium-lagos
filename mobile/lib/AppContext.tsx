@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { memberDisplayName } from "./member-name";
 import { registerMemberPushToken } from "./push-notifications";
 import { lagosToday } from "./ui";
 import { supabase } from "./supabase";
@@ -175,7 +176,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           return;
         }
 
-        const typedMember = memberRow as Member;
+        const typedMember = { ...memberRow, full_name: memberDisplayName(memberRow.full_name, session.user.user_metadata) } as Member;
         setMember(typedMember);
         void registerMemberPushToken(typedMember.id);
 
