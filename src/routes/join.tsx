@@ -7,6 +7,17 @@ import { supabase } from '@/lib/supabase';
 
 export const Route = createFileRoute('/join')({ component: JoinPage });
 type Trainer = { staff_profile_id: string; display_name: string };
+async function getFunctionErrorMessage(functionError: unknown, fallback: string) {
+ const context=(functionError as {context?: Response}|null)?.context;
+ if(context){
+  try{
+   const payload=await context.clone().json() as {error?: unknown; message?: unknown};
+   const message=typeof payload?.error==='string'?payload.error:typeof payload?.message==='string'?payload.message:'';
+   if(message.trim())return message.trim();
+  }catch{/* Fall back to the client error below. */}
+ }
+ return functionError instanceof Error&&functionError.message?functionError.message:fallback;
+}
 function JoinPage() {
  const [selectedPlanId,setSelectedPlanId]=useState('monthly');
  const [fullName,setFullName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
@@ -23,7 +34,7 @@ function JoinPage() {
   if(!name||!mail.includes('@')||!mobile||!Number.isInteger(day)||day<1||day>31||!Number.isInteger(month)||month<1||month>12){setError('Enter your name, email, phone and valid birth day/month.');return;}
   setLoading(true);
   try{const {data,error:fnError}=await supabase.functions.invoke('initialize-public-payment',{body:{planId:selectedPlan.id,fullName:name,email:mail,phone:mobile,birthDay:day,birthMonth:month,...(cleanCoupon?{couponCode:cleanCoupon}:{}),...(selectedPlan.id==='personal-training'?{trainerStaffProfileId:trainerId}:{})}});
-   if(fnError)throw Error(fnError.message||'Unable to start payment.');
+   if(fnError)throw Error(await getFunctionErrorMessage(fnError,'Unable to start payment. No payment has been taken.'));
    if(!data?.authorization_url)throw Error(data?.error||'Unable to start payment.');
    const returnedMembership=Number(data.membership_amount),returnedRegistration=Number(data.registration_amount),returnedTotal=Number(data.total_amount);
    if(returnedMembership!==selectedPlan.price||returnedTotal!==returnedMembership+returnedRegistration||(!cleanCoupon&&returnedRegistration!==registrationFee))throw Error('Checkout total does not match the selected plan. Payment was not started.');
