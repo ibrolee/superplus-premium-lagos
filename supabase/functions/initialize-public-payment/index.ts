@@ -51,7 +51,12 @@ Deno.serve(async(req:Request)=>{
   if(familyMembers)metadata.family_members=familyMembers;
   else Object.assign(metadata,{full_name:name,email,phone,birth_day:birthDay,birth_month:birthMonth});
   const transaction=await fetch('https://api.paystack.co/transaction/initialize',{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify({email,amount:pricing.totalAmount*100,currency:'NGN',reference,callback_url:'https://superplusfitness.com/payment/public-callback',metadata})});
-  const data=await transaction.json();if(!transaction.ok||!data?.status||!data?.data?.authorization_url)return respond({error:data?.message||'Paystack could not start the payment.'},400);
+  const data=await transaction.json();
+  if(!transaction.ok||!data?.status||!data?.data?.authorization_url){
+   const paystackMessage=typeof data?.message==='string'&&data.message.trim()?data.message.trim():'Paystack could not start the payment.';
+   console.error('Public Paystack initialization rejected',JSON.stringify({http_status:transaction.status,plan_id:planId,reference,paystack_status:data?.status??null,paystack_code:data?.code??null,paystack_type:data?.type??null,message:paystackMessage}));
+   return respond({error:paystackMessage},400);
+  }
   return respond({authorization_url:data.data.authorization_url,access_code:data.data.access_code,reference:data.data.reference||reference,plan_name:plan.name,membership_amount:pricing.membershipAmount,registration_amount:pricing.registrationAmount,total_amount:pricing.totalAmount,coupon_code:pricing.couponCode});
  }catch(error){console.error('Public Paystack initialization failed',error);return respond({error:'Unable to start payment. Please try again.'},500);}
 });
