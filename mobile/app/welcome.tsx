@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
         <BrandLogo size={116} />
         <View style={styles.brandCopy}>
           <Text style={sharedStyles.kicker}>SUPER PLUS FITNESS</Text>
-          <Text style={styles.tagline}>Train. Recover. Belong.</Text>
+          <Text style={styles.tagline}>Fitness That Fits Your Life.</Text>
           <Text style={sharedStyles.subtitle}>
             Discover the gym, join a membership, read our latest articles or
             sign in to your member account.
