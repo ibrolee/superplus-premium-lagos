@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/staff-attendance-qr")({
   component: StaffAttendanceQrPage,
@@ -61,7 +62,7 @@ function StaffAttendanceQrPage() {
         setAuthorized(true);
       } catch (err) {
         console.error(err);
-        setError("Unable to verify management access.");
+        setError(getUserErrorMessage(err, "Unable to verify management access."));
       } finally {
         setLoading(false);
       }
