@@ -126,7 +126,7 @@ const structuredData = {
     streetAddress: "No. 105 Apata Street",
     addressLocality: "Shomolu",
     addressRegion: "Lagos",
-    addressCountry": "NG",
+    addressCountry: "NG",
   },
   areaServed: { "@type": "Place", name: "Shomolu, Lagos, Nigeria" },
   openingHoursSpecification: [
