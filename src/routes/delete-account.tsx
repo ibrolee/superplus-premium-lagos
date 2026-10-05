@@ -4,6 +4,7 @@ import { Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { contact } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/delete-account")({
   head: () => ({
@@ -43,7 +44,7 @@ function DeleteAccountPage() {
     });
 
     if (fnError) {
-      setError(fnError.message || "We could not delete the account. Please contact support.");
+      setError(await getFunctionErrorMessage(fnError, "We could not delete the account. Please contact support."));
       setDeleting(false);
       return;
     }
