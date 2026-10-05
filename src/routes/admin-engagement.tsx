@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { supabase } from "@/lib/supabase";
+import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/admin-engagement")({
   component: AdminEngagement,
@@ -541,7 +542,7 @@ function AdminEngagement() {
     setChallengePoints(10);
     setSuccess(
       pushError
-        ? "Challenge created. Push notification could not be sent."
+        ? `Challenge created, but notification failed: ${await getFunctionErrorMessage(pushError, "Push notification could not be sent.")}`
         : "Challenge created and members were notified.",
     );
     setBusy("");
@@ -819,7 +820,7 @@ function AdminEngagement() {
     );
 
     if (invokeError) {
-      setError(invokeError.message);
+      setError(await getFunctionErrorMessage(invokeError, "Notification could not be sent."));
     } else {
       const sent = Number(
         (data as { push_sent?: number } | null)?.push_sent ?? 0,
