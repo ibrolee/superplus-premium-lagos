@@ -26,6 +26,17 @@ export const colors = {
   danger: "#C13228",
 };
 
+export const iconPalette = {
+  orange: { bg: "#FFF0E8", fg: "#E44824" },
+  red: { bg: "#FDEBEC", fg: "#C92A36" },
+  blue: { bg: "#EAF3FF", fg: "#2F6FDB" },
+  purple: { bg: "#F3ECFF", fg: "#7950C7" },
+  gold: { bg: "#FFF5D8", fg: "#A96500" },
+  teal: { bg: "#E7F7F4", fg: "#167A6C" },
+  green: { bg: "#EAF7ED", fg: "#287A45" },
+  pink: { bg: "#FDEBF4", fg: "#B83A78" },
+};
+
 export function lagosToday() {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Africa/Lagos",
