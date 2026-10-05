@@ -9,7 +9,10 @@ import {
   SectionHeader,
   ServiceCard,
 } from "@/components/site";
-import { GalleryExperience } from "@/components/gallery/GalleryExperience";
+import {
+  GalleryExperience,
+  type GalleryDisplayItem,
+} from "@/components/gallery/GalleryExperience";
 import { supabase } from "@/lib/supabase";
 import { images, membershipPlans, recoveryServices } from "@/lib/site-data";
 
@@ -115,7 +118,11 @@ function HomeJournal() {
 }
 
 /** Existing Homepage 2.0 retained; facilities cards replaced with the gallery showcase. */
-export function HomePageGallery() {
+export function HomePageGallery({
+  initialGalleryItems,
+}: {
+  initialGalleryItems?: GalleryDisplayItem[];
+}) {
   const featuredPlans = [
     membershipPlans[2],
     membershipPlans[3],
@@ -201,7 +208,7 @@ export function HomePageGallery() {
           </div>
         </div>
       </section>
-      <GalleryExperience compact />
+      <GalleryExperience compact initialItems={initialGalleryItems} />
       <section className="py-10 sm:py-12">
         <div className="section-shell">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
