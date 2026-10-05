@@ -13,7 +13,7 @@ import {
 import { useApp } from "../lib/AppContext";
 import { scheduleBookingReminders, cancelBookingReminders } from "../lib/booking-reminders";
 import { supabase } from "../lib/supabase";
-import { Card, colors, dateTimeLabel, lagosToday, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, dateTimeLabel, iconPalette, lagosToday, Screen, sharedStyles } from "../lib/ui";
 
 type Booking = {
   id: string;
@@ -28,11 +28,11 @@ type Booking = {
 };
 
 const services = [
-  { type: "group_class", name: "Group Class", icon: "people-outline" as const },
-  { type: "personal_training", name: "Personal Training", icon: "barbell-outline" as const },
-  { type: "massage", name: "Massage", icon: "hand-left-outline" as const },
-  { type: "pedicure", name: "Pedicure", icon: "sparkles-outline" as const },
-  { type: "spa", name: "Spa Session", icon: "water-outline" as const },
+  { type: "group_class", name: "Group Class", icon: "people-outline" as const, tone: iconPalette.purple },
+  { type: "personal_training", name: "Personal Training", icon: "barbell-outline" as const, tone: iconPalette.red },
+  { type: "massage", name: "Massage", icon: "hand-left-outline" as const, tone: iconPalette.teal },
+  { type: "pedicure", name: "Pedicure", icon: "sparkles-outline" as const, tone: iconPalette.pink },
+  { type: "spa", name: "Spa Session", icon: "water-outline" as const, tone: iconPalette.blue },
 ];
 
 const timeSlots = [7, 9, 11, 13, 15, 17, 19];
@@ -193,7 +193,9 @@ export default function BookingsScreen() {
                   setServiceName(service.name);
                 }}
               >
-                <Ionicons name={service.icon} size={22} color={active ? "#FFFFFF" : colors.green} />
+                <View style={[styles.serviceIcon, { backgroundColor: active ? "rgba(255,255,255,0.16)" : service.tone.bg }]}>
+                  <Ionicons name={service.icon} size={22} color={active ? "#FFFFFF" : service.tone.fg} />
+                </View>
                 <Text style={[styles.serviceName, active && styles.selectedText]}>{service.name}</Text>
               </Pressable>
             );
@@ -316,9 +318,10 @@ const styles = StyleSheet.create({
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", letterSpacing: -0.8, lineHeight: 34 },
   sectionTitle: { color: colors.ink, fontSize: 18, fontWeight: "900" },
   serviceGrid: { flexDirection: "row", flexWrap: "wrap", gap: 9, marginTop: 14 },
-  serviceCard: { alignItems: "center", backgroundColor: colors.background, borderColor: colors.line, borderRadius: 15, borderWidth: 1, gap: 6, minHeight: 84, justifyContent: "center", padding: 10, width: "48%" },
+  serviceCard: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: 1, gap: 8, minHeight: 96, justifyContent: "center", padding: 12, width: "48%" },
+  serviceIcon: { alignItems: "center", borderRadius: 14, height: 46, justifyContent: "center", width: 46 },
   serviceName: { color: colors.ink, fontSize: 11, fontWeight: "900", textAlign: "center" },
-  selected: { backgroundColor: colors.green, borderColor: colors.green },
+  selected: { backgroundColor: colors.green2, borderColor: colors.green2 },
   selectedText: { color: "#FFFFFF" },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   chip: { backgroundColor: colors.background, borderColor: colors.line, borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 9 },
