@@ -14,7 +14,7 @@ type GalleryRow = {
   thumbnail_path: string | null;
 };
 
-async function loadHomeGallery(): Promise<GalleryDisplayItem[]> {
+async function loadHomeGallery(): Promise<GalleryDisplayItem[] | null> {
   try {
     const { data, error } = await supabase
       .from("gallery_media")
@@ -24,7 +24,7 @@ async function loadHomeGallery(): Promise<GalleryDisplayItem[]> {
       .order("created_at", { ascending: false })
       .limit(4);
 
-    if (error || !data) return [];
+    if (error || !data) return null;
 
     const bucket = supabase.storage.from("gallery-media");
     return (data as GalleryRow[]).map((item) => {
@@ -43,7 +43,7 @@ async function loadHomeGallery(): Promise<GalleryDisplayItem[]> {
     });
   } catch {
     // Keep the homepage available even if the optional gallery feed is unavailable.
-    return [];
+    return null;
   }
 }
 
@@ -85,5 +85,5 @@ export const Route = createFileRoute("/")({
 
 function HomeRoute() {
   const initialGalleryItems = Route.useLoaderData();
-  return <HomePageGallery initialGalleryItems={initialGalleryItems} />;
+  return <HomePageGallery initialGalleryItems={initialGalleryItems ?? undefined} />;
 }
