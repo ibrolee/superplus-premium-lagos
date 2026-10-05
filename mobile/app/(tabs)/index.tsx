@@ -233,12 +233,16 @@ export default function HomeScreen() {
           <SectionTitle title="Your momentum" />
           <View style={styles.momentumGrid}>
             <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
-              <Ionicons name="sparkles-outline" size={21} color={colors.green} />
+              <View style={[styles.momentumIcon, { backgroundColor: iconPalette.gold.bg }]}>
+                <Ionicons name="sparkles-outline" size={21} color={iconPalette.gold.fg} />
+              </View>
               <Text style={styles.momentumValue}>{highlights.points.toLocaleString()}</Text>
               <Text style={styles.momentumLabel}>SP Points</Text>
             </Pressable>
             <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
-              <Ionicons name="ribbon-outline" size={21} color={iconPalette.purple.fg} />
+              <View style={[styles.momentumIcon, { backgroundColor: iconPalette.purple.bg }]}>
+                <Ionicons name="ribbon-outline" size={21} color={iconPalette.purple.fg} />
+              </View>
               <Text style={styles.momentumValue} numberOfLines={1}>
                 {highlights.achievement?.title ?? "Next badge"}
               </Text>
@@ -489,7 +493,7 @@ const styles = StyleSheet.create({
   },
   goalIcon: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.gold.bg,
     borderRadius: 13,
     height: 44,
     justifyContent: "center",
@@ -524,7 +528,7 @@ const styles = StyleSheet.create({
   },
   cardReminderIcon: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.blue.bg,
     borderRadius: 12,
     height: 44,
     justifyContent: "center",
@@ -540,6 +544,7 @@ const styles = StyleSheet.create({
     minHeight: 118,
     padding: 15,
   },
+  momentumIcon: { alignItems: "center", borderRadius: 12, height: 42, justifyContent: "center", width: 42 },
   momentumValue: {
     color: colors.ink,
     fontSize: 18,
@@ -580,7 +585,7 @@ const styles = StyleSheet.create({
   },
   latestPostIcon: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.purple.bg,
     borderRadius: 12,
     height: 44,
     justifyContent: "center",
@@ -589,7 +594,7 @@ const styles = StyleSheet.create({
   latestPostTitle: { color: colors.ink, fontSize: 13, fontWeight: "900", lineHeight: 18, marginTop: 3 },
   exploreGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   exploreCard: {
-    backgroundColor: "#EEF5EA",
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,
