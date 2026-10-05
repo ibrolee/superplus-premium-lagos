@@ -96,6 +96,7 @@ function ManagementBookings() {
       return;
     }
 
+    let notificationError = "";
     if (["confirmed", "declined", "completed"].includes(nextStatus)) {
       const title =
         nextStatus === "confirmed"
@@ -121,11 +122,12 @@ function ManagementBookings() {
         },
       });
       if (pushError) {
-        setError(`Booking updated, but member notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`);
+        notificationError = `Booking updated, but member notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`;
       }
     }
 
     await load();
+    if (notificationError) setError(notificationError);
   }
 
   return (
