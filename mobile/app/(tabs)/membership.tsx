@@ -20,6 +20,7 @@ import {
   AccountLinkRequired,
   Card,
   colors,
+  iconPalette,
   dateLabel,
   EmptyState,
   lagosToday,
@@ -471,7 +472,7 @@ export default function MembershipScreen() {
           <SectionTitle title="Personal Training" />
           <Card>
             <View style={styles.ptHeader}>
-              <View style={styles.ptCoachIcon}>
+              <View style={[styles.ptCoachIcon, { backgroundColor: iconPalette.red.fg }]}>
                 <Ionicons name="barbell-outline" size={21} color="#FFFFFF" />
               </View>
               <View style={styles.grow}>
@@ -559,7 +560,7 @@ export default function MembershipScreen() {
               <Ionicons
                 name={remindersEnabled ? "notifications" : "notifications-outline"}
                 size={21}
-                color={colors.green}
+                color={iconPalette.blue.fg}
               />
             </View>
             <View style={styles.grow}>
@@ -602,7 +603,7 @@ export default function MembershipScreen() {
                   Group expiry: {dateLabel(family.latest_end_date)}
                 </Text>
               </View>
-              <Ionicons name="people" size={24} color={colors.green2} />
+              <View style={[styles.familyIcon, { backgroundColor: iconPalette.purple.bg }]}><Ionicons name="people" size={22} color={iconPalette.purple.fg} /></View>
             </View>
             <View style={styles.familyList}>
               {family.members.map((person) => (
@@ -680,7 +681,7 @@ export default function MembershipScreen() {
 
         {!!paymentMessage && (
           <View style={styles.paymentMessage}>
-            <Ionicons name="information-circle-outline" size={18} color={colors.green2} />
+            <Ionicons name="information-circle-outline" size={18} color={iconPalette.orange.fg} />
             <Text style={styles.paymentMessageText}>{paymentMessage}</Text>
           </View>
         )}
@@ -784,11 +785,12 @@ const styles = StyleSheet.create({
   dateValue: { color: colors.ink, fontSize: 13, fontWeight: "900", marginTop: 4 },
   familyLabel: { color: colors.green2, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   familyExpiry: { color: colors.muted, fontSize: 12, marginTop: 4 },
+  familyIcon: { alignItems: "center", borderRadius: 12, height: 42, justifyContent: "center", width: 42 },
   familyList: { borderTopColor: colors.line, borderTopWidth: 1, gap: 12, marginTop: 16, paddingTop: 16 },
   familyRow: { alignItems: "center", flexDirection: "row", gap: 11 },
   slot: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 999,
     height: 29,
     justifyContent: "center",
@@ -801,7 +803,7 @@ const styles = StyleSheet.create({
   reminderRow: { alignItems: "center", flexDirection: "row", gap: 12 },
   reminderIcon: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.blue.bg,
     borderRadius: 12,
     height: 42,
     justifyContent: "center",
@@ -879,7 +881,7 @@ const styles = StyleSheet.create({
   ptHeader: { alignItems: "center", flexDirection: "row", gap: 11 },
   ptCoachIcon: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: iconPalette.red.fg,
     borderRadius: 12,
     height: 42,
     justifyContent: "center",
