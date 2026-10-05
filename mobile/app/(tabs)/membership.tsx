@@ -63,6 +63,7 @@ const planIdByName: Record<string, string> = {
   "Monthly VIP Gold": "vip-gold",
   "Family Plan": "family",
   "Personal Training": "personal-training",
+  "Personal Training Only": "personal-training-only",
 };
 
 export default function MembershipScreen() {
@@ -149,12 +150,21 @@ export default function MembershipScreen() {
     };
   }, [currentMembership?.end_date]);
 
+  const today = lagosToday();
+  const hasActiveGymMembership = memberships.some((item) =>
+    item.payment_status === "paid" && item.status === "active" &&
+    item.plan_name !== "Personal Training Only" &&
+    item.start_date <= today && item.end_date >= today,
+  );
+  const availablePlans = useMemo(
+    () => plans.filter((plan) => plan.id !== "personal-training-only" || hasActiveGymMembership),
+    [plans, hasActiveGymMembership],
+  );
   const selectedPlan = useMemo(
-    () => plans.find((plan) => plan.id === selectedPlanId) ?? null,
-    [plans, selectedPlanId],
+    () => availablePlans.find((plan) => plan.id === selectedPlanId) ?? null,
+    [availablePlans, selectedPlanId],
   );
 
-  const today = lagosToday();
   const activePtMembership = useMemo(
     () =>
       memberships.find(
@@ -452,6 +462,14 @@ export default function MembershipScreen() {
       <MembershipCard member={member} membership={currentMembership} phase={currentPhase}
         onChoosePlan={() => scrollRef.current?.scrollTo({ y: plansY.current, animated: true })} />
 
+      {hasActiveGymMembership && <Pressable accessibilityRole="button" style={styles.reportButton} onPress={() => {
+        setSelectedPlanId("personal-training-only");
+        scrollRef.current?.scrollTo({ y: plansY.current, animated: true });
+      }}>
+        <Ionicons name="barbell" size={18} color="#8F2F2F" />
+        <Text style={styles.reportButtonText}>Add Personal Training Only</Text>
+      </Pressable>}
+
       {!!activePtMembership && !!ptAssignment && !!ptCoach && (
         <>
           <SectionTitle title="Personal Training" />
@@ -619,9 +637,9 @@ export default function MembershipScreen() {
 
         {plansLoading ? (
           <Text style={styles.loadingText}>Loading current gym prices…</Text>
-        ) : plans.length ? (
+        ) : availablePlans.length ? (
           <View style={styles.planList}>
-            {plans.map((plan) => {
+            {availablePlans.map((plan) => {
               const selected = selectedPlanId === plan.id;
               const familyUnavailable =
                 plan.id === "family" && (!family || !family.is_primary);
@@ -640,7 +658,7 @@ export default function MembershipScreen() {
                   <View style={styles.grow}>
                     <Text style={styles.planOptionName}>{plan.name}</Text>
                     <Text style={styles.planOptionMeta}>
-                      {plan.durationDays} day{plan.durationDays === 1 ? "" : "s"}
+                      {plan.durationDays} day{plan.durationDays === 1 ? "" : "s"}{plan.id === "personal-training-only" ? " · coaching only; gym plan unchanged" : ""}
                       {familyUnavailable ? " · setup/primary member required" : ""}
                     </Text>
                   </View>
