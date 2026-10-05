@@ -242,7 +242,7 @@ function AdminAnnouncements() {
     if (changeError) {
       setError(changeError.message);
     } else {
-      let notificationFailed = false;
+      let notificationError = "";
       if (next === "published" && Date.parse(item.starts_at) <= Date.now() + 5000) {
         const { error: pushError } = await supabase.functions.invoke("send-member-push", {
           body: {
@@ -254,14 +254,14 @@ function AdminAnnouncements() {
             send_push: true,
           },
         });
-        notificationFailed = !!pushError;
+        if (pushError) notificationError = await getFunctionErrorMessage(pushError, "Member push notification could not be sent.");
       }
 
       setSuccess(
         next === "draft"
           ? "Announcement unpublished."
-          : notificationFailed
-            ? "Announcement enabled, but the member push notification could not be sent."
+          : notificationError
+            ? `Announcement enabled, but notification failed: ${notificationError}`
             : "Announcement enabled and members were notified."
       );
       await loadItems();
