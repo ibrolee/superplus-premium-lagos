@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -11,11 +11,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { useApp } from "../lib/AppContext";
 import { publicMembershipPlans } from "../lib/public-site";
 import { supabase } from "../lib/supabase";
 import { Card, colors, money, Screen, sharedStyles } from "../lib/ui";
 
 export default function PublicJoinScreen() {
+  const { member, session } = useApp();
   const [selectedPlanId, setSelectedPlanId] = useState("monthly");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,6 +33,12 @@ export default function PublicJoinScreen() {
       publicMembershipPlans[0]!,
     [selectedPlanId],
   );
+
+  useEffect(() => {
+    setFullName((current) => current || member?.full_name || "");
+    setEmail((current) => current || member?.email || session?.user.email || "");
+    setPhone((current) => current || member?.phone || "");
+  }, [member?.email, member?.full_name, member?.phone, session?.user.email]);
 
   async function continueToPayment() {
     const name = fullName.trim();
@@ -275,15 +283,15 @@ export default function PublicJoinScreen() {
             </Pressable>
 
             <Text style={styles.securityNote}>
-              Paystack handles the payment securely. Your Super Plus member
-              profile is created only through the verified checkout flow.
+              Paystack handles the payment securely. Your gym membership
+              activates only after the payment is successfully verified.
             </Text>
           </>
         )}
       </Card>
 
       <Pressable style={styles.memberLogin} onPress={() => router.push("/login")}>
-        <Text style={styles.memberLoginText}>Already a member? Sign in instead</Text>
+        <Text style={styles.memberLoginText}>Already have an account? Sign in instead</Text>
       </Pressable>
     </Screen>
   );
