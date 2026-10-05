@@ -18,9 +18,11 @@ import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
 import { VisitorChat } from "@/components/visitor/VisitorChat";
 import { AnnouncementSurface } from "@/components/announcements/AnnouncementSurface";
 import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { getUserErrorMessage } from "@/lib/user-error";
 
 function NotFoundComponent() {
   return (
@@ -54,7 +56,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold text-foreground">This page didn't load</h1>
         <p className="mt-4 text-sm text-muted-foreground">
-          Something went wrong. Try refreshing or head home.
+          {getUserErrorMessage(error, "An unexpected website error occurred.")}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -75,6 +77,31 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     </div>
   );
 }
+function GlobalUnhandledErrorToasts() {
+  useEffect(() => {
+    let lastMessage = "";
+    let lastShownAt = 0;
+    const show = (value: unknown) => {
+      const message = getUserErrorMessage(value, "An unexpected website error occurred.");
+      if (!message || /ResizeObserver loop/i.test(message)) return;
+      const now = Date.now();
+      if (message === lastMessage && now - lastShownAt < 2500) return;
+      lastMessage = message;
+      lastShownAt = now;
+      toast.error(message);
+    };
+    const onError = (event: ErrorEvent) => show(event.error || event.message);
+    const onRejection = (event: PromiseRejectionEvent) => show(event.reason);
+    window.addEventListener("error", onError);
+    window.addEventListener("unhandledrejection", onRejection);
+    return () => {
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+    };
+  }, []);
+  return null;
+}
+
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "HealthClub",
@@ -235,6 +262,7 @@ function RootComponent() {
         <AnnouncementSurface placement="popup" />
       )}
       <Toaster position="top-center" richColors />
+      <GlobalUnhandledErrorToasts />
     </QueryClientProvider>
   );
 }
