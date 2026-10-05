@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRight, CheckCircle2, Loader2, Search, UserPlus, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute('/reception-register')({ component: ReceptionRegister });
 type Plan = { id: string; name: string; price: number; duration_days: number };
@@ -59,8 +60,8 @@ function ReceptionRegister() {
   if(!window.confirm(confirmation))return;
   setBusy(true);
   try{const body=mode==='registration'?{transactionType:'registration_only',fullName:fullName.trim(),email:email.trim().toLowerCase(),phone:phone.trim(),registrationAmount:registrationOnlyAmount,method,reference:reference.trim(),notes:notes.trim(),fundsConfirmed,idempotencyKey:retryKey}:{fullName:mode==='new'?fullName.trim():member?.full_name||'',email:mode==='new'?email.trim().toLowerCase():member?.email||'',phone:mode==='new'?phone.trim():member?.phone||'',memberId:mode==='renewal'?member?.id:null,planId:plan!.id,startDate,durationDays:days,planAmount,method,reference:reference.trim(),notes:notes.trim(),couponCode:mode==='new'?cleanCoupon:'',discountPercentage:discountPct,trainerStaffProfileId:isPtPlan?trainerId:null,fundsConfirmed,idempotencyKey:retryKey};const {data,error:submitError}=await supabase.functions.invoke('reception-instant-register',{body});
-   if(submitError)throw submitError;if(!data?.success)throw Error(data?.error||'Result uncertain. Check the member directory before retrying.');setDone(data as Result);setRetryKey(crypto.randomUUID());
-  }catch(cause){setError(cause instanceof Error?cause.message:'Could not confirm the transaction. Check the member profile before retrying.');}finally{setBusy(false);}
+   if(submitError)throw Error(await getFunctionErrorMessage(submitError,'Could not confirm the transaction.'));if(!data?.success)throw Error(data?.error||'Result uncertain. Check the member directory before retrying.');setDone(data as Result);setRetryKey(crypto.randomUUID());
+  }catch(cause){setError(getUserErrorMessage(cause,'Could not confirm the transaction. Check the member profile before retrying.'));}finally{setBusy(false);}
  }
  return <main className="min-h-screen bg-[#f4f6f1] px-4 py-7 text-[#193327] sm:px-7 lg:px-10"><div className="mx-auto max-w-4xl space-y-6">
   <header><p className="text-xs font-black uppercase tracking-widest text-[#54815c]">Reception / Memberships</p><h1 className="mt-2 text-3xl font-black sm:text-4xl">Register or renew</h1><p className="mt-2 text-sm leading-6 text-[#607366]">Find out whether the customer is already a member, select their plan, and record payment. No management approval is needed.</p></header>
