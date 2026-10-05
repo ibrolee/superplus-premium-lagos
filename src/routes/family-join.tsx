@@ -8,6 +8,20 @@ import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/family-join")({ component: FamilyJoinPage });
 
+async function getFunctionErrorMessage(functionError: unknown, fallback: string) {
+  const context = (functionError as { context?: Response } | null)?.context;
+  if (context) {
+    try {
+      const payload = await context.clone().json() as { error?: unknown; message?: unknown };
+      const message = typeof payload?.error === "string" ? payload.error : typeof payload?.message === "string" ? payload.message : "";
+      if (message.trim()) return message.trim();
+    } catch {
+      // Fall back to the client error below.
+    }
+  }
+  return functionError instanceof Error && functionError.message ? functionError.message : fallback;
+}
+
 function FamilyJoinPage() {
   const plan = useMemo(() => membershipPlans.find((item) => item.id === "family"), []);
   const [members, setMembers] = useState<FamilyMemberInput[]>([emptyFamilyMember(), emptyFamilyMember(), emptyFamilyMember()]);
@@ -31,7 +45,7 @@ function FamilyJoinPage() {
       const { data, error: functionError } = await supabase.functions.invoke("initialize-public-payment", {
         body: { planId: "family", familyMembers: members.map(familyMemberPayload), ...(coupon.trim() ? { couponCode: coupon.trim().toUpperCase() } : {}) },
       });
-      if (functionError) throw new Error(data?.error || functionError.message || "Unable to start payment.");
+      if (functionError) throw new Error(data?.error || await getFunctionErrorMessage(functionError, "Unable to start payment. No payment has been taken."));
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to start Family Plan payment.");
       window.location.href = data.authorization_url;
     } catch (cause) {
