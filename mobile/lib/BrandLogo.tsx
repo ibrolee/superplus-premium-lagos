@@ -20,7 +20,14 @@ export function BrandLogo({
       accessibilityLabel="Super Plus Fitness"
       accessibilityRole="image"
       resizeMode="contain"
-      style={[styles.logo, { width: size, borderRadius: size / 2 }, style]}
+      style={[
+        styles.logo,
+        {
+          width: size,
+          borderRadius: variant === "mark" ? size * 0.2 : 0,
+        },
+        style,
+      ]}
     />
   );
 }
@@ -29,7 +36,6 @@ const styles = StyleSheet.create({
   logo: {
     alignSelf: "center",
     aspectRatio: 1,
-    // Override the bundled asset's intrinsic height so width controls both axes.
     height: undefined,
     maxWidth: "100%",
     backgroundColor: "#FFFFFF",
