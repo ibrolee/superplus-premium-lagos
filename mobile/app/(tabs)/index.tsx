@@ -10,6 +10,7 @@ import {
   AccountLinkRequired,
   Card,
   colors,
+  iconPalette,
   dateLabel,
   dateTimeLabel,
   daysUntil,
@@ -100,7 +101,7 @@ export default function HomeScreen() {
             style={styles.notificationButton}
             onPress={() => router.push("/notifications")}
           >
-            <Ionicons name="notifications-outline" size={22} color={colors.green} />
+            <Ionicons name="notifications-outline" size={22} color={iconPalette.purple.fg} />
             {notificationUnreadCount > 0 && (
               <View style={styles.notificationBadge}>
                 <Text style={styles.notificationBadgeText}>
@@ -173,7 +174,7 @@ export default function HomeScreen() {
             <Ionicons
               name={goalProgress?.complete ? "trophy" : "flag"}
               size={22}
-              color={colors.green}
+              color={iconPalette.gold.fg}
             />
           </View>
         </View>
@@ -203,7 +204,7 @@ export default function HomeScreen() {
 
       <View style={styles.cardReminder}>
         <View style={styles.cardReminderIcon}>
-          <Ionicons name="card-outline" size={22} color={colors.green} />
+          <Ionicons name="card-outline" size={22} color={iconPalette.blue.fg} />
         </View>
         <View style={styles.qrCopy}>
           <Text style={styles.qrTitle}>Bring your membership card</Text>
@@ -237,7 +238,7 @@ export default function HomeScreen() {
               <Text style={styles.momentumLabel}>SP Points</Text>
             </Pressable>
             <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
-              <Ionicons name="ribbon-outline" size={21} color={colors.green} />
+              <Ionicons name="ribbon-outline" size={21} color={iconPalette.purple.fg} />
               <Text style={styles.momentumValue} numberOfLines={1}>
                 {highlights.achievement?.title ?? "Next badge"}
               </Text>
@@ -281,7 +282,7 @@ export default function HomeScreen() {
               }
             >
               <View style={styles.latestPostIcon}>
-                <Ionicons name="newspaper-outline" size={22} color={colors.green} />
+                <Ionicons name="newspaper-outline" size={22} color={iconPalette.purple.fg} />
               </View>
               <View style={styles.grow}>
                 <Text style={styles.challengeEyebrow}>LATEST FROM THE BLOG</Text>
@@ -298,29 +299,29 @@ export default function HomeScreen() {
       <SectionTitle title="Explore Super Plus" />
       <View style={styles.exploreGrid}>
         <Pressable style={styles.exploreCard} onPress={() => router.push("/blog")}>
-          <View style={styles.exploreIcon}>
-            <Ionicons name="newspaper-outline" size={22} color={colors.green} />
+          <View style={[styles.exploreIcon, { backgroundColor: iconPalette.purple.bg }]}>
+            <Ionicons name="newspaper-outline" size={22} color={iconPalette.purple.fg} />
           </View>
           <Text style={styles.exploreTitle}>Blog</Text>
           <Text style={styles.exploreText}>Tips, recovery and gym life.</Text>
         </Pressable>
         <Pressable style={styles.exploreCard} onPress={() => router.push("/workouts")}>
-          <View style={styles.exploreIcon}>
-            <Ionicons name="barbell-outline" size={22} color={colors.green} />
+          <View style={[styles.exploreIcon, { backgroundColor: iconPalette.red.bg }]}>
+            <Ionicons name="barbell-outline" size={22} color={iconPalette.red.fg} />
           </View>
           <Text style={styles.exploreTitle}>Workouts</Text>
           <Text style={styles.exploreText}>Plan and check off a session.</Text>
         </Pressable>
         <Pressable style={styles.exploreCard} onPress={() => router.push("/bookings")}>
-          <View style={styles.exploreIcon}>
-            <Ionicons name="calendar-outline" size={22} color={colors.green} />
+          <View style={[styles.exploreIcon, { backgroundColor: iconPalette.blue.bg }]}>
+            <Ionicons name="calendar-outline" size={22} color={iconPalette.blue.fg} />
           </View>
           <Text style={styles.exploreTitle}>Book</Text>
           <Text style={styles.exploreText}>PT, classes and spa services.</Text>
         </Pressable>
         <Pressable style={styles.exploreCard} onPress={() => router.push("/rewards")}>
-          <View style={styles.exploreIcon}>
-            <Ionicons name="trophy-outline" size={22} color={colors.green} />
+          <View style={[styles.exploreIcon, { backgroundColor: iconPalette.gold.bg }]}>
+            <Ionicons name="trophy-outline" size={22} color={iconPalette.gold.fg} />
           </View>
           <Text style={styles.exploreTitle}>Rewards</Text>
           <Text style={styles.exploreText}>Challenges, badges and SP Points.</Text>
@@ -336,7 +337,7 @@ export default function HomeScreen() {
               style={[styles.visitRow, index > 0 && styles.rowBorder]}
             >
               <View style={styles.visitIcon}>
-                <Ionicons name="barbell-outline" size={18} color={colors.green} />
+                <Ionicons name="barbell-outline" size={18} color={iconPalette.teal.fg} />
               </View>
               <View style={styles.grow}>
                 <Text style={styles.visitTitle}>{dateTimeLabel(visit.checked_in_at)}</Text>
@@ -417,7 +418,7 @@ const styles = StyleSheet.create({
   },
   notificationBadge: {
     alignItems: "center",
-    backgroundColor: "#EF2B2D",
+    backgroundColor: colors.green2,
     borderColor: "#FFFFFF",
     borderRadius: 999,
     borderWidth: 2,
@@ -445,9 +446,9 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 21,
   },
-  cardEyebrow: { color: "#BAD4BF", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
+  cardEyebrow: { color: "#F4B7A8", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
   planName: { color: "#FFFFFF", fontSize: 28, fontWeight: "900", letterSpacing: -0.8, marginTop: 18 },
-  planDates: { color: "#CFE0D2", fontSize: 13, fontWeight: "600", marginTop: 5 },
+  planDates: { color: "#E9E4E0", fontSize: 13, fontWeight: "600", marginTop: 5 },
   cardFooter: {
     borderTopColor: "rgba(255,255,255,0.16)",
     borderTopWidth: 1,
@@ -456,7 +457,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
     paddingTop: 18,
   },
-  smallLabel: { color: "#AFCAB5", fontSize: 9, fontWeight: "900", letterSpacing: 1.1 },
+  smallLabel: { color: "#D7CEC8", fontSize: 9, fontWeight: "900", letterSpacing: 1.1 },
   bigStat: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
   cardNumberWrap: { alignItems: "flex-end" },
   cardNumber: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
@@ -513,7 +514,7 @@ const styles = StyleSheet.create({
   goalStreak: { color: colors.green, fontSize: 11, fontWeight: "900" },
   cardReminder: {
     alignItems: "center",
-    backgroundColor: "#F7F8F5",
+    backgroundColor: "#FFF9F6",
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,
@@ -548,7 +549,7 @@ const styles = StyleSheet.create({
   },
   momentumLabel: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 3 },
   challengeCard: {
-    backgroundColor: "#EEF5EA",
+    backgroundColor: "#FFF9F6",
     borderColor: colors.line,
     borderRadius: 19,
     borderWidth: 1,
@@ -559,7 +560,7 @@ const styles = StyleSheet.create({
   challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 4 },
   challengePoints: { color: colors.green, fontSize: 11, fontWeight: "900" },
   challengeTrack: {
-    backgroundColor: "#DCE8D7",
+    backgroundColor: "#F3DED5",
     borderRadius: 999,
     height: 8,
     marginTop: 13,
@@ -598,7 +599,7 @@ const styles = StyleSheet.create({
   },
   exploreIcon: {
     alignItems: "center",
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     height: 42,
     justifyContent: "center",
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
   rowBorder: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 6, paddingTop: 13 },
   visitIcon: {
     alignItems: "center",
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: iconPalette.teal.bg,
     borderRadius: 12,
     height: 40,
     justifyContent: "center",
