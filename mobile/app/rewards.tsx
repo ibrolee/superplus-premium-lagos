@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "rea
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
 import { uniqueVisitDates } from "../lib/visit-goals";
-import { Card, colors, Screen, sharedStyles } from "../lib/ui";
+import { Card, colors, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 type AchievementDefinition = {
   code: string;
@@ -187,7 +187,7 @@ export default function RewardsScreen() {
               return (
                 <View key={item.code} style={[styles.achievementCard, !unlocked && styles.lockedCard]}>
                   <View style={[styles.badgeIcon, unlocked && styles.badgeUnlocked]}>
-                    <Ionicons name={unlocked ? "trophy" : "lock-closed"} size={22} color={unlocked ? "#FFFFFF" : colors.muted} />
+                    <Ionicons name={unlocked ? "trophy" : "lock-closed"} size={22} color={unlocked ? "#FFFFFF" : iconPalette.purple.fg} />
                   </View>
                   <Text style={styles.achievementTitle}>{item.title}</Text>
                   <Text style={styles.achievementText}>{item.description}</Text>
@@ -234,7 +234,7 @@ export default function RewardsScreen() {
                 <Card key={reward.id}>
                   <View style={styles.rewardRow}>
                     <View style={styles.rewardIcon}>
-                      <Ionicons name="gift-outline" size={22} color={colors.green} />
+                      <Ionicons name="gift-outline" size={22} color={iconPalette.pink.fg} />
                     </View>
                     <View style={styles.grow}>
                       <Text style={styles.rewardTitle}>{reward.name}</Text>
@@ -273,7 +273,7 @@ export default function RewardsScreen() {
               <Card>
                 {redemptions.map((item, index) => (
                   <View key={item.id} style={[styles.redemptionRow, index > 0 && styles.border]}>
-                    <Ionicons name="gift-outline" size={18} color={colors.green} />
+                    <Ionicons name="gift-outline" size={18} color={iconPalette.pink.fg} />
                     <View style={styles.grow}>
                       <Text style={styles.redemptionTitle}>{item.points_cost.toLocaleString()} points</Text>
                       <Text style={styles.redemptionMeta}>{item.status}</Text>
@@ -304,8 +304,8 @@ const styles = StyleSheet.create({
   achievementGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   achievementCard: { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: 1, padding: 14, width: "48%" },
   lockedCard: { opacity: 0.6 },
-  badgeIcon: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 999, height: 42, justifyContent: "center", width: 42 },
-  badgeUnlocked: { backgroundColor: colors.green },
+  badgeIcon: { alignItems: "center", backgroundColor: iconPalette.purple.bg, borderRadius: 999, height: 42, justifyContent: "center", width: 42 },
+  badgeUnlocked: { backgroundColor: iconPalette.gold.fg },
   achievementTitle: { color: colors.ink, fontSize: 13, fontWeight: "900", marginTop: 10 },
   achievementText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
   achievementPoints: { color: colors.green2, fontSize: 10, fontWeight: "900", marginTop: 8 },
@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   fill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
   challengeMeta: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 8 },
   rewardRow: { flexDirection: "row", gap: 12 },
-  rewardIcon: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 12, height: 44, justifyContent: "center", width: 44 },
+  rewardIcon: { alignItems: "center", backgroundColor: iconPalette.pink.bg, borderRadius: 12, height: 44, justifyContent: "center", width: 44 },
   rewardTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
   rewardText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 3 },
   rewardCost: { color: colors.green2, fontSize: 11, fontWeight: "900", marginTop: 6 },
