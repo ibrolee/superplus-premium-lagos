@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { MembershipCard } from "../../lib/MembershipCard";
 import { BrandLogo } from "../../lib/BrandLogo";
 import { loadHomeHighlights, type HomeHighlight } from "../../lib/home-highlights";
 import { calculateGoalProgress } from "../../lib/visit-goals";
@@ -13,7 +14,6 @@ import {
   iconPalette,
   dateLabel,
   dateTimeLabel,
-  daysUntil,
   LoadingView,
   Pill,
   Screen,
@@ -85,7 +85,6 @@ export default function HomeScreen() {
         ? "active"
         : "expired"
     : "none";
-  const remaining = daysUntil(currentMembership?.end_date);
   const goalProgress = visitGoal ? calculateGoalProgress(attendance, visitGoal) : null;
 
   return (
@@ -123,42 +122,8 @@ export default function HomeScreen() {
         </Card>
       )}
 
-      <View style={styles.memberCard}>
-        <View style={sharedStyles.row}>
-          <Text style={styles.cardEyebrow}>MEMBERSHIP</Text>
-          <Pill tone={phase === "active" ? "success" : phase === "upcoming" ? "amber" : "danger"}>
-            {phase === "active" ? "ACTIVE" : phase === "upcoming" ? "UPCOMING" : "INACTIVE"}
-          </Pill>
-        </View>
-        <Text style={styles.planName}>{currentMembership?.plan_name ?? "No paid plan"}</Text>
-        {currentMembership ? (
-          <>
-            <Text style={styles.planDates}>
-              {dateLabel(currentMembership.start_date)} — {dateLabel(currentMembership.end_date)}
-            </Text>
-            <View style={styles.cardFooter}>
-              <View>
-                <Text style={styles.smallLabel}>
-                  {phase === "upcoming" ? "STARTS" : "TIME LEFT"}
-                </Text>
-                <Text style={styles.bigStat}>
-                  {phase === "upcoming"
-                    ? dateLabel(currentMembership.start_date)
-                    : remaining !== null && remaining >= 0
-                      ? `${remaining} days`
-                      : "Expired"}
-                </Text>
-              </View>
-              <View style={styles.cardNumberWrap}>
-                <Text style={styles.smallLabel}>MEMBER #</Text>
-                <Text style={styles.cardNumber}>{member.member_card_number}</Text>
-              </View>
-            </View>
-          </>
-        ) : (
-          <Text style={styles.planDates}>Contact reception or choose a plan to get started.</Text>
-        )}
-      </View>
+      <MembershipCard member={member} membership={currentMembership} phase={phase}
+        onChoosePlan={() => router.push("/(tabs)/membership")} />
 
       <Pressable style={styles.goalCard} onPress={() => router.push("/goal")}>
         <View style={styles.goalTop}>
@@ -447,26 +412,6 @@ const styles = StyleSheet.create({
   },
   errorCard: { borderColor: "#F2C7C2", backgroundColor: "#FFF3F1" },
   errorText: { color: colors.danger, fontSize: 12, fontWeight: "700" },
-  memberCard: {
-    backgroundColor: colors.green,
-    borderRadius: 24,
-    padding: 21,
-  },
-  cardEyebrow: { color: "#F4B7A8", fontSize: 10, fontWeight: "900", letterSpacing: 1.5 },
-  planName: { color: "#FFFFFF", fontSize: 28, fontWeight: "900", letterSpacing: -0.8, marginTop: 18 },
-  planDates: { color: "#E9E4E0", fontSize: 13, fontWeight: "600", marginTop: 5 },
-  cardFooter: {
-    borderTopColor: "rgba(255,255,255,0.16)",
-    borderTopWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 22,
-    paddingTop: 18,
-  },
-  smallLabel: { color: "#D7CEC8", fontSize: 9, fontWeight: "900", letterSpacing: 1.1 },
-  bigStat: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
-  cardNumberWrap: { alignItems: "flex-end" },
-  cardNumber: { color: "#FFFFFF", fontSize: 17, fontWeight: "900", marginTop: 4 },
   goalCard: {
     backgroundColor: colors.surface,
     borderColor: colors.line,

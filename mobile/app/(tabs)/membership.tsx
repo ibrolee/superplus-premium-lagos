@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { MembershipCard } from "../../lib/MembershipCard";
 import { useApp } from "../../lib/AppContext";
 import {
   cancelMembershipExpiryReminders,
@@ -75,6 +77,8 @@ export default function MembershipScreen() {
     refresh,
   } = useApp();
 
+  const scrollRef = useRef<ScrollView>(null);
+  const plansY = useRef(0);
   const [plans, setPlans] = useState<PlanOption[]>([]);
   const [plansLoading, setPlansLoading] = useState(true);
   const [selectedPlanId, setSelectedPlanId] = useState("");
@@ -237,7 +241,7 @@ export default function MembershipScreen() {
   if (dataLoading) return <LoadingView />;
   if (!member) {
     return (
-      <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
+      <Screen scrollRef={scrollRef} refreshing={refreshing} onRefresh={() => void refresh()}>
         <AccountLinkRequired email={session?.user.email} />
       </Screen>
     );
@@ -438,36 +442,15 @@ export default function MembershipScreen() {
   }
 
   return (
-    <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
+    <Screen scrollRef={scrollRef} refreshing={refreshing} onRefresh={() => void refresh()}>
       <Text style={sharedStyles.kicker}>MEMBERSHIP</Text>
       <Text style={sharedStyles.title}>Your plan.</Text>
       <Text style={sharedStyles.subtitle}>
         Your dates here are the same dates held by reception.
       </Text>
 
-      {currentMembership ? (
-        <Card style={styles.hero}>
-          <View style={sharedStyles.row}>
-            <Pill tone={currentPhase === "ACTIVE" ? "success" : currentPhase === "UPCOMING" ? "amber" : "danger"}>
-              {currentPhase}
-            </Pill>
-            {!!currentMembership.family_group_id && <Pill>FAMILY PLAN</Pill>}
-          </View>
-          <Text style={styles.heroPlan}>{currentMembership.plan_name ?? "Membership"}</Text>
-          <View style={styles.dateGrid}>
-            <View style={styles.dateCell}>
-              <Text style={styles.dateLabel}>START DATE</Text>
-              <Text style={styles.dateValue}>{dateLabel(currentMembership.start_date)}</Text>
-            </View>
-            <View style={styles.dateCell}>
-              <Text style={styles.dateLabel}>END DATE</Text>
-              <Text style={styles.dateValue}>{dateLabel(currentMembership.end_date)}</Text>
-            </View>
-          </View>
-        </Card>
-      ) : (
-        <EmptyState>No membership is attached to this account yet.</EmptyState>
-      )}
+      <MembershipCard member={member} membership={currentMembership} phase={currentPhase}
+        onChoosePlan={() => scrollRef.current?.scrollTo({ y: plansY.current, animated: true })} />
 
       {!!activePtMembership && !!ptAssignment && !!ptCoach && (
         <>
@@ -624,7 +607,9 @@ export default function MembershipScreen() {
         </>
       )}
 
-      <SectionTitle title={firstMembership ? "Choose your first plan" : "Renew or change plan"} />
+      <View onLayout={(event) => { plansY.current = event.nativeEvent.layout.y; }}>
+        <SectionTitle title={firstMembership ? "Choose your first plan" : "Renew or change plan"} />
+      </View>
       <Card>
         <Text style={styles.paymentIntro}>
           {firstMembership
@@ -805,17 +790,6 @@ export default function MembershipScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { gap: 16 },
-  heroPlan: { color: colors.ink, fontSize: 27, fontWeight: "900", letterSpacing: -0.7 },
-  dateGrid: { flexDirection: "row", gap: 10 },
-  dateCell: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: 14,
-    flex: 1,
-    padding: 13,
-  },
-  dateLabel: { color: colors.muted, fontSize: 9, fontWeight: "900", letterSpacing: 0.9 },
-  dateValue: { color: colors.ink, fontSize: 13, fontWeight: "900", marginTop: 4 },
   familyLabel: { color: colors.green2, fontSize: 10, fontWeight: "900", letterSpacing: 1 },
   familyExpiry: { color: colors.muted, fontSize: 12, marginTop: 4 },
   familyIcon: { alignItems: "center", borderRadius: 12, height: 42, justifyContent: "center", width: 42 },

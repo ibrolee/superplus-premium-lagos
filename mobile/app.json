@@ -2,7 +2,7 @@
   "expo": {
     "name": "Super Plus Fitness",
     "slug": "superplus-fitness",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "superplus",
     "userInterfaceStyle": "light",
@@ -16,7 +16,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFF8F3"
-      }
+      },
+      "versionCode": 2
     },
     "plugins": [
       "expo-router",

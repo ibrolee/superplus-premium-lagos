@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import type { PropsWithChildren, ReactNode, Ref } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -91,10 +91,12 @@ export function Screen({
   children,
   refreshing = false,
   onRefresh,
-}: PropsWithChildren<{ refreshing?: boolean; onRefresh?: () => void }>) {
+  scrollRef,
+}: PropsWithChildren<{ refreshing?: boolean; onRefresh?: () => void; scrollRef?: Ref<ScrollView> }>) {
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
