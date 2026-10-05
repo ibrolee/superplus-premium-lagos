@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { FamilyMemberFields, emptyFamilyMember, familyMemberPayload, familyMemberValid, type FamilyMemberInput } from "@/components/family/FamilyMemberFields";
 import { formatNaira, membershipPlans } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
-import { getFunctionErrorMessage } from "@/lib/user-error";
+import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/family-join")({ component: FamilyJoinPage });
 
@@ -36,7 +36,7 @@ function FamilyJoinPage() {
       if (!data?.authorization_url) throw new Error(data?.error || "Unable to start Family Plan payment.");
       window.location.href = data.authorization_url;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Unable to start payment. No payment has been taken.");
+      setError(getUserErrorMessage(cause, "Unable to start payment. No payment has been taken."));
       setLoading(false);
     }
   }
