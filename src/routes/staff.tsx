@@ -1260,8 +1260,6 @@ function StaffPage() {
           )}
         </section>
 
-        <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={() => setActiveSection("support")}><MessageSquareWarning />Request or complaint</Button>
-
         <Tabs value={activeSection} onValueChange={setActiveSection} className="mt-5">
           <TabsList
             aria-label="Staff dashboard sections"
