@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -249,6 +250,7 @@ export default function MembershipScreen() {
         ? "ACTIVE"
         : "EXPIRED"
     : "NO PLAN";
+  const firstMembership = memberships.length === 0;
 
   async function verifyPayment(reference: string, automatic = false) {
     setPaymentBusy(true);
@@ -622,11 +624,12 @@ export default function MembershipScreen() {
         </>
       )}
 
-      <SectionTitle title="Renew or change plan" />
+      <SectionTitle title={firstMembership ? "Choose your first plan" : "Renew or change plan"} />
       <Card>
         <Text style={styles.paymentIntro}>
-          Choose a plan and pay securely through Paystack. Existing members do not
-          pay a new registration fee.
+          {firstMembership
+            ? "Your account is free. Choose a gym plan when you’re ready; your one-time registration fee will be shown clearly before payment."
+            : "Choose a plan and pay securely through Paystack. Existing members do not pay a new registration fee."}
         </Text>
 
         {plansLoading ? (
@@ -667,73 +670,103 @@ export default function MembershipScreen() {
           </Text>
         )}
 
-        <Text style={styles.inputLabel}>Coupon code (optional)</Text>
-        <TextInput
-          value={coupon}
-          onChangeText={(value) => setCoupon(value.toUpperCase())}
-          autoCapitalize="characters"
-          autoCorrect={false}
-          editable={!paymentBusy}
-          placeholder="Enter coupon code"
-          placeholderTextColor="#95A098"
-          style={styles.input}
-        />
-
-        {!!paymentMessage && (
-          <View style={styles.paymentMessage}>
-            <Ionicons name="information-circle-outline" size={18} color={iconPalette.orange.fg} />
-            <Text style={styles.paymentMessageText}>{paymentMessage}</Text>
-          </View>
-        )}
-
-        {pendingReference ? (
+        {firstMembership ? (
           <>
-            <Pressable
-              style={[sharedStyles.primaryButton, paymentBusy && styles.disabled]}
-              disabled={paymentBusy}
-              onPress={() => void verifyPayment(pendingReference)}
-            >
-              <Text style={sharedStyles.primaryButtonText}>
-                {paymentBusy ? "Checking payment…" : "Verify payment"}
+            <View style={styles.paymentMessage}>
+              <Ionicons name="information-circle-outline" size={18} color={iconPalette.orange.fg} />
+              <Text style={styles.paymentMessageText}>
+                Your first checkout includes the applicable registration fee. You can still use the app without buying a plan.
               </Text>
-            </Pressable>
+            </View>
 
-            <Pressable
-              style={[styles.secondaryButton, paymentBusy && styles.disabled]}
-              disabled={paymentBusy}
-              onPress={clearPendingCheckout}
-            >
-              <Text style={styles.secondaryButtonText}>I cancelled — start over</Text>
-            </Pressable>
-
-            <Text style={styles.paymentSafety}>
-              A checkout has already been started. Do not start another payment
-              unless you cancelled the previous checkout and use Start over above.
-            </Text>
-          </>
-        ) : (
-          <>
             <Pressable
               style={[
                 sharedStyles.primaryButton,
                 (!selectedPlan || paymentBusy) && styles.disabled,
               ]}
               disabled={!selectedPlan || paymentBusy}
-              onPress={() => void startPayment()}
+              onPress={() => {
+                if (!selectedPlan) return;
+                router.push({ pathname: "/join", params: { planId: selectedPlan.id } });
+              }}
             >
               <Text style={sharedStyles.primaryButtonText}>
-                {paymentBusy
-                  ? "Please wait…"
-                  : selectedPlan
-                    ? `Pay ${money(selectedPlan.price)} with Paystack`
-                    : "Choose a plan"}
+                {selectedPlan ? "Continue to first membership checkout" : "Choose a plan"}
               </Text>
             </Pressable>
-
-            <Text style={styles.paymentSafety}>
-              If Paystack charges you but verification is delayed, do not pay again.
-              Return here and verify the existing payment.
-            </Text>
+          </>
+        ) : (
+          <>
+          <Text style={styles.inputLabel}>Coupon code (optional)</Text>
+          <TextInput
+            value={coupon}
+            onChangeText={(value) => setCoupon(value.toUpperCase())}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            editable={!paymentBusy}
+            placeholder="Enter coupon code"
+            placeholderTextColor="#95A098"
+            style={styles.input}
+          />
+  
+          {!!paymentMessage && (
+            <View style={styles.paymentMessage}>
+              <Ionicons name="information-circle-outline" size={18} color={iconPalette.orange.fg} />
+              <Text style={styles.paymentMessageText}>{paymentMessage}</Text>
+            </View>
+          )}
+  
+          {pendingReference ? (
+            <>
+              <Pressable
+                style={[sharedStyles.primaryButton, paymentBusy && styles.disabled]}
+                disabled={paymentBusy}
+                onPress={() => void verifyPayment(pendingReference)}
+              >
+                <Text style={sharedStyles.primaryButtonText}>
+                  {paymentBusy ? "Checking payment…" : "Verify payment"}
+                </Text>
+              </Pressable>
+  
+              <Pressable
+                style={[styles.secondaryButton, paymentBusy && styles.disabled]}
+                disabled={paymentBusy}
+                onPress={clearPendingCheckout}
+              >
+                <Text style={styles.secondaryButtonText}>I cancelled — start over</Text>
+              </Pressable>
+  
+              <Text style={styles.paymentSafety}>
+                A checkout has already been started. Do not start another payment
+                unless you cancelled the previous checkout and use Start over above.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Pressable
+                style={[
+                  sharedStyles.primaryButton,
+                  (!selectedPlan || paymentBusy) && styles.disabled,
+                ]}
+                disabled={!selectedPlan || paymentBusy}
+                onPress={() => void startPayment()}
+              >
+                <Text style={sharedStyles.primaryButtonText}>
+                  {paymentBusy
+                    ? "Please wait…"
+                    : selectedPlan
+                      ? `Pay ${money(selectedPlan.price)} with Paystack`
+                      : "Choose a plan"}
+                </Text>
+              </Pressable>
+  
+              <Text style={styles.paymentSafety}>
+                If Paystack charges you but verification is delayed, do not pay again.
+                Return here and verify the existing payment.
+              </Text>
+            </>
+          )}
+  
           </>
         )}
       </Card>
