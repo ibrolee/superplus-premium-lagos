@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 import { THEMES } from '@/lib/game';
 import { useGame } from '@/store/game-store';
 
-const icon = (name: keyof typeof Ionicons.glyphMap) => ({ color, size }: { color: string; size: number }) => <Ionicons name={name} color={color} size={size} />;
+const icon = (name: keyof typeof Ionicons.glyphMap) => ({ color, size }: { focused: boolean; color: ColorValue; size: number }) => <Ionicons name={name} color={color} size={size} />;
 export default function TabsLayout() {
   const game = useGame(); const c = THEMES[game.theme];
   return <Tabs screenOptions={{ headerShown: false, tabBarStyle: { backgroundColor: c.bg2, borderTopColor: c.border, height: 72, paddingTop: 7 }, tabBarActiveTintColor: c.primary, tabBarInactiveTintColor: c.muted, tabBarLabelStyle: { fontWeight: '700', fontSize: 11 } }}>
