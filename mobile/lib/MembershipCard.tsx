@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-na
 import Svg, { Defs, LinearGradient, Rect, Stop, Circle } from "react-native-svg";
 import { BrandLogo } from "./BrandLogo";
 import type { Member, Membership } from "./AppContext";
-import { dateLabel, daysUntil } from "./ui";
+import { colors, dateLabel, daysUntil } from "./ui";
 
 // Presentation only: callers retain the existing membership/status selection.
 export function MembershipCard({ member, membership, phase, onChoosePlan }: {
