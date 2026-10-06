@@ -1,21 +1,20 @@
 name: Expo Go live preview
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - ".github/workflows/expo-go-preview.yml"
-  workflow_dispatch:
 
 permissions:
-  contents: read
-  statuses: write
+  contents: write
 
 jobs:
   serve-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: mobile
@@ -37,53 +36,49 @@ jobs:
       - name: Install Expo tunnel helper
         run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
-      - name: Verify Expo account
-        run: npx expo whoami
-
-      - name: Start and keep Safari Expo Go preview live
+      - name: Start public Expo Go tunnel and publish link
         shell: bash
         run: |
           set -euo pipefail
-          export RUNNER_TRACKING_ID=""
-
-          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
-          EXPO_PID=$!
+          echo "Starting SPF Expo Go tunnel..."
+          npx expo whoami || true
+          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
+          PID=$!
 
           PUBLIC_URL=""
-          EXPO_URL=""
-
-          for i in $(seq 1 90); do
-            PUBLIC_URL=$(curl -fsSL --max-time 2 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[]? | select(.proto == "https") | .public_url' | head -n 1 || true)
-
-            if [ -n "$PUBLIC_URL" ] && [ "$PUBLIC_URL" != "null" ]; then
-              RESPONSE=$(curl -fsSL --max-time 5 "$PUBLIC_URL/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
-              EXPO_URL=$(printf '%s' "$RESPONSE" | jq -r '.url // empty' 2>/dev/null || true)
-
-              if [ -z "$EXPO_URL" ]; then
-                EXPO_URL=$(printf '%s' "$PUBLIC_URL" | sed -E 's#^https?://#exp://#; s#/$##')
-              fi
-
-              if [ -n "$EXPO_URL" ]; then
-                break
-              fi
+          for i in $(seq 1 120); do
+            RESPONSE=$(curl -fsSL --max-time 3 "http://127.0.0.1:8081/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
+            CANDIDATE=$(printf '%s' "$RESPONSE" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
+            if [[ "$CANDIDATE" == exp://* ]] && [[ "$CANDIDATE" != exp://10.* ]] && [[ "$CANDIDATE" != exp://127.* ]] && [[ "$CANDIDATE" != exp://192.168.* ]] && [[ "$CANDIDATE" != exp://172.* ]]; then
+              PUBLIC_URL="$CANDIDATE"
+              break
             fi
-
-            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+            if ! kill -0 "$PID" 2>/dev/null; then
               cat /tmp/spf-expo.log
               exit 1
             fi
             sleep 2
           done
 
-          if [ -z "$EXPO_URL" ]; then
+          if [ -z "$PUBLIC_URL" ]; then
+            echo "No public Expo URL appeared."
             cat /tmp/spf-expo.log
             exit 1
           fi
 
-          echo "Safari Expo Go preview: $EXPO_URL"
+          echo "PUBLIC EXPO GO URL: $PUBLIC_URL"
 
-          gh api --method POST             -H "Accept: application/vnd.github+json"             "/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             -f state=success             -f context=expo-go-preview             -f description="$EXPO_URL" >/dev/null
+          OWNER_REPO="${GITHUB_REPOSITORY}"
+          API_PATH="repos/$OWNER_REPO/contents/.expo-preview-url.txt"
+          OLD_SHA=$(gh api "$API_PATH" --jq .sha 2>/dev/null || true)
+          BODY=$(printf '%s\n' "$PUBLIC_URL" | base64 -w0)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API_PATH" -f message="Update live Expo Go preview link" -f content="$BODY" -f sha="$OLD_SHA" -f branch="main" >/dev/null
+          else
+            gh api --method PUT "$API_PATH" -f message="Publish live Expo Go preview link" -f content="$BODY" -f branch="main" >/dev/null
+          fi
 
-          while kill -0 "$EXPO_PID" 2>/dev/null; do
+          echo "Link published to .expo-preview-url.txt"
+          while kill -0 "$PID" 2>/dev/null; do
             sleep 30
           done
