@@ -1,0 +1,103 @@
+name: Expo hosted iOS preview
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/expo-hosted-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      EAS_PROJECT_ID: 98a7285c-045e-49e6-8f0f-f46a1bc145ae
+    steps:
+      - name: Checkout current SPF app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Add Expo Updates locally for hosted preview
+        run: npx expo install expo-updates --npm
+
+      - name: Configure Expo Go compatible hosted update locally
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const app = JSON.parse(fs.readFileSync('app.json', 'utf8'));
+          app.expo.updates = { ...(app.expo.updates || {}), url: 'https://u.expo.dev/98a7285c-045e-49e6-8f0f-f46a1bc145ae' };
+          app.expo.runtimeVersion = { policy: 'sdkVersion' };
+          fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\n');
+          NODE
+          npx expo config --type public
+
+      - name: Publish latest SPF iOS preview to Expo
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx eas-cli@latest update \
+            --branch spf-expo-go-preview \
+            --message "SPF iOS Safari Expo Go preview" \
+            --platform ios \
+            --environment production \
+            --clear-cache \
+            --json \
+            --non-interactive > /tmp/eas-update.json
+          cat /tmp/eas-update.json
+
+      - name: Build Expo Go deep link
+        shell: bash
+        run: |
+          set -euo pipefail
+          GROUP_ID=$(jq -r '[.. | objects | .group? // empty] | .[0] // empty' /tmp/eas-update.json)
+          if [ -z "$GROUP_ID" ]; then
+            GROUP_ID=$(npx eas-cli@latest update:list --branch spf-expo-go-preview --platform ios --limit 1 --json --non-interactive | jq -r '[.. | objects | .group? // empty] | .[0] // empty')
+          fi
+
+          if [ -z "$GROUP_ID" ]; then
+            echo "Could not determine EAS Update group id."
+            exit 1
+          fi
+
+          PREVIEW_URL=$(curl -fsSL "https://qr.expo.dev/eas-update?projectId=$EAS_PROJECT_ID&groupId=$GROUP_ID&format=url")
+          if [[ "$PREVIEW_URL" != exp://* ]]; then
+            echo "Unexpected Expo preview URL: $PREVIEW_URL"
+            exit 1
+          fi
+
+          echo "Expo Go hosted preview: $PREVIEW_URL"
+          printf '%s\n' "$PREVIEW_URL" > /tmp/spf-expo-preview-url.txt
+
+          API_PATH="repos/$GITHUB_REPOSITORY/contents/.expo-preview-url.txt"
+          OLD_SHA=$(gh api "$API_PATH" --jq .sha 2>/dev/null || true)
+          BODY=$(base64 -w0 /tmp/spf-expo-preview-url.txt)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API_PATH" -f message="Publish hosted Expo Go preview link" -f content="$BODY" -f sha="$OLD_SHA" -f branch="main" >/dev/null
+          else
+            gh api --method PUT "$API_PATH" -f message="Publish hosted Expo Go preview link" -f content="$BODY" -f branch="main" >/dev/null
+          fi
+
+      - name: Upload preview URL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: spf-expo-hosted-preview-url
+          path: /tmp/spf-expo-preview-url.txt
+          retention-days: 1
