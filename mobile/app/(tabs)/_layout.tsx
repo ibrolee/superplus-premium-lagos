@@ -97,12 +97,12 @@ export default function TabsLayout() {
         tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? "book" : "book-outline"} color={color} focused={focused} tone={iconPalette.gold} />,
       }} />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: "Profile",
+          title: "Settings",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name={focused ? "person-circle" : "person-circle-outline"}
+              name={focused ? "settings" : "settings-outline"}
               color={color}
               focused={focused}
               tone={iconPalette.purple}
@@ -110,6 +110,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }
