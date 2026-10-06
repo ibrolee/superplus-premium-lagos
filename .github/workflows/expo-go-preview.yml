@@ -10,16 +10,18 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 jobs:
   serve-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: mobile
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - name: Checkout current SPF app
         uses: actions/checkout@v4
@@ -35,51 +37,53 @@ jobs:
       - name: Install Expo tunnel helper
         run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
-      - name: Show Expo account state
-        run: npx expo whoami || true
+      - name: Verify Expo account
+        run: npx expo whoami
 
-      - name: Start Expo Go tunnel and capture iPhone link
+      - name: Start and keep Safari Expo Go preview live
         shell: bash
         run: |
           set -euo pipefail
           export RUNNER_TRACKING_ID=""
-          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
-          echo $! > /tmp/spf-expo.pid
 
-          RESPONSE=""
+          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
+          EXPO_PID=$!
+
+          PUBLIC_URL=""
+          EXPO_URL=""
+
           for i in $(seq 1 90); do
-            RESPONSE=$(curl -fsSL --max-time 3 "http://127.0.0.1:8081/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
-            if [ -n "$RESPONSE" ]; then
-              break
+            PUBLIC_URL=$(curl -fsSL --max-time 2 http://127.0.0.1:4040/api/tunnels 2>/dev/null | jq -r '.tunnels[]? | select(.proto == "https") | .public_url' | head -n 1 || true)
+
+            if [ -n "$PUBLIC_URL" ] && [ "$PUBLIC_URL" != "null" ]; then
+              RESPONSE=$(curl -fsSL --max-time 5 "$PUBLIC_URL/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
+              EXPO_URL=$(printf '%s' "$RESPONSE" | jq -r '.url // empty' 2>/dev/null || true)
+
+              if [ -z "$EXPO_URL" ]; then
+                EXPO_URL=$(printf '%s' "$PUBLIC_URL" | sed -E 's#^https?://#exp://#; s#/$##')
+              fi
+
+              if [ -n "$EXPO_URL" ]; then
+                break
+              fi
             fi
-            if ! kill -0 "$(cat /tmp/spf-expo.pid)" 2>/dev/null; then
+
+            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
               cat /tmp/spf-expo.log
               exit 1
             fi
             sleep 2
           done
 
-          if [ -z "$RESPONSE" ]; then
+          if [ -z "$EXPO_URL" ]; then
             cat /tmp/spf-expo.log
             exit 1
           fi
 
-          printf '%s\n' "$RESPONSE" > /tmp/spf-expo-open.json
-          echo "$RESPONSE"
-          cat /tmp/spf-expo.log
+          echo "Safari Expo Go preview: $EXPO_URL"
 
-      - name: Publish Expo Go URL data
-        uses: actions/upload-artifact@v4
-        with:
-          name: spf-expo-go-url
-          path: /tmp/spf-expo-open.json
-          if-no-files-found: error
-          retention-days: 1
+          gh api --method POST             -H "Accept: application/vnd.github+json"             "/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             -f state=success             -f context=expo-go-preview             -f description="$EXPO_URL" >/dev/null
 
-      - name: Keep preview tunnel available
-        shell: bash
-        run: |
-          PID=$(cat /tmp/spf-expo.pid)
-          while kill -0 "$PID" 2>/dev/null; do
+          while kill -0 "$EXPO_PID" 2>/dev/null; do
             sleep 30
           done
