@@ -4,6 +4,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AppProvider } from "../lib/AppContext";
+import { AppearanceProvider, useAppearancePreference } from "../lib/appearance";
 import { colors } from "../lib/ui";
 
 Notifications.setNotificationHandler({
@@ -22,7 +23,9 @@ function openNotificationResponse(response: Notifications.NotificationResponse |
   }
 }
 
-export default function RootLayout() {
+function AppShell() {
+  const { colorScheme } = useAppearancePreference();
+
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       openNotificationResponse,
@@ -36,16 +39,26 @@ export default function RootLayout() {
   }, []);
 
   return (
+    <>
+      <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  return (
     <SafeAreaProvider>
-      <AppProvider>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.background },
-          }}
-        />
-      </AppProvider>
+      <AppearanceProvider>
+        <AppProvider>
+          <AppShell />
+        </AppProvider>
+      </AppearanceProvider>
     </SafeAreaProvider>
   );
 }
