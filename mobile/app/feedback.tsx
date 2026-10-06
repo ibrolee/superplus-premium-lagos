@@ -114,7 +114,7 @@ export default function FeedbackScreen() {
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
       <Pressable accessibilityLabel="Go back" onPress={() => router.back()} style={styles.backButton}>
-        <Ionicons name="arrow-back" size={20} color={colors.green} />
+        <Ionicons name="arrow-back" size={20} color={colors.ink} />
         <Text style={styles.backText}>Back</Text>
       </Pressable>
 
@@ -213,7 +213,7 @@ export default function FeedbackScreen() {
               maxLength={160}
               editable={!busy}
               placeholder={type === "suggestion" ? "Short title for your idea" : "Short title for the issue"}
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               style={styles.input}
             />
 
@@ -231,7 +231,7 @@ export default function FeedbackScreen() {
                   ? "Explain your idea and how it could improve Super Plus…"
                   : "Describe the issue clearly and include anything management should know…"
               }
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               textAlignVertical="top"
               style={styles.textArea}
             />
@@ -261,14 +261,14 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     minHeight: 40,
   },
-  backText: { color: colors.green, fontSize: 12, fontWeight: "900" },
+  backText: { color: colors.ink, fontSize: 12, fontWeight: "900" },
   grow: { flex: 1 },
   noticeRow: { alignItems: "flex-start", flexDirection: "row", gap: 10 },
   noticeText: { color: colors.ink, flex: 1, fontSize: 12, lineHeight: 19 },
   confidentialRow: { alignItems: "flex-start", flexDirection: "row", gap: 12 },
   shield: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 13,
     height: 44,
     justifyContent: "center",
@@ -290,14 +290,14 @@ const styles = StyleSheet.create({
     minHeight: 46,
     paddingHorizontal: 10,
   },
-  typeButtonActive: { backgroundColor: colors.green, borderColor: colors.green },
+  typeButtonActive: { backgroundColor: colors.green2, borderColor: colors.green2 },
   issueButtonActive: { backgroundColor: "#8F2F2F", borderColor: "#8F2F2F" },
   typeButtonText: { color: colors.green2, fontSize: 11, fontWeight: "900" },
   issueButtonText: { color: "#8F2F2F", fontSize: 11, fontWeight: "900" },
   typeButtonTextActive: { color: "#FFFFFF" },
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginTop: 9 },
   categoryChip: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 999,
     borderWidth: 1,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   categoryText: { color: colors.muted, fontSize: 10, fontWeight: "800" },
   categoryTextSelected: { color: colors.green2 },
   input: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 13,
   },
   textArea: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
   count: { color: colors.muted, fontSize: 9, marginTop: 4, textAlign: "right" },
   submitButton: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 13,
     flexDirection: "row",
     gap: 8,
