@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useApp } from "./AppContext";
 import { supabase } from "./supabase";
+import { optimizedBlogImage } from "./blog-images";
 import { Card, colors, dateLabel, Screen, sharedStyles } from "./ui";
 
 type BlogPost = {
@@ -23,6 +24,39 @@ type BlogPost = {
   author_name: string;
   published_at: string | null;
 };
+
+function BlogCover({ uri }: { uri: string }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const source = optimizedBlogImage(uri, 1000, 520);
+
+  if (failed) {
+    return (
+      <View style={styles.coverFallback}>
+        <Ionicons name="barbell-outline" size={34} color={colors.green2} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.coverWrap}>
+      {!loaded && (
+        <View style={styles.coverLoading}>
+          <ActivityIndicator size="small" color={colors.green2} />
+        </View>
+      )}
+      <Image
+        source={{ uri: source, cache: "force-cache" }}
+        style={styles.cover}
+        resizeMode="cover"
+        resizeMethod="resize"
+        fadeDuration={140}
+        onLoad={() => setLoaded(true)}
+        onError={() => setFailed(true)}
+      />
+    </View>
+  );
+}
 
 export default function BlogFeedScreen({ showBack = false }: { showBack?: boolean }) {
   const { member } = useApp();
@@ -52,7 +86,16 @@ export default function BlogFeedScreen({ showBack = false }: { showBack?: boolea
       setError("Unable to load the blog right now. Pull down to try again.");
       setPosts([]);
     } else {
-      setPosts((data ?? []) as BlogPost[]);
+      const nextPosts = (data ?? []) as BlogPost[];
+      setPosts(nextPosts);
+
+      for (const post of nextPosts.slice(0, 5)) {
+        if (post.featured_image) {
+          void Image.prefetch(
+            optimizedBlogImage(post.featured_image, 1000, 520),
+          );
+        }
+      }
     }
 
     if (member?.id) {
@@ -160,7 +203,7 @@ export default function BlogFeedScreen({ showBack = false }: { showBack?: boolea
               }
             >
               {post.featured_image ? (
-                <Image source={{ uri: post.featured_image }} style={styles.cover} />
+                <BlogCover uri={post.featured_image} />
               ) : (
                 <View style={styles.coverFallback}>
                   <Ionicons name="barbell-outline" size={34} color={colors.green2} />
@@ -241,6 +284,21 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   pressed: { opacity: 0.84 },
+  coverWrap: {
+    backgroundColor: colors.surfaceMuted,
+    height: 190,
+    position: "relative",
+    width: "100%",
+  },
+  coverLoading: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    left: 0,
+    position: "absolute",
+    right: 0,
+    top: 0,
+  },
   cover: { width: "100%", height: 190, backgroundColor: colors.surfaceMuted },
   coverFallback: {
     alignItems: "center",
