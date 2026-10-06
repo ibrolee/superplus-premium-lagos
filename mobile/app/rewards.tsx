@@ -298,7 +298,7 @@ export default function RewardsScreen() {
                     <Ionicons name="gift-outline" size={18} color={iconPalette.pink.fg} />
                     <View style={styles.grow}>
                       <Text style={styles.redemptionTitle}>{item.points_cost.toLocaleString()} points</Text>
-                      <Text style={styles.redemptionMeta}>{item.status}</Text>
+                      <Text style={styles.redemptionMeta}>{item.status === "rejected" || item.status === "cancelled" ? item.status + " · points returned" : item.status}</Text>
                     </View>
                   </View>
                 ))}
