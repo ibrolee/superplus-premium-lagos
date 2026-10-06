@@ -1,7 +1,10 @@
 import type { PropsWithChildren, ReactNode, Ref } from "react";
 import {
   ActivityIndicator,
+  DynamicColorIOS,
   Linking,
+  Platform,
+  PlatformColor,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -12,15 +15,21 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { BrandLogo } from "./BrandLogo";
 
-export const colors = {
-  background: "#F8F6F3",
-  surface: "#FFFFFF",
-  surfaceMuted: "#FFF1EA",
+function adaptiveColor(light: string, dark: string, androidAttribute: string) {
+  if (Platform.OS === "ios") return DynamicColorIOS({ light, dark });
+  if (Platform.OS === "android") return PlatformColor(androidAttribute);
+  return light;
+}
+
+export const colors: Record<string, any> = {
+  background: adaptiveColor("#F8F6F3", "#0F1011", "?android:attr/colorBackground"),
+  surface: adaptiveColor("#FFFFFF", "#1A1C1E", "?android:attr/colorBackgroundFloating"),
+  surfaceMuted: adaptiveColor("#FFF1EA", "#2A211E", "?android:attr/colorBackgroundFloating"),
   green: "#111111",
   green2: "#E44824",
-  ink: "#161616",
-  muted: "#6F6A66",
-  line: "#EEE3DC",
+  ink: adaptiveColor("#161616", "#F5F2EF", "?android:attr/textColorPrimary"),
+  muted: adaptiveColor("#6F6A66", "#B6B0AB", "?android:attr/textColorSecondary"),
+  line: adaptiveColor("#EEE3DC", "#36393C", "?android:attr/textColorTertiary"),
   success: "#287A45",
   amber: "#A96500",
   danger: "#C13228",
