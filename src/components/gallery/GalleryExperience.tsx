@@ -54,10 +54,9 @@ function useGallery(initialItems?: GalleryDisplayItem[], refresh = true) {
                 category: item.category,
                 media_type: item.media_type,
                 url,
-                thumbnailUrl:
-                  item.media_type === "image" && item.thumbnail_path
-                    ? bucket.getPublicUrl(item.thumbnail_path).data.publicUrl
-                    : url,
+                thumbnailUrl: item.thumbnail_path
+                  ? bucket.getPublicUrl(item.thumbnail_path).data.publicUrl
+                  : url,
               };
             }),
           );
@@ -122,14 +121,10 @@ function MediaTile({
       aria-label={`View ${item.title}`}
       className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[1.4rem] bg-zinc-800 text-left shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary sm:aspect-[5/4]"
     >
-      {item.media_type === "video" ? (
-        <video
-          src={`${item.url}#t=0.1`}
-          preload="metadata"
-          muted
-          playsInline
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
+      {item.media_type === "video" && item.thumbnailUrl === item.url ? (
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-zinc-950 text-white/45">
+          <Play className="size-12" aria-hidden="true" />
+        </div>
       ) : (
         <GalleryImage
           key={item.thumbnailUrl}
@@ -300,7 +295,7 @@ export function GalleryExperience({
               <MediaTile
                 key={item.id}
                 item={item}
-                priority={index < 4}
+                priority={index < (compact ? 2 : 3)}
                 onOpen={() => setSelected(item)}
               />
             ))}
