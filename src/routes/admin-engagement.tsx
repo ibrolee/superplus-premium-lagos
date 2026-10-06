@@ -746,7 +746,7 @@ function AdminEngagement() {
               ? `Your ${rewardName} redemption has been approved.`
               : status === "fulfilled"
                 ? `Your ${rewardName} has been marked fulfilled.`
-                : `Your ${rewardName} redemption was not approved.${note.trim() ? ` ${note.trim()}` : ""}`,
+                : `Your ${rewardName} redemption was not approved. ${item.points_cost} SP Points were returned.${note.trim() ? ` ${note.trim()}` : ""}`,
           kind: "reward",
           deep_link: "/rewards",
           member_id: item.member_id,
