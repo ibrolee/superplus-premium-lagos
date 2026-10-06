@@ -1,0 +1,47 @@
+name: Quest Native Android Build
+
+on:
+  push:
+    branches:
+      - quest-native-build
+    paths:
+      - 'quest-native-src.b64'
+      - '.github/workflows/quest-native-build.yml'
+  workflow_dispatch:
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Quest source
+        run: |
+          mkdir -p quest-native
+          base64 -d quest-native-src.b64 | tar -xzf - -C quest-native
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        working-directory: quest-native
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: quest-native
+        run: npm run typecheck
+
+      - name: Initialize EAS project
+        working-directory: quest-native
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@latest project:init --account ibrolee98 --non-interactive --force
+
+      - name: Build Android development APK on EAS
+        working-directory: quest-native
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: npx eas-cli@latest build --platform android --profile development --non-interactive --no-wait
