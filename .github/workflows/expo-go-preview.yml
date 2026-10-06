@@ -18,6 +18,8 @@ jobs:
     defaults:
       run:
         working-directory: mobile
+    env:
+      EXPO_TUNNEL_SUBDOMAIN: spf-ios-ibrolee-20261006
     steps:
       - name: Checkout current SPF app
         uses: actions/checkout@v4
@@ -33,18 +35,19 @@ jobs:
       - name: Install Expo tunnel helper
         run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
-      - name: Start Expo Go tunnel and capture URL
+      - name: Start Expo Go tunnel and capture deep link
         shell: bash
         run: |
           set -euo pipefail
           export RUNNER_TRACKING_ID=""
-          nohup env CI=1 npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
+          nohup env CI=1 EXPO_TUNNEL_SUBDOMAIN="$EXPO_TUNNEL_SUBDOMAIN" npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
           echo $! > /tmp/spf-expo.pid
 
-          EXPO_URL=""
+          OPEN_URL="https://$EXPO_TUNNEL_SUBDOMAIN.exp.direct/_expo/open?platform=ios&runtime=expo"
+          RESPONSE=""
           for i in $(seq 1 90); do
-            EXPO_URL=$(grep -Eo 'exp://[^[:space:]]+' /tmp/spf-expo.log | head -n 1 || true)
-            if [ -n "$EXPO_URL" ]; then
+            RESPONSE=$(curl -fsSL --max-time 5 "$OPEN_URL" 2>/dev/null || true)
+            if [ -n "$RESPONSE" ]; then
               break
             fi
             if ! kill -0 "$(cat /tmp/spf-expo.pid)" 2>/dev/null; then
@@ -54,20 +57,23 @@ jobs:
             sleep 2
           done
 
-          if [ -z "$EXPO_URL" ]; then
+          if [ -z "$RESPONSE" ]; then
             cat /tmp/spf-expo.log
             exit 1
           fi
 
-          printf '%s\n' "$EXPO_URL" > /tmp/spf-expo-url.txt
-          echo "SPF Expo Go preview: $EXPO_URL"
-          cat /tmp/spf-expo.log
+          printf '%s\n' "$RESPONSE" > /tmp/spf-expo-open.json
+          printf '%s\n' "$OPEN_URL" > /tmp/spf-expo-endpoint.txt
+          echo "Expo open endpoint: $OPEN_URL"
+          echo "$RESPONSE"
 
-      - name: Publish Expo Go URL
+      - name: Publish Expo Go URL data
         uses: actions/upload-artifact@v4
         with:
           name: spf-expo-go-url
-          path: /tmp/spf-expo-url.txt
+          path: |
+            /tmp/spf-expo-open.json
+            /tmp/spf-expo-endpoint.txt
           if-no-files-found: error
           retention-days: 1
 
