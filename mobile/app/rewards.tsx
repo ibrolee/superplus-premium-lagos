@@ -58,7 +58,7 @@ export default function RewardsScreen() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [points, setPoints] = useState(0);
-  const [visitPoints, setVisitPoints] = useState(1);
+  const [visitPoints, setVisitPoints] = useState(10);
   const [programStartedAt, setProgramStartedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export default function RewardsScreen() {
     setRewards((rewardsResult.data ?? []) as Reward[]);
     setRedemptions((redemptionsResult.data ?? []) as Redemption[]);
     setPoints((ledgerResult.data ?? []).reduce((sum, item) => sum + Number(item.points || 0), 0));
-    setVisitPoints(Number(settingsResult.data?.visit_points ?? 1));
+    setVisitPoints(Number(settingsResult.data?.visit_points ?? 10));
     setProgramStartedAt(settingsResult.data?.program_started_at ?? null);
     setLoading(false);
   }, [member?.id]);
@@ -161,7 +161,7 @@ export default function RewardsScreen() {
           <Text style={sharedStyles.kicker}>REWARDS & CHALLENGES</Text>
           <Text style={styles.title}>Your consistency pays.</Text>
           <Text style={sharedStyles.subtitle}>
-            Earn SP Points from real gym visits, memberships, milestones and active Super Plus challenges.
+            Earn whole-number SP Points from real gym visits, memberships, milestones, challenges and verified bonus activities.
           </Text>
         </View>
       </View>
@@ -170,11 +170,30 @@ export default function RewardsScreen() {
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
         <Text style={styles.pointsNote}>
-          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward, plus 5 points whenever you register or renew a paid membership plan. Multiple scans on the same day do not earn extra visit points, and you can also earn badge and challenge bonuses.
+          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward, plus 100 points whenever you register or renew a paid membership plan. Multiple scans on the same day do not earn extra visit points, and you can also earn badge and challenge bonuses.
         </Text>
       </View>
 
-      {!!member && <DailyRewardsCard onAward={() => void load()} />}
+      {!!member && (
+        <>
+          <Card style={styles.bonusCard}>
+            <View style={styles.bonusIcon}>
+              <Ionicons name="sparkles" size={22} color={iconPalette.purple.fg} />
+            </View>
+            <View style={styles.grow}>
+              <Text style={styles.bonusTitle}>Bonus SP Points</Text>
+              <Text style={styles.bonusText}>
+                Earn one-time bonuses for private app/gym feedback and verified Instagram or TikTok follows.
+              </Text>
+            </View>
+            <Pressable onPress={() => router.push("/bonus-points" as never)} style={styles.bonusButton}>
+              <Text style={styles.bonusButtonText}>View</Text>
+              <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
+            </Pressable>
+          </Card>
+          <DailyRewardsCard onAward={() => void load()} />
+        </>
+      )}
 
       {loading ? (
         <Card style={styles.loadingCard}>
@@ -279,7 +298,7 @@ export default function RewardsScreen() {
                     <Ionicons name="gift-outline" size={18} color={iconPalette.pink.fg} />
                     <View style={styles.grow}>
                       <Text style={styles.redemptionTitle}>{item.points_cost.toLocaleString()} points</Text>
-                      <Text style={styles.redemptionMeta}>{item.status}</Text>
+                      <Text style={styles.redemptionMeta}>{item.status === "rejected" || item.status === "cancelled" ? item.status + " · points returned" : item.status}</Text>
                     </View>
                   </View>
                 ))}
@@ -301,6 +320,12 @@ const styles = StyleSheet.create({
   pointsLabel: { color: "#F4B7A8", fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   pointsValue: { color: "#FFFFFF", fontSize: 34, fontWeight: "900", letterSpacing: -0.6, marginTop: 3 },
   pointsNote: { color: "#E9E4E0", fontSize: 11, lineHeight: 17, marginTop: 5 },
+  bonusCard: { alignItems: "center", flexDirection: "row", gap: 11 },
+  bonusIcon: { alignItems: "center", backgroundColor: iconPalette.purple.bg, borderRadius: 13, height: 44, justifyContent: "center", width: 44 },
+  bonusTitle: { color: colors.ink, fontSize: 14, fontWeight: "900" },
+  bonusText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
+  bonusButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 11, flexDirection: "row", gap: 5, minHeight: 38, paddingHorizontal: 12 },
+  bonusButtonText: { color: "#FFFFFF", fontSize: 11, fontWeight: "900" },
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   loadingText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   sectionTitle: { color: colors.ink, fontSize: 19, fontWeight: "900", marginTop: 4 },

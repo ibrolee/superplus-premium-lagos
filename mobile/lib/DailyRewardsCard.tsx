@@ -13,7 +13,7 @@ type DailyStatus = {
   next_spin_on: string; balance: number;
 };
 const wheelColors = ["#FFD97D", "#FFA58E", "#D7C2FF", "#98DECE", "#9ACBFF", "#F5ADD0"];
-const pointLabel = (value: number) => Number(value).toLocaleString("en-NG", { maximumFractionDigits: 2 });
+const pointLabel = (value: number) => Math.round(Number(value)).toLocaleString("en-NG");
 
 function Wheel({ points, rotation }: { points: number[]; rotation: Animated.Value }) {
   const polar = (angle: number, radius: number) => ({ x: 110 + radius * Math.cos(angle * Math.PI / 180), y: 110 + radius * Math.sin(angle * Math.PI / 180) });

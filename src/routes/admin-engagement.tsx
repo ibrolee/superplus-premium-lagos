@@ -74,6 +74,22 @@ type Redemption = {
   reward: { name: string | null } | null;
 };
 
+type SocialFollowClaim = {
+  id: string;
+  member_id: string;
+  platform: "instagram" | "tiktok";
+  handle: string;
+  status: "pending" | "approved" | "rejected";
+  points_reward: number;
+  staff_note: string | null;
+  submitted_at: string;
+  member: {
+    full_name: string | null;
+    phone: string | null;
+    email: string | null;
+  } | null;
+};
+
 type Booking = {
   id: string;
   member_id: string;
@@ -177,29 +193,30 @@ function AdminEngagement() {
   const [success, setSuccess] = useState("");
 
   const [settings, setSettings] = useState<EngagementSettings | null>(null);
-  const [visitPoints, setVisitPoints] = useState(1);
+  const [visitPoints, setVisitPoints] = useState(10);
   const [badges, setBadges] = useState<AchievementDefinition[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
+  const [socialClaims, setSocialClaims] = useState<SocialFollowClaim[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   const [badgeTitle, setBadgeTitle] = useState("");
   const [badgeDescription, setBadgeDescription] = useState("");
   const [badgeThreshold, setBadgeThreshold] = useState(10);
-  const [badgePoints, setBadgePoints] = useState(3);
+  const [badgePoints, setBadgePoints] = useState(60);
 
   const [challengeTitle, setChallengeTitle] = useState("");
   const [challengeDescription, setChallengeDescription] = useState("");
   const [challengeStart, setChallengeStart] = useState("");
   const [challengeEnd, setChallengeEnd] = useState("");
   const [challengeTarget, setChallengeTarget] = useState(12);
-  const [challengePoints, setChallengePoints] = useState(10);
+  const [challengePoints, setChallengePoints] = useState(100);
 
   const [rewardName, setRewardName] = useState("");
   const [rewardDescription, setRewardDescription] = useState("");
-  const [rewardCost, setRewardCost] = useState(10);
+  const [rewardCost, setRewardCost] = useState(500);
   const [rewardInventory, setRewardInventory] = useState("");
 
   const [pushTitle, setPushTitle] = useState("");
@@ -258,6 +275,7 @@ function AdminEngagement() {
       challengeResult,
       rewardResult,
       redemptionResult,
+      socialResult,
       bookingResult,
       notificationResult,
     ] = await Promise.all([
@@ -286,6 +304,13 @@ function AdminEngagement() {
         .order("created_at", { ascending: false })
         .limit(80),
       supabase
+        .from("member_social_follow_claims")
+        .select(
+          "id,member_id,platform,handle,status,points_reward,staff_note,submitted_at,member:members(full_name,phone,email)",
+        )
+        .order("submitted_at", { ascending: false })
+        .limit(100),
+      supabase
         .from("member_bookings")
         .select(
           "id,member_id,service_type,service_name,preferred_at,notes,status,staff_note,created_at,member:members(full_name,phone,email)",
@@ -305,6 +330,7 @@ function AdminEngagement() {
       challengeResult.error ||
       rewardResult.error ||
       redemptionResult.error ||
+      socialResult.error ||
       bookingResult.error ||
       notificationResult.error;
 
@@ -313,11 +339,12 @@ function AdminEngagement() {
     } else {
       const nextSettings = (settingsResult.data ?? null) as EngagementSettings | null;
       setSettings(nextSettings);
-      setVisitPoints(nextSettings?.visit_points ?? 1);
+      setVisitPoints(nextSettings?.visit_points ?? 10);
       setBadges((badgesResult.data ?? []) as AchievementDefinition[]);
       setChallenges((challengeResult.data ?? []) as Challenge[]);
       setRewards((rewardResult.data ?? []) as Reward[]);
       setRedemptions((redemptionResult.data ?? []) as unknown as Redemption[]);
+      setSocialClaims((socialResult.data ?? []) as unknown as SocialFollowClaim[]);
       setBookings((bookingResult.data ?? []) as unknown as Booking[]);
       setNotifications((notificationResult.data ?? []) as AppNotification[]);
     }
@@ -351,10 +378,7 @@ function AdminEngagement() {
     setError("");
     setSuccess("");
 
-    const safePoints = Math.max(
-      0.1,
-      Math.min(20, Math.round(visitPoints * 100) / 100),
-    );
+    const safePoints = Math.max(1, Math.min(500, Math.round(visitPoints)));
     const { error: updateError } = await supabase
       .from("app_engagement_settings")
       .upsert(
@@ -620,7 +644,7 @@ function AdminEngagement() {
     } else {
       setRewardName("");
       setRewardDescription("");
-      setRewardCost(10);
+      setRewardCost(500);
       setRewardInventory("");
       setSuccess("Reward added to the member app.");
       await load();
@@ -722,7 +746,7 @@ function AdminEngagement() {
               ? `Your ${rewardName} redemption has been approved.`
               : status === "fulfilled"
                 ? `Your ${rewardName} has been marked fulfilled.`
-                : `Your ${rewardName} redemption was not approved.${note.trim() ? ` ${note.trim()}` : ""}`,
+                : `Your ${rewardName} redemption was not approved. ${item.points_cost} SP Points were returned.${note.trim() ? ` ${note.trim()}` : ""}`,
           kind: "reward",
           deep_link: "/rewards",
           member_id: item.member_id,
@@ -734,6 +758,59 @@ function AdminEngagement() {
         pushError
           ? `Redemption marked ${status}, but notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`
           : `Redemption marked ${status}.`,
+      );
+      await load();
+    }
+
+    setBusy("");
+  }
+
+  async function updateSocialClaim(
+    item: SocialFollowClaim,
+    status: "approved" | "rejected",
+  ) {
+    const note = window.prompt(
+      status === "rejected" ? "Why was this claim rejected?" : "Optional management note:",
+      item.staff_note ?? "",
+    );
+    if (note === null) return;
+
+    setBusy(item.id);
+    setError("");
+    setSuccess("");
+
+    const { error: updateError } = await supabase
+      .from("member_social_follow_claims")
+      .update({
+        status,
+        staff_note: note.trim() || null,
+        reviewed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", item.id);
+
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      const platformName = item.platform === "instagram" ? "Instagram" : "TikTok";
+      const { error: pushError } = await supabase.functions.invoke("send-member-push", {
+        body: {
+          title: status === "approved" ? platformName + " bonus approved" : platformName + " bonus update",
+          body:
+            status === "approved"
+              ? "Your verified " + platformName + " follow earned " + item.points_reward + " SP Points."
+              : "Your " + platformName + " follow claim needs attention." + (note.trim() ? " " + note.trim() : ""),
+          kind: "reward",
+          deep_link: "/bonus-points",
+          member_id: item.member_id,
+          send_push: true,
+        },
+      });
+
+      setSuccess(
+        pushError
+          ? "Claim marked " + status + ", but the notification could not be sent."
+          : "Social follow claim marked " + status + ".",
       );
       await load();
     }
@@ -999,13 +1076,13 @@ function AdminEngagement() {
             Points earned per unique gym day
             <input
               type="number"
-              min={0.1}
-              max={20}
-              step={0.1}
-              inputMode="decimal"
+              min={1}
+              max={500}
+              step={1}
+              inputMode="numeric"
               value={visitPoints}
               onChange={(event) =>
-                setVisitPoints(Number(event.target.value) || 0.5)
+                setVisitPoints(Math.round(Number(event.target.value) || 10))
               }
               className={inputClass}
             />
@@ -1334,6 +1411,75 @@ function AdminEngagement() {
               </article>
             ))}
             {!bookings.length && <p className="text-sm text-[#657568]">No member session requests yet.</p>}
+          </div>
+        </CollapsiblePanel>
+
+
+        <CollapsiblePanel
+          title="Social follow bonus claims"
+          subtitle="Verify Instagram and TikTok follows before the one-time 10 SP bonus is awarded."
+          icon={<Users size={19} />}
+          badge={
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
+              {socialClaims.filter((item) => item.status === "pending").length} pending
+            </span>
+          }
+        >
+          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+            {socialClaims.map((item) => (
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-black capitalize">{item.platform}</p>
+                    <a
+                      href={
+                        item.platform === "instagram"
+                          ? "https://www.instagram.com/" + encodeURIComponent(item.handle) + "/"
+                          : "https://www.tiktok.com/@" + encodeURIComponent(item.handle)
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex break-words text-sm font-bold text-[#356942] underline underline-offset-2"
+                    >
+                      @{item.handle} · open profile
+                    </a>
+                    <p className="mt-1 break-words text-xs text-[#657568]">
+                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
+                    </p>
+                    <p className="mt-2 text-xs font-bold">+{item.points_reward} SP on approval</p>
+                  </div>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
+                    {item.status}
+                  </span>
+                </div>
+                {item.staff_note && (
+                  <p className="mt-3 break-words text-xs text-[#657568]">Note: {item.staff_note}</p>
+                )}
+                {item.status === "pending" && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy === item.id}
+                      onClick={() => void updateSocialClaim(item, "approved")}
+                      className={buttonClass}
+                    >
+                      Verify & award
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy === item.id}
+                      onClick={() => void updateSocialClaim(item, "rejected")}
+                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+            {!socialClaims.length && (
+              <p className="text-sm text-[#657568]">No social follow claims yet.</p>
+            )}
           </div>
         </CollapsiblePanel>
 
