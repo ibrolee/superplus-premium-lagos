@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage } from "@/lib/user-error";
+import { compressImageForWeb } from "@/lib/image-compression";
 
 type BlogPost = { id: string; title: string; slug: string; excerpt: string | null; content: string; featured_image: string | null; category: string; author_name: string; status: "draft" | "scheduled" | "published"; featured: boolean; published_at: string | null; created_at: string; updated_at: string };
 type PublishMode = "draft" | "published" | "scheduled";
@@ -97,13 +98,19 @@ function StaffBlogPage() {
     if (file.size > MAX_IMAGE_BYTES) { setError("Image is too large. Please upload an image under 5MB."); return; }
     setUploadingImage(true); setError(""); setSuccess("");
     const base = slugify(slug || title || "blog-image") || "blog-image";
-    const path = `featured/${base}-${Date.now()}.${getFileExtension(file)}`;
-    const { error: uploadError } = await supabase.storage.from(BLOG_IMAGE_BUCKET).upload(path, file, { cacheControl: "31536000", contentType: file.type, upsert: false });
-    if (uploadError) { setError(uploadError.message); setUploadingImage(false); return; }
-    const { data } = supabase.storage.from(BLOG_IMAGE_BUCKET).getPublicUrl(path);
-    setFeaturedImage(data.publicUrl);
-    setSuccess("Image uploaded. Save the post to keep it.");
-    setUploadingImage(false);
+    try {
+      const optimized = await compressImageForWeb(file, { maxDimension: 1400, quality: 0.76 });
+      const path = `featured/${base}-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage.from(BLOG_IMAGE_BUCKET).upload(path, optimized, { cacheControl: "31536000", contentType: "image/jpeg", upsert: false });
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from(BLOG_IMAGE_BUCKET).getPublicUrl(path);
+      setFeaturedImage(data.publicUrl);
+      setSuccess(`Image optimized and uploaded (${Math.max(1, Math.round(optimized.size / 1024))} KB). Save the post to keep it.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not optimize and upload this image.");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function generateDraftArticle() {
