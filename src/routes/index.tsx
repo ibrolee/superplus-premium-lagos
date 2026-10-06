@@ -20,6 +20,7 @@ async function loadHomeGallery(): Promise<GalleryDisplayItem[] | null> {
       .from("gallery_media")
       .select("id,title,category,media_type,storage_path,thumbnail_path")
       .eq("is_published", true)
+      .eq("media_type", "image")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(4);
@@ -35,10 +36,9 @@ async function loadHomeGallery(): Promise<GalleryDisplayItem[] | null> {
         category: item.category,
         media_type: item.media_type,
         url,
-        thumbnailUrl:
-          item.media_type === "image" && item.thumbnail_path
-            ? bucket.getPublicUrl(item.thumbnail_path).data.publicUrl
-            : url,
+        thumbnailUrl: item.thumbnail_path
+          ? bucket.getPublicUrl(item.thumbnail_path).data.publicUrl
+          : url,
       };
     });
   } catch {
