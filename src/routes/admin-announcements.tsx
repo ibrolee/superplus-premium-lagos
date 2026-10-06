@@ -5,6 +5,7 @@ import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AnnouncementVisual } from "@/components/announcements/AnnouncementSurface";
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
+import { compressImageForWeb } from "@/lib/image-compression";
 import {
   ANNOUNCEMENT_BUCKET, MAX_ANNOUNCEMENT_IMAGE_BYTES, announcementImageUrl,
   formatAnnouncementDate, isAnnouncementLive, lagosInputFromIso, lagosInputToIso,
@@ -154,10 +155,10 @@ function AdminAnnouncements() {
     let uploadedPath: string | null = null;
     try {
       if (file) {
-        const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-        uploadedPath = `announcements/${crypto.randomUUID()}.${extension}`;
+        const optimized = await compressImageForWeb(file, { maxDimension: 1600, quality: 0.78 });
+        uploadedPath = `announcements/${crypto.randomUUID()}.jpg`;
         const { error: uploadError } = await supabase.storage.from(ANNOUNCEMENT_BUCKET)
-          .upload(uploadedPath, file, { contentType: file.type, upsert: false, cacheControl: "31536000" });
+          .upload(uploadedPath, optimized, { contentType: "image/jpeg", upsert: false, cacheControl: "31536000" });
         if (uploadError) throw uploadError;
       }
       const payload = {
