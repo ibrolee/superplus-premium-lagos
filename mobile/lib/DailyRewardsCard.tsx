@@ -10,6 +10,8 @@ type DailyStatus = {
   enabled: boolean; streak: number; best_streak: number; claimed_today: boolean;
   daily_points: number; spin_points: number[]; spin_odds: number[];
   spun_this_week: boolean; spin_award: number | null; spin_segment: number | null;
+  weekly_streak_target: number; weekly_streak_points: number;
+  weekly_streak_progress: number; weekly_streak_claimed: boolean;
   next_spin_on: string; balance: number;
 };
 const wheelColors = ["#FFD97D", "#FFA58E", "#D7C2FF", "#98DECE", "#9ACBFF", "#F5ADD0"];
@@ -90,7 +92,16 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
       }
       if (!alive.current) return;
       setStatus(next);
-      setResult(data.already_claimed ? "Already claimed — your points are safe." : `+${pointLabel(Number(data.points))} SP Points added!`);
+      if (data.already_claimed) {
+        setResult("Already claimed — your points are safe.");
+      } else {
+        const bonus = Number(data.bonus_points ?? 0);
+        setResult(
+          bonus > 0
+            ? `+${pointLabel(Number(data.points))} SP added · 7-Day App Streak complete! +${pointLabel(bonus)} SP bonus`
+            : `+${pointLabel(Number(data.points))} SP Points added!`,
+        );
+      }
       awardCallback.current?.();
     } catch (cause) {
       if (alive.current) { Alert.alert("Reward could not be confirmed", cause instanceof Error ? cause.message : "Refresh and try again."); await load(); }
@@ -110,6 +121,38 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
     </View>
     <Text style={styles.copy}>Open the app and claim each day. Miss a Lagos calendar day and your streak starts again from day 1.</Text>
     {!compact && <Text style={styles.best}>Best streak: {status.best_streak} days · +{pointLabel(status.daily_points)} SP Points per claim</Text>}
+    <View style={styles.challengeCard}>
+      <View style={styles.challengeHeading}>
+        <View style={styles.grow}>
+          <Text style={styles.challengeKicker}>WEEKLY CHALLENGE</Text>
+          <Text style={styles.challengeTitle}>7-Day App Streak</Text>
+        </View>
+        <Text style={[styles.challengeReward, status.weekly_streak_claimed && styles.challengeRewardDone]}>
+          {status.weekly_streak_claimed ? "Completed" : `+${pointLabel(status.weekly_streak_points)} SP`}
+        </Text>
+      </View>
+      <Text style={styles.copy}>
+        Claim your daily app reward every day from Monday to Sunday. Complete all 7 days to earn the weekly bonus.
+      </Text>
+      <View style={styles.progressTrack}>
+        <View
+          style={[
+            styles.progressFill,
+            {
+              width: `${Math.min(
+                100,
+                (Number(status.weekly_streak_progress || 0) /
+                  Math.max(1, Number(status.weekly_streak_target || 7))) *
+                  100,
+              )}%`,
+            },
+          ]}
+        />
+      </View>
+      <Text style={styles.challengeProgress}>
+        {Math.min(status.weekly_streak_progress || 0, status.weekly_streak_target || 7)}/{status.weekly_streak_target || 7} days this week
+      </Text>
+    </View>
     <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!busy || status.claimed_today }} disabled={!!busy || status.claimed_today} onPress={() => void claim("daily")} style={({ pressed }) => [styles.button, status.claimed_today && styles.claimed, (pressed || busy) && styles.muted]}>
       <Ionicons name={status.claimed_today ? "checkmark-circle" : "flame"} size={18} color={status.claimed_today ? "#276740" : "#FFFFFF"} />
       <Text style={[styles.buttonText, status.claimed_today && styles.claimedText]}>{busy === "daily" ? "Claiming…" : status.claimed_today ? "Claimed today · come back tomorrow" : `Claim today · +${pointLabel(status.daily_points)} SP`}</Text>
@@ -136,6 +179,15 @@ const styles = StyleSheet.create({
   grow: { flex: 1 }, eyebrow: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 1.2 },
   title: { color: colors.ink, fontSize: 21, fontWeight: "900" }, copy: { color: colors.muted, fontSize: 12, lineHeight: 19 },
   best: { color: "#7950C7", fontSize: 11, fontWeight: "700" },
+  challengeCard: { backgroundColor: colors.surfaceMuted, borderColor: colors.line, borderRadius: 14, borderWidth: 1, gap: 8, padding: 12 },
+  challengeHeading: { alignItems: "center", flexDirection: "row", gap: 10 },
+  challengeKicker: { color: colors.green2, fontSize: 8, fontWeight: "900", letterSpacing: 1 },
+  challengeTitle: { color: colors.ink, fontSize: 14, fontWeight: "900", marginTop: 2 },
+  challengeReward: { color: colors.green2, fontSize: 11, fontWeight: "900" },
+  challengeRewardDone: { color: colors.success },
+  progressTrack: { backgroundColor: colors.line, borderRadius: 999, height: 8, overflow: "hidden" },
+  progressFill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
+  challengeProgress: { color: colors.muted, fontSize: 10, fontWeight: "800" },
   button: { minHeight: 48, borderRadius: 14, backgroundColor: "#D63E1D", padding: 12, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 },
   buttonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900", flexShrink: 1, textAlign: "center" },
   claimed: { backgroundColor: colors.surfaceMuted }, claimedText: { color: colors.success }, muted: { opacity: 0.7 },
