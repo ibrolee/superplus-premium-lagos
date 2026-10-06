@@ -287,7 +287,7 @@ export default function LoginScreen() {
                   textContentType="emailAddress"
                   autoComplete="email"
                   placeholder="you@example.com"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   editable={!sending && !verifying}
                 />
 
@@ -304,7 +304,7 @@ export default function LoginScreen() {
                       textContentType="password"
                       autoComplete="current-password"
                       placeholder="Your password"
-                      placeholderTextColor="#95A098"
+                      placeholderTextColor={colors.muted}
                       editable={!sending && !verifying}
                       onSubmitEditing={() => void signInWithPassword()}
                     />
@@ -380,7 +380,7 @@ export default function LoginScreen() {
                   textContentType="oneTimeCode"
                   autoComplete="one-time-code"
                   placeholder="00000000"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   maxLength={8}
                   autoFocus
                   editable={!verifying}
@@ -433,7 +433,7 @@ export default function LoginScreen() {
                   textContentType="newPassword"
                   autoComplete="new-password"
                   placeholder="At least 6 characters"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   editable={!savingPassword}
                 />
 
@@ -448,7 +448,7 @@ export default function LoginScreen() {
                   textContentType="newPassword"
                   autoComplete="new-password"
                   placeholder="Repeat your password"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   editable={!savingPassword}
                   onSubmitEditing={() => void savePassword()}
                 />
@@ -534,11 +534,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
   },
   modeTabTextActive: {
-    color: colors.green,
+    color: colors.ink,
   },
   label: { color: colors.ink, fontSize: 12, fontWeight: "900", marginTop: 5 },
   input: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 14,
     justifyContent: "center",
     marginTop: 10,
