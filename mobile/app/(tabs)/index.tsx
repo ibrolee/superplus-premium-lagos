@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   feedbackIcon: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 13,
     height: 44,
     justifyContent: "center",
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   notificationBadge: {
     alignItems: "center",
     backgroundColor: colors.green2,
-    borderColor: "#FFFFFF",
+    borderColor: colors.surface,
     borderRadius: 999,
     borderWidth: 2,
     justifyContent: "center",
