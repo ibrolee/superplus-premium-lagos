@@ -54,4 +54,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-themefix2-1.0.3-2026-10-06 Super-Plus-Fitness-1.0.3.apk             --title "Super Plus Fitness 1.0.3 — Android Theme Fix"             --notes "Fresh standalone Android APK using Super Plus-owned native day/night colors to fix missing text in both light and dark mode across Android devices."
+          gh release create spf-dark-blog-settings-1.0.3-2026-10-06 Super-Plus-Fitness-1.0.3.apk             --title "Super Plus Fitness 1.0.3 — Dark Mode & Blog Fix"             --notes "Standalone Android 1.0.3 with improved dark-mode contrast, collapsed Appearance settings with automatic theme refresh, and faster optimized/prefetched blog cover images."
