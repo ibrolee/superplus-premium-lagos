@@ -33,12 +33,13 @@ jobs:
       - name: Install Expo tunnel helper
         run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
-      - name: Start Safari to Expo Go preview
+      - name: Start Expo Go tunnel and capture URL
         shell: bash
         run: |
           set -euo pipefail
-          CI=1 npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
-          EXPO_PID=$!
+          export RUNNER_TRACKING_ID=""
+          nohup env CI=1 npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
+          echo $! > /tmp/spf-expo.pid
 
           EXPO_URL=""
           for i in $(seq 1 90); do
@@ -46,7 +47,7 @@ jobs:
             if [ -n "$EXPO_URL" ]; then
               break
             fi
-            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+            if ! kill -0 "$(cat /tmp/spf-expo.pid)" 2>/dev/null; then
               cat /tmp/spf-expo.log
               exit 1
             fi
@@ -58,10 +59,22 @@ jobs:
             exit 1
           fi
 
-          echo "EXPO_URL=$EXPO_URL" >> "$GITHUB_ENV"
-          echo "::notice title=SPF Expo Go Preview::$EXPO_URL"
+          printf '%s\n' "$EXPO_URL" > /tmp/spf-expo-url.txt
           echo "SPF Expo Go preview: $EXPO_URL"
+          cat /tmp/spf-expo.log
 
-          while kill -0 "$EXPO_PID" 2>/dev/null; do
+      - name: Publish Expo Go URL
+        uses: actions/upload-artifact@v4
+        with:
+          name: spf-expo-go-url
+          path: /tmp/spf-expo-url.txt
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Keep preview tunnel available
+        shell: bash
+        run: |
+          PID=$(cat /tmp/spf-expo.pid)
+          while kill -0 "$PID" 2>/dev/null; do
             sleep 30
           done
