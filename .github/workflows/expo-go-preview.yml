@@ -1,21 +1,20 @@
 name: Expo Go live preview
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
     paths:
       - ".github/workflows/expo-go-preview.yml"
-  workflow_dispatch:
 
 permissions:
-  contents: read
-  statuses: write
+  contents: write
 
 jobs:
   serve-preview:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     defaults:
       run:
         working-directory: mobile
@@ -34,26 +33,26 @@ jobs:
       - name: Install app dependencies
         run: npm install --package-lock=false
 
-      - name: Verify Expo account
-        run: npx expo whoami
-
-      - name: Start secure Safari Expo Go preview
+      - name: Install Cloudflare tunnel client
         shell: bash
         run: |
           set -euo pipefail
-          export RUNNER_TRACKING_ID=""
-
           curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /tmp/cloudflared
           chmod +x /tmp/cloudflared
 
-          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --localhost --clear > /tmp/spf-expo.log 2>&1 &
-          EXPO_PID=$!
+      - name: Start public Safari to Expo Go preview
+        shell: bash
+        run: |
+          set -euo pipefail
 
-          for i in $(seq 1 90); do
-            if curl -fsS --max-time 2 http://127.0.0.1:8081/_expo/open?platform=ios\&runtime=expo >/dev/null 2>&1; then
+          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --localhost --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
+          METRO_PID=$!
+
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8081/status >/dev/null 2>&1; then
               break
             fi
-            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+            if ! kill -0 "$METRO_PID" 2>/dev/null; then
               cat /tmp/spf-expo.log
               exit 1
             fi
@@ -63,10 +62,10 @@ jobs:
           /tmp/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8081 > /tmp/cloudflared.log 2>&1 &
           CF_PID=$!
 
-          PUBLIC_HTTPS=""
+          CF_URL=""
           for i in $(seq 1 90); do
-            PUBLIC_HTTPS=$(grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n 1 || true)
-            if [ -n "$PUBLIC_HTTPS" ]; then
+            CF_URL=$(grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n 1 || true)
+            if [ -n "$CF_URL" ]; then
               break
             fi
             if ! kill -0 "$CF_PID" 2>/dev/null; then
@@ -76,18 +75,33 @@ jobs:
             sleep 2
           done
 
-          if [ -z "$PUBLIC_HTTPS" ]; then
+          if [ -z "$CF_URL" ]; then
             cat /tmp/cloudflared.log
             exit 1
           fi
 
-          HOST=${PUBLIC_HTTPS#https://}
+          HOST="${CF_URL#https://}"
           EXPO_URL="exps://$HOST"
+          echo "PUBLIC EXPO GO URL: $EXPO_URL"
 
-          echo "Safari Expo Go preview: $EXPO_URL"
+          # Verify Cloudflare can actually reach Metro before publishing the link.
+          curl -fsSL --max-time 10 "$CF_URL/status" >/dev/null
 
-          gh api --method POST             -H "Accept: application/vnd.github+json"             "/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA"             -f state=success             -f context=expo-go-preview             -f description="$EXPO_URL" >/dev/null
+          API_PATH="repos/${GITHUB_REPOSITORY}/contents/.expo-preview-url.txt"
+          OLD_SHA=$(gh api "$API_PATH" --jq .sha 2>/dev/null || true)
+          BODY=$(printf '%s\n' "$EXPO_URL" | base64 -w0)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API_PATH" -f message="Update live Expo Go preview link" -f content="$BODY" -f sha="$OLD_SHA" -f branch="main" >/dev/null
+          else
+            gh api --method PUT "$API_PATH" -f message="Publish live Expo Go preview link" -f content="$BODY" -f branch="main" >/dev/null
+          fi
 
-          while kill -0 "$EXPO_PID" 2>/dev/null && kill -0 "$CF_PID" 2>/dev/null; do
+          echo "Preview link published."
+
+          while kill -0 "$METRO_PID" 2>/dev/null && kill -0 "$CF_PID" 2>/dev/null; do
             sleep 30
           done
+
+          echo "Preview process ended."
+          cat /tmp/spf-expo.log || true
+          cat /tmp/cloudflared.log || true
