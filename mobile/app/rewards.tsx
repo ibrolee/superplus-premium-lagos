@@ -58,7 +58,7 @@ export default function RewardsScreen() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [points, setPoints] = useState(0);
-  const [visitPoints, setVisitPoints] = useState(1);
+  const [visitPoints, setVisitPoints] = useState(10);
   const [programStartedAt, setProgramStartedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export default function RewardsScreen() {
     setRewards((rewardsResult.data ?? []) as Reward[]);
     setRedemptions((redemptionsResult.data ?? []) as Redemption[]);
     setPoints((ledgerResult.data ?? []).reduce((sum, item) => sum + Number(item.points || 0), 0));
-    setVisitPoints(Number(settingsResult.data?.visit_points ?? 1));
+    setVisitPoints(Number(settingsResult.data?.visit_points ?? 10));
     setProgramStartedAt(settingsResult.data?.program_started_at ?? null);
     setLoading(false);
   }, [member?.id]);
