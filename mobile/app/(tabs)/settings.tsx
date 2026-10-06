@@ -212,6 +212,13 @@ export default function SettingsScreen() {
           detail="View Super Plus alerts and updates"
           onPress={() => router.push("/notifications" as never)}
         />
+        <Separator />
+        <SettingsRow
+          icon="sparkles-outline"
+          label="Bonus SP Points"
+          detail="Private feedback and verified social follow bonuses"
+          onPress={() => router.push("/bonus-points" as never)}
+        />
       </Card>
 
       <Text style={styles.sectionTitle}>Appearance</Text>
