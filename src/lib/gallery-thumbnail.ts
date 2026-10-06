@@ -46,24 +46,55 @@ export async function makeGalleryVideoThumbnail(source: Blob): Promise<Blob> {
   const objectUrl = URL.createObjectURL(source);
   try {
     const video = document.createElement("video");
-    video.preload = "metadata";
+    video.preload = "auto";
     video.muted = true;
     video.playsInline = true;
     video.src = objectUrl;
 
     await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
-      video.onerror = () => reject(new Error("Could not decode this video for optimization."));
+      const ready = () => {
+        cleanup();
+        resolve();
+      };
+      const failed = () => {
+        cleanup();
+        reject(new Error("Could not decode this video for optimization."));
+      };
+      const cleanup = () => {
+        video.removeEventListener("loadeddata", ready);
+        video.removeEventListener("error", failed);
+      };
+      video.addEventListener("loadeddata", ready, { once: true });
+      video.addEventListener("error", failed, { once: true });
+      video.load();
     });
 
+    // iOS Safari can fail when seeking some MP4 encodings. Try a tiny seek for a
+    // better poster frame, but fall back to the already-decoded first frame.
     const duration = Number.isFinite(video.duration) ? video.duration : 0;
-    video.currentTime = Math.min(0.15, Math.max(0, duration / 4));
-    await new Promise<void>((resolve, reject) => {
-      video.onseeked = () => resolve();
-      video.onerror = () => reject(new Error("Could not capture a video preview."));
-    });
+    if (duration > 0.2) {
+      await new Promise<void>((resolve) => {
+        let finished = false;
+        const done = () => {
+          if (finished) return;
+          finished = true;
+          video.removeEventListener("seeked", done);
+          window.clearTimeout(timeout);
+          resolve();
+        };
+        const timeout = window.setTimeout(done, 1200);
+        video.addEventListener("seeked", done, { once: true });
+        try {
+          video.currentTime = Math.min(0.15, duration / 4);
+        } catch {
+          done();
+        }
+      });
+    }
 
-    const size = fitSize(video.videoWidth || 1280, video.videoHeight || 720);
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    const size = fitSize(width, height);
     const canvas = document.createElement("canvas");
     canvas.width = size.width;
     canvas.height = size.height;
