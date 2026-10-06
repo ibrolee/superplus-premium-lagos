@@ -54,4 +54,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-daily-rewards-1.0.3-2026-10-05 Super-Plus-Fitness-1.0.3.apk             --title "Super Plus Fitness 1.0.3 — Daily Rewards and Blog"             --notes "Fresh standalone Android APK with compact membership cards, actual signup names, Blog navigation, daily streak claims and a weekly SP Points wheel. Includes free accounts and Personal Training Only checkout. For modern arm64 Android phones."
+          gh release create spf-settings-standalone-1.0.3-2026-10-06 Super-Plus-Fitness-1.0.3.apk             --title "Super Plus Fitness 1.0.3 — Settings Standalone"             --notes "Fresh standalone Android APK with the Settings tab, Profile inside Settings, Light/Dark/System appearance, Privacy Policy, Terms, support controls, logout, delete account and Android exit app. Includes the existing member features and is built for modern arm64 Android phones."
