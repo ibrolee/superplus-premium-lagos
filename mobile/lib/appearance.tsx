@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Expo from "expo";
 import {
   createContext,
   type PropsWithChildren,
@@ -53,8 +54,9 @@ export function AppearanceProvider({ children }: PropsWithChildren) {
 
   const setMode = useCallback(async (nextMode: AppearanceMode) => {
     setModeState(nextMode);
-    applyMode(nextMode);
     await AsyncStorage.setItem(STORAGE_KEY, nextMode);
+    applyMode(nextMode);
+    await Expo.reloadAppAsync("Super Plus appearance changed");
   }, []);
 
   const value = useMemo<AppearanceValue>(

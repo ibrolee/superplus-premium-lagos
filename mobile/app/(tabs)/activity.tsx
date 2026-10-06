@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   dayPlanned: { borderColor: colors.green2, borderWidth: 2 },
   dayVisited: { backgroundColor: colors.green2, borderColor: colors.green2 },
   dayNumber: { color: colors.muted, fontSize: 10, fontWeight: "900" },
-  dayNumberPlanned: { color: colors.green },
+  dayNumberPlanned: { color: colors.ink },
   goalTrack: {
     backgroundColor: colors.surfaceMuted,
     borderRadius: 999,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   goalPrompt: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 16 },
   timeCard: {
     alignItems: "center",
-    backgroundColor: "#FFF9F6",
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,

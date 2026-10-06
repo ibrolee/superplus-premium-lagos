@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     letterSpacing: -1,
     lineHeight: 36,
   },
-  errorCard: { borderColor: "#F2C7C2", backgroundColor: "#FFF3F1" },
+  errorCard: { borderColor: colors.line, backgroundColor: colors.surface },
   errorText: { color: colors.danger, fontSize: 12, fontWeight: "700" },
   goalCard: {
     backgroundColor: colors.surface,
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     overflow: "hidden",
   },
-  goalFill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  goalFill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
   goalFooter: {
     alignItems: "center",
     flexDirection: "row",
@@ -465,10 +465,10 @@ const styles = StyleSheet.create({
     marginTop: 9,
   },
   goalNote: { color: colors.muted, flex: 1, fontSize: 11, fontWeight: "700", lineHeight: 17, marginTop: 9 },
-  goalStreak: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  goalStreak: { color: colors.green2, fontSize: 11, fontWeight: "900" },
   cardReminder: {
     alignItems: "center",
-    backgroundColor: "#FFF9F6",
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: 18,
     borderWidth: 1,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   },
   momentumLabel: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 3 },
   challengeCard: {
-    backgroundColor: "#FFF9F6",
+    backgroundColor: colors.surface,
     borderColor: colors.line,
     borderRadius: 19,
     borderWidth: 1,
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
   challengeTop: { alignItems: "flex-start", flexDirection: "row", gap: 10 },
   challengeEyebrow: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 1 },
   challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 4 },
-  challengePoints: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  challengePoints: { color: colors.green2, fontSize: 11, fontWeight: "900" },
   challengeTrack: {
     backgroundColor: "#F3DED5",
     borderRadius: 999,
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
     overflow: "hidden",
   },
-  challengeFill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  challengeFill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
   challengeMeta: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 8 },
   latestPostCard: {
     alignItems: "center",
