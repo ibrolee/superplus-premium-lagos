@@ -33,52 +33,111 @@ jobs:
       - name: Install app dependencies
         run: npm install --package-lock=false
 
-      - name: Install Expo tunnel helper
-        run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
-
-      - name: Start public Expo Go tunnel and publish link
+      - name: Install Cloudflare tunnel client
         shell: bash
         run: |
           set -euo pipefail
-          echo "Starting SPF Expo Go tunnel..."
-          npx expo whoami || true
-          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --clear > /tmp/spf-expo.log 2>&1 &
-          PID=$!
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /tmp/cloudflared
+          chmod +x /tmp/cloudflared
+          /tmp/cloudflared --version
 
-          PUBLIC_URL=""
-          for i in $(seq 1 120); do
-            RESPONSE=$(curl -fsSL --max-time 3 "http://127.0.0.1:8081/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
-            CANDIDATE=$(printf '%s' "$RESPONSE" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
-            if [[ "$CANDIDATE" == exp://* ]] && [[ "$CANDIDATE" != exp://10.* ]] && [[ "$CANDIDATE" != exp://127.* ]] && [[ "$CANDIDATE" != exp://192.168.* ]] && [[ "$CANDIDATE" != exp://172.* ]]; then
-              PUBLIC_URL="$CANDIDATE"
+      - name: Start public Safari to Expo Go preview
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Start Metro locally first so Cloudflare has a healthy origin.
+          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --localhost --no-dev --minify --clear > /tmp/spf-expo-local.log 2>&1 &
+          METRO_PID=$!
+
+          for i in $(seq 1 60); do
+            if curl -fsS --max-time 2 http://127.0.0.1:8081/status >/dev/null 2>&1; then
               break
             fi
-            if ! kill -0 "$PID" 2>/dev/null; then
-              cat /tmp/spf-expo.log
+            if ! kill -0 "$METRO_PID" 2>/dev/null; then
+              cat /tmp/spf-expo-local.log
               exit 1
             fi
             sleep 2
           done
 
-          if [ -z "$PUBLIC_URL" ]; then
-            echo "No public Expo URL appeared."
-            cat /tmp/spf-expo.log
+          /tmp/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8081 > /tmp/cloudflared.log 2>&1 &
+          CF_PID=$!
+
+          CF_URL=""
+          for i in $(seq 1 90); do
+            CF_URL=$(grep -Eo 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/cloudflared.log | head -n 1 || true)
+            if [ -n "$CF_URL" ]; then
+              break
+            fi
+            if ! kill -0 "$CF_PID" 2>/dev/null; then
+              cat /tmp/cloudflared.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ -z "$CF_URL" ]; then
+            echo "Cloudflare public URL was not created."
+            cat /tmp/cloudflared.log
             exit 1
           fi
 
-          echo "PUBLIC EXPO GO URL: $PUBLIC_URL"
+          echo "Cloudflare URL: $CF_URL"
 
-          OWNER_REPO="${GITHUB_REPOSITORY}"
-          API_PATH="repos/$OWNER_REPO/contents/.expo-preview-url.txt"
+          # Restart Metro so its Expo Go manifest advertises the public HTTPS proxy.
+          kill "$METRO_PID" 2>/dev/null || true
+          wait "$METRO_PID" 2>/dev/null || true
+          env CI=1 EXPO_NO_DEV_TOOLS=1 EXPO_PACKAGER_PROXY_URL="$CF_URL" npx expo start --go --localhost --no-dev --minify > /tmp/spf-expo-public.log 2>&1 &
+          METRO_PID=$!
+
+          OPEN_JSON=""
+          for i in $(seq 1 90); do
+            OPEN_JSON=$(curl -fsSL --max-time 3 "http://127.0.0.1:8081/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
+            if [ -n "$OPEN_JSON" ]; then
+              break
+            fi
+            if ! kill -0 "$METRO_PID" 2>/dev/null; then
+              cat /tmp/spf-expo-public.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ -z "$OPEN_JSON" ]; then
+            cat /tmp/spf-expo-public.log
+            exit 1
+          fi
+
+          EXPO_URL=$(printf '%s' "$OPEN_JSON" | sed -n 's/.*"url":"\([^"]*\)".*/\1/p')
+          if [ -z "$EXPO_URL" ]; then
+            echo "$OPEN_JSON"
+            exit 1
+          fi
+
+          # If Expo reports exp:// for an HTTPS proxy, use exps:// so Expo Go fetches through TLS.
+          if [[ "$CF_URL" == https://* ]] && [[ "$EXPO_URL" == exp://* ]]; then
+            EXPO_URL="exps://${EXPO_URL#exp://}"
+          fi
+
+          echo "PUBLIC EXPO GO URL: $EXPO_URL"
+
+          API_PATH="repos/${GITHUB_REPOSITORY}/contents/.expo-preview-url.txt"
           OLD_SHA=$(gh api "$API_PATH" --jq .sha 2>/dev/null || true)
-          BODY=$(printf '%s\n' "$PUBLIC_URL" | base64 -w0)
+          BODY=$(printf '%s\n' "$EXPO_URL" | base64 -w0)
           if [ -n "$OLD_SHA" ]; then
             gh api --method PUT "$API_PATH" -f message="Update live Expo Go preview link" -f content="$BODY" -f sha="$OLD_SHA" -f branch="main" >/dev/null
           else
             gh api --method PUT "$API_PATH" -f message="Publish live Expo Go preview link" -f content="$BODY" -f branch="main" >/dev/null
           fi
 
-          echo "Link published to .expo-preview-url.txt"
-          while kill -0 "$PID" 2>/dev/null; do
+          echo "Preview link published."
+
+          # Keep both ends alive for this preview session.
+          while kill -0 "$METRO_PID" 2>/dev/null && kill -0 "$CF_PID" 2>/dev/null; do
             sleep 30
           done
+
+          echo "Preview process ended."
+          cat /tmp/spf-expo-public.log || true
+          cat /tmp/cloudflared.log || true
