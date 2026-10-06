@@ -84,5 +84,5 @@ export const Route = createFileRoute("/")({
 
 function HomeRoute() {
   const initialGalleryItems = Route.useLoaderData();
-  return <HomePageGallery {...(initialGalleryItems !== undefined ? { initialGalleryItems } : {})} />;
+  return <HomePageGallery {...(initialGalleryItems != null ? { initialGalleryItems } : {})} />;
 }
