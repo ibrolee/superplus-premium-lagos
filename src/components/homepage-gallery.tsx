@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Dumbbell, HeartPulse, Target } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   FinalCTA,
@@ -24,6 +24,49 @@ type BlogPost = {
   excerpt: string | null;
   featured_image: string | null;
 };
+function DeferredHomepageImage({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+}) {
+  const host = useRef<HTMLDivElement | null>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = host.current;
+    if (!node) return;
+    if (!("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={host} className="h-full w-full">
+      {visible ? (
+        <img src={src} alt={alt} loading="lazy" decoding="async" className={className} />
+      ) : (
+        <div className="h-full w-full bg-muted" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
 function HomeJournal() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   useEffect(() => {
@@ -79,10 +122,9 @@ function HomeJournal() {
               >
                 <div className="aspect-[16/9] overflow-hidden bg-muted">
                   {post.featured_image ? (
-                    <img
+                    <DeferredHomepageImage
                       src={post.featured_image}
                       alt={post.title}
-                      loading="lazy"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
