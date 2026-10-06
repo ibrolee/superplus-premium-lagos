@@ -5,7 +5,7 @@
     "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "superplus",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
