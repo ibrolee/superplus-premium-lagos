@@ -178,7 +178,7 @@ export default function RewardsScreen() {
 
       {loading ? (
         <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
           <Text style={styles.loadingText}>Updating your rewards…</Text>
         </Card>
       ) : (
@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
   backButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 14, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
   headingCopy: { flex: 1, gap: 5 },
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", letterSpacing: -0.8, lineHeight: 34 },
-  pointsCard: { backgroundColor: colors.green, borderRadius: 24, padding: 22 },
+  pointsCard: { backgroundColor: "#211A25", borderRadius: 24, padding: 22 },
   pointsLabel: { color: "#F4B7A8", fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   pointsValue: { color: "#FFFFFF", fontSize: 34, fontWeight: "900", letterSpacing: -0.6, marginTop: 3 },
   pointsNote: { color: "#E9E4E0", fontSize: 11, lineHeight: 17, marginTop: 5 },
@@ -316,16 +316,16 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   challengeTitle: { color: colors.ink, fontSize: 16, fontWeight: "900" },
   challengeText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
-  challengeReward: { color: colors.green, fontSize: 13, fontWeight: "900" },
+  challengeReward: { color: colors.green2, fontSize: 13, fontWeight: "900" },
   track: { backgroundColor: colors.surfaceMuted, borderRadius: 999, height: 8, marginTop: 14, overflow: "hidden" },
-  fill: { backgroundColor: colors.green, borderRadius: 999, height: "100%" },
+  fill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
   challengeMeta: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 8 },
   rewardRow: { flexDirection: "row", gap: 12 },
   rewardIcon: { alignItems: "center", backgroundColor: iconPalette.pink.bg, borderRadius: 12, height: 44, justifyContent: "center", width: 44 },
   rewardTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
   rewardText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 3 },
   rewardCost: { color: colors.green2, fontSize: 11, fontWeight: "900", marginTop: 6 },
-  redeemButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 12, justifyContent: "center", minHeight: 44, marginTop: 14 },
+  redeemButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 12, justifyContent: "center", minHeight: 44, marginTop: 14 },
   disabledButton: { opacity: 0.4 },
   redeemText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   emptyTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },

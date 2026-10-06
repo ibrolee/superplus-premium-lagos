@@ -140,7 +140,7 @@ export default function NotificationsScreen() {
           style={[styles.markAllButton, (!unread || markingAll) && styles.disabled]}
         >
           {markingAll ? (
-            <ActivityIndicator size="small" color={colors.green} />
+            <ActivityIndicator size="small" color={colors.green2} />
           ) : (
             <Text style={styles.markAllText}>Mark all read</Text>
           )}
@@ -149,7 +149,7 @@ export default function NotificationsScreen() {
 
       {loading ? (
         <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
         </Card>
       ) : items.length ? (
         <View style={styles.list}>
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     gap: 11,
     padding: 14,
   },
-  itemUnread: { backgroundColor: "#FFF9F6", borderColor: "#F1CFC0" },
+  itemUnread: { backgroundColor: colors.surfaceMuted, borderColor: colors.line },
   iconWrap: {
     alignItems: "center",
     backgroundColor: colors.surfaceMuted,

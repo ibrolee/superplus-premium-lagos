@@ -236,7 +236,7 @@ export default function WorkoutsScreen() {
 
       {loading ? (
         <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
         </Card>
       ) : active ? (
         <>
@@ -254,7 +254,7 @@ export default function WorkoutsScreen() {
           <Card>
             <View style={styles.listHeader}>
               <Text style={styles.sectionTitle}>Exercise checklist</Text>
-              {saving && <ActivityIndicator size="small" color={colors.green} />}
+              {saving && <ActivityIndicator size="small" color={colors.green2} />}
             </View>
 
             {active.exercises.length ? (
@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   headingCopy: { flex: 1, gap: 5 },
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", letterSpacing: -0.8, lineHeight: 34 },
   loadingCard: { alignItems: "center", paddingVertical: 34 },
-  activeCard: { backgroundColor: colors.green, borderRadius: 24, padding: 20 },
+  activeCard: { backgroundColor: "#211A25", borderRadius: 24, padding: 20 },
   activeTop: { alignItems: "flex-start", flexDirection: "row", justifyContent: "space-between", gap: 10 },
   activeKicker: { color: "#BDD1C0", fontSize: 9, fontWeight: "900", letterSpacing: 1.2 },
   activeTitle: { color: "#FFFFFF", fontSize: 27, fontWeight: "900", marginTop: 4 },
@@ -385,15 +385,15 @@ const styles = StyleSheet.create({
   exerciseRow: { alignItems: "center", flexDirection: "row", gap: 11, paddingVertical: 10 },
   border: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 4, paddingTop: 14 },
   check: { alignItems: "center", borderColor: colors.line, borderRadius: 8, borderWidth: 2, height: 28, justifyContent: "center", width: 28 },
-  checkDone: { backgroundColor: colors.green, borderColor: colors.green },
+  checkDone: { backgroundColor: colors.green2, borderColor: colors.green2 },
   exerciseCopy: { flex: 1 },
   exerciseName: { color: colors.ink, fontSize: 13, fontWeight: "800" },
   exerciseDone: { color: colors.muted, textDecorationLine: "line-through" },
   removeButton: { padding: 6 },
   addRow: { flexDirection: "row", gap: 8, marginTop: 15 },
   input: { backgroundColor: colors.background, borderColor: colors.line, borderRadius: 12, borderWidth: 1, color: colors.ink, flex: 1, fontSize: 13, minHeight: 44, paddingHorizontal: 12 },
-  addButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 12, justifyContent: "center", width: 46 },
-  finishButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 16, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 54 },
+  addButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 12, justifyContent: "center", width: 46 },
+  finishButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 16, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 54 },
   finishText: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
   deleteButton: { alignItems: "center", minHeight: 42, justifyContent: "center" },
   deleteText: { color: colors.danger, fontSize: 12, fontWeight: "800" },

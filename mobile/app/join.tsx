@@ -166,7 +166,7 @@ export default function PublicJoinScreen() {
                   </View>
                 )}
                 {selected && (
-                  <Ionicons name="checkmark-circle" size={22} color={colors.green} />
+                  <Ionicons name="checkmark-circle" size={22} color={colors.green2} />
                 )}
               </View>
               <Text style={styles.planPrice}>{money(plan.price)}</Text>
@@ -209,7 +209,7 @@ export default function PublicJoinScreen() {
               value={fullName}
               onChangeText={setFullName}
               placeholder="Enter your full name"
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               autoComplete="name"
             />
 
@@ -219,7 +219,7 @@ export default function PublicJoinScreen() {
               value={email}
               onChangeText={setEmail}
               placeholder="you@example.com"
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -232,7 +232,7 @@ export default function PublicJoinScreen() {
               value={phone}
               onChangeText={setPhone}
               placeholder="08012345678"
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               keyboardType="phone-pad"
               autoComplete="tel"
             />
@@ -244,7 +244,7 @@ export default function PublicJoinScreen() {
                 value={birthDay}
                 onChangeText={(value) => setBirthDay(value.replace(/\D/g, "").slice(0, 2))}
                 placeholder="Day"
-                placeholderTextColor="#95A098"
+                placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
                 maxLength={2}
               />
@@ -253,7 +253,7 @@ export default function PublicJoinScreen() {
                 value={birthMonth}
                 onChangeText={(value) => setBirthMonth(value.replace(/\D/g, "").slice(0, 2))}
                 placeholder="Month"
-                placeholderTextColor="#95A098"
+                placeholderTextColor={colors.muted}
                 keyboardType="number-pad"
                 maxLength={2}
               />
@@ -268,7 +268,7 @@ export default function PublicJoinScreen() {
               value={coupon}
               onChangeText={setCoupon}
               placeholder="Enter coupon code"
-              placeholderTextColor="#95A098"
+              placeholderTextColor={colors.muted}
               autoCapitalize="characters"
               autoCorrect={false}
             />
@@ -315,21 +315,21 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   planName: { color: colors.ink, fontSize: 14, fontWeight: "900" },
   planDuration: { color: colors.muted, fontSize: 10, marginTop: 3 },
-  badge: { backgroundColor: colors.green, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
+  badge: { backgroundColor: colors.green2, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 5 },
   badgeText: { color: "#FFFFFF", fontSize: 8, fontWeight: "900", textTransform: "uppercase" },
-  planPrice: { color: colors.green, fontSize: 20, fontWeight: "900", marginTop: 12 },
+  planPrice: { color: colors.green2, fontSize: 20, fontWeight: "900", marginTop: 12 },
   planRegistration: { color: colors.muted, fontSize: 10, marginTop: 3 },
   formTitle: { color: colors.ink, fontSize: 20, fontWeight: "900" },
   totalRow: { alignItems: "center", borderBottomColor: colors.line, borderBottomWidth: 1, flexDirection: "row", justifyContent: "space-between", marginBottom: 8, paddingBottom: 14, paddingTop: 7 },
   totalLabel: { color: colors.muted, fontSize: 11, fontWeight: "700" },
-  totalValue: { color: colors.green, fontSize: 16, fontWeight: "900" },
+  totalValue: { color: colors.green2, fontSize: 16, fontWeight: "900" },
   label: { color: colors.ink, fontSize: 11, fontWeight: "900", marginTop: 10 },
-  input: { backgroundColor: "#FAFCF9", borderColor: colors.line, borderRadius: 13, borderWidth: 1, color: colors.ink, fontSize: 14, marginTop: 6, minHeight: 50, paddingHorizontal: 13 },
+  input: { backgroundColor: colors.background, borderColor: colors.line, borderRadius: 13, borderWidth: 1, color: colors.ink, fontSize: 14, marginTop: 6, minHeight: 50, paddingHorizontal: 13 },
   inlineInputs: { flexDirection: "row", gap: 10 },
   halfInput: { flex: 1 },
   helper: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 5 },
   familyNote: { color: colors.muted, fontSize: 13, lineHeight: 20, marginTop: 10 },
-  primaryButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18, minHeight: 54, paddingHorizontal: 16 },
+  primaryButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 14, flexDirection: "row", gap: 8, justifyContent: "center", marginTop: 18, minHeight: 54, paddingHorizontal: 16 },
   primaryButtonText: { color: "#FFFFFF", fontSize: 13, fontWeight: "900" },
   disabled: { opacity: 0.55 },
   securityNote: { color: colors.muted, fontSize: 10, lineHeight: 16, marginTop: 11, textAlign: "center" },

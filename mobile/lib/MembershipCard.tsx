@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-na
 import Svg, { Defs, LinearGradient, Rect, Stop, Circle } from "react-native-svg";
 import { BrandLogo } from "./BrandLogo";
 import type { Member, Membership } from "./AppContext";
-import { dateLabel, daysUntil } from "./ui";
+import { colors, dateLabel, daysUntil } from "./ui";
 
 // Presentation only: callers retain the existing membership/status selection.
 export function MembershipCard({ member, membership, phase, onChoosePlan }: {
@@ -78,7 +78,7 @@ export function MembershipCard({ member, membership, phase, onChoosePlan }: {
 }
 
 const styles = StyleSheet.create({
-  shadow: { width: "100%", maxWidth: 480, alignSelf: "center", borderRadius: 22, backgroundColor: '#FFFFFF', shadowColor: '#482319', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 6 },
+  shadow: { width: "100%", maxWidth: 480, alignSelf: "center", borderRadius: 22, backgroundColor: colors.surface, shadowColor: '#482319', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 6 },
   card: { borderRadius: 22, overflow: 'hidden', padding: 18, backgroundColor: '#211A25', gap: 5 },
   stacked: { flexDirection: "column" },
   stackedCell: { flex: 0, alignSelf: "stretch" },
@@ -98,13 +98,13 @@ const styles = StyleSheet.create({
   value: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
   footer: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.18)', paddingTop: 12, marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
   footerCell: { flex: 1, minWidth: 0, gap: 5 },
-  emptyCard: { backgroundColor: '#FFF8F3', borderRadius: 22, borderWidth: 1, borderColor: '#F6DCD0', padding: 18, gap: 12 },
+  emptyCard: { backgroundColor: colors.surface, borderRadius: 22, borderWidth: 1, borderColor: colors.line, padding: 18, gap: 12 },
   emptyTop: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   welcomeIcon: { width: 64, height: 64, borderRadius: 22, backgroundColor: '#FFE1D0', alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-8deg' }] },
   ready: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, padding: 9, backgroundColor: '#E7F5E9' },
   readyText: { fontSize: 9, fontWeight: '900', color: '#23643B', letterSpacing: 0.6 },
-  emptyTitle: { color: '#201B24', fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
-  emptyText: { color: '#655A58', fontSize: 14, lineHeight: 22 },
+  emptyTitle: { color: colors.ink, fontSize: 22, fontWeight: '900', letterSpacing: -0.6 },
+  emptyText: { color: colors.muted, fontSize: 14, lineHeight: 22 },
   perks: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   perk: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12 },
   perkText: { color: '#38303F', fontSize: 11, fontWeight: '700' },

@@ -536,7 +536,7 @@ export default function MembershipScreen() {
                   maxLength={3000}
                   editable={!reportBusy}
                   placeholder="Describe the issue clearly. Include anything management should know…"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   style={styles.reportTextArea}
                   textAlignVertical="top"
                 />
@@ -708,7 +708,7 @@ export default function MembershipScreen() {
             autoCorrect={false}
             editable={!paymentBusy}
             placeholder="Enter coupon code"
-            placeholderTextColor="#95A098"
+            placeholderTextColor={colors.muted}
             style={styles.input}
           />
   
@@ -853,13 +853,13 @@ const styles = StyleSheet.create({
     borderColor: colors.green2,
     borderWidth: 2,
   },
-  planOptionMuted: { opacity: 0.62 },
+  planOptionMuted: { opacity: 0.78 },
   planOptionName: { color: colors.ink, fontSize: 13, fontWeight: "900" },
   planOptionMeta: { color: colors.muted, fontSize: 10, marginTop: 3 },
-  planPrice: { color: colors.green, fontSize: 13, fontWeight: "900" },
+  planPrice: { color: colors.green2, fontSize: 13, fontWeight: "900" },
   inputLabel: { color: colors.ink, fontSize: 11, fontWeight: "900", marginTop: 17 },
   input: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
@@ -929,8 +929,8 @@ const styles = StyleSheet.create({
   confidentialText: { color: colors.ink, flex: 1, fontSize: 11, lineHeight: 18 },
   reportButton: {
     alignItems: "center",
-    backgroundColor: "#FFF3F0",
-    borderColor: "#EACAC3",
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
     flexDirection: "row",
@@ -940,11 +940,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
     paddingHorizontal: 14,
   },
-  reportButtonText: { color: "#8F2F2F", fontSize: 12, fontWeight: "900" },
+  reportButtonText: { color: colors.danger, fontSize: 12, fontWeight: "900" },
   reportForm: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 15, paddingTop: 4 },
   categoryGrid: { flexDirection: "row", flexWrap: "wrap", gap: 7, marginBottom: 3, marginTop: 8 },
   categoryChip: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 999,
     borderWidth: 1,
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
   categoryChipText: { color: colors.muted, fontSize: 10, fontWeight: "800" },
   categoryChipTextSelected: { color: colors.green2 },
   reportTextArea: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,

@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   feedbackIcon: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 13,
     height: 44,
     justifyContent: "center",
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   notificationBadge: {
     alignItems: "center",
     backgroundColor: colors.green2,
-    borderColor: "#FFFFFF",
+    borderColor: colors.surface,
     borderRadius: 999,
     borderWidth: 2,
     justifyContent: "center",
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 4 },
   challengePoints: { color: colors.green2, fontSize: 11, fontWeight: "900" },
   challengeTrack: {
-    backgroundColor: "#F3DED5",
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 999,
     height: 8,
     marginTop: 13,

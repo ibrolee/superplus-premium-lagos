@@ -194,7 +194,7 @@ export default function CreateAccountScreen() {
                   value={fullName}
                   onChangeText={setFullName}
                   placeholder="Your full name"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   autoComplete="name"
                   editable={!busy}
                 />
@@ -205,7 +205,7 @@ export default function CreateAccountScreen() {
                   value={phone}
                   onChangeText={setPhone}
                   placeholder="08012345678"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   keyboardType="phone-pad"
                   autoComplete="tel"
                   editable={!busy}
@@ -217,7 +217,7 @@ export default function CreateAccountScreen() {
                   value={email}
                   onChangeText={setEmail}
                   placeholder="you@example.com"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -231,7 +231,7 @@ export default function CreateAccountScreen() {
                   value={password}
                   onChangeText={setPassword}
                   placeholder="At least 6 characters"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -246,7 +246,7 @@ export default function CreateAccountScreen() {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Repeat your password"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   secureTextEntry
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -293,7 +293,7 @@ export default function CreateAccountScreen() {
                   textContentType="oneTimeCode"
                   autoComplete="one-time-code"
                   placeholder="00000000"
-                  placeholderTextColor="#95A098"
+                  placeholderTextColor={colors.muted}
                   maxLength={8}
                   autoFocus
                   editable={!busy}
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   label: { color: colors.ink, fontSize: 12, fontWeight: "900", marginTop: 5 },
   input: {
-    backgroundColor: "#FAFCF9",
+    backgroundColor: colors.background,
     borderColor: colors.line,
     borderRadius: 13,
     borderWidth: 1,
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   },
   button: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 14,
     justifyContent: "center",
     marginTop: 12,

@@ -324,7 +324,7 @@ export default function BlogArticleScreen() {
     return (
       <Screen>
         <View style={styles.loadingWrap}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
           <Text style={styles.loadingText}>Opening article…</Text>
         </View>
       </Screen>
@@ -366,14 +366,14 @@ export default function BlogArticleScreen() {
             <Ionicons
               name={saved ? "bookmark" : "bookmark-outline"}
               size={19}
-              color={saved ? "#FFFFFF" : colors.green}
+              color={saved ? "#FFFFFF" : colors.ink}
             />
             <Text style={[styles.shareText, saved && styles.savedText]}>
               {saved ? "Saved" : "Save"}
             </Text>
           </Pressable>
           <Pressable style={styles.shareButton} onPress={() => void shareArticle()}>
-            <Ionicons name="share-outline" size={20} color={colors.green} />
+            <Ionicons name="share-outline" size={20} color={colors.ink} />
             <Text style={styles.shareText}>Share</Text>
           </Pressable>
         </View>
@@ -420,7 +420,7 @@ export default function BlogArticleScreen() {
           <Ionicons
             name={liked ? "heart" : "heart-outline"}
             size={20}
-            color={liked ? "#FFFFFF" : colors.green}
+            color={liked ? "#FFFFFF" : colors.ink}
           />
           <Text style={[styles.interactionText, liked && styles.interactionTextActive]}>
             {likeCount} {likeCount === 1 ? "Like" : "Likes"}
@@ -428,7 +428,7 @@ export default function BlogArticleScreen() {
         </Pressable>
 
         <View style={styles.interactionButton}>
-          <Ionicons name="chatbubble-outline" size={19} color={colors.green} />
+          <Ionicons name="chatbubble-outline" size={19} color={colors.ink} />
           <Text style={styles.interactionText}>
             {comments.length} {comments.length === 1 ? "Comment" : "Comments"}
           </Text>
@@ -482,7 +482,7 @@ export default function BlogArticleScreen() {
         </Card>
       ) : (
         <Card style={styles.guestCommentCard}>
-          <Ionicons name="people-outline" size={24} color={colors.green} />
+          <Ionicons name="people-outline" size={24} color={colors.ink} />
           <Text style={styles.guestCommentTitle}>Members can join the conversation</Text>
           <Text style={styles.guestCommentText}>
             Sign in to like, save and comment. You can still read every public article as a guest.
@@ -583,8 +583,8 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 14,
   },
-  shareText: { color: colors.green, fontSize: 12, fontWeight: "900" },
-  savedButton: { backgroundColor: colors.green, borderColor: colors.green },
+  shareText: { color: colors.ink, fontSize: 12, fontWeight: "900" },
+  savedButton: { backgroundColor: colors.green2, borderColor: colors.green2 },
   savedText: { color: "#FFFFFF" },
   articleHeader: { gap: 9 },
   title: { color: colors.ink, fontSize: 31, fontWeight: "900", letterSpacing: -0.9, lineHeight: 36 },
@@ -610,8 +610,8 @@ const styles = StyleSheet.create({
     minHeight: 42,
     paddingHorizontal: 14,
   },
-  interactionButtonActive: { backgroundColor: colors.green, borderColor: colors.green },
-  interactionText: { color: colors.green, fontSize: 12, fontWeight: "900" },
+  interactionButtonActive: { backgroundColor: colors.green2, borderColor: colors.green2 },
+  interactionText: { color: colors.ink, fontSize: 12, fontWeight: "900" },
   interactionTextActive: { color: "#FFFFFF" },
   articleBodyCard: { paddingVertical: 22 },
   articleBody: { color: colors.ink, fontSize: 15, lineHeight: 26 },
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   guestCommentCard: { alignItems: "center", gap: 8 },
   guestCommentTitle: { color: colors.ink, fontSize: 16, fontWeight: "900", textAlign: "center" },
   guestCommentText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: "center" },
-  guestLoginButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 12, justifyContent: "center", marginTop: 4, minHeight: 44, paddingHorizontal: 18 },
+  guestLoginButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 12, justifyContent: "center", marginTop: 4, minHeight: 44, paddingHorizontal: 18 },
   guestLoginText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   commentInput: {
     backgroundColor: colors.background,

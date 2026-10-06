@@ -185,7 +185,7 @@ export default function VisitGoalScreen() {
 
       {loading ? (
         <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
           <Text style={styles.muted}>Loading your goal…</Text>
         </Card>
       ) : (
@@ -323,7 +323,7 @@ export default function VisitGoalScreen() {
                 value={remindersEnabled}
                 onValueChange={setRemindersEnabled}
                 trackColor={{ false: "#C9D0CB", true: "#91B49A" }}
-                thumbColor={remindersEnabled ? colors.green : "#FFFFFF"}
+                thumbColor={remindersEnabled ? colors.green2 : "#FFFFFF"}
               />
             </View>
 
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   muted: { color: colors.muted, fontSize: 13, fontWeight: "700" },
   progressCard: {
-    backgroundColor: colors.green,
+    backgroundColor: "#211A25",
     borderRadius: 24,
     padding: 20,
   },
@@ -477,7 +477,7 @@ const styles = StyleSheet.create({
     width: 46,
   },
   numberOptionText: { color: colors.ink, fontSize: 15, fontWeight: "900" },
-  optionSelected: { backgroundColor: colors.green, borderColor: colors.green },
+  optionSelected: { backgroundColor: colors.green2, borderColor: colors.green2 },
   optionSelectedText: { color: "#FFFFFF" },
   chip: {
     backgroundColor: colors.background,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 16,
     flexDirection: "row",
     gap: 8,

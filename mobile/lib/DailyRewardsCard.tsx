@@ -130,7 +130,7 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
 }
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: "#FFFFFF", borderColor: "#F1DFD4", borderWidth: 1, borderRadius: 22, padding: 17, gap: 11 },
+  card: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 22, padding: 17, gap: 11 },
   heading: { flexDirection: "row", alignItems: "center", gap: 11 },
   flame: { backgroundColor: "#FFEADB", width: 46, height: 46, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   grow: { flex: 1 }, eyebrow: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 1.2 },
@@ -138,13 +138,13 @@ const styles = StyleSheet.create({
   best: { color: "#7950C7", fontSize: 11, fontWeight: "700" },
   button: { minHeight: 48, borderRadius: 14, backgroundColor: "#D63E1D", padding: 12, flexDirection: "row", justifyContent: "center", alignItems: "center", gap: 6 },
   buttonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900", flexShrink: 1, textAlign: "center" },
-  claimed: { backgroundColor: "#E8F5EB" }, claimedText: { color: "#276740" }, muted: { opacity: 0.7 },
+  claimed: { backgroundColor: colors.surfaceMuted }, claimedText: { color: colors.success }, muted: { opacity: 0.7 },
   wheelLink: { flexDirection: "row", alignItems: "center", gap: 6 }, link: { color: "#7950C7", fontSize: 11, fontWeight: "800", flexShrink: 1 },
   result: { color: "#287A45", fontSize: 12, fontWeight: "800", textAlign: "center", lineHeight: 18 },
   divider: { height: 1, backgroundColor: colors.line, marginVertical: 5 },
   wheelWrap: { alignItems: "center", justifyContent: "center", alignSelf: "center", width: 206, height: 206, marginVertical: 8 },
   pointer: { position: "absolute", top: -4, zIndex: 2 },
-  wheelHub: { position: "absolute", width: 46, height: 46, borderRadius: 23, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center" },
+  wheelHub: { position: "absolute", width: 46, height: 46, borderRadius: 23, backgroundColor: colors.surface, alignItems: "center", justifyContent: "center" },
   odds: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 6 },
   oddsChip: { borderRadius: 10, paddingHorizontal: 9, paddingVertical: 7, color: "#2B2132", fontSize: 10, fontWeight: "700" },
   spinButton: { backgroundColor: "#7950C7" },
