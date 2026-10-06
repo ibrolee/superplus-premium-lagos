@@ -38,10 +38,34 @@ jobs:
         working-directory: quest-native
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli@latest project:init --account ibrolee98 --non-interactive --force
+        run: npx eas-cli@latest project:init --account ibrolee98 --non-interactive
 
-      - name: Build Android development APK on EAS
+      - name: Build standalone Android preview APK on EAS
         working-directory: quest-native
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: npx eas-cli@latest build --platform android --profile development --non-interactive --no-wait
+        run: |
+          npx eas-cli@latest build --platform android --profile preview --non-interactive --wait --json > eas-build.json
+          cat eas-build.json
+          node <<'NODE'
+          const fs = require('fs');
+          const parsed = JSON.parse(fs.readFileSync('eas-build.json','utf8'));
+          const build = Array.isArray(parsed) ? parsed[0] : parsed;
+          const url = build?.artifacts?.buildUrl || build?.artifacts?.applicationArchiveUrl || build?.artifactUrl;
+          if (!url) {
+            console.error('No Android artifact URL found in EAS JSON');
+            process.exit(1);
+          }
+          fs.writeFileSync('apk-url.txt', url);
+          console.log('EAS build id:', build?.id || 'unknown');
+          NODE
+          curl -L --fail --retry 3 "$(cat apk-url.txt)" -o Quest-Android.apk
+          test -s Quest-Android.apk
+
+      - name: Upload Quest APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Quest-Android-APK
+          path: quest-native/Quest-Android.apk
+          if-no-files-found: error
+          retention-days: 14
