@@ -9,7 +9,12 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.superplusfitness.app"
+      "bundleIdentifier": "com.superplusfitness.app",
+      "buildNumber": "1",
+      "backgroundColor": "#FFF8F3",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.superplusfitness.app",
