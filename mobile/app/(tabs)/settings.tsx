@@ -112,6 +112,7 @@ function AppearanceChoice({
 export default function SettingsScreen() {
   const { member, dataLoading } = useApp();
   const { mode, setMode } = useAppearancePreference();
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
 
@@ -215,32 +216,57 @@ export default function SettingsScreen() {
 
       <Text style={styles.sectionTitle}>Appearance</Text>
       <Card style={styles.appearanceCard}>
-        <Text style={styles.appearanceHint}>
-          Choose how Super Plus looks. Your preference is saved on this device.
-        </Text>
-        <View style={styles.appearanceGrid}>
-          <AppearanceChoice
-            mode="light"
-            currentMode={mode}
-            label="Light"
-            icon="sunny-outline"
-            onSelect={(next) => void setMode(next)}
+        <Pressable
+          style={styles.appearanceHeader}
+          onPress={() => setAppearanceOpen((open) => !open)}
+        >
+          <View style={[styles.iconBox, { backgroundColor: iconPalette.purple.bg }]}>
+            <Ionicons name="contrast-outline" size={18} color={iconPalette.purple.fg} />
+          </View>
+          <View style={styles.rowCopy}>
+            <Text style={styles.rowLabel}>Theme</Text>
+            <Text style={styles.rowDetail}>
+              {mode === "system" ? "System default" : mode === "dark" ? "Dark" : "Light"}
+            </Text>
+          </View>
+          <Ionicons
+            name={appearanceOpen ? "chevron-up" : "chevron-down"}
+            size={18}
+            color={colors.muted}
           />
-          <AppearanceChoice
-            mode="dark"
-            currentMode={mode}
-            label="Dark"
-            icon="moon-outline"
-            onSelect={(next) => void setMode(next)}
-          />
-          <AppearanceChoice
-            mode="system"
-            currentMode={mode}
-            label="System"
-            icon="phone-portrait-outline"
-            onSelect={(next) => void setMode(next)}
-          />
-        </View>
+        </Pressable>
+
+        {appearanceOpen && (
+          <>
+            <View style={styles.appearanceDivider} />
+            <Text style={styles.appearanceHint}>
+              Choose how Super Plus looks. The app refreshes automatically after you select one.
+            </Text>
+            <View style={styles.appearanceGrid}>
+              <AppearanceChoice
+                mode="light"
+                currentMode={mode}
+                label="Light"
+                icon="sunny-outline"
+                onSelect={(next) => void setMode(next)}
+              />
+              <AppearanceChoice
+                mode="dark"
+                currentMode={mode}
+                label="Dark"
+                icon="moon-outline"
+                onSelect={(next) => void setMode(next)}
+              />
+              <AppearanceChoice
+                mode="system"
+                currentMode={mode}
+                label="System"
+                icon="phone-portrait-outline"
+                onSelect={(next) => void setMode(next)}
+              />
+            </View>
+          </>
+        )}
       </Card>
 
       <Text style={styles.sectionTitle}>App & permissions</Text>
@@ -379,7 +405,15 @@ const styles = StyleSheet.create({
   },
   dangerText: { color: colors.danger },
   separator: { backgroundColor: colors.line, height: 1, marginLeft: 54 },
-  appearanceCard: { gap: 13 },
+  appearanceCard: { gap: 12, paddingVertical: 8 },
+  appearanceHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
+    minHeight: 58,
+    paddingVertical: 5,
+  },
+  appearanceDivider: { backgroundColor: colors.line, height: 1 },
   appearanceHint: { color: colors.muted, fontSize: 11, lineHeight: 17 },
   appearanceGrid: { gap: 9 },
   appearanceChoice: {
