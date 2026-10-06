@@ -22,7 +22,7 @@ const STORAGE_KEY = "@superplus/appearance-mode";
 const AppearanceContext = createContext<AppearanceValue | undefined>(undefined);
 
 function applyMode(mode: AppearanceMode) {
-  Appearance.setColorScheme(mode === "system" ? "auto" : mode);
+  Appearance.setColorScheme(mode === "system" ? null : mode);
 }
 
 export function AppearanceProvider({ children }: PropsWithChildren) {
