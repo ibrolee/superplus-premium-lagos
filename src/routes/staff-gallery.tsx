@@ -30,7 +30,8 @@ function GalleryManagement() {
     const thumbnail = mediaType === 'video'
       ? await makeGalleryVideoThumbnail(source)
       : await makeGalleryThumbnail(source);
-    const path = `thumbnails/${sourcePath.split('/').pop()?.replace(/\.[^.]+$/, '') || crypto.randomUUID()}.jpg`;
+    const base = sourcePath.split('/').pop()?.replace(/\.[^.]+$/, '') || crypto.randomUUID();
+    const path = `thumbnails/${base}-${Date.now()}-${crypto.randomUUID().slice(0,8)}.jpg`;
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path,thumbnail,{contentType:thumbnail.type,upsert:false,cacheControl:'31536000'});
     if (uploadError) throw uploadError;
     return path;
