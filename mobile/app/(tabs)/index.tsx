@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   challengeTitle: { color: colors.ink, fontSize: 17, fontWeight: "900", marginTop: 4 },
   challengePoints: { color: colors.green2, fontSize: 11, fontWeight: "900" },
   challengeTrack: {
-    backgroundColor: "#F3DED5",
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 999,
     height: 8,
     marginTop: 13,
