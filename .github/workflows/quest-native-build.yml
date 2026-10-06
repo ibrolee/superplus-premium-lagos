@@ -6,6 +6,7 @@ on:
       - quest-native-build
     paths:
       - 'quest-native-src.b64'
+      - 'quest-overrides/**'
       - '.github/workflows/quest-native-build.yml'
   workflow_dispatch:
 
@@ -16,10 +17,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Extract Quest source
+      - name: Extract Quest source and apply UI overrides
         run: |
           mkdir -p quest-native
           base64 -d quest-native-src.b64 | tar -xzf - -C quest-native
+          if [ -d quest-overrides ]; then
+            cp -a quest-overrides/. quest-native/
+          fi
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -28,7 +32,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: quest-native
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund
+          npx expo install @react-native-community/datetimepicker
 
       - name: Typecheck
         working-directory: quest-native
