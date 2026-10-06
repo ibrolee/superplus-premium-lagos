@@ -19,7 +19,7 @@ jobs:
       run:
         working-directory: mobile
     env:
-      EXPO_TUNNEL_SUBDOMAIN: spf-ios-ibrolee-20261006
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
     steps:
       - name: Checkout current SPF app
         uses: actions/checkout@v4
@@ -35,18 +35,20 @@ jobs:
       - name: Install Expo tunnel helper
         run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
-      - name: Start Expo Go tunnel and capture deep link
+      - name: Show Expo account state
+        run: npx expo whoami || true
+
+      - name: Start Expo Go tunnel and capture iPhone link
         shell: bash
         run: |
           set -euo pipefail
           export RUNNER_TRACKING_ID=""
-          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 EXPO_TUNNEL_SUBDOMAIN="$EXPO_TUNNEL_SUBDOMAIN" npx expo start --go --tunnel --clear > /tmp/spf-expo.log 2>&1 &
+          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
           echo $! > /tmp/spf-expo.pid
 
-          OPEN_URL="https://$EXPO_TUNNEL_SUBDOMAIN.exp.direct/_expo/open?platform=ios&runtime=expo"
           RESPONSE=""
           for i in $(seq 1 90); do
-            RESPONSE=$(curl -fsSL --max-time 5 "$OPEN_URL" 2>/dev/null || true)
+            RESPONSE=$(curl -fsSL --max-time 3 "http://127.0.0.1:8081/_expo/open?platform=ios&runtime=expo" 2>/dev/null || true)
             if [ -n "$RESPONSE" ]; then
               break
             fi
@@ -63,17 +65,14 @@ jobs:
           fi
 
           printf '%s\n' "$RESPONSE" > /tmp/spf-expo-open.json
-          printf '%s\n' "$OPEN_URL" > /tmp/spf-expo-endpoint.txt
-          echo "Expo open endpoint: $OPEN_URL"
           echo "$RESPONSE"
+          cat /tmp/spf-expo.log
 
       - name: Publish Expo Go URL data
         uses: actions/upload-artifact@v4
         with:
           name: spf-expo-go-url
-          path: |
-            /tmp/spf-expo-open.json
-            /tmp/spf-expo-endpoint.txt
+          path: /tmp/spf-expo-open.json
           if-no-files-found: error
           retention-days: 1
 
