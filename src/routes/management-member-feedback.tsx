@@ -36,6 +36,23 @@ type FeedbackRow = {
   } | null;
 };
 
+type ExperienceRow = {
+  id: string;
+  member_id: string;
+  feedback_kind: "app" | "gym";
+  overall_rating: number;
+  ratings: Record<string, number>;
+  comments: string | null;
+  points_awarded: number;
+  submitted_at: string;
+  updated_at: string;
+  member: {
+    full_name: string | null;
+    phone: string | null;
+    email: string | null;
+  } | null;
+};
+
 const categoryLabel = (value: string) =>
   ({
     coach: "Coach",
@@ -61,6 +78,7 @@ const formatDateTime = (value: string) =>
 
 function ManagementMemberFeedback() {
   const [rows, setRows] = useState<FeedbackRow[]>([]);
+  const [experienceRows, setExperienceRows] = useState<ExperienceRow[]>([]);
   const [status, setStatus] = useState<"pending" | "reviewed" | "resolved" | "all">("pending");
   const [type, setType] = useState<"all" | "suggestion" | "issue">("all");
   const [query, setQuery] = useState("");
@@ -73,19 +91,31 @@ function ManagementMemberFeedback() {
     setLoading(true);
     setError("");
 
-    const { data, error: queryError } = await supabase
-      .from("member_feedback_submissions")
-      .select(
-        "id,member_id,membership_id,submission_type,category,subject,details,status,management_note,submitted_at,updated_at,member:members(full_name,phone,email)",
-      )
-      .order("submitted_at", { ascending: false })
-      .limit(500);
+    const [submissionResult, experienceResult] = await Promise.all([
+      supabase
+        .from("member_feedback_submissions")
+        .select(
+          "id,member_id,membership_id,submission_type,category,subject,details,status,management_note,submitted_at,updated_at,member:members(full_name,phone,email)",
+        )
+        .order("submitted_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("member_experience_feedback")
+        .select(
+          "id,member_id,feedback_kind,overall_rating,ratings,comments,points_awarded,submitted_at,updated_at,member:members(full_name,phone,email)",
+        )
+        .order("submitted_at", { ascending: false })
+        .limit(500),
+    ]);
 
+    const queryError = submissionResult.error || experienceResult.error;
     if (queryError) {
       setRows([]);
+      setExperienceRows([]);
       setError(queryError.message);
     } else {
-      setRows((data ?? []) as unknown as FeedbackRow[]);
+      setRows((submissionResult.data ?? []) as unknown as FeedbackRow[]);
+      setExperienceRows((experienceResult.data ?? []) as unknown as ExperienceRow[]);
     }
     setLoading(false);
   }, []);
@@ -103,6 +133,25 @@ function ManagementMemberFeedback() {
     }),
     [rows],
   );
+
+  const experienceSummary = useMemo(() => {
+    const average = (kind: "app" | "gym") => {
+      const values = experienceRows
+        .filter((row) => row.feedback_kind === kind)
+        .map((row) => Number(row.overall_rating || 0))
+        .filter((value) => value > 0);
+      return values.length
+        ? (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1)
+        : "—";
+    };
+
+    return {
+      appCount: experienceRows.filter((row) => row.feedback_kind === "app").length,
+      gymCount: experienceRows.filter((row) => row.feedback_kind === "gym").length,
+      appAverage: average("app"),
+      gymAverage: average("gym"),
+    };
+  }, [experienceRows]);
 
   const filteredRows = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -181,6 +230,76 @@ function ManagementMemberFeedback() {
             <p className="mt-3 text-3xl font-black">{value}</p>
           </div>
         ))}
+      </section>
+
+      <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">Private experience ratings</p>
+            <h2 className="mt-1 text-xl font-black">App & gym feedback</h2>
+            <p className="mt-1 text-xs leading-5 text-[#657568]">
+              These are private Super Plus ratings. The member receives the same one-time 10 SP bonus whether the rating is high or low.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
+          >
+            <RefreshCw size={15} /> Refresh
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-[#dce7d8] bg-[#f8faf6] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">App feedback</p>
+            <p className="mt-2 text-3xl font-black">{experienceSummary.appAverage} / 5</p>
+            <p className="mt-1 text-xs text-[#657568]">{experienceSummary.appCount} submission{experienceSummary.appCount === 1 ? "" : "s"}</p>
+          </div>
+          <div className="rounded-2xl border border-[#dce7d8] bg-[#f8faf6] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">Gym experience</p>
+            <p className="mt-2 text-3xl font-black">{experienceSummary.gymAverage} / 5</p>
+            <p className="mt-1 text-xs text-[#657568]">{experienceSummary.gymCount} submission{experienceSummary.gymCount === 1 ? "" : "s"}</p>
+          </div>
+        </div>
+
+        {!!experienceRows.length && (
+          <div className="mt-4 grid gap-3 xl:grid-cols-2">
+            {experienceRows.slice(0, 20).map((row) => (
+              <article key={row.id} className="rounded-2xl border border-[#e4ebe1] bg-[#fbfcfa] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-black uppercase text-[#38673e]">
+                      {row.feedback_kind === "app" ? "App Feedback" : "Gym Experience"}
+                    </p>
+                    <p className="mt-1 font-black">{row.member?.full_name || "Member"}</p>
+                    <p className="mt-1 text-xs text-[#68766d]">
+                      {row.member?.phone || row.member?.email || "No contact"}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#fff2d6] px-3 py-1.5 text-xs font-black text-[#8a5b00]">
+                    ★ {row.overall_rating}/5
+                  </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {Object.entries(row.ratings || {}).map(([key, value]) => (
+                    <span key={key} className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold capitalize text-[#536359]">
+                      {key.replaceAll("_", " ")}: {value}/5
+                    </span>
+                  ))}
+                </div>
+                {row.comments && (
+                  <p className="mt-3 whitespace-pre-wrap rounded-xl bg-white p-3 text-sm leading-6 text-[#46564c]">
+                    {row.comments}
+                  </p>
+                )}
+                <p className="mt-3 text-[10px] text-[#7a827d]">
+                  Submitted {formatDateTime(row.submitted_at)} · {row.points_awarded} SP bonus
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
