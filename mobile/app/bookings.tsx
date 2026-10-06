@@ -268,7 +268,7 @@ export default function BookingsScreen() {
 
       <Text style={styles.sectionTitle}>Your bookings</Text>
       {loading ? (
-        <Card style={styles.loadingCard}><ActivityIndicator color={colors.green} /></Card>
+        <Card style={styles.loadingCard}><ActivityIndicator color={colors.green2} /></Card>
       ) : bookings.length ? (
         bookings.map((booking) => (
           <Card key={booking.id}>
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   chipText: { color: colors.ink, fontSize: 11, fontWeight: "800" },
   timeHeading: { color: colors.green2, fontSize: 9, fontWeight: "900", letterSpacing: 1.1, marginTop: 18 },
   notes: { backgroundColor: colors.background, borderColor: colors.line, borderRadius: 13, borderWidth: 1, color: colors.ink, fontSize: 13, lineHeight: 20, marginTop: 12, minHeight: 100, padding: 12 },
-  requestButton: { alignItems: "center", backgroundColor: colors.green, borderRadius: 16, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 54 },
+  requestButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 16, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 54 },
   requestText: { color: "#FFFFFF", fontSize: 14, fontWeight: "900" },
   disabled: { opacity: 0.5 },
   loadingCard: { alignItems: "center", paddingVertical: 28 },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   status_completed: { backgroundColor: "#E8F0FF" },
   status_declined: { backgroundColor: "#FCE9E6" },
   status_cancelled: { backgroundColor: "#EEF0EE" },
-  statusText: { color: colors.ink, fontSize: 8, fontWeight: "900" },
+  statusText: { color: "#161616", fontSize: 8, fontWeight: "900" },
   staffNote: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 10 },
   cancelButton: { alignItems: "center", borderColor: "#EBCBC6", borderRadius: 11, borderWidth: 1, justifyContent: "center", marginTop: 13, minHeight: 40 },
   cancelText: { color: colors.danger, fontSize: 11, fontWeight: "900" },
