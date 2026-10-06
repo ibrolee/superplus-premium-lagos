@@ -22,14 +22,14 @@ function adaptiveColor(light: string, dark: string, androidAttribute: string) {
 }
 
 export const colors: Record<string, any> = {
-  background: adaptiveColor("#F8F6F3", "#0F1011", "?android:attr/colorBackground"),
-  surface: adaptiveColor("#FFFFFF", "#1A1C1E", "?android:attr/colorBackgroundFloating"),
-  surfaceMuted: adaptiveColor("#FFF1EA", "#2A211E", "?android:attr/colorBackgroundFloating"),
+  background: adaptiveColor("#F8F6F3", "#0F1011", "?attr/colorBackground"),
+  surface: adaptiveColor("#FFFFFF", "#1A1C1E", "?attr/colorBackgroundFloating"),
+  surfaceMuted: adaptiveColor("#FFF1EA", "#2A211E", "?attr/colorBackgroundFloating"),
   green: "#111111",
   green2: "#E44824",
-  ink: adaptiveColor("#161616", "#F5F2EF", "?android:attr/textColorPrimary"),
-  muted: adaptiveColor("#6F6A66", "#B6B0AB", "?android:attr/textColorSecondary"),
-  line: adaptiveColor("#EEE3DC", "#36393C", "?android:attr/textColorTertiary"),
+  ink: adaptiveColor("#161616", "#F5F2EF", "?attr/textColorPrimary"),
+  muted: adaptiveColor("#6F6A66", "#B6B0AB", "?attr/textColorSecondary"),
+  line: adaptiveColor("#EEE3DC", "#36393C", "?attr/textColorTertiary"),
   success: "#287A45",
   amber: "#A96500",
   danger: "#C13228",
