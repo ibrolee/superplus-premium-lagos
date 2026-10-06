@@ -1431,7 +1431,18 @@ function AdminEngagement() {
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-black capitalize">{item.platform}</p>
-                    <p className="mt-1 break-words text-sm font-bold">@{item.handle}</p>
+                    <a
+                      href={
+                        item.platform === "instagram"
+                          ? "https://www.instagram.com/" + encodeURIComponent(item.handle) + "/"
+                          : "https://www.tiktok.com/@" + encodeURIComponent(item.handle)
+                      }
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex break-words text-sm font-bold text-[#356942] underline underline-offset-2"
+                    >
+                      @{item.handle} · open profile
+                    </a>
                     <p className="mt-1 break-words text-xs text-[#657568]">
                       {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
