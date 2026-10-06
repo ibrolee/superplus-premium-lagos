@@ -40,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           export RUNNER_TRACKING_ID=""
-          nohup env CI=1 EXPO_TUNNEL_SUBDOMAIN="$EXPO_TUNNEL_SUBDOMAIN" npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
+          nohup env CI=1 EXPO_NO_DEV_TOOLS=1 EXPO_TUNNEL_SUBDOMAIN="$EXPO_TUNNEL_SUBDOMAIN" npx expo start --go --tunnel --clear > /tmp/spf-expo.log 2>&1 &
           echo $! > /tmp/spf-expo.pid
 
           OPEN_URL="https://$EXPO_TUNNEL_SUBDOMAIN.exp.direct/_expo/open?platform=ios&runtime=expo"
