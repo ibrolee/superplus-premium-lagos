@@ -20,7 +20,6 @@ async function loadHomeGallery(): Promise<GalleryDisplayItem[] | null> {
       .from("gallery_media")
       .select("id,title,category,media_type,storage_path,thumbnail_path")
       .eq("is_published", true)
-      .eq("media_type", "image")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(4);
