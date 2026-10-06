@@ -31,7 +31,7 @@ jobs:
         run: npm install --package-lock=false
 
       - name: Install Expo tunnel helper
-        run: npm install --no-save @expo/ngrok@^4.1.0
+        run: npm install --no-save --legacy-peer-deps @expo/ngrok@^4.1.0
 
       - name: Start Safari to Expo Go preview
         shell: bash
