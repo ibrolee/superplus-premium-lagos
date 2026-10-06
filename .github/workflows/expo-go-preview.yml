@@ -1,0 +1,67 @@
+name: Expo Go live preview
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/expo-go-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  serve-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout current SPF app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install app dependencies
+        run: npm install --package-lock=false
+
+      - name: Install Expo tunnel helper
+        run: npm install --no-save @expo/ngrok@^4.1.0
+
+      - name: Start Safari to Expo Go preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          CI=1 npx expo start --tunnel --clear > /tmp/spf-expo.log 2>&1 &
+          EXPO_PID=$!
+
+          EXPO_URL=""
+          for i in $(seq 1 90); do
+            EXPO_URL=$(grep -Eo 'exp://[^[:space:]]+' /tmp/spf-expo.log | head -n 1 || true)
+            if [ -n "$EXPO_URL" ]; then
+              break
+            fi
+            if ! kill -0 "$EXPO_PID" 2>/dev/null; then
+              cat /tmp/spf-expo.log
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [ -z "$EXPO_URL" ]; then
+            cat /tmp/spf-expo.log
+            exit 1
+          fi
+
+          echo "EXPO_URL=$EXPO_URL" >> "$GITHUB_ENV"
+          echo "::notice title=SPF Expo Go Preview::$EXPO_URL"
+          echo "SPF Expo Go preview: $EXPO_URL"
+
+          while kill -0 "$EXPO_PID" 2>/dev/null; do
+            sleep 30
+          done
