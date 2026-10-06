@@ -35,7 +35,7 @@ jobs:
         run: npm install --package-lock=false
 
       - name: Add Expo Updates locally for hosted preview
-        run: npx expo install expo-updates --npm
+        run: npm install --no-save --legacy-peer-deps expo-updates@~57.0.23
 
       - name: Configure Expo Go compatible hosted update locally
         shell: bash
