@@ -250,7 +250,7 @@ export function HomePageGallery({
           </div>
         </div>
       </section>
-      <GalleryExperience compact initialItems={initialGalleryItems} />
+      <GalleryExperience compact {...(initialGalleryItems !== undefined ? { initialItems: initialGalleryItems } : {})} />
       <section className="py-10 sm:py-12">
         <div className="section-shell">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
