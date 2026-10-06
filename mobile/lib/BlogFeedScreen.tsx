@@ -111,7 +111,7 @@ export default function BlogFeedScreen({ showBack = false }: { showBack?: boolea
             <Ionicons
               name={filter === "saved" ? "bookmark" : "bookmark-outline"}
               size={14}
-              color={filter === "saved" ? "#FFFFFF" : colors.green}
+              color={filter === "saved" ? "#FFFFFF" : colors.ink}
             />
             <Text style={[styles.filterText, filter === "saved" && styles.filterTextActive]}>
               Saved {savedIds.size ? `(${savedIds.size})` : ""}
@@ -119,7 +119,7 @@ export default function BlogFeedScreen({ showBack = false }: { showBack?: boolea
           </Pressable>
         ) : (
           <Pressable style={styles.filterChip} onPress={() => router.push("/login")}>
-            <Ionicons name="person-outline" size={14} color={colors.green} />
+            <Ionicons name="person-outline" size={14} color={colors.ink} />
             <Text style={styles.filterText}>Member sign in</Text>
           </Pressable>
         )}
@@ -127,7 +127,7 @@ export default function BlogFeedScreen({ showBack = false }: { showBack?: boolea
 
       {loading ? (
         <Card style={styles.loadingCard}>
-          <ActivityIndicator color={colors.green} />
+          <ActivityIndicator color={colors.green2} />
           <Text style={styles.loadingText}>Loading articles…</Text>
         </Card>
       ) : error ? (
@@ -223,12 +223,12 @@ const styles = StyleSheet.create({
     minHeight: 38,
     paddingHorizontal: 13,
   },
-  filterChipActive: { backgroundColor: colors.green, borderColor: colors.green },
-  filterText: { color: colors.green, fontSize: 11, fontWeight: "900" },
+  filterChipActive: { backgroundColor: colors.green2, borderColor: colors.green2 },
+  filterText: { color: colors.ink, fontSize: 11, fontWeight: "900" },
   filterTextActive: { color: "#FFFFFF" },
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   loadingText: { color: colors.muted, fontSize: 13, fontWeight: "700" },
-  errorCard: { alignItems: "center", gap: 10, backgroundColor: "#FFF3F1" },
+  errorCard: { alignItems: "center", gap: 10, backgroundColor: colors.surface },
   errorText: { color: colors.danger, fontSize: 13, fontWeight: "700", textAlign: "center" },
   emptyTitle: { color: colors.ink, fontSize: 18, fontWeight: "900", textAlign: "center" },
   emptyText: { color: colors.muted, fontSize: 13, lineHeight: 20, marginTop: 6, textAlign: "center" },
