@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           echo "Starting SPF Expo Go tunnel..."
           npx expo whoami || true
-          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --no-dev --minify --clear > /tmp/spf-expo.log 2>&1 &
+          env CI=1 EXPO_NO_DEV_TOOLS=1 npx expo start --go --tunnel --clear > /tmp/spf-expo.log 2>&1 &
           PID=$!
 
           PUBLIC_URL=""
