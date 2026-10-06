@@ -43,7 +43,8 @@
           "icon": "./assets/notification-icon.png"
         }
       ],
-      "expo-system-ui"
+      "expo-system-ui",
+      "./plugins/with-spf-theme-colors"
     ],
     "owner": "ibrolee98",
     "extra": {
