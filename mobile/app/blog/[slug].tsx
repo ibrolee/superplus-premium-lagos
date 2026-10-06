@@ -13,7 +13,8 @@ import {
   View,
 } from "react-native";
 import { useApp } from "../../lib/AppContext";
-import { supabase } from "../../lib/supabase";\nimport { optimizedBlogImage } from "../../lib/blog-images";
+import { supabase } from "../../lib/supabase";
+import { optimizedBlogImage } from "../../lib/blog-images";
 import { Card, colors, dateLabel, Screen, sharedStyles } from "../../lib/ui";
 
 type BlogPost = {
@@ -388,7 +389,16 @@ export default function BlogArticleScreen() {
       </View>
 
       {post.featured_image ? (
-        <Image\n          source={{ uri: optimizedBlogImage(post.featured_image, 1400, 800), cache: "force-cache" }}\n          style={styles.hero}\n          resizeMode="cover"\n          resizeMethod="resize"\n          fadeDuration={140}\n        />
+        <Image
+          source={{
+            uri: optimizedBlogImage(post.featured_image, 1400, 800),
+            cache: "force-cache",
+          }}
+          style={styles.hero}
+          resizeMode="cover"
+          resizeMethod="resize"
+          fadeDuration={140}
+        />
       ) : (
         <View style={styles.heroFallback}>
           <Ionicons name="barbell-outline" size={44} color={colors.green2} />
