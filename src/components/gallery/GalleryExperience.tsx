@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, Images, Play, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
@@ -82,8 +82,35 @@ function GalleryImage({
   className: string;
   priority: boolean;
 }) {
+  const host = useRef<HTMLDivElement | null>(null);
   const [source, setSource] = useState(item.thumbnailUrl);
   const [failed, setFailed] = useState(false);
+  const [visible, setVisible] = useState(priority);
+
+  useEffect(() => {
+    if (priority || visible) return;
+    const node = host.current;
+    if (!node || !("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "250px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [priority, visible]);
+
+  if (!visible) {
+    return <div ref={host} className={`${className} bg-zinc-800`} aria-hidden="true" />;
+  }
+
   return failed ? (
     <div
       className="flex h-full w-full items-center justify-center bg-zinc-800 px-3 text-center text-xs text-white/70"
