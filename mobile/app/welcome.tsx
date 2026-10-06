@@ -43,7 +43,7 @@ export default function WelcomeScreen() {
         </Pressable>
 
         <Pressable style={styles.loginButton} onPress={() => router.push("/login")}>
-          <Ionicons name="person-circle-outline" size={19} color={colors.green} />
+          <Ionicons name="person-circle-outline" size={19} color={colors.green2} />
           <Text style={styles.loginButtonText}>Already have an account? Sign in</Text>
         </Pressable>
       </View>
@@ -87,7 +87,7 @@ export default function WelcomeScreen() {
         {publicFacilities.map((item) => (
           <Card key={item.title} style={styles.facilityCard}>
             <View style={styles.facilityIcon}>
-              <Ionicons name={item.icon} size={22} color={colors.green} />
+              <Ionicons name={item.icon} size={22} color={colors.green2} />
             </View>
             <View style={styles.grow}>
               <Text style={styles.facilityTitle}>{item.title}</Text>
@@ -112,21 +112,21 @@ export default function WelcomeScreen() {
             style={styles.smallAction}
             onPress={() => void Linking.openURL(publicContact.directions)}
           >
-            <Ionicons name="navigate-outline" size={18} color={colors.green} />
+            <Ionicons name="navigate-outline" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>Directions</Text>
           </Pressable>
           <Pressable
             style={styles.smallAction}
             onPress={() => void Linking.openURL(publicContact.whatsapp)}
           >
-            <Ionicons name="logo-whatsapp" size={18} color={colors.green} />
+            <Ionicons name="logo-whatsapp" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>WhatsApp</Text>
           </Pressable>
           <Pressable
             style={styles.smallAction}
             onPress={() => void Linking.openURL(`tel:${publicContact.phone}`)}
           >
-            <Ionicons name="call-outline" size={18} color={colors.green} />
+            <Ionicons name="call-outline" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>Call</Text>
           </Pressable>
         </View>
@@ -185,9 +185,9 @@ const styles = StyleSheet.create({
   hoursTime: { color: colors.muted, fontSize: 11, fontWeight: "700" },
   contactActions: { flexDirection: "row", gap: 8, marginTop: 12 },
   smallAction: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 12, flex: 1, gap: 5, justifyContent: "center", minHeight: 58, paddingHorizontal: 8 },
-  smallActionText: { color: colors.green, fontSize: 10, fontWeight: "900" },
+  smallActionText: { color: colors.green2, fontSize: 10, fontWeight: "900" },
   legalRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 2 },
-  legalLink: { color: colors.green, fontSize: 10, fontWeight: "900" },
+  legalLink: { color: colors.green2, fontSize: 10, fontWeight: "900" },
   legalDot: { color: colors.muted, fontSize: 10 },
   footerNote: { color: colors.muted, fontSize: 10, lineHeight: 16, paddingHorizontal: 8, textAlign: "center" },
 });
