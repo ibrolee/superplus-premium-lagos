@@ -54,4 +54,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-first-release-1.0.0-2026-10-06 Super-Plus-Fitness-1.0.0.apk             --title "Super Plus Fitness 1.0.0 — First Release"             --notes "Standalone Android 1.0.0 after a full dark-mode audit across login, membership, home, activity, blog, rewards, goals, workouts, notifications and shared components. Includes collapsed appearance controls with automatic theme refresh and optimized blog images."
+          gh release create spf-closed-test-1.0.0-2026-10-06 Super-Plus-Fitness-1.0.0.apk             --title "Super Plus Fitness 1.0.0 — Closed Test"             --notes "Standalone Android 1.0.0 closed-test candidate including final dark-mode fixes, whole-number SP Points, Monthly Beast, recurring weekly 7-Day App Streak, optimized blog images, private feedback bonuses, verified Instagram/TikTok follow bonuses, reward refund handling, and current member features."
