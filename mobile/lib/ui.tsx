@@ -114,7 +114,7 @@ export function Screen({
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={colors.green}
+              tintColor={colors.green2}
             />
           ) : undefined
         }
@@ -233,7 +233,7 @@ export const sharedStyles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 14,
     justifyContent: "center",
     minHeight: 52,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: colors.green,
+    backgroundColor: colors.green2,
     borderRadius: 14,
     justifyContent: "center",
     minHeight: 52,
