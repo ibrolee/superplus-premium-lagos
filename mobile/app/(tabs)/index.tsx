@@ -554,7 +554,7 @@ const styles = StyleSheet.create({
   },
   exploreIcon: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.surface,
     borderRadius: 12,
     height: 42,
     justifyContent: "center",

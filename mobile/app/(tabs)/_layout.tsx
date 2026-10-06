@@ -52,7 +52,7 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: "#849188",
         tabBarLabelStyle: { fontSize: 10, fontWeight: "800", marginBottom: 4 },
         tabBarStyle: {
-          backgroundColor: "#FFFFFF",
+          backgroundColor: colors.surface,
           borderTopColor: colors.line,
           height: 62 + Math.max(insets.bottom, 8),
           paddingBottom: Math.max(insets.bottom, 8),
@@ -97,12 +97,12 @@ export default function TabsLayout() {
         tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? "book" : "book-outline"} color={color} focused={focused} tone={iconPalette.gold} />,
       }} />
       <Tabs.Screen
-        name="profile"
+        name="settings"
         options={{
-          title: "Profile",
+          title: "Settings",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon
-              name={focused ? "person-circle" : "person-circle-outline"}
+              name={focused ? "settings" : "settings-outline"}
               color={color}
               focused={focused}
               tone={iconPalette.purple}
@@ -110,6 +110,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="profile" options={{ href: null }} />
     </Tabs>
   );
 }
