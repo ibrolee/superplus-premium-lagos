@@ -37,7 +37,8 @@
           "defaultChannel": "membership-reminders",
           "icon": "./assets/notification-icon.png"
         }
-      ]
+      ],
+      "expo-system-ui"
     ],
     "owner": "ibrolee98",
     "extra": {
