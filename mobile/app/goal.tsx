@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   muted: { color: colors.muted, fontSize: 13, fontWeight: "700" },
   progressCard: {
-    backgroundColor: colors.green,
+    backgroundColor: "#211A25",
     borderRadius: 24,
     padding: 20,
   },
