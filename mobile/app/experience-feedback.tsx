@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Redirect, router, useLocalSearchParams } from "expo-router";
+import { Redirect, router } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -21,24 +21,14 @@ import {
   sharedStyles,
 } from "../lib/ui";
 
-type FeedbackKind = "app" | "gym";
 type RatingKey =
-  | "ease"
-  | "design"
-  | "usefulness"
   | "equipment"
   | "cleanliness"
   | "staff"
   | "facilities";
 type RatingMap = Partial<Record<RatingKey, number>>;
 
-const APP_ROWS: Array<[RatingKey, string]> = [
-  ["ease", "Ease of use"],
-  ["design", "Design & appearance"],
-  ["usefulness", "Usefulness"],
-];
-
-const GYM_ROWS: Array<[RatingKey, string]> = [
+const RATING_ROWS: Array<[RatingKey, string]> = [
   ["equipment", "Equipment"],
   ["cleanliness", "Cleanliness"],
   ["staff", "Staff & service"],
@@ -73,10 +63,7 @@ function RatingRow({
 }
 
 export default function ExperienceFeedbackScreen() {
-  const params = useLocalSearchParams<{ kind?: string }>();
   const { session, member, dataLoading, refreshing, refresh } = useApp();
-  const initialKind: FeedbackKind = params.kind === "gym" ? "gym" : "app";
-  const [kind, setKind] = useState<FeedbackKind>(initialKind);
   const [overall, setOverall] = useState(0);
   const [ratings, setRatings] = useState<RatingMap>({});
   const [comments, setComments] = useState("");
@@ -84,7 +71,7 @@ export default function ExperienceFeedbackScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const rows = kind === "app" ? APP_ROWS : GYM_ROWS;
+  const rows = RATING_ROWS;
 
   const load = useCallback(async () => {
     if (!member?.id) {
@@ -97,7 +84,7 @@ export default function ExperienceFeedbackScreen() {
       .from("member_experience_feedback")
       .select("overall_rating,ratings,comments")
       .eq("member_id", member.id)
-      .eq("feedback_kind", kind)
+      .eq("feedback_kind", "gym")
       .maybeSingle();
 
     if (error) {
@@ -117,7 +104,7 @@ export default function ExperienceFeedbackScreen() {
       setComments("");
     }
     setLoading(false);
-  }, [kind, member?.id]);
+  }, [member?.id]);
 
   useEffect(() => {
     void load();
@@ -140,7 +127,7 @@ export default function ExperienceFeedbackScreen() {
     );
 
     const { data, error } = await supabase.rpc("submit_my_experience_feedback", {
-      p_kind: kind,
+      p_kind: "gym",
       p_overall_rating: overall,
       p_ratings: payload,
       p_comments: comments.trim() || null,
@@ -175,32 +162,13 @@ export default function ExperienceFeedbackScreen() {
       <Text style={sharedStyles.kicker}>PRIVATE FEEDBACK</Text>
       <Text style={sharedStyles.title}>Help us improve.</Text>
       <Text style={sharedStyles.subtitle}>
-        Your first App Feedback and first Gym Experience Feedback each earn 10 SP Points. Honest low or high ratings earn the same amount.
+        Your first Gym Experience Feedback earns 10 SP Points. Honest low or high ratings earn the same amount.
       </Text>
 
       {!member ? (
         <AccountLinkRequired email={session.user.email} />
       ) : (
         <>
-          <View style={styles.tabs}>
-            {(["app", "gym"] as const).map((item) => (
-              <Pressable
-                key={item}
-                onPress={() => setKind(item)}
-                style={[styles.tab, kind === item && styles.tabActive]}
-              >
-                <Ionicons
-                  name={item === "app" ? "phone-portrait-outline" : "barbell-outline"}
-                  size={17}
-                  color={kind === item ? "#FFFFFF" : colors.ink}
-                />
-                <Text style={[styles.tabText, kind === item && styles.tabTextActive]}>
-                  {item === "app" ? "App Feedback" : "Gym Experience"}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
           {loading ? (
             <Card style={styles.loadingCard}>
               <ActivityIndicator color={colors.green2} />
@@ -222,10 +190,8 @@ export default function ExperienceFeedbackScreen() {
                     </Text>
                     <Text style={styles.copy}>
                       {existing
-                        ? "You can update your feedback anytime, but points are awarded only once for this feedback type."
-                        : kind === "gym"
-                          ? "Requires at least one recorded gym visit."
-                          : "Available to any linked Super Plus member account."}
+                        ? "You can update your feedback anytime, but points are awarded only once."
+                        : "Requires at least one recorded gym visit."}
                     </Text>
                   </View>
                 </View>
@@ -255,11 +221,7 @@ export default function ExperienceFeedbackScreen() {
                   onChangeText={setComments}
                   multiline
                   maxLength={2000}
-                  placeholder={
-                    kind === "app"
-                      ? "What do you like, dislike, or want improved?"
-                      : "Tell us what went well or what the gym can improve."
-                  }
+                  placeholder="Tell us what went well or what the gym can improve."
                   placeholderTextColor={colors.muted}
                   textAlignVertical="top"
                   style={styles.textArea}
@@ -300,22 +262,6 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   backText: { color: colors.ink, fontSize: 12, fontWeight: "900" },
-  tabs: { flexDirection: "row", gap: 8 },
-  tab: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: 13,
-    borderWidth: 1,
-    flex: 1,
-    flexDirection: "row",
-    gap: 7,
-    justifyContent: "center",
-    minHeight: 46,
-  },
-  tabActive: { backgroundColor: colors.green2, borderColor: colors.green2 },
-  tabText: { color: colors.ink, fontSize: 11, fontWeight: "900" },
-  tabTextActive: { color: "#FFFFFF" },
   loadingCard: { alignItems: "center", paddingVertical: 28 },
   rewardRow: { alignItems: "center", flexDirection: "row", gap: 11 },
   rewardIcon: {
