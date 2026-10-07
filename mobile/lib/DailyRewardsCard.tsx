@@ -124,7 +124,7 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
     <View style={styles.challengeCard}>
       <View style={styles.challengeHeading}>
         <View style={styles.grow}>
-          <Text style={styles.challengeKicker}>WEEKLY BONUS</Text>
+          <Text style={styles.challengeKicker}>WEEKLY CHALLENGE</Text>
           <Text style={styles.challengeTitle}>7-Day App Streak</Text>
         </View>
         <Text style={[styles.challengeReward, status.weekly_streak_claimed && styles.challengeRewardDone]}>

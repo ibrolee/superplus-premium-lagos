@@ -3,11 +3,15 @@ import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { BrandLogo } from "../lib/BrandLogo";
-import { publicContact, publicHours } from "../lib/public-site";
+import {
+  publicContact,
+  publicFacilities,
+  publicHours,
+} from "../lib/public-site";
 import { Card, colors, iconPalette, Screen, sharedStyles } from "../lib/ui";
 
 async function openSite(path: string) {
-  await WebBrowser.openBrowserAsync("https://www.superplusfitness.com" + path);
+  await WebBrowser.openBrowserAsync(`https://www.superplusfitness.com${path}`);
 }
 
 export default function WelcomeScreen() {
@@ -17,18 +21,20 @@ export default function WelcomeScreen() {
         <BrandLogo size={116} />
         <View style={styles.brandCopy}>
           <Text style={sharedStyles.kicker}>SUPER PLUS FITNESS</Text>
-          <Text style={styles.tagline}>Your membership, in one place.</Text>
+          <Text style={styles.tagline}>Fitness That Fits Your Life.</Text>
           <Text style={sharedStyles.subtitle}>
-            Create a free account, manage your membership, view check-ins and access member rewards.
+            Create a free account, explore the app, read our latest articles
+            and choose a membership whenever you’re ready.
           </Text>
         </View>
       </View>
 
       <View style={styles.hero}>
         <Text style={styles.heroEyebrow}>SHOMOLU · LAGOS</Text>
-        <Text style={styles.heroTitle}>A simpler way to stay connected to Super Plus.</Text>
+        <Text style={styles.heroTitle}>Your fitness journey can start here.</Text>
         <Text style={styles.heroText}>
-          Your account is free. Join when you are ready, keep your membership details handy and receive important gym updates.
+          Your Super Plus account is free. Explore workouts, articles, rewards
+          and more first, then activate a gym membership whenever you’re ready.
         </Text>
 
         <Pressable style={styles.primaryButton} onPress={() => router.push("/create-account")}>
@@ -43,37 +49,52 @@ export default function WelcomeScreen() {
       </View>
 
       <View style={styles.quickGrid}>
+        <Pressable style={styles.quickCard} onPress={() => router.push("/blog")}>
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.purple.bg }]}>
+            <Ionicons name="newspaper-outline" size={24} color={iconPalette.purple.fg} />
+          </View>
+          <Text style={styles.quickTitle}>Blog</Text>
+          <Text style={styles.quickText}>Fitness, recovery and gym life.</Text>
+        </Pressable>
+
         <Pressable style={styles.quickCard} onPress={() => void openSite("/membership")}>
           <View style={[styles.quickIcon, { backgroundColor: iconPalette.blue.bg }]}>
             <Ionicons name="card-outline" size={24} color={iconPalette.blue.fg} />
           </View>
           <Text style={styles.quickTitle}>Memberships</Text>
-          <Text style={styles.quickText}>Compare plans and membership benefits.</Text>
+          <Text style={styles.quickText}>Compare plans and benefits.</Text>
         </Pressable>
 
-        <Pressable style={styles.quickCard} onPress={() => router.push("/login")}>
-          <View style={[styles.quickIcon, { backgroundColor: iconPalette.gold.bg }]}>
-            <Ionicons name="gift-outline" size={24} color={iconPalette.gold.fg} />
+        <Pressable style={styles.quickCard} onPress={() => void openSite("/spa-recovery")}>
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.pink.bg }]}>
+            <Ionicons name="sparkles-outline" size={24} color={iconPalette.pink.fg} />
           </View>
-          <Text style={styles.quickTitle}>Member rewards</Text>
-          <Text style={styles.quickText}>Sign in to view SP Points and available rewards.</Text>
-        </Pressable>
-
-        <Pressable style={styles.quickCard} onPress={() => void Linking.openURL(publicContact.directions)}>
-          <View style={[styles.quickIcon, { backgroundColor: iconPalette.teal.bg }]}>
-            <Ionicons name="navigate-outline" size={24} color={iconPalette.teal.fg} />
-          </View>
-          <Text style={styles.quickTitle}>Visit us</Text>
-          <Text style={styles.quickText}>Find Super Plus Fitness in Shomolu.</Text>
+          <Text style={styles.quickTitle}>Spa & recovery</Text>
+          <Text style={styles.quickText}>Massage and wellness services.</Text>
         </Pressable>
 
         <Pressable style={styles.quickCard} onPress={() => void openSite("/contact")}>
-          <View style={[styles.quickIcon, { backgroundColor: iconPalette.purple.bg }]}>
-            <Ionicons name="chatbubble-ellipses-outline" size={24} color={iconPalette.purple.fg} />
+          <View style={[styles.quickIcon, { backgroundColor: iconPalette.teal.bg }]}>
+            <Ionicons name="chatbubble-ellipses-outline" size={24} color={iconPalette.teal.fg} />
           </View>
           <Text style={styles.quickTitle}>Contact</Text>
-          <Text style={styles.quickText}>Questions? Reach the Super Plus team.</Text>
+          <Text style={styles.quickText}>Questions? Reach the gym team.</Text>
         </Pressable>
+      </View>
+
+      <Text style={styles.sectionTitle}>What you’ll find here</Text>
+      <View style={styles.facilityList}>
+        {publicFacilities.map((item) => (
+          <Card key={item.title} style={styles.facilityCard}>
+            <View style={styles.facilityIcon}>
+              <Ionicons name={item.icon} size={22} color={colors.green2} />
+            </View>
+            <View style={styles.grow}>
+              <Text style={styles.facilityTitle}>{item.title}</Text>
+              <Text style={styles.facilityText}>{item.text}</Text>
+            </View>
+          </Card>
+        ))}
       </View>
 
       <Card>
@@ -87,15 +108,24 @@ export default function WelcomeScreen() {
         ))}
 
         <View style={styles.contactActions}>
-          <Pressable style={styles.smallAction} onPress={() => void Linking.openURL(publicContact.directions)}>
+          <Pressable
+            style={styles.smallAction}
+            onPress={() => void Linking.openURL(publicContact.directions)}
+          >
             <Ionicons name="navigate-outline" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>Directions</Text>
           </Pressable>
-          <Pressable style={styles.smallAction} onPress={() => void Linking.openURL(publicContact.whatsapp)}>
+          <Pressable
+            style={styles.smallAction}
+            onPress={() => void Linking.openURL(publicContact.whatsapp)}
+          >
             <Ionicons name="logo-whatsapp" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>WhatsApp</Text>
           </Pressable>
-          <Pressable style={styles.smallAction} onPress={() => void Linking.openURL("tel:" + publicContact.phone)}>
+          <Pressable
+            style={styles.smallAction}
+            onPress={() => void Linking.openURL(`tel:${publicContact.phone}`)}
+          >
             <Ionicons name="call-outline" size={18} color={colors.green2} />
             <Text style={styles.smallActionText}>Call</Text>
           </Pressable>
@@ -117,7 +147,8 @@ export default function WelcomeScreen() {
       </View>
 
       <Text style={styles.footerNote}>
-        Staff and admin operations remain on the secure Super Plus website. This app is for guests and members.
+        Staff and admin operations remain on the secure Super Plus website.
+        This app is designed for guests and members.
       </Text>
     </Screen>
   );
@@ -140,6 +171,13 @@ const styles = StyleSheet.create({
   quickIcon: { alignItems: "center", borderRadius: 13, height: 46, justifyContent: "center", width: 46 },
   quickTitle: { color: colors.ink, fontSize: 14, fontWeight: "900", marginTop: 12 },
   quickText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  sectionTitle: { color: colors.ink, fontSize: 19, fontWeight: "900", marginTop: 2 },
+  facilityList: { gap: 10 },
+  facilityCard: { alignItems: "center", flexDirection: "row", gap: 13 },
+  facilityIcon: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 13, height: 44, justifyContent: "center", width: 44 },
+  grow: { flex: 1 },
+  facilityTitle: { color: colors.ink, fontSize: 14, fontWeight: "900" },
+  facilityText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 3 },
   sectionKicker: { color: colors.green2, fontSize: 10, fontWeight: "900", letterSpacing: 1.2 },
   address: { color: colors.ink, fontSize: 17, fontWeight: "900", lineHeight: 23, marginBottom: 12, marginTop: 5 },
   hoursRow: { alignItems: "center", borderTopColor: colors.line, borderTopWidth: 1, flexDirection: "row", justifyContent: "space-between", paddingVertical: 10 },

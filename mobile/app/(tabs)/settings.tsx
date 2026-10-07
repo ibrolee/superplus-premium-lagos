@@ -146,7 +146,7 @@ export default function SettingsScreen() {
 
     Alert.alert(
       "Permanently delete account?",
-      "This removes your Super Plus login and deletes or anonymizes app data such as membership access history, SP Points, bookings and feedback. Certain payment or accounting records may be retained where required.",
+      "This removes your Super Plus login and deletes or anonymizes app data such as attendance activity, SP Points, challenges, bookings, saved posts, likes and comments. Certain payment or accounting records may be retained where required.",
       [
         { text: "Cancel", style: "cancel" },
         {

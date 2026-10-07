@@ -27,7 +27,7 @@ function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-xl font-bold text-foreground">Information we collect</h2>
-            <p className="mt-2">Depending on how you use our services, we may collect your name, email address, phone number, birthday day/month, membership and payment records, membership access and reception check-in history, bookings, reward activity, app feedback, app notifications and device push-notification tokens. Website interactions may also include blog likes, comments or saved posts. We also receive basic technical and security information needed to operate our website and app.</p>
+            <p className="mt-2">Depending on how you use our services, we may collect your name, email address, phone number, birthday day/month, membership and payment records, gym attendance, bookings, workout-planner entries, visit goals, reward activity, blog likes/comments/saves, app notifications and device push-notification tokens. We also receive basic technical and security information needed to operate our website and app.</p>
           </section>
 
           <section>
@@ -37,7 +37,7 @@ function PrivacyPolicyPage() {
 
           <section>
             <h2 className="text-xl font-bold text-foreground">How we use information</h2>
-            <p className="mt-2">We use information to create and manage memberships, authenticate members, record membership access check-ins, calculate loyalty SP Points, process rewards, handle bookings and renewals, send relevant membership or service notifications, support customers, prevent abuse and improve Super Plus services.</p>
+            <p className="mt-2">We use information to create and manage memberships, authenticate members, record gym visits, calculate SP Points and challenges, process rewards, handle bookings and renewals, send relevant membership or service notifications, support customers, prevent abuse and improve Super Plus services.</p>
           </section>
 
           <section>

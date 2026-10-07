@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import type { ComponentProps } from "react";
-import { View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View } from "react-native";
 import { useApp } from "../../lib/AppContext";
 import { colors, iconPalette, LoadingView } from "../../lib/ui";
 
@@ -81,18 +81,32 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="activity"
         options={{
-          title: "Visits",
+          title: "Activity",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? "time" : "time-outline"} color={color} focused={focused} tone={iconPalette.teal} />
+            <TabIcon
+              name={focused ? "stats-chart" : "stats-chart-outline"}
+              color={color}
+              focused={focused}
+              tone={iconPalette.teal}
+            />
           ),
         }}
       />
+      <Tabs.Screen name="blog" options={{
+        title: "Blog",
+        tabBarIcon: ({ color, focused }) => <TabIcon name={focused ? "book" : "book-outline"} color={color} focused={focused} tone={iconPalette.gold} />,
+      }} />
       <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
           tabBarIcon: ({ color, focused }) => (
-            <TabIcon name={focused ? "settings" : "settings-outline"} color={color} focused={focused} tone={iconPalette.purple} />
+            <TabIcon
+              name={focused ? "settings" : "settings-outline"}
+              color={color}
+              focused={focused}
+              tone={iconPalette.purple}
+            />
           ),
         }}
       />

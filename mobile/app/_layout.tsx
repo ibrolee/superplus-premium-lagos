@@ -18,12 +18,7 @@ Notifications.setNotificationHandler({
 
 function openNotificationResponse(response: Notifications.NotificationResponse | null) {
   const deepLink = response?.notification.request.content.data?.deep_link;
-  const blocked = ["/blog", "/workouts", "/goal"];
-  if (
-    typeof deepLink === "string" &&
-    deepLink.startsWith("/") &&
-    !blocked.some((path) => deepLink.startsWith(path))
-  ) {
+  if (typeof deepLink === "string" && deepLink.startsWith("/")) {
     router.push(deepLink as never);
   }
 }
