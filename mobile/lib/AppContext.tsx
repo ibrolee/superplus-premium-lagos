@@ -12,7 +12,6 @@ import { memberDisplayName } from "./member-name";
 import { registerMemberPushToken } from "./push-notifications";
 import { lagosToday } from "./ui";
 import { supabase } from "./supabase";
-import type { VisitGoal } from "./visit-goals";
 
 export type Member = {
   id: string;
@@ -84,7 +83,6 @@ type AppValue = {
   payments: Payment[];
   announcements: Announcement[];
   family: FamilySummary | null;
-  visitGoal: VisitGoal | null;
   notificationUnreadCount: number;
   refreshNotificationCount: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -120,7 +118,6 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [family, setFamily] = useState<FamilySummary | null>(null);
-  const [visitGoal, setVisitGoal] = useState<VisitGoal | null>(null);
   const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
 
   const clearMemberData = useCallback(() => {
@@ -130,7 +127,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPayments([]);
     setAnnouncements([]);
     setFamily(null);
-    setVisitGoal(null);
     setNotificationUnreadCount(0);
     setError("");
   }, []);
@@ -171,7 +167,6 @@ export function AppProvider({ children }: PropsWithChildren) {
           setAttendance([]);
           setPayments([]);
           setFamily(null);
-          setVisitGoal(null);
           setNotificationUnreadCount(0);
           return;
         }
@@ -185,7 +180,6 @@ export function AppProvider({ children }: PropsWithChildren) {
           attendanceResult,
           paymentsResult,
           familyResult,
-          visitGoalResult,
           notificationsResult,
           notificationReadsResult,
         ] = await Promise.all([
@@ -212,11 +206,6 @@ export function AppProvider({ children }: PropsWithChildren) {
             .limit(20),
           supabase.rpc("get_my_family_summary"),
           supabase
-            .from("member_visit_goals")
-            .select("*")
-            .eq("member_id", typedMember.id)
-            .maybeSingle(),
-          supabase
             .from("app_notifications")
             .select("id")
             .order("published_at", { ascending: false })
@@ -236,9 +225,6 @@ export function AppProvider({ children }: PropsWithChildren) {
         setAttendance((attendanceResult.data ?? []) as Attendance[]);
         setPayments((paymentsResult.data ?? []) as Payment[]);
         setFamily((familyResult.data ?? null) as FamilySummary | null);
-        setVisitGoal(
-          visitGoalResult.error ? null : ((visitGoalResult.data ?? null) as VisitGoal | null),
-        );
         const readIds = new Set(
           (notificationReadsResult.data ?? []).map((row) => String(row.notification_id)),
         );
@@ -338,7 +324,6 @@ export function AppProvider({ children }: PropsWithChildren) {
       payments,
       announcements,
       family,
-      visitGoal,
       notificationUnreadCount,
       refreshNotificationCount,
       refresh,
@@ -356,7 +341,6 @@ export function AppProvider({ children }: PropsWithChildren) {
       payments,
       announcements,
       family,
-      visitGoal,
       notificationUnreadCount,
       refreshNotificationCount,
       refresh,
