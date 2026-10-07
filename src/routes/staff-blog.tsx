@@ -86,7 +86,7 @@ function StaffBlogPage() {
 
   function resetEditor() { setSelectedPost(null); setTitle(""); setSlug(""); setExcerpt(""); setContent(""); setFeaturedImage(""); setCategory("Fitness"); setAuthorName("Super Plus Fitness"); setFeatured(false); setPublishMode("draft"); setScheduledDate(""); setError(""); setSuccess(""); }
   function openNewPost() { resetEditor(); setShowEditor(true); }
-  function fillEditor(post: BlogPost) { setSelectedPost(post); setTitle(post.title); setSlug(post.slug); setExcerpt(post.excerpt || ""); setContent(post.content); setFeaturedImage(post.featured_image || ""); setCategory(post.category); setAuthorName("Super Plus Fitness"); setFeatured(post.featured); setPublishMode(post.status); setScheduledDate(post.status === "scheduled" && post.published_at ? new Date(new Date(post.published_at).getTime() - new Date(post.published_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""); }
+  function fillEditor(post: BlogPost) { const effectiveStatus = getStatusLabel(post); setSelectedPost(post); setTitle(post.title); setSlug(post.slug); setExcerpt(post.excerpt || ""); setContent(post.content); setFeaturedImage(post.featured_image || ""); setCategory(post.category); setAuthorName("Super Plus Fitness"); setFeatured(post.featured); setPublishMode(effectiveStatus); setScheduledDate(effectiveStatus === "scheduled" && post.published_at ? new Date(new Date(post.published_at).getTime() - new Date(post.published_at).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""); }
   function openEditPost(post: BlogPost) { fillEditor(post); setError(""); setSuccess(""); setShowEditor(true); }
   function handleTitleChange(value: string) { setTitle(value); if (!selectedPost) setSlug(slugify(value)); }
 
@@ -130,12 +130,20 @@ function StaffBlogPage() {
     const validationError = validatePost(); if (validationError) { setError(validationError); return; }
     setSaving(true);
     const status = publishMode;
-    const publishedAt = publishMode === "published" ? new Date().toISOString() : publishMode === "scheduled" ? new Date(scheduledDate).toISOString() : null;
+    const selectedStatus = selectedPost ? getStatusLabel(selectedPost) : null;
+    const publishedAt =
+      publishMode === "published"
+        ? selectedPost?.published_at && selectedStatus === "published"
+          ? selectedPost.published_at
+          : new Date().toISOString()
+        : publishMode === "scheduled"
+          ? new Date(scheduledDate).toISOString()
+          : null;
     const cleanSlug = slugify(slug);
     const payload = { title: title.trim(), slug: cleanSlug, excerpt: excerpt.trim() || null, content: content.trim(), featured_image: featuredImage.trim() || null, category, author_name: "Super Plus Fitness", status, featured, published_at: publishedAt };
-    const shouldNotify = publishMode === "published" && (!selectedPost || selectedPost.status !== "published");
+    const shouldNotify = publishMode === "published" && (!selectedPost || selectedStatus !== "published");
     const shouldScheduleInApp =
-      publishMode === "scheduled" && (!selectedPost || selectedPost.status !== "scheduled");
+      publishMode === "scheduled" && (!selectedPost || selectedStatus !== "scheduled");
     const { error: saveError } = selectedPost ? await supabase.from("blog_posts").update(payload).eq("id", selectedPost.id) : await supabase.from("blog_posts").insert(payload);
     if (saveError) { setError(saveError.message.toLowerCase().includes("duplicate") ? "That URL slug is already being used. Please choose another one." : saveError.message); setSaving(false); return; }
 
