@@ -24,7 +24,7 @@ import {
   sharedStyles,
 } from "../lib/ui";
 
-type FeedbackKind = "app" | "gym";
+type FeedbackKind = "gym";
 type SocialPlatform = "instagram" | "tiktok";
 
 type SocialClaim = {
@@ -92,7 +92,7 @@ export default function BonusPointsScreen() {
       new Set(
         (feedbackResult.data ?? [])
           .map((item) => String(item.feedback_kind))
-          .filter((value): value is FeedbackKind => value === "app" || value === "gym"),
+          .filter((value): value is FeedbackKind => value === "gym"),
       ),
     );
 
@@ -171,7 +171,7 @@ export default function BonusPointsScreen() {
       <Text style={sharedStyles.kicker}>BONUS SP POINTS</Text>
       <Text style={sharedStyles.title}>Small actions. Extra points.</Text>
       <Text style={sharedStyles.subtitle}>
-        These bonuses are one-time rewards. Private feedback earns points; public reviews are always optional and never affect SP Points.
+        These bonuses are one-time rewards. Private gym experience feedback earns points; public reviews are always optional and never affect SP Points.
       </Text>
 
       {!member ? (
@@ -183,28 +183,8 @@ export default function BonusPointsScreen() {
         </Card>
       ) : (
         <>
-          <Text style={styles.sectionTitle}>Private feedback · 10 SP each</Text>
+          <Text style={styles.sectionTitle}>Private feedback · 10 SP</Text>
           <Card>
-            <View style={styles.taskRow}>
-              <View style={[styles.iconBox, { backgroundColor: iconPalette.blue.bg }]}>
-                <Ionicons name="phone-portrait-outline" size={20} color={iconPalette.blue.fg} />
-              </View>
-              <View style={styles.grow}>
-                <Text style={styles.taskTitle}>Rate the Super Plus app</Text>
-                <Text style={styles.copy}>Private 1–5 star feedback to help us improve the app.</Text>
-              </View>
-              <Pressable
-                onPress={() => router.push("/experience-feedback?kind=app" as never)}
-                style={[styles.actionButton, feedbackDone.has("app") && styles.secondaryButton]}
-              >
-                <Text style={[styles.actionText, feedbackDone.has("app") && styles.secondaryText]}>
-                  {feedbackDone.has("app") ? "Update" : "+10 SP"}
-                </Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.divider} />
-
             <View style={styles.taskRow}>
               <View style={[styles.iconBox, { backgroundColor: iconPalette.teal.bg }]}>
                 <Ionicons name="barbell-outline" size={20} color={iconPalette.teal.fg} />
@@ -330,7 +310,6 @@ const styles = StyleSheet.create({
   status: { color: colors.amber, fontSize: 9, fontWeight: "900", marginTop: 5, textTransform: "uppercase" },
   statusApproved: { color: colors.success },
   statusRejected: { color: colors.danger },
-  divider: { backgroundColor: colors.line, height: 1, marginVertical: 14 },
   actionButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 10, justifyContent: "center", minHeight: 38, minWidth: 68, paddingHorizontal: 10 },
   actionText: { color: "#FFFFFF", fontSize: 10, fontWeight: "900" },
   secondaryButton: { backgroundColor: colors.surfaceMuted, borderColor: colors.line, borderWidth: 1 },
