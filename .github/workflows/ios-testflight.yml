@@ -1,11 +1,6 @@
 name: iOS TestFlight build
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/ios-testflight.yml"
   workflow_dispatch:
 
 permissions:
@@ -44,5 +39,4 @@ jobs:
         run: npm run check:assets
 
       - name: Build iOS production app and submit to TestFlight
-        run: |
-          npx eas-cli@latest build             --platform ios             --profile production             --non-interactive             --auto-submit             --wait
+        run: npx eas-cli@latest build --platform ios --profile production --non-interactive --auto-submit --wait
