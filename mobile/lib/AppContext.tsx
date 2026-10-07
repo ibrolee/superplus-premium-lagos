@@ -207,7 +207,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           supabase.rpc("get_my_family_summary"),
           supabase
             .from("app_notifications")
-            .select("id")
+            .select("id,kind")
             .order("published_at", { ascending: false })
             .limit(100),
           supabase
@@ -228,8 +228,13 @@ export function AppProvider({ children }: PropsWithChildren) {
         const readIds = new Set(
           (notificationReadsResult.data ?? []).map((row) => String(row.notification_id)),
         );
+        const blockedKinds = new Set(["blog", "challenge", "workout", "goal", "fitness"]);
         setNotificationUnreadCount(
-          (notificationsResult.data ?? []).filter((row) => !readIds.has(String(row.id))).length,
+          (notificationsResult.data ?? []).filter(
+            (row) =>
+              !blockedKinds.has(String(row.kind || "").toLowerCase()) &&
+              !readIds.has(String(row.id)),
+          ).length,
         );
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Unable to load your member account.");
@@ -250,7 +255,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const [notificationsResult, readsResult] = await Promise.all([
       supabase
         .from("app_notifications")
-        .select("id")
+        .select("id,kind")
         .order("published_at", { ascending: false })
         .limit(100),
       supabase
@@ -262,8 +267,13 @@ export function AppProvider({ children }: PropsWithChildren) {
     const readIds = new Set(
       (readsResult.data ?? []).map((row) => String(row.notification_id)),
     );
+    const blockedKinds = new Set(["blog", "challenge", "workout", "goal", "fitness"]);
     setNotificationUnreadCount(
-      (notificationsResult.data ?? []).filter((row) => !readIds.has(String(row.id))).length,
+      (notificationsResult.data ?? []).filter(
+        (row) =>
+          !blockedKinds.has(String(row.kind || "").toLowerCase()) &&
+          !readIds.has(String(row.id)),
+      ).length,
     );
   }, [member?.id]);
 
