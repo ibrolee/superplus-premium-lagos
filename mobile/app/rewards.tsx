@@ -1,37 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, router } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { DailyRewardsCard } from "../lib/DailyRewardsCard";
 import { useApp } from "../lib/AppContext";
 import { supabase } from "../lib/supabase";
-import { uniqueVisitDates } from "../lib/visit-goals";
 import { Card, colors, iconPalette, Screen, sharedStyles } from "../lib/ui";
-
-type AchievementDefinition = {
-  code: string;
-  title: string;
-  description: string;
-  visit_threshold: number;
-  points_reward: number;
-};
-
-type MemberAchievement = {
-  achievement_code: string;
-  awarded_at: string;
-};
-
-type Challenge = {
-  id: string;
-  title: string;
-  description: string;
-  starts_on: string;
-  ends_on: string;
-  target_visits: number;
-  points_reward: number;
-};
-
-type ChallengeCompletion = { challenge_id: string; completed_at: string };
 
 type Reward = {
   id: string;
@@ -50,16 +24,11 @@ type Redemption = {
 };
 
 export default function RewardsScreen() {
-  const { session, member, attendance, refreshing, refresh } = useApp();
-  const [definitions, setDefinitions] = useState<AchievementDefinition[]>([]);
-  const [earned, setEarned] = useState<MemberAchievement[]>([]);
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [completions, setCompletions] = useState<ChallengeCompletion[]>([]);
+  const { session, member, refreshing, refresh } = useApp();
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [points, setPoints] = useState(0);
   const [visitPoints, setVisitPoints] = useState(10);
-  const [programStartedAt, setProgramStartedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState<string | null>(null);
 
@@ -72,35 +41,17 @@ export default function RewardsScreen() {
     setLoading(true);
     await supabase.rpc("sync_my_engagement");
 
-    const [
-      definitionsResult,
-      earnedResult,
-      challengesResult,
-      completionsResult,
-      ledgerResult,
-      rewardsResult,
-      redemptionsResult,
-      settingsResult,
-    ] = await Promise.all([
-      supabase.from("achievement_definitions").select("code,title,description,visit_threshold,points_reward").eq("active", true).order("visit_threshold"),
-      supabase.from("member_achievements").select("achievement_code,awarded_at").eq("member_id", member.id),
-      supabase.from("fitness_challenges").select("id,title,description,starts_on,ends_on,target_visits,points_reward").eq("active", true).order("ends_on"),
-      supabase.from("member_challenge_completions").select("challenge_id,completed_at").eq("member_id", member.id),
+    const [ledgerResult, rewardsResult, redemptionsResult, settingsResult] = await Promise.all([
       supabase.from("member_points_ledger").select("points").eq("member_id", member.id),
       supabase.from("reward_catalog").select("id,name,description,points_cost,inventory").eq("active", true).order("points_cost"),
       supabase.from("reward_redemptions").select("id,reward_id,points_cost,status,created_at").eq("member_id", member.id).order("created_at", { ascending: false }).limit(10),
-      supabase.from("app_engagement_settings").select("visit_points,program_started_at").eq("id", "default").maybeSingle(),
+      supabase.from("app_engagement_settings").select("visit_points").eq("id", "default").maybeSingle(),
     ]);
 
-    setDefinitions((definitionsResult.data ?? []) as AchievementDefinition[]);
-    setEarned((earnedResult.data ?? []) as MemberAchievement[]);
-    setChallenges((challengesResult.data ?? []) as Challenge[]);
-    setCompletions((completionsResult.data ?? []) as ChallengeCompletion[]);
     setRewards((rewardsResult.data ?? []) as Reward[]);
     setRedemptions((redemptionsResult.data ?? []) as Redemption[]);
     setPoints((ledgerResult.data ?? []).reduce((sum, item) => sum + Number(item.points || 0), 0));
     setVisitPoints(Number(settingsResult.data?.visit_points ?? 10));
-    setProgramStartedAt(settingsResult.data?.program_started_at ?? null);
     setLoading(false);
   }, [member?.id]);
 
@@ -108,25 +59,12 @@ export default function RewardsScreen() {
     void load();
   }, [load]);
 
-  const earnedCodes = useMemo(() => new Set(earned.map((item) => item.achievement_code)), [earned]);
-  const completedChallengeIds = useMemo(() => new Set(completions.map((item) => item.challenge_id)), [completions]);
-  const eligibleAttendance = useMemo(
-    () =>
-      programStartedAt
-        ? attendance.filter(
-            (item) => new Date(item.checked_in_at).getTime() >= new Date(programStartedAt).getTime(),
-          )
-        : attendance,
-    [attendance, programStartedAt],
-  );
-  const visitDates = useMemo(() => uniqueVisitDates(eligibleAttendance), [eligibleAttendance]);
-
   async function redeem(reward: Reward) {
     if (points < reward.points_cost || redeeming) return;
 
     Alert.alert(
       "Redeem reward?",
-      `${reward.name} costs ${reward.points_cost.toLocaleString()} SP Points.`,
+      reward.name + " costs " + reward.points_cost.toLocaleString() + " SP Points.",
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -136,11 +74,13 @@ export default function RewardsScreen() {
               setRedeeming(reward.id);
               const { error } = await supabase.rpc("redeem_my_reward", { p_reward_id: reward.id });
               setRedeeming(null);
+
               if (error) {
                 Alert.alert("Could not redeem", error.message || "Please try again.");
                 return;
               }
-              Alert.alert("Redemption requested", "Reception/management can now process this reward.");
+
+              Alert.alert("Redemption requested", "Reception or management can now process this reward.");
               await load();
             })();
           },
@@ -158,10 +98,10 @@ export default function RewardsScreen() {
           <Ionicons name="arrow-back" size={21} color={colors.ink} />
         </Pressable>
         <View style={styles.headingCopy}>
-          <Text style={sharedStyles.kicker}>REWARDS & CHALLENGES</Text>
-          <Text style={styles.title}>Your consistency pays.</Text>
+          <Text style={sharedStyles.kicker}>SP REWARDS</Text>
+          <Text style={styles.title}>Membership rewards made simple.</Text>
           <Text style={sharedStyles.subtitle}>
-            Earn whole-number SP Points from real gym visits, memberships, milestones, challenges and verified bonus activities.
+            Earn SP Points through eligible check-ins, memberships, app activity and verified bonus activities.
           </Text>
         </View>
       </View>
@@ -170,7 +110,7 @@ export default function RewardsScreen() {
         <Text style={styles.pointsLabel}>SP POINTS</Text>
         <Text style={styles.pointsValue}>{points.toLocaleString()}</Text>
         <Text style={styles.pointsNote}>
-          {visitPoints} point{visitPoints === 1 ? "" : "s"} per gym day from the SP Points launch onward, plus 100 points whenever you register or renew a paid membership plan. Multiple scans on the same day do not earn extra visit points, and you can also earn badge and challenge bonuses.
+          Eligible reception check-ins earn {visitPoints} point{visitPoints === 1 ? "" : "s"} per day. Registration and membership renewals can also earn points.
         </Text>
       </View>
 
@@ -183,7 +123,7 @@ export default function RewardsScreen() {
             <View style={styles.grow}>
               <Text style={styles.bonusTitle}>Bonus SP Points</Text>
               <Text style={styles.bonusText}>
-                Earn one-time bonuses for private app/gym feedback and verified Instagram or TikTok follows.
+                Earn one-time bonuses for private feedback and verified Instagram or TikTok follows.
               </Text>
             </View>
             <Pressable onPress={() => router.push("/bonus-points" as never)} style={styles.bonusButton}>
@@ -191,6 +131,7 @@ export default function RewardsScreen() {
               <Ionicons name="arrow-forward" size={15} color="#FFFFFF" />
             </Pressable>
           </Card>
+
           <DailyRewardsCard onAward={() => void load()} />
         </>
       )}
@@ -202,56 +143,12 @@ export default function RewardsScreen() {
         </Card>
       ) : (
         <>
-          <Text style={styles.sectionTitle}>Achievements</Text>
-          <View style={styles.achievementGrid}>
-            {definitions.map((item) => {
-              const unlocked = earnedCodes.has(item.code);
-              return (
-                <View key={item.code} style={[styles.achievementCard, !unlocked && styles.lockedCard]}>
-                  <View style={[styles.badgeIcon, unlocked && styles.badgeUnlocked]}>
-                    <Ionicons name={unlocked ? "trophy" : "lock-closed"} size={22} color={unlocked ? "#FFFFFF" : iconPalette.purple.fg} />
-                  </View>
-                  <Text style={styles.achievementTitle}>{item.title}</Text>
-                  <Text style={styles.achievementText}>{item.description}</Text>
-                  <Text style={styles.achievementPoints}>+{item.points_reward} pts</Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <Text style={styles.sectionTitle}>Active challenges</Text>
-          {challenges.length ? (
-            challenges.map((challenge) => {
-              const visits = visitDates.filter((day) => day >= challenge.starts_on && day <= challenge.ends_on).length;
-              const percentage = Math.min(100, Math.round((visits / challenge.target_visits) * 100));
-              const complete = completedChallengeIds.has(challenge.id) || visits >= challenge.target_visits;
-              return (
-                <Card key={challenge.id}>
-                  <View style={styles.challengeTop}>
-                    <View style={styles.grow}>
-                      <Text style={styles.challengeTitle}>{challenge.title}</Text>
-                      <Text style={styles.challengeText}>{challenge.description}</Text>
-                    </View>
-                    <Text style={styles.challengeReward}>+{challenge.points_reward}</Text>
-                  </View>
-                  <View style={styles.track}>
-                    <View style={[styles.fill, { width: `${percentage}%` as `${number}%` }]} />
-                  </View>
-                  <Text style={styles.challengeMeta}>
-                    {complete ? "Completed 🎉" : `${visits}/${challenge.target_visits} visits`} · Ends {challenge.ends_on}
-                  </Text>
-                </Card>
-              );
-            })
-          ) : (
-            <Card><Text style={styles.emptyText}>No active challenge right now.</Text></Card>
-          )}
-
-          <Text style={styles.sectionTitle}>Rewards</Text>
+          <Text style={styles.sectionTitle}>Available rewards</Text>
           {rewards.length ? (
             rewards.map((reward) => {
               const unavailable = reward.inventory === 0;
               const enough = points >= reward.points_cost;
+
               return (
                 <Card key={reward.id}>
                   <View style={styles.rewardRow}>
@@ -264,6 +161,7 @@ export default function RewardsScreen() {
                       <Text style={styles.rewardCost}>{reward.points_cost.toLocaleString()} SP Points</Text>
                     </View>
                   </View>
+
                   <Pressable
                     disabled={!enough || unavailable || redeeming === reward.id}
                     onPress={() => void redeem(reward)}
@@ -284,7 +182,7 @@ export default function RewardsScreen() {
             <Card>
               <Text style={styles.emptyTitle}>Reward catalogue is ready.</Text>
               <Text style={styles.emptyText}>
-                Management has not published a redeemable reward yet. Your points keep accumulating meanwhile.
+                Management has not published a redeemable reward yet. Your points remain available.
               </Text>
             </Card>
           )}
@@ -298,7 +196,11 @@ export default function RewardsScreen() {
                     <Ionicons name="gift-outline" size={18} color={iconPalette.pink.fg} />
                     <View style={styles.grow}>
                       <Text style={styles.redemptionTitle}>{item.points_cost.toLocaleString()} points</Text>
-                      <Text style={styles.redemptionMeta}>{item.status === "rejected" || item.status === "cancelled" ? item.status + " · points returned" : item.status}</Text>
+                      <Text style={styles.redemptionMeta}>
+                        {item.status === "rejected" || item.status === "cancelled"
+                          ? item.status + " · points returned"
+                          : item.status}
+                      </Text>
                     </View>
                   </View>
                 ))}
@@ -313,7 +215,16 @@ export default function RewardsScreen() {
 
 const styles = StyleSheet.create({
   topRow: { alignItems: "flex-start", flexDirection: "row", gap: 12 },
-  backButton: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 14, borderWidth: 1, height: 44, justifyContent: "center", width: 44 },
+  backButton: {
+    alignItems: "center",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
+  },
   headingCopy: { flex: 1, gap: 5 },
   title: { color: colors.ink, fontSize: 29, fontWeight: "900", letterSpacing: -0.8, lineHeight: 34 },
   pointsCard: { backgroundColor: "#211A25", borderRadius: 24, padding: 22 },
@@ -322,6 +233,7 @@ const styles = StyleSheet.create({
   pointsNote: { color: "#E9E4E0", fontSize: 11, lineHeight: 17, marginTop: 5 },
   bonusCard: { alignItems: "center", flexDirection: "row", gap: 11 },
   bonusIcon: { alignItems: "center", backgroundColor: iconPalette.purple.bg, borderRadius: 13, height: 44, justifyContent: "center", width: 44 },
+  grow: { flex: 1 },
   bonusTitle: { color: colors.ink, fontSize: 14, fontWeight: "900" },
   bonusText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
   bonusButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 11, flexDirection: "row", gap: 5, minHeight: 38, paddingHorizontal: 12 },
@@ -329,34 +241,18 @@ const styles = StyleSheet.create({
   loadingCard: { alignItems: "center", gap: 10, paddingVertical: 30 },
   loadingText: { color: colors.muted, fontSize: 12, fontWeight: "700" },
   sectionTitle: { color: colors.ink, fontSize: 19, fontWeight: "900", marginTop: 4 },
-  achievementGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  achievementCard: { backgroundColor: colors.surface, borderColor: colors.line, borderRadius: 18, borderWidth: 1, padding: 14, width: "48%" },
-  lockedCard: { opacity: 0.6 },
-  badgeIcon: { alignItems: "center", backgroundColor: iconPalette.purple.bg, borderRadius: 999, height: 42, justifyContent: "center", width: 42 },
-  badgeUnlocked: { backgroundColor: iconPalette.gold.fg },
-  achievementTitle: { color: colors.ink, fontSize: 13, fontWeight: "900", marginTop: 10 },
-  achievementText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
-  achievementPoints: { color: colors.green2, fontSize: 10, fontWeight: "900", marginTop: 8 },
-  challengeTop: { flexDirection: "row", gap: 12 },
-  grow: { flex: 1 },
-  challengeTitle: { color: colors.ink, fontSize: 16, fontWeight: "900" },
-  challengeText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
-  challengeReward: { color: colors.green2, fontSize: 13, fontWeight: "900" },
-  track: { backgroundColor: colors.surfaceMuted, borderRadius: 999, height: 8, marginTop: 14, overflow: "hidden" },
-  fill: { backgroundColor: colors.green2, borderRadius: 999, height: "100%" },
-  challengeMeta: { color: colors.muted, fontSize: 10, fontWeight: "700", marginTop: 8 },
-  rewardRow: { flexDirection: "row", gap: 12 },
-  rewardIcon: { alignItems: "center", backgroundColor: iconPalette.pink.bg, borderRadius: 12, height: 44, justifyContent: "center", width: 44 },
+  rewardRow: { alignItems: "center", flexDirection: "row", gap: 11 },
+  rewardIcon: { alignItems: "center", backgroundColor: iconPalette.pink.bg, borderRadius: 13, height: 44, justifyContent: "center", width: 44 },
   rewardTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
-  rewardText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 3 },
+  rewardText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 3 },
   rewardCost: { color: colors.green2, fontSize: 11, fontWeight: "900", marginTop: 6 },
-  redeemButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 12, justifyContent: "center", minHeight: 44, marginTop: 14 },
-  disabledButton: { opacity: 0.4 },
+  redeemButton: { alignItems: "center", backgroundColor: colors.green2, borderRadius: 12, justifyContent: "center", marginTop: 13, minHeight: 46 },
+  disabledButton: { opacity: 0.45 },
   redeemText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   emptyTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
-  emptyText: { color: colors.muted, fontSize: 12, lineHeight: 18, marginTop: 4 },
-  redemptionRow: { alignItems: "center", flexDirection: "row", gap: 10, paddingVertical: 7 },
-  border: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 6, paddingTop: 13 },
+  emptyText: { color: colors.muted, fontSize: 11, lineHeight: 17, marginTop: 4 },
+  redemptionRow: { alignItems: "center", flexDirection: "row", gap: 10, paddingVertical: 8 },
+  border: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 5, paddingTop: 13 },
   redemptionTitle: { color: colors.ink, fontSize: 12, fontWeight: "900" },
-  redemptionMeta: { color: colors.muted, fontSize: 10, marginTop: 2, textTransform: "capitalize" },
+  redemptionMeta: { color: colors.muted, fontSize: 10, marginTop: 3, textTransform: "capitalize" },
 });
