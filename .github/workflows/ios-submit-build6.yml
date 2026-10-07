@@ -29,5 +29,8 @@ jobs:
         with:
           node-version: "22.13"
 
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
       - name: Submit build 6 to App Store Connect / TestFlight
         run: npx eas-cli@latest submit --platform ios --profile production --id 8763c6f4-03b2-4461-b02a-7ce793356ef5 --non-interactive --wait
