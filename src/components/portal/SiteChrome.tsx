@@ -7,7 +7,7 @@ import { contact, navItems, openingHours } from '@/lib/site-data';
 import { GmailIcon, TikTokIcon, WhatsAppIcon } from './footer-brand-icons';
 
 const galleryNavItems = navItems.map(item => item.to === '/facilities' ? { label: 'Gallery', to: '/gallery' as const } : item);
-const links = [...galleryNavItems, { label: 'Portal', to: '/portal' }] as const;
+const links = galleryNavItems;
 const mobileSections = [
   { heading: 'PORTAL', items: [{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal'}] },
   { heading: 'Explore', items: galleryNavItems.slice(0, 5) },
@@ -30,8 +30,8 @@ export function Navbar() {
  </SheetContent></Sheet></div></div></header>;
 }
 export function Footer() {
- const primaryLinks=galleryNavItems.slice(0,6);
- const businessLinks=galleryNavItems.slice(6,8);
+ const primaryLinks=galleryNavItems.filter(item=>['/','/app','/membership','/personal-training','/gallery','/spa-recovery','/blog'].includes(item.to));
+ const businessLinks=galleryNavItems.filter(item=>['/about','/hmo','/contact'].includes(item.to));
  const accountLinks=[{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal'}] as const;
  return <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
  <div className="pointer-events-none absolute -right-28 top-12 size-72 rounded-full border-[42px] border-primary/15" aria-hidden="true"/><div className="pointer-events-none absolute -left-20 bottom-10 size-56 rounded-full bg-primary/10 blur-3xl" aria-hidden="true"/>
