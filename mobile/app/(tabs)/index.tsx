@@ -171,18 +171,6 @@ export default function HomeScreen() {
       </Pressable>
 
       {phase === "active" && (
-        <View style={styles.cardReminder}>
-          <View style={styles.cardReminderIcon}>
-            <Ionicons name="card-outline" size={22} color={iconPalette.blue.fg} />
-          </View>
-          <View style={styles.qrCopy}>
-            <Text style={styles.qrTitle}>Bring your membership card</Text>
-            <Text style={styles.qrText}>Your physical card is used to scan in and out at reception.</Text>
-          </View>
-        </View>
-      )}
-
-      {phase === "active" && (
         <Pressable style={styles.feedbackCard} onPress={() => router.push("/feedback")}>
           <View style={styles.feedbackIcon}>
             <Ionicons name="shield-checkmark-outline" size={22} color="#FFFFFF" />
@@ -466,24 +454,6 @@ const styles = StyleSheet.create({
   },
   goalNote: { color: colors.muted, flex: 1, fontSize: 11, fontWeight: "700", lineHeight: 17, marginTop: 9 },
   goalStreak: { color: colors.green2, fontSize: 11, fontWeight: "900" },
-  cardReminder: {
-    alignItems: "center",
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: 18,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: 12,
-    padding: 14,
-  },
-  cardReminderIcon: {
-    alignItems: "center",
-    backgroundColor: iconPalette.blue.bg,
-    borderRadius: 12,
-    height: 44,
-    justifyContent: "center",
-    width: 44,
-  },
   momentumGrid: { flexDirection: "row", gap: 10 },
   momentumCard: {
     backgroundColor: colors.surface,
@@ -562,9 +532,6 @@ const styles = StyleSheet.create({
   },
   exploreTitle: { color: colors.ink, fontSize: 15, fontWeight: "900", marginTop: 12 },
   exploreText: { color: colors.muted, fontSize: 10, lineHeight: 15, marginTop: 4 },
-  qrCopy: { flex: 1 },
-  qrTitle: { color: colors.ink, fontSize: 15, fontWeight: "900" },
-  qrText: { color: colors.muted, fontSize: 12, marginTop: 3 },
   visitRow: { alignItems: "center", flexDirection: "row", gap: 12, paddingVertical: 7 },
   rowBorder: { borderTopColor: colors.line, borderTopWidth: 1, marginTop: 6, paddingTop: 13 },
   visitIcon: {
