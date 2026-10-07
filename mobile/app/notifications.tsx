@@ -48,7 +48,11 @@ export default function NotificationsScreen() {
         .eq("member_id", member.id),
     ]);
 
-    setItems((notificationsResult.data ?? []) as AppNotification[]);
+    const blockedKinds = new Set(["blog", "challenge", "workout", "goal", "fitness"]);
+    const safeItems = ((notificationsResult.data ?? []) as AppNotification[]).filter(
+      (item) => !blockedKinds.has(String(item.kind || "").toLowerCase()),
+    );
+    setItems(safeItems);
     setReadIds(
       new Set((readsResult.data ?? []).map((row) => String(row.notification_id))),
     );
@@ -110,7 +114,11 @@ export default function NotificationsScreen() {
 
   async function openItem(item: AppNotification) {
     await markRead(item.id);
-    if (item.deep_link?.startsWith("/")) {
+    const blocked = ["/blog", "/workouts", "/goal"];
+    if (
+      item.deep_link?.startsWith("/") &&
+      !blocked.some((path) => item.deep_link!.startsWith(path))
+    ) {
       router.push(item.deep_link as never);
     }
   }
@@ -127,7 +135,7 @@ export default function NotificationsScreen() {
           <Text style={sharedStyles.kicker}>UPDATES</Text>
           <Text style={styles.title}>Notifications</Text>
           <Text style={sharedStyles.subtitle}>
-            Gym updates, new articles, challenges, bookings and important member notices.
+            Membership updates, bookings, rewards and important member notices.
           </Text>
         </View>
       </View>
@@ -156,13 +164,11 @@ export default function NotificationsScreen() {
           {items.map((item) => {
             const isUnread = !readIds.has(item.id);
             const tone =
-              item.kind === "blog"
-                ? iconPalette.purple
-                : item.kind === "challenge"
+              item.kind === "booking"
+                ? iconPalette.blue
+                : item.kind === "reward"
                   ? iconPalette.gold
-                  : item.kind === "booking"
-                    ? iconPalette.blue
-                    : iconPalette.orange;
+                  : iconPalette.orange;
             return (
               <Pressable
                 key={item.id}
@@ -172,13 +178,11 @@ export default function NotificationsScreen() {
                 <View style={[styles.iconWrap, { backgroundColor: tone.bg }, isUnread && styles.iconWrapUnread]}>
                   <Ionicons
                     name={
-                      item.kind === "blog"
-                        ? "newspaper-outline"
-                        : item.kind === "challenge"
-                          ? "trophy-outline"
-                          : item.kind === "booking"
-                            ? "calendar-outline"
-                            : "notifications-outline"
+                      item.kind === "booking"
+                        ? "calendar-outline"
+                        : item.kind === "reward"
+                          ? "gift-outline"
+                          : "notifications-outline"
                     }
                     size={20}
                     color={tone.fg}
