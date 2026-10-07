@@ -60,7 +60,7 @@ function DeleteAccountPage() {
       <div className="mx-auto max-w-2xl rounded-3xl border bg-background p-7 shadow-sm sm:p-10">
         <p className="text-xs font-extrabold uppercase tracking-[.18em] text-primary">Account privacy</p>
         <h1 className="mt-3 font-display text-5xl font-bold uppercase sm:text-6xl">Delete your account</h1>
-        <p className="mt-5 text-sm leading-7 text-muted-foreground">This page is the external account-deletion resource for the Super Plus Fitness mobile app. Deleting your account removes your login and deletes or anonymizes app-personalization data such as attendance activity, SP Points, challenges, rewards activity, bookings, workout entries, saved posts, likes, comments and push-notification tokens.</p>
+        <p className="mt-5 text-sm leading-7 text-muted-foreground">This page is the external account-deletion resource for the Super Plus Fitness mobile app. Deleting your account removes your login and deletes or anonymizes app-personalization data such as membership access history, SP Points, rewards activity, bookings, feedback and push-notification tokens.</p>
 
         <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-950">
           Some payment, membership transaction, accounting, dispute-prevention or legally required business records may be retained where necessary. Retained records are not used to recreate your deleted app account.
