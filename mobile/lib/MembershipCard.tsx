@@ -31,7 +31,7 @@ export function MembershipCard({ member, membership, phase, onChoosePlan }: {
           <View style={styles.ready}><Ionicons name="checkmark-circle" size={16} color="#287A45" /><Text style={styles.readyText}>ACCOUNT READY</Text></View>
         </View>
         <Text style={styles.emptyTitle}>No active membership yet</Text>
-        <Text style={styles.emptyText}>Your account is ready. Choose a membership plan anytime to start training, check in, earn SP Points and enjoy the full Super Plus experience.</Text>
+        <Text style={styles.emptyText}>Your account is ready. Choose a membership plan anytime to activate member access, check in, earn SP Points and enjoy the full Super Plus experience.</Text>
         <View style={styles.perks}>
           {([['fitness', 'Train'], ['qr-code', 'Check in'], ['sparkles', 'SP Points']] as const).map(([icon, label], index) => (
             <View key={label} style={[styles.perk, { backgroundColor: ['#EEE6FF', '#E3F4FF', '#FFF0CB'][index] }]}>
