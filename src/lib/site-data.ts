@@ -318,6 +318,7 @@ export const testimonials = [
 
 export const navItems = [
   { label: "Home", to: "/" },
+  { label: "App", to: "/app" },
   { label: "Membership", to: "/membership" },
   { label: "Personal Training", to: "/personal-training" },
   { label: "Facilities", to: "/facilities" },
