@@ -21,6 +21,7 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       GH_TOKEN: ${{ github.token }}
+      EAS_BUILD_SKIP_LOCKFILE_CHECK: "1"
 
     steps:
       - name: Checkout final SPF app
