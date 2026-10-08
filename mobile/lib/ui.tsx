@@ -22,14 +22,14 @@ function adaptiveColor(light: string, dark: string, androidAttribute: string) {
 }
 
 export const colors: Record<string, any> = {
-  background: adaptiveColor("#F8F6F3", "#0F1011", "@color/spf_background"),
+  background: adaptiveColor("#FFF8F3", "#0F1011", "@color/spf_background"),
   surface: adaptiveColor("#FFFFFF", "#1A1C1E", "@color/spf_surface"),
-  surfaceMuted: adaptiveColor("#FFF1EA", "#2A211E", "@color/spf_surface_muted"),
+  surfaceMuted: adaptiveColor("#FFF0E8", "#2A211E", "@color/spf_surface_muted"),
   green: "#111111",
   green2: "#E44824",
   ink: adaptiveColor("#161616", "#F5F2EF", "@color/spf_ink"),
   muted: adaptiveColor("#6F6A66", "#B6B0AB", "@color/spf_muted"),
-  line: adaptiveColor("#EEE3DC", "#36393C", "@color/spf_line"),
+  line: adaptiveColor("#F0DDD3", "#36393C", "@color/spf_line"),
   success: "#287A45",
   amber: "#A96500",
   danger: "#C13228",
@@ -254,13 +254,18 @@ export const sharedStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  content: { padding: 18, paddingBottom: 34, gap: 16 },
+  content: { padding: 18, paddingBottom: 34, gap: 15 },
   card: {
     backgroundColor: colors.surface,
     borderColor: colors.line,
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 18,
+    shadowColor: "#4D2F22",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   sectionHeading: {
     alignItems: "center",
