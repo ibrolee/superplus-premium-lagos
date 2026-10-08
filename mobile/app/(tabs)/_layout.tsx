@@ -50,11 +50,11 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: "#849188",
-        tabBarLabelStyle: { fontSize: 10, fontWeight: "800", marginBottom: 4 },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "900", marginBottom: 3 },
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.line,
-          height: 62 + Math.max(insets.bottom, 8),
+          height: 64 + Math.max(insets.bottom, 8),
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 7,
         },
@@ -72,7 +72,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="membership"
         options={{
-          title: "Membership",
+          title: "Plan",
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name={focused ? "card" : "card-outline"} color={color} focused={focused} tone={iconPalette.blue} />
           ),
@@ -88,6 +88,20 @@ export default function TabsLayout() {
               color={color}
               focused={focused}
               tone={iconPalette.teal}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="challenges"
+        options={{
+          title: "Challenges",
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon
+              name={focused ? "trophy" : "trophy-outline"}
+              color={color}
+              focused={focused}
+              tone={iconPalette.purple}
             />
           ),
         }}
