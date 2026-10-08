@@ -11,24 +11,30 @@ type Ledger = { id: string; points: number; reason: string; created_at: string }
 export default function SpPointsScreen() {
   const { member, refreshing, refresh } = useApp();
   const [ledger, setLedger] = useState<Ledger[]>([]);
+  const [balance, setBalance] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     if (!member?.id) return;
     setLoading(true);
-    const { data } = await supabase
-      .from("member_points_ledger")
-      .select("id,points,reason,created_at")
-      .eq("member_id", member.id)
-      .order("created_at", { ascending: false })
-      .limit(30);
-    setLedger((data ?? []) as Ledger[]);
+    const [allPoints, recent] = await Promise.all([
+      supabase
+        .from("member_points_ledger")
+        .select("points")
+        .eq("member_id", member.id),
+      supabase
+        .from("member_points_ledger")
+        .select("id,points,reason,created_at")
+        .eq("member_id", member.id)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
+    setBalance((allPoints.data ?? []).reduce((sum, row) => sum + Number(row.points || 0), 0));
+    setLedger((recent.data ?? []) as Ledger[]);
     setLoading(false);
   }, [member?.id]);
 
   useEffect(() => { void load(); }, [load]);
-  const balance = ledger.reduce((sum, row) => sum + Number(row.points || 0), 0);
-
   return (
     <Screen refreshing={refreshing} onRefresh={() => { void refresh(); void load(); }}>
       <View style={styles.topRow}>
