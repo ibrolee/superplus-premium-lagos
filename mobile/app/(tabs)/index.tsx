@@ -126,6 +126,34 @@ export default function HomeScreen() {
       <MembershipCard member={member} membership={currentMembership} phase={phase}
         onChoosePlan={() => router.push("/(tabs)/membership")} />
 
+      <SectionTitle title="Play & earn" action={
+        <Pressable onPress={() => router.push("/(tabs)/challenges")}>
+          <Text style={styles.seeAllText}>See all</Text>
+        </Pressable>
+      } />
+      <View style={styles.engagementGrid}>
+        <Pressable style={[styles.engagementTile, { backgroundColor: "#FFF1C9" }]} onPress={() => router.push("/sp-points" as never)}>
+          <Ionicons name="sparkles" size={21} color="#8A5A00" />
+          <Text style={styles.engagementValue}>{highlights ? highlights.points.toLocaleString() : "—"}</Text>
+          <Text style={styles.engagementLabel}>SP POINTS</Text>
+        </Pressable>
+        <Pressable style={[styles.engagementTile, { backgroundColor: "#F2E9FF" }]} onPress={() => router.push("/weekly-spin" as never)}>
+          <Ionicons name="disc-outline" size={21} color="#7A50C7" />
+          <Text style={styles.engagementTileTitle}>Weekly Spin</Text>
+          <Text style={styles.engagementLabel}>STREAKS & WHEEL</Text>
+        </Pressable>
+        <Pressable style={[styles.engagementTile, { backgroundColor: "#FFF0D8" }]} onPress={() => router.push("/badges" as never)}>
+          <Ionicons name="ribbon-outline" size={21} color="#B77800" />
+          <Text style={styles.engagementTileTitle}>Badges</Text>
+          <Text style={styles.engagementLabel}>YOUR MILESTONES</Text>
+        </Pressable>
+        <Pressable style={[styles.engagementTile, { backgroundColor: "#E9F8F4" }]} onPress={() => router.push("/reward-store" as never)}>
+          <Ionicons name="gift-outline" size={21} color="#187B6C" />
+          <Text style={styles.engagementTileTitle}>Rewards</Text>
+          <Text style={styles.engagementLabel}>SPEND YOUR POINTS</Text>
+        </Pressable>
+      </View>
+
       <DailyRewardsCard compact onAward={() => { void loadHomeHighlights(member.id, attendance).then(setHighlights).catch(() => {}); }} />
 
       <Pressable style={styles.goalCard} onPress={() => router.push("/goal")}>
@@ -186,54 +214,8 @@ export default function HomeScreen() {
         </Pressable>
       )}
 
-      {highlights && (
+      {highlights?.latestPost && (
         <>
-          <SectionTitle title="Your momentum" />
-          <View style={styles.momentumGrid}>
-            <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
-              <View style={[styles.momentumIcon, { backgroundColor: iconPalette.gold.bg }]}>
-                <Ionicons name="sparkles-outline" size={21} color={iconPalette.gold.fg} />
-              </View>
-              <Text style={styles.momentumValue}>{highlights.points.toLocaleString()}</Text>
-              <Text style={styles.momentumLabel}>SP Points</Text>
-            </Pressable>
-            <Pressable style={styles.momentumCard} onPress={() => router.push("/rewards")}>
-              <View style={[styles.momentumIcon, { backgroundColor: iconPalette.purple.bg }]}>
-                <Ionicons name="ribbon-outline" size={21} color={iconPalette.purple.fg} />
-              </View>
-              <Text style={styles.momentumValue} numberOfLines={1}>
-                {highlights.achievement?.title ?? "Next badge"}
-              </Text>
-              <Text style={styles.momentumLabel}>
-                {highlights.achievement ? "Latest achievement" : "Keep showing up"}
-              </Text>
-            </Pressable>
-          </View>
-
-          {highlights.challenge && (
-            <Pressable style={styles.challengeCard} onPress={() => router.push("/rewards")}>
-              <View style={styles.challengeTop}>
-                <View style={styles.grow}>
-                  <Text style={styles.challengeEyebrow}>ACTIVE CHALLENGE</Text>
-                  <Text style={styles.challengeTitle}>{highlights.challenge.title}</Text>
-                </View>
-                <Text style={styles.challengePoints}>+{highlights.challenge.points_reward} pts</Text>
-              </View>
-              <View style={styles.challengeTrack}>
-                <View
-                  style={[
-                    styles.challengeFill,
-                    { width: `${highlights.challenge.percentage}%` as `${number}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.challengeMeta}>
-                {highlights.challenge.visits}/{highlights.challenge.target_visits} visits · ends {dateLabel(highlights.challenge.ends_on)}
-              </Text>
-            </Pressable>
-          )}
-
-          {highlights.latestPost && (
             <Pressable
               style={styles.latestPostCard}
               onPress={() =>
@@ -254,7 +236,6 @@ export default function HomeScreen() {
               </View>
               <Ionicons name="chevron-forward" size={19} color={colors.green2} />
             </Pressable>
-          )}
         </>
       )}
 
@@ -281,12 +262,12 @@ export default function HomeScreen() {
           <Text style={styles.exploreTitle}>Book</Text>
           <Text style={styles.exploreText}>PT, classes and spa services.</Text>
         </Pressable>
-        <Pressable style={styles.exploreCard} onPress={() => router.push("/rewards")}>
+        <Pressable style={styles.exploreCard} onPress={() => router.push("/(tabs)/challenges")}>
           <View style={[styles.exploreIcon, { backgroundColor: iconPalette.gold.bg }]}>
             <Ionicons name="trophy-outline" size={22} color={iconPalette.gold.fg} />
           </View>
-          <Text style={styles.exploreTitle}>Rewards</Text>
-          <Text style={styles.exploreText}>Challenges, badges and SP Points.</Text>
+          <Text style={styles.exploreTitle}>Challenges</Text>
+          <Text style={styles.exploreText}>Points, badges, spins and rewards.</Text>
         </Pressable>
       </View>
 
@@ -454,6 +435,12 @@ const styles = StyleSheet.create({
   },
   goalNote: { color: colors.muted, flex: 1, fontSize: 11, fontWeight: "700", lineHeight: 17, marginTop: 9 },
   goalStreak: { color: colors.green2, fontSize: 11, fontWeight: "900" },
+  seeAllText: { color: colors.green2, fontSize: 11, fontWeight: "900" },
+  engagementGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  engagementTile: { borderRadius: 18, minHeight: 112, padding: 14, width: "48%" },
+  engagementValue: { color: "#241D2A", fontSize: 22, fontWeight: "900", marginTop: 10 },
+  engagementTileTitle: { color: "#241D2A", fontSize: 15, fontWeight: "900", marginTop: 10 },
+  engagementLabel: { color: "#655B69", fontSize: 8, fontWeight: "900", letterSpacing: 0.6, marginTop: 4 },
   momentumGrid: { flexDirection: "row", gap: 10 },
   momentumCard: {
     backgroundColor: colors.surface,
