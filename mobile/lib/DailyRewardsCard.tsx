@@ -158,7 +158,7 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
       <Text style={[styles.buttonText, status.claimed_today && styles.claimedText]}>{busy === "daily" ? "Claiming…" : status.claimed_today ? "Claimed today · come back tomorrow" : `Claim today · +${pointLabel(status.daily_points)} SP`}</Text>
     </Pressable>
     {!!result && <Text accessibilityLiveRegion="polite" style={styles.result}>{result}</Text>}
-    {compact ? <Pressable accessibilityRole="button" onPress={() => router.push("/rewards")} style={styles.wheelLink}><Ionicons name="sparkles" size={16} color="#7950C7" /><Text style={styles.link}>{status.spun_this_week ? "Weekly spin claimed · view rewards" : "Your weekly wheel spin is ready"}</Text><Ionicons name="arrow-forward" size={16} color="#7950C7" /></Pressable> : <>
+    {compact ? <Pressable accessibilityRole="button" onPress={() => router.push("/weekly-spin" as never)} style={styles.wheelLink}><Ionicons name="sparkles" size={16} color="#7950C7" /><Text style={styles.link}>{status.spun_this_week ? "Weekly spin claimed · view rewards" : "Your weekly wheel spin is ready"}</Text><Ionicons name="arrow-forward" size={16} color="#7950C7" /></Pressable> : <>
       <View style={styles.divider} />
       <Text style={styles.title}>Weekly SP Wheel</Text>
       <Text style={styles.copy}>One free spin each Monday–Sunday week, using Lagos time. Smaller rewards are more common.</Text>
