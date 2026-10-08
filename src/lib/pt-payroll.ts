@@ -107,6 +107,22 @@ export const LOW_VOLUME_TRAINEE_COMMISSION = 10_000;
 export const RENEWAL_GRACE_DAYS = 3;
 export const RATING_MIN_EVALUATIONS = 2;
 
+/**
+ * A PT membership counts during a selected pay period if it was paid and
+ * its membership dates overlap the period. An "expired" membership can
+ * therefore still count for an earlier period. Cancelled or paused
+ * memberships do not count for an active-training period.
+ */
+export const isPaidPtActiveDuringPeriod = (
+  membership: PtMembership,
+  periodStart: string,
+  periodEnd: string,
+) =>
+  membership.payment_status === "paid" &&
+  (membership.status === "active" || membership.status === "expired") &&
+  membership.start_date <= periodEnd &&
+  membership.end_date >= periodStart;
+
 export const DAY = 86400000;
 export const lagosToday = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -325,9 +341,7 @@ export function calculatePtPayout(input: PtPayoutInput) {
       memberships
         .filter(
           (row) =>
-            row.payment_status === "paid" &&
-            row.start_date <= measurementEnd &&
-            row.end_date >= periodStart &&
+            isPaidPtActiveDuringPeriod(row, periodStart, measurementEnd) &&
             !assignmentMap.has(row.id),
         )
         .map((row) => row.member_id),
@@ -338,9 +352,7 @@ export function calculatePtPayout(input: PtPayoutInput) {
         memberships
           .filter(
             (row) =>
-              row.payment_status === "paid" &&
-              row.start_date <= measurementEnd &&
-              row.end_date >= periodStart &&
+              isPaidPtActiveDuringPeriod(row, periodStart, measurementEnd) &&
               assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
           )
           .map((row) => row.member_id),
@@ -349,9 +361,8 @@ export function calculatePtPayout(input: PtPayoutInput) {
       const payableMembershipIds = memberships
         .filter(
           (row) =>
-            row.payment_status === "paid" &&
+            isPaidPtActiveDuringPeriod(row, periodStart, measurementEnd) &&
             row.start_date >= periodStart &&
-            row.start_date <= measurementEnd &&
             !previouslyPaidMembershipIds.has(row.id) &&
             assignmentMap.get(row.id)?.trainer_staff_profile_id === trainer.staff_profile_id,
         )
