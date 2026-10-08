@@ -1,4 +1,4 @@
-name: Small Android test APK
+name: Standalone Android APK — October 8 update
 
 on:
   push:
@@ -35,8 +35,23 @@ jobs:
       - name: Install mobile dependencies
         run: npm install --package-lock=false
 
+      - name: Verify Expo dependencies
+        run: npx expo install --check
+
+      - name: Validate branded assets
+        run: npm run check:assets
+
       - name: Verify TypeScript
         run: npm run typecheck
+
+      - name: Set Android update build number
+        run: |
+          node - <<'NODE'
+          const fs = require("fs");
+          const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
+          config.expo.android.versionCode = 6;
+          fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
+          NODE
 
       - name: Generate Android project
         run: npx expo prebuild --no-install --platform android
@@ -48,10 +63,37 @@ jobs:
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/release/app-release.apk Super-Plus-Fitness-1.0.0.apk
+        run: mv android/app/build/outputs/apk/release/app-release.apk SP-Fitness-1.0.0-2026-10-08.apk
+
+      - name: Verify APK can update the current website download
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
+          APK="SP-Fitness-1.0.0-2026-10-08.apk"
+          curl -fL --retry 3 "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-full-app-1.0.0-2026-10-07/Super-Plus-Fitness-1.0.0.apk" -o /tmp/previous-spf.apk
+          "$SDK_TOOLS/apksigner" verify --print-certs "$APK" > /tmp/new-certificate.txt
+          "$SDK_TOOLS/apksigner" verify --print-certs /tmp/previous-spf.apk > /tmp/previous-certificate.txt
+          NEW_CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/new-certificate.txt)
+          OLD_CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/previous-certificate.txt)
+          test -n "$NEW_CERT"
+          test "$NEW_CERT" = "$OLD_CERT"
+          "$SDK_TOOLS/aapt" dump badging "$APK" > /tmp/new-manifest.txt
+          "$SDK_TOOLS/aapt" dump badging /tmp/previous-spf.apk > /tmp/previous-manifest.txt
+          grep -q "name='com.superplusfitness.app'" /tmp/new-manifest.txt
+          NEW_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/new-manifest.txt | head -n 1)
+          OLD_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/previous-manifest.txt | head -n 1)
+          test "$NEW_VERSION" -gt "$OLD_VERSION"
+          unzip -l "$APK" > /tmp/apk-contents.txt
+          grep -q 'assets/index.android.bundle' /tmp/apk-contents.txt
+          sha256sum "$APK"
+          wc -c "$APK"
+          head -n 1 /tmp/new-manifest.txt
 
       - name: Publish direct-download release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-full-app-1.0.0-2026-10-07 Super-Plus-Fitness-1.0.0.apk             --title "Super Plus Fitness 1.0.0 — Full App"             --notes "Standalone Android APK with the restored full Super Plus Fitness member experience, including workouts, goals, blog, challenges, rewards, streaks, bookings, membership, visits, notifications and current member features."
+          gh release create spf-android-build7-2026-10-08 SP-Fitness-1.0.0-2026-10-08.apk \
+            --title "SP Fitness — October 8 update" \
+            --notes "Standalone Android APK matching the latest iOS build 7 member experience. Includes the redesigned Challenges hub, SP Points, rewards store, badges, streaks, weekly spin, refreshed home and login screens. Android versionCode 6; package and signing certificate verified against the previous website APK."
