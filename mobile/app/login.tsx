@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -25,9 +26,12 @@ export default function LoginScreen() {
   const { session } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [mode, setMode] = useState<LoginMode>("password");
   const [step, setStep] = useState<LoginStep>("login");
   const [codePurpose, setCodePurpose] = useState<CodePurpose>("login");
@@ -294,20 +298,30 @@ export default function LoginScreen() {
                 {mode === "password" ? (
                   <>
                     <Text style={styles.label}>Password</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={password}
-                      onChangeText={setPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      secureTextEntry
-                      textContentType="password"
-                      autoComplete="current-password"
-                      placeholder="Your password"
-                      placeholderTextColor={colors.muted}
-                      editable={!sending && !verifying}
-                      onSubmitEditing={() => void signInWithPassword()}
-                    />
+                    <View style={styles.passwordWrap}>
+                      <TextInput
+                        style={styles.passwordInput}
+                        value={password}
+                        onChangeText={setPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        secureTextEntry={!showPassword}
+                        textContentType="password"
+                        autoComplete="current-password"
+                        placeholder="Your password"
+                        placeholderTextColor={colors.muted}
+                        editable={!sending && !verifying}
+                        onSubmitEditing={() => void signInWithPassword()}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                        style={styles.eyeButton}
+                        onPress={() => setShowPassword((value) => !value)}
+                      >
+                        <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color="#7950C7" />
+                      </Pressable>
+                    </View>
 
                     <Pressable
                       style={({ pressed }) => [
@@ -423,35 +437,45 @@ export default function LoginScreen() {
                 </View>
 
                 <Text style={styles.label}>New password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newPassword}
-                  onChangeText={setNewPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  placeholder="At least 6 characters"
-                  placeholderTextColor={colors.muted}
-                  editable={!savingPassword}
-                />
+                <View style={styles.passwordWrap}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={newPassword}
+                    onChangeText={setNewPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    secureTextEntry={!showNewPassword}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    placeholder="At least 6 characters"
+                    placeholderTextColor={colors.muted}
+                    editable={!savingPassword}
+                  />
+                  <Pressable style={styles.eyeButton} onPress={() => setShowNewPassword((value) => !value)}>
+                    <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={21} color="#7950C7" />
+                  </Pressable>
+                </View>
 
                 <Text style={styles.label}>Confirm new password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  secureTextEntry
-                  textContentType="newPassword"
-                  autoComplete="new-password"
-                  placeholder="Repeat your password"
-                  placeholderTextColor={colors.muted}
-                  editable={!savingPassword}
-                  onSubmitEditing={() => void savePassword()}
-                />
+                <View style={styles.passwordWrap}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    secureTextEntry={!showConfirmPassword}
+                    textContentType="newPassword"
+                    autoComplete="new-password"
+                    placeholder="Repeat your password"
+                    placeholderTextColor={colors.muted}
+                    editable={!savingPassword}
+                    onSubmitEditing={() => void savePassword()}
+                  />
+                  <Pressable style={styles.eyeButton} onPress={() => setShowConfirmPassword((value) => !value)}>
+                    <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={21} color="#7950C7" />
+                  </Pressable>
+                </View>
 
                 <Pressable
                   style={({ pressed }) => [
@@ -486,7 +510,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: "#FFF7F2" },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
   brandLogo: { marginBottom: 24 },
   eyebrow: { color: colors.green2, fontSize: 11, fontWeight: "900", letterSpacing: 1.7 },
@@ -501,16 +525,16 @@ const styles = StyleSheet.create({
   },
   copy: { color: colors.muted, fontSize: 15, lineHeight: 23, marginTop: 13, maxWidth: 380 },
   form: {
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F2D9CD",
+    borderRadius: 26,
     borderWidth: 1,
     gap: 8,
     marginTop: 28,
     padding: 18,
   },
   modeTabs: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: "#F3ECFF",
     borderRadius: 13,
     flexDirection: "row",
     marginBottom: 8,
@@ -525,7 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   modeTabActive: {
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFFFF",
   },
   modeTabText: {
     color: colors.muted,
@@ -546,6 +570,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 52,
     paddingHorizontal: 14,
+  },
+  passwordWrap: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderColor: colors.line,
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 52,
+  },
+  passwordInput: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 16,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    paddingRight: 4,
+  },
+  eyeButton: {
+    alignItems: "center",
+    height: 50,
+    justifyContent: "center",
+    width: 50,
   },
   codeInput: {
     fontSize: 24,
