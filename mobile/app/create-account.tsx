@@ -28,6 +28,8 @@ export default function CreateAccountScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -226,35 +228,55 @@ export default function CreateAccountScreen() {
                 />
 
                 <Text style={styles.label}>Password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="At least 6 characters"
-                  placeholderTextColor={colors.muted}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="new-password"
-                  textContentType="newPassword"
-                  editable={!busy}
-                />
+                <View style={styles.passwordWrap}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="At least 6 characters"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="new-password"
+                    textContentType="newPassword"
+                    editable={!busy}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword((value) => !value)}
+                  >
+                    <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={21} color="#7950C7" />
+                  </Pressable>
+                </View>
 
                 <Text style={styles.label}>Confirm password</Text>
-                <TextInput
-                  style={styles.input}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Repeat your password"
-                  placeholderTextColor={colors.muted}
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  autoComplete="new-password"
-                  textContentType="newPassword"
-                  editable={!busy}
-                  onSubmitEditing={() => void sendVerificationCode()}
-                />
+                <View style={styles.passwordWrap}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder="Repeat your password"
+                    placeholderTextColor={colors.muted}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="new-password"
+                    textContentType="newPassword"
+                    editable={!busy}
+                    onSubmitEditing={() => void sendVerificationCode()}
+                  />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={showConfirmPassword ? "Hide password" : "Show password"}
+                    style={styles.eyeButton}
+                    onPress={() => setShowConfirmPassword((value) => !value)}
+                  >
+                    <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={21} color="#7950C7" />
+                  </Pressable>
+                </View>
 
                 <Pressable
                   style={({ pressed }) => [
@@ -340,7 +362,7 @@ export default function CreateAccountScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: "#FFF7F2" },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
   backButton: {
     alignItems: "center",
@@ -366,9 +388,9 @@ const styles = StyleSheet.create({
   },
   copy: { color: colors.muted, fontSize: 14, lineHeight: 22, marginTop: 12, maxWidth: 390 },
   form: {
-    backgroundColor: colors.surface,
-    borderColor: colors.line,
-    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#F2D9CD",
+    borderRadius: 26,
     borderWidth: 1,
     gap: 8,
     marginTop: 24,
@@ -384,6 +406,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 52,
     paddingHorizontal: 14,
+  },
+  passwordWrap: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    borderColor: colors.line,
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: "row",
+    minHeight: 52,
+  },
+  passwordInput: {
+    color: colors.ink,
+    flex: 1,
+    fontSize: 16,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    paddingRight: 4,
+  },
+  eyeButton: {
+    alignItems: "center",
+    height: 50,
+    justifyContent: "center",
+    width: 50,
   },
   codeInput: {
     fontSize: 24,
