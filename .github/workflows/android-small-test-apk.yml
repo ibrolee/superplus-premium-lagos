@@ -65,6 +65,14 @@ jobs:
       - name: Rename APK
         run: mv android/app/build/outputs/apk/release/app-release.apk SP-Fitness-1.0.0-2026-10-08.apk
 
+      - name: Preserve compiled standalone APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: sp-fitness-standalone-2026-10-08
+          path: mobile/SP-Fitness-1.0.0-2026-10-08.apk
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Verify APK can update the current website download
         shell: bash
         run: |
@@ -74,17 +82,24 @@ jobs:
           curl -fL --retry 3 "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-full-app-1.0.0-2026-10-07/Super-Plus-Fitness-1.0.0.apk" -o /tmp/previous-spf.apk
           "$SDK_TOOLS/apksigner" verify --print-certs "$APK" > /tmp/new-certificate.txt
           "$SDK_TOOLS/apksigner" verify --print-certs /tmp/previous-spf.apk > /tmp/previous-certificate.txt
-          NEW_CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/new-certificate.txt)
-          OLD_CERT=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' /tmp/previous-certificate.txt)
+          cat /tmp/new-certificate.txt /tmp/previous-certificate.txt
+          NEW_CERT=$(awk '/certificate SHA-256 digest:/ { print $NF; exit }' /tmp/new-certificate.txt)
+          OLD_CERT=$(awk '/certificate SHA-256 digest:/ { print $NF; exit }' /tmp/previous-certificate.txt)
           test -n "$NEW_CERT"
-          test "$NEW_CERT" = "$OLD_CERT"
+          if [ "$NEW_CERT" != "$OLD_CERT" ]; then
+            echo "Signing certificate does not match the current website APK."
+            exit 1
+          fi
           "$SDK_TOOLS/aapt" dump badging "$APK" > /tmp/new-manifest.txt
           "$SDK_TOOLS/aapt" dump badging /tmp/previous-spf.apk > /tmp/previous-manifest.txt
+          head -n 1 /tmp/new-manifest.txt /tmp/previous-manifest.txt
           grep -q "name='com.superplusfitness.app'" /tmp/new-manifest.txt
           NEW_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/new-manifest.txt | head -n 1)
           OLD_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/previous-manifest.txt | head -n 1)
+          echo "Android versionCode: previous=$OLD_VERSION new=$NEW_VERSION"
           test "$NEW_VERSION" -gt "$OLD_VERSION"
           unzip -l "$APK" > /tmp/apk-contents.txt
+          grep 'bundle' /tmp/apk-contents.txt
           grep -q 'assets/index.android.bundle' /tmp/apk-contents.txt
           sha256sum "$APK"
           wc -c "$APK"
