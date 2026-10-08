@@ -21,7 +21,7 @@ import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/seo";
 
 const APK_URL =
-  "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-full-app-1.0.0-2026-10-07/Super-Plus-Fitness-1.0.0.apk";
+  "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-android-build7-2026-10-08/SP-Fitness-1.0.0-2026-10-08.apk";
 
 const features = [
   {
@@ -79,7 +79,7 @@ const installSteps = [
     icon: CheckCircle2,
     number: "04",
     title: "Install and sign in",
-    copy: "Complete the installation, open Super Plus Fitness and sign in or create your member account.",
+    copy: "Complete the installation, open SP Fitness and sign in or create your member account. If you already have the app, install this file as an update.",
   },
 ];
 
@@ -128,6 +128,7 @@ function AppDownloadPage() {
             <div className="mt-7 flex flex-wrap gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-white/60">
               <span className="rounded-full border border-white/15 bg-white/[0.05] px-3 py-2">Android APK</span>
               <span className="rounded-full border border-white/15 bg-white/[0.05] px-3 py-2">Version 1.0.0</span>
+              <span className="rounded-full border border-white/15 bg-white/[0.05] px-3 py-2">Updated 8 October 2026</span>
               <span className="rounded-full border border-white/15 bg-white/[0.05] px-3 py-2">Approx. 48 MB</span>
             </div>
 
@@ -231,19 +232,19 @@ function AppDownloadPage() {
                 <p className="mb-3 mt-6 text-sm font-black">Quick access</p>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    [Dumbbell, "Workouts"],
-                    [CalendarDays, "Bookings"],
-                    [Trophy, "Rewards"],
-                    [Newspaper, "Blog"],
-                  ].map(([Icon, label]) => (
+                    { icon: Dumbbell, label: "Workouts" },
+                    { icon: CalendarDays, label: "Bookings" },
+                    { icon: Trophy, label: "Rewards" },
+                    { icon: Newspaper, label: "Blog" },
+                  ].map(({ icon: Icon, label }) => (
                     <div
-                      key={label as string}
+                      key={label}
                       className="rounded-[1.3rem] border border-black/10 bg-white p-4 shadow-sm"
                     >
                       <div className="grid size-9 place-items-center rounded-xl bg-[#fff0e8]">
                         <Icon className="size-4 text-[#e44824]" />
                       </div>
-                      <p className="mt-3 text-xs font-extrabold">{label as string}</p>
+                      <p className="mt-3 text-xs font-extrabold">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -386,8 +387,8 @@ function AppDownloadPage() {
                 Ready for your Android phone.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/50">
-                Download the current official Android release. Future versions can be installed as
-                updates when they are released.
+                Get the refreshed Challenges hub, SP Points, rewards store, badges, streaks and
+                weekly spin. Already have SP Fitness? Install this APK to update your app.
               </p>
             </div>
 

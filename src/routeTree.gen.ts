@@ -16,6 +16,7 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin-approvals'
 import { Route as AdminEngagementRouteImport } from './routes/admin-engagement'
 import { Route as AdminMembersRouteImport } from './routes/admin-members'
 import { Route as AdminWorkspaceRouteImport } from './routes/admin-workspace'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
@@ -119,6 +120,11 @@ const AdminMembersRoute = AdminMembersRouteImport.update({
 const AdminWorkspaceRoute = AdminWorkspaceRouteImport.update({
   id: '/admin-workspace',
   path: '/admin-workspace',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogRoute = BlogRouteImport.update({
@@ -483,6 +489,7 @@ export interface FileRoutesByFullPath {
   '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
+  '/app': typeof AppRoute
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
   '/delete-account': typeof DeleteAccountRoute
@@ -561,6 +568,7 @@ export interface FileRoutesByTo {
   '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
+  '/app': typeof AppRoute
   '/contact': typeof ContactRoute
   '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
@@ -639,6 +647,7 @@ export interface FileRoutesById {
   '/admin-engagement': typeof AdminEngagementRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
+  '/app': typeof AppRoute
   '/blog': typeof BlogRouteWithChildren
   '/contact': typeof ContactRoute
   '/delete-account': typeof DeleteAccountRoute
@@ -719,6 +728,7 @@ export interface FileRouteTypes {
     | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
+    | '/app'
     | '/blog'
     | '/contact'
     | '/delete-account'
@@ -797,6 +807,7 @@ export interface FileRouteTypes {
     | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
+    | '/app'
     | '/contact'
     | '/delete-account'
     | '/facilities'
@@ -874,6 +885,7 @@ export interface FileRouteTypes {
     | '/admin-engagement'
     | '/admin-members'
     | '/admin-workspace'
+    | '/app'
     | '/blog'
     | '/contact'
     | '/delete-account'
@@ -953,6 +965,7 @@ export interface RootRouteChildren {
   AdminEngagementRoute: typeof AdminEngagementRoute
   AdminMembersRoute: typeof AdminMembersRoute
   AdminWorkspaceRoute: typeof AdminWorkspaceRoute
+  AppRoute: typeof AppRoute
   BlogRoute: typeof BlogRouteWithChildren
   ContactRoute: typeof ContactRoute
   DeleteAccountRoute: typeof DeleteAccountRoute
@@ -1067,6 +1080,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-workspace'
       fullPath: '/admin-workspace'
       preLoaderRoute: typeof AdminWorkspaceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog': {
@@ -1592,6 +1612,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminEngagementRoute: AdminEngagementRoute,
   AdminMembersRoute: AdminMembersRoute,
   AdminWorkspaceRoute: AdminWorkspaceRoute,
+  AppRoute: AppRoute,
   BlogRoute: BlogRouteWithChildren,
   ContactRoute: ContactRoute,
   DeleteAccountRoute: DeleteAccountRoute,
