@@ -29,6 +29,7 @@ type Membership = {
   end_date: string | null;
   created_at: string;
   payment_status?: string | null;
+  status?: string | null;
 };
 type BlogPreview = {
   id: string;
@@ -400,6 +401,12 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
     row.start_date <= today && row.end_date >= today &&
     row.plan_name !== "Personal Training Only"
   );
+  const hasActivePtMembership = ptMemberships.some((row) => {
+    const start = dateOnly(row.start_date);
+    const end = dateOnly(row.end_date);
+    return row.payment_status === "paid" && row.status === "active" &&
+      !!start && !!end && start <= today && today <= end;
+  });
   const dashboardPlans = hasActiveGymMembership
     ? [...membershipPlans, { id: "personal-training-only", name: "Personal Training Only", price: 30000, duration: "30 days · coaching only; uses your existing gym membership" }]
     : membershipPlans;
@@ -674,7 +681,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
             <Button asChild className="h-12 rounded-xl bg-[#b8ee73] text-[#193b2a] hover:bg-[#d1faa3]"><Link to="/my-qr"><QrCode className="size-5"/> Open QR</Link></Button>
             <Button variant="outline" className="h-12 rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => setShowPlans((value) => !value)}><RefreshCw className="size-4"/> Renew</Button>
           </div>
-          {hasActiveGymMembership && <Button variant="outline" className="mt-2 h-12 w-full rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => { setShowPlans(true); setSelectedPlan("personal-training-only"); setPaymentError(""); }}><Dumbbell className="size-4"/> Add Personal Training Only · {formatNaira(30000)}</Button>}
+          {hasActiveGymMembership && !hasActivePtMembership && <Button variant="outline" className="mt-2 h-12 w-full rounded-xl border-white/40 bg-transparent text-white hover:bg-white hover:text-[#193b2a]" onClick={() => { setShowPlans(true); setSelectedPlan("personal-training-only"); setPaymentError(""); }}><Dumbbell className="size-4"/> Add Personal Training Only · {formatNaira(30000)}</Button>}
           {showPlans && <div className="mt-5 rounded-2xl bg-white p-4 text-[#20362a]">
             <div className="grid gap-2 sm:grid-cols-2">{dashboardPlans.map((plan) => <button key={plan.id} type="button" onClick={() => { setSelectedPlan(plan.id); setPaymentError(""); }}
               className={(selectedPlan === plan.id ? "border-[#26743d] bg-[#eaf5e7]" : "border-[#dce6d9]") + " rounded-xl border p-3 text-left"}>
