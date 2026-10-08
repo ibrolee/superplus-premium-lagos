@@ -750,7 +750,7 @@ function ManagementPersonalTraining() {
                 <AlertCircle size={17} className="mt-0.5 shrink-0" />
                 <p>
                   <strong>{payoutCalculation.unassignedCount} paid PT trainee{payoutCalculation.unassignedCount === 1 ? "" : "s"}</strong>{" "}
-                  overlap this period without a coach assignment. Assign them before finalising payout.
+                  active during this payout period {payoutCalculation.unassignedCount === 1 ? "has" : "have"} no coach assigned.
                 </p>
               </div>
             )}
