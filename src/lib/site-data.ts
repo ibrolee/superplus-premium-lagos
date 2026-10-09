@@ -192,6 +192,22 @@ export const membershipPlans: MembershipPlan[] = [
 // Public choices include registration without gym access and the existing-member PT add-on.
 // Keep these out of standard renewal lists; PT eligibility is checked in member checkout.
 export const publicMembershipOptions: MembershipPlan[] = [
+  {
+    id: "registration-only",
+    name: "Registration Only",
+    category: "Registration",
+    group: "Registration",
+    price: 0,
+    duration: "One-time registration",
+    registration: 7000,
+    benefits: [
+      "Register now and buy a membership plan later",
+      "Your registration fee is recorded on your member profile",
+      "Gym access starts when you buy a membership plan",
+      "Family registration is ₦20,000; pay the balance if you choose Family later",
+    ],
+    checkoutUrl: "/join?plan=registration-only",
+  },
   ...membershipPlans,
   {
     id: "personal-training-only",
@@ -208,22 +224,6 @@ export const publicMembershipOptions: MembershipPlan[] = [
       "No new registration fee for existing registered members",
     ],
     checkoutUrl: "/login",
-  },
-  {
-    id: "registration-only",
-    name: "Registration Only",
-    category: "Registration",
-    group: "Registration",
-    price: 0,
-    duration: "One-time registration",
-    registration: 7000,
-    benefits: [
-      "Register now and buy a membership plan later",
-      "Your registration fee is recorded on your member profile",
-      "Gym access starts when you buy a membership plan",
-      "Family registration is ₦20,000; pay the balance if you choose Family later",
-    ],
-    checkoutUrl: "/join?plan=registration-only",
   },
 ];
 
