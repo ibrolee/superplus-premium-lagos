@@ -281,7 +281,7 @@ export function MembershipCard({
             plan.badge ? "text-secondary-foreground/65" : "text-muted-foreground"
           }`}
         >
-          {plan.duration}{plan.id === "registration-only" ? " · no membership included" : plan.id === "personal-training-only" ? " · registration already paid by existing members" : ` · ${formatNaira(plan.registration)} registration`}
+          {plan.duration}{plan.id === "registration-only" ? " · no membership included" : plan.id === "personal-training-only" ? " · one-time registration fee already paid" : ` · ${formatNaira(plan.registration)} one-time registration fee`}
         </p>
       </div>
 

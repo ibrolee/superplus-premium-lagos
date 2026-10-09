@@ -55,7 +55,7 @@ function FamilyJoinPage() {
       </div>
       <div className="mt-7 grid gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border bg-card p-5"><p className="text-xs font-bold uppercase text-muted-foreground">Monthly plan</p><p className="mt-2 text-2xl font-black">{formatNaira(plan.price)}</p></div>
-        <div className="rounded-2xl border bg-card p-5"><p className="text-xs font-bold uppercase text-muted-foreground">Registration</p><p className="mt-2 text-2xl font-black">{formatNaira(plan.registration)}</p></div>
+        <div className="rounded-2xl border bg-card p-5"><p className="text-xs font-bold uppercase text-muted-foreground">One-time registration fee</p><p className="mt-2 text-2xl font-black">{formatNaira(plan.registration)}</p></div>
         <div className="rounded-2xl border bg-card p-5"><p className="text-xs font-bold uppercase text-muted-foreground">People covered</p><p className="mt-2 text-2xl font-black">3</p></div>
       </div>
       <div className="mt-6 rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm leading-6">
@@ -69,7 +69,7 @@ function FamilyJoinPage() {
           <div className="flex items-center gap-3"><Users className="size-5 text-primary"/><h2 className="font-bold">Family Plan checkout</h2></div>
           <div className="mt-5 space-y-3 text-sm">
             <p className="flex justify-between"><span>Membership</span><strong>{formatNaira(plan.price)}</strong></p>
-            <p className="flex justify-between"><span>Registration</span><strong>{formatNaira(plan.registration)}</strong></p>
+            <p className="flex justify-between"><span>One-time registration fee</span><strong>{formatNaira(plan.registration)}</strong></p>
             <p className="flex justify-between border-t pt-3 text-lg"><span>Total before coupon</span><strong>{formatNaira(plan.price + plan.registration)}</strong></p>
           </div>
           <label className="mt-5 block text-sm font-medium">Coupon code (optional)
