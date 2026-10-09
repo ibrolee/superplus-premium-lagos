@@ -29,6 +29,7 @@ import {
   facilities,
   images,
   membershipPlans,
+  publicMembershipOptions,
   recoveryServices,
   testimonials,
 } from "@/lib/site-data";
@@ -349,13 +350,14 @@ export function MembershipPage() {
     "VIP",
     "Family",
     "Training",
+    "Registration",
     "Spa & Recovery",
   ];
 
   const plans =
     filter === "All"
-      ? membershipPlans
-      : membershipPlans.filter((plan) => plan.category === filter);
+      ? publicMembershipOptions
+      : publicMembershipOptions.filter((plan) => plan.category === filter);
 
   return (
     <main>
@@ -385,6 +387,8 @@ export function MembershipPage() {
               </Button>
             ))}
           </div>
+
+          <p className="mt-4 text-sm text-muted-foreground">One-time registration: ₦7,000 for individual plans and ₦20,000 for the Family Plan. Existing registered members do not pay registration again.</p>
 
           {filter === "Spa & Recovery" ? (
             <div className="mt-10">

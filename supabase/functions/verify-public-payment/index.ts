@@ -1,5 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { plans, couponPricing } from '../_shared/public-join-pricing.ts';
+import { verifiedCheckoutPlan, couponPricing } from '../_shared/public-join-pricing.ts';
 const corsHeaders={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,x-client-info,apikey,content-type','Access-Control-Allow-Methods':'POST,OPTIONS'};
 const respond=(body:Record<string,unknown>,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,'Content-Type':'application/json','Cache-Control':'no-store'}});
 Deno.serve(async(req:Request)=>{
@@ -14,7 +14,7 @@ Deno.serve(async(req:Request)=>{
   if(!paystack.ok||!result?.status||result?.data?.status!=='success')return respond({error:'Payment could not be verified by Paystack.'},400);
   const txn=result.data,metadata=txn.metadata||{};
   if(txn.reference!==reference||metadata.source!=='public_join'||metadata.reference!==reference||txn.currency!=='NGN')return respond({error:'Paystack transaction details do not match this checkout.'},400);
-  const planId=String(metadata.plan_id||'').trim(),plan=plans[planId];if(!plan)return respond({error:'Membership plan not found.'},400);
+  const planId=String(metadata.plan_id||'').trim(),plan=verifiedCheckoutPlan(planId,metadata.pricing_version);if(!plan)return respond({error:'Membership plan not found.'},400);
   let pricing:ReturnType<typeof couponPricing>;try{pricing=couponPricing(plan,metadata.coupon_code);}catch{return respond({error:'Invalid coupon in payment metadata.'},400);}
   if(Number(txn.amount)!==pricing.totalAmount*100||Number(metadata.membership_amount_naira)!==pricing.membershipAmount||Number(metadata.registration_amount_naira)!==pricing.registrationAmount||Number(metadata.total_amount_naira)!==pricing.totalAmount||Number(metadata.duration_days)!==plan.durationDays)return respond({error:'Verified payment amount does not match the membership and registration fee.'},400);
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});

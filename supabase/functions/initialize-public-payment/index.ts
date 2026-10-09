@@ -11,11 +11,13 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json();const planId=String(body?.planId||'').trim();const plan=plans[planId];
   if(!plan)return respond({error:'Invalid membership plan.'},400);
   let pricing:ReturnType<typeof couponPricing>;
-  try{pricing=couponPricing(plan,body?.couponCode);}catch{return respond({error:'Invalid coupon code.'},400);}
+  try{pricing=couponPricing(plan,body?.couponCode);}catch(cause){return respond({error:cause instanceof Error?cause.message:'Invalid coupon code.'},400);}
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
+  if(planId!=='registration-only'){
   const {data:official,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.databaseName).maybeSingle();
   if(planError||!official?.active||Number(official.price)!==plan.price||Number(official.duration_days)!==plan.durationDays){
    return respond({error:'Membership prices are being updated. No payment has started; please try again shortly or contact reception.'},503);
+  }
   }
 
   let email='',name='',phone='';let birthDay=0,birthMonth=0;let familyMembers:unknown[]|null=null;
@@ -34,6 +36,16 @@ Deno.serve(async(req:Request)=>{
    const {data:matches,error:matchError}=await admin.rpc('public_join_email_matches',{p_email:email});
    if(matchError||typeof matches!=='number')return respond({error:'Member check is temporarily unavailable. No payment has started; try again later.'},503);
    if(matches>1)return respond({error:'Multiple gym profiles use this email. Ask reception to correct the duplicate email records before paying online. No payment has started.'},409);
+   const {data:members,error:memberError}=await admin.from('members').select('id').ilike('email',email).limit(2);
+   if(memberError)return respond({error:'Member check is temporarily unavailable. No payment has started.'},503);
+   if(members?.length===1){
+    const memberId=members[0].id;
+    const {data:history,error:historyError}=await admin.from('memberships').select('id').eq('member_id',memberId).limit(1);
+    const {data:registration,error:registrationError}=await admin.from('payments').select('id').eq('member_id',memberId).eq('status','success').eq('metadata->>registration_only','true').limit(1);
+    const {data:receptionRegistration,error:receptionError}=await admin.from('reception_registration_only_transactions').select('id').eq('member_id',memberId).limit(1);
+    if(historyError||registrationError||receptionError)return respond({error:'Unable to check registration history. No payment has started.'},503);
+    if(history?.length||registration?.length||receptionRegistration?.length)return respond({error:'You are already registered. Log in with this email to buy a membership without paying registration again.'},409);
+   }
   }
 
   let trainerId='';
@@ -46,7 +58,7 @@ Deno.serve(async(req:Request)=>{
   }
 
   const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
-  const metadata:Record<string,unknown>={source:'public_join',reference,plan_id:planId,plan_name:plan.name,membership_amount_naira:pricing.membershipAmount,registration_amount_naira:pricing.registrationAmount,total_amount_naira:pricing.totalAmount,coupon_code:pricing.couponCode,duration_days:plan.durationDays};
+  const metadata:Record<string,unknown>={source:'public_join',pricing_version:'registration-7000-v1',reference,plan_id:planId,plan_name:plan.name,membership_amount_naira:pricing.membershipAmount,registration_amount_naira:pricing.registrationAmount,total_amount_naira:pricing.totalAmount,coupon_code:pricing.couponCode,duration_days:plan.durationDays};
   if(trainerId)metadata.trainer_staff_profile_id=trainerId;
   if(familyMembers)metadata.family_members=familyMembers;
   else Object.assign(metadata,{full_name:name,email,phone,birth_day:birthDay,birth_month:birthMonth});

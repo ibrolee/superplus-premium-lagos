@@ -31,13 +31,14 @@ export type MembershipCategory =
   | "VIP"
   | "Family"
   | "Training"
+  | "Registration"
   | "Spa & Recovery";
 
 export type MembershipPlan = {
   id: string;
   name: string;
   category: MembershipCategory;
-  group: "Gym Access" | "Long-Term" | "Premium" | "Training";
+  group: "Gym Access" | "Long-Term" | "Premium" | "Training" | "Registration";
   price: number;
   duration: string;
   registration: number;
@@ -103,7 +104,7 @@ export const membershipPlans: MembershipPlan[] = [
     group: "Long-Term",
     price: 150000,
     duration: "6 months",
-    registration: 3000,
+    registration: 7000,
     benefits: ["6 months", "All gym equipment", "Group classes"],
     checkoutUrl:
       "https://members.superplusfitness.com/checkout?checkoutId=ca727402-aeb9-4e0f-8c95-9a7c00e2f6c5&disableContinueShopping=true",
@@ -145,7 +146,7 @@ export const membershipPlans: MembershipPlan[] = [
     group: "Premium",
     price: 85000,
     duration: "One month",
-    registration: 3000,
+    registration: 7000,
     benefits: [
       "All gym equipment",
       "Two full-body massages",
@@ -185,6 +186,44 @@ export const membershipPlans: MembershipPlan[] = [
     ],
     checkoutUrl:
       "https://members.superplusfitness.com/checkout?checkoutId=ca727402-7374-426f-8780-7135176e7b7d&disableContinueShopping=true",
+  },
+];
+
+// Public choices include registration without gym access and the existing-member PT add-on.
+// Keep these out of standard renewal lists; PT eligibility is checked in member checkout.
+export const publicMembershipOptions: MembershipPlan[] = [
+  ...membershipPlans,
+  {
+    id: "personal-training-only",
+    name: "Personal Training Only",
+    category: "Training",
+    group: "Training",
+    price: 30000,
+    duration: "30 days",
+    registration: 7000,
+    benefits: [
+      "For members with an existing active gym membership",
+      "Personal coach training for 30 days",
+      "Gym access comes from your existing membership",
+      "No new registration fee for existing registered members",
+    ],
+    checkoutUrl: "/login",
+  },
+  {
+    id: "registration-only",
+    name: "Registration Only",
+    category: "Registration",
+    group: "Registration",
+    price: 0,
+    duration: "One-time registration",
+    registration: 7000,
+    benefits: [
+      "Register now and buy a membership plan later",
+      "Your registration fee is recorded on your member profile",
+      "Gym access starts when you buy a membership plan",
+      "Family registration is ₦20,000; pay the balance if you choose Family later",
+    ],
+    checkoutUrl: "/join?plan=registration-only",
   },
 ];
 

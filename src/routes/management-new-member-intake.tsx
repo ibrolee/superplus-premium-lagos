@@ -10,7 +10,7 @@ const input = 'mt-1.5 w-full min-w-0 rounded-xl border border-[#d4e0d2] bg-white
 const button = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#20432b] px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50';
 const money = (n: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(n);
 // Mirror the server-enforced plan fees, including the pre-existing PT-only exemption.
-const feeFor = (name: string) => name === 'Personal Training Only' ? 0 : name === 'Family Plan' ? 20000 : ['Semi-Annual', 'Monthly VIP Gold'].includes(name) ? 3000 : 7000;
+const feeFor = (name: string) => name === 'Personal Training Only' ? 0 : name === 'Family Plan' ? 20000 : 7000;
 function lagosToday() { const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Lagos', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()); const p = (key: string) => parts.find(part => part.type === key)?.value || ''; return `${p('year')}-${p('month')}-${p('day')}`; }
 function NewMemberIntake() {
   const [role, setRole] = useState(''); const [authId, setAuthId] = useState(''); const [loading, setLoading] = useState(true); const [busy, setBusy] = useState(false); const [error, setError] = useState(''); const [notice, setNotice] = useState(''); const [tab, setTab] = useState<'intake' | 'review'>('intake');

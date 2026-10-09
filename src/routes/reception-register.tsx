@@ -11,7 +11,7 @@ type Trainer = { staff_profile_id: string; display_name: string };
 type Result = { success: boolean; already_recorded?: boolean; member_id: string; membership_id: string | null; revenue_recorded: boolean; payment_status?: string; amount: number; registration_fee?: number; transaction_type?: string; discount_percentage?: number; discount_amount?: number; subtotal_amount?: number; registration_credit_applied?: number; start_date?: string; end_date?: string; pt_trainer_name?: string; pt_assignment_pending?: boolean };
 const input = 'mt-1.5 w-full min-w-0 rounded-xl border border-[#cbdacb] bg-white px-4 py-3 text-base text-[#193327] outline-none focus:border-[#427a43] disabled:opacity-50';
 const money = (value: number) => new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(value);
-const feeFor = (name: string) => name === 'Personal Training Only' ? 0 : name === 'Family Plan' ? 20000 : ['Semi-Annual','Monthly VIP Gold'].includes(name) ? 3000 : 7000;
+const feeFor = (name: string) => name === 'Personal Training Only' ? 0 : name === 'Family Plan' ? 20000 : 7000;
 const lagosToday = () => { const parts = new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()); const part = (name: string) => parts.find(item => item.type===name)?.value || ''; return `${part('year')}-${part('month')}-${part('day')}`; };
 
 function ReceptionRegister() {

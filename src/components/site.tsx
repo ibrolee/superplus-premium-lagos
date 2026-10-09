@@ -273,7 +273,7 @@ export function MembershipCard({
 
       <div className={compact ? "mt-3" : "mt-5"}>
         <span className={`font-display font-bold ${compact ? "text-4xl" : "text-5xl"}`}>
-          {formatNaira(plan.price)}
+          {formatNaira(plan.id === "registration-only" ? plan.registration : plan.price)}
         </span>
 
         <p
@@ -281,7 +281,7 @@ export function MembershipCard({
             plan.badge ? "text-secondary-foreground/65" : "text-muted-foreground"
           }`}
         >
-          {plan.duration} · {formatNaira(plan.registration)} registration
+          {plan.duration}{plan.id === "registration-only" ? " · no membership included" : plan.id === "personal-training-only" ? " · registration already paid by existing members" : ` · ${formatNaira(plan.registration)} registration`}
         </p>
       </div>
 
@@ -295,8 +295,8 @@ export function MembershipCard({
       </ul>
 
       <Button asChild variant={plan.badge ? "default" : "dark"} size="lg" className="mt-auto">
-        <a href={`/join?plan=${encodeURIComponent(plan.id)}`}>
-          Choose plan <ArrowRight />
+        <a href={plan.id === "personal-training-only" ? "/login" : `/join?plan=${encodeURIComponent(plan.id)}`}>
+          {plan.id === "registration-only" ? "Register now" : plan.id === "personal-training-only" ? "Log in to add PT" : "Choose plan"} <ArrowRight />
         </a>
       </Button>
     </article>
