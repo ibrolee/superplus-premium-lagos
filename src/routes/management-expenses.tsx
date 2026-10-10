@@ -65,6 +65,7 @@ const dateLabel = (value: string) =>
   }).format(new Date(value + "T12:00:00Z"));
 const field =
   "mt-2 w-full min-w-0 rounded-xl border border-[#d5e0d0] bg-white px-4 py-3 text-base text-[#193b2a] outline-none focus:border-[#548b4c] disabled:opacity-50";
+const DESCRIPTION_LIMIT = 10000;
 type Draft = {
   id: string;
   expense_date: string;
@@ -210,6 +211,10 @@ function ExpensesAndProfit() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || access !== "allowed") return;
+    if (draft.description.length > DESCRIPTION_LIMIT) {
+      setError("Keep the expense description within 10,000 characters.");
+      return;
+    }
     const expenseDate = new Date(draft.expense_date + "T12:00:00Z");
     if (
       !/^\d{4}-\d{2}-\d{2}$/.test(draft.expense_date) ||
@@ -498,14 +503,17 @@ function ExpensesAndProfit() {
               Description
               <textarea
                 required
-                rows={4}
-                maxLength={250}
+                rows={10}
+                maxLength={DESCRIPTION_LIMIT}
                 value={draft.description}
                 disabled={!!busy}
                 placeholder="e.g. October internet subscription"
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                 className={field + " resize-y"}
               />
+              <span className="mt-1 block text-xs font-normal text-[#647468]">
+                {draft.description.length.toLocaleString()} / 10,000 characters
+              </span>
             </label>
             <label className="text-sm font-bold">
               Expense amount (₦)
