@@ -21,16 +21,18 @@ BEGIN
    (DATE '2026-10-02','electricity','QA electricity',2000),
    (DATE '2026-10-03','petrol','QA petrol',3000),
    (DATE '2026-10-04','gas','QA gas',4000),
-   (DATE '2026-10-05','other','QA other',5000);
+   (DATE '2026-10-05','other','QA other',5000),
+   (DATE '2026-10-06','membership_cards','QA membership card printing',6000);
   v_report := public.admin_get_finance_month(DATE '2026-10-01');
-  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+15000 OR (v_report->>'expense_count')::integer <> (v_before->>'expense_count')::integer+5 THEN RAISE EXCEPTION 'Category totals incorrect'; END IF;
+  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+21000 OR (v_report->>'expense_count')::integer <> (v_before->>'expense_count')::integer+6 THEN RAISE EXCEPTION 'Category totals incorrect'; END IF;
+  IF (v_report->'category_totals'->>'membership_cards')::numeric IS DISTINCT FROM coalesce((v_before->'category_totals'->>'membership_cards')::numeric,0)+6000 THEN RAISE EXCEPTION 'Membership card category total incorrect'; END IF;
   IF NOT EXISTS(SELECT 1 FROM public.gym_expenses WHERE id=v_id AND created_by=v_admin AND updated_by=v_admin) THEN RAISE EXCEPTION 'Expense actor audit missing'; END IF;
   UPDATE public.gym_expenses SET amount=1200 WHERE id=v_id;
   v_report := public.admin_get_finance_month(DATE '2026-10-01');
-  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+15200 THEN RAISE EXCEPTION 'Edit total incorrect'; END IF;
+  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+21200 THEN RAISE EXCEPTION 'Edit total incorrect'; END IF;
   UPDATE public.gym_expenses SET voided_at=clock_timestamp() WHERE id=v_id;
   v_report := public.admin_get_finance_month(DATE '2026-10-01');
-  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+14000 OR NOT EXISTS(SELECT 1 FROM public.gym_expenses WHERE id=v_id AND voided_by=v_admin) THEN RAISE EXCEPTION 'Removed expense remains in totals or audit missing'; END IF;
+  IF (v_report->>'expense_total')::numeric <> (v_before->>'expense_total')::numeric+20000 OR NOT EXISTS(SELECT 1 FROM public.gym_expenses WHERE id=v_id AND voided_by=v_admin) THEN RAISE EXCEPTION 'Removed expense remains in totals or audit missing'; END IF;
 
   v_blocked := false;
   BEGIN INSERT INTO public.gym_expenses(expense_date,category,description,amount) VALUES(DATE '2026-09-30','gas','Before start',100); EXCEPTION WHEN check_violation THEN v_blocked := true; END;
