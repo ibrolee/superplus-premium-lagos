@@ -3,6 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { ChevronDown, ChevronRight, LayoutDashboard, Menu, Search, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { adminGroups, canSeeAdminTool } from "./AdminWorkspaceShell";
+import { useAdminNavigation } from "./AdminNavigationContext";
 import "./admin-persistent-navigation.css";
 
 type MemberHit = {
@@ -42,7 +43,8 @@ export function isAdminDestination(pathname: string): boolean {
 /** Navigation visibility is not authorisation. Existing destination guards and RLS stay authoritative. */
 export function AdminPersistentNavigation() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const eligible = isAdminDestination(pathname);
+  const { hasPageNavigation } = useAdminNavigation();
+  const eligible = isAdminDestination(pathname) && !hasPageNavigation;
   const [role, setRole] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
