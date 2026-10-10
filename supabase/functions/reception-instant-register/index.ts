@@ -54,7 +54,12 @@ Deno.serve(async (req: Request) => {
       return json(data as Record<string, unknown>, 201);
     }
 
-    const { data, error } = await admin.rpc('reception_complete_registration_with_pt', {
+    const customTotalPaid = body?.customTotalPaid == null ? null : body.customTotalPaid;
+    if (customTotalPaid !== null && (typeof customTotalPaid !== 'number' || !Number.isFinite(customTotalPaid) || customTotalPaid < 0 || customTotalPaid > 100000000 || Math.abs(customTotalPaid * 100 - Math.round(customTotalPaid * 100)) > 0.000001)) {
+      return json({ error: 'Custom total paid must be from 0 to 100,000,000 naira with up to two decimal places.' }, 400);
+    }
+
+    const { data, error } = await admin.rpc('reception_complete_registration_with_pt_custom_total', {
       p_actor_id: identity.user.id,
       p_full_name: String(body?.fullName || ''),
       p_email: String(body?.email || ''),
@@ -72,6 +77,7 @@ Deno.serve(async (req: Request) => {
       p_coupon_code: String(body?.couponCode || ''),
       p_discount_percentage: Number(body?.discountPercentage ?? 0),
       p_trainer_staff_profile_id: body?.trainerStaffProfileId || null,
+      p_custom_total_paid: customTotalPaid,
     });
 
     if (error) return json({ error: error.message || 'Payment could not be recorded. Check the member directory before retrying.' }, 400);
