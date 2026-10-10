@@ -496,14 +496,15 @@ function ExpensesAndProfit() {
             </label>
             <label className="text-sm font-bold sm:col-span-2">
               Description
-              <input
+              <textarea
                 required
+                rows={4}
                 maxLength={250}
                 value={draft.description}
                 disabled={!!busy}
                 placeholder="e.g. October internet subscription"
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-                className={field}
+                className={field + " resize-y"}
               />
             </label>
             <label className="text-sm font-bold">
@@ -802,7 +803,9 @@ function ExpensesAndProfit() {
                         <Icon size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="break-words text-sm font-black">{e.description}</p>
+                        <p className="whitespace-pre-wrap break-words text-sm font-black">
+                          {e.description}
+                        </p>
                         <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647468]">
                           <span>{categoryNames[e.category]}</span>
                           <span className="flex items-center gap-1">
