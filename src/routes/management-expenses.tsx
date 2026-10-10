@@ -50,10 +50,9 @@ const money = (value: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
-const dateLabel = (value: string) =>
+const monthLabel = (value: string) =>
   new Intl.DateTimeFormat("en-NG", {
-    day: "numeric",
-    month: "short",
+    month: "long",
     year: "numeric",
     timeZone: "Africa/Lagos",
   }).format(new Date(value + "T12:00:00Z"));
@@ -61,25 +60,16 @@ const field =
   "mt-2 w-full min-w-0 rounded-xl border border-[#d5e0d0] bg-white px-4 py-3 text-base text-[#193b2a] outline-none focus:border-[#548b4c] disabled:opacity-50";
 type Draft = {
   id: string;
-  expense_date: string;
   category: ExpenseCategory;
   description: string;
   amount: string;
-  payment_method: string;
-  reference: string;
-  notes: string;
 };
-function blankDraft(month: string): Draft {
-  const today = lagosToday();
+function blankDraft(): Draft {
   return {
     id: crypto.randomUUID(),
-    expense_date: month === today.slice(0, 7) ? today : month + "-01",
     category: "internet",
     description: "",
     amount: "",
-    payment_method: "Cash",
-    reference: "",
-    notes: "",
   };
 }
 function exportReport(month: string, rows: string[][]) {
@@ -107,7 +97,7 @@ function ExpensesAndProfit() {
     [notice, setNotice] = useState("");
   const [reload, setReload] = useState(0),
     [formOpen, setFormOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(() => blankDraft(today.slice(0, 7)));
+  const [draft, setDraft] = useState<Draft>(blankDraft);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [filter, setFilter] = useState<ExpenseCategory | "all">("all"),
     [search, setSearch] = useState(""),
@@ -181,9 +171,7 @@ function ExpensesAndProfit() {
       (data?.finance.expenses || []).filter(
         (e) =>
           (filter === "all" || e.category === filter) &&
-          (e.description + " " + e.reference + " " + e.notes)
-            .toLowerCase()
-            .includes(search.trim().toLowerCase()),
+          e.description.toLowerCase().includes(search.trim().toLowerCase()),
       ),
     [data, filter, search],
   );
@@ -192,14 +180,19 @@ function ExpensesAndProfit() {
   const disabled = !!busy || loading;
   function openNew() {
     setEditing(null);
-    setDraft(blankDraft(month));
+    setDraft(blankDraft());
     setFormOpen(true);
     setError("");
     setNotice("");
   }
   function edit(expense: Expense) {
     setEditing(expense);
-    setDraft({ ...expense, amount: String(expense.amount) });
+    setDraft({
+      id: expense.id,
+      category: expense.category,
+      description: expense.description,
+      amount: String(expense.amount),
+    });
     setFormOpen(true);
     setError("");
     setNotice("");
@@ -214,11 +207,12 @@ function ExpensesAndProfit() {
       amount > 100000000 ||
       !/^\d+(?:\.\d{1,2})?$/.test(draft.amount) ||
       !draft.description.trim() ||
-      draft.expense_date < FINANCE_START_MONTH + "-01" ||
-      draft.expense_date > today
+      !/^\d{4}-(0[1-9]|1[0-2])$/.test(month) ||
+      month < FINANCE_START_MONTH ||
+      month > today.slice(0, 7)
     ) {
       setError(
-        "Enter a description, a valid date from October 2026, and a positive amount with up to two decimal places.",
+        "Choose a report month from October 2026 to the current month, and enter a description and a positive expense amount with up to two decimal places.",
       );
       return;
     }
@@ -227,13 +221,11 @@ function ExpensesAndProfit() {
     setNotice("");
     try {
       const values = {
-        expense_date: draft.expense_date,
+        expense_date:
+          editing?.expense_date ?? (month === today.slice(0, 7) ? today : month + "-01"),
         category: draft.category,
         description: draft.description.trim(),
         amount,
-        payment_method: draft.payment_method,
-        reference: draft.reference.trim(),
-        notes: draft.notes.trim(),
       };
       const query = editing
         ? supabase
@@ -259,7 +251,6 @@ function ExpensesAndProfit() {
       );
       setFormOpen(false);
       setEditing(null);
-      setMonth(draft.expense_date.slice(0, 7));
       setReload((v) => v + 1);
       setPage(0);
     } catch (cause) {
@@ -326,23 +317,12 @@ function ExpensesAndProfit() {
         canCalculate ? String(result.profit) : "Unavailable until issues are resolved",
       ],
       ["", ""],
-      [
-        "Expense date",
-        "Category",
-        "Description",
-        "Amount (NGN)",
-        "Payment method",
-        "Reference",
-        "Notes",
-      ],
+      ["Expense month", "Category", "Description", "Expense amount (NGN)"],
       ...data.finance.expenses.map((e) => [
-        e.expense_date,
+        e.expense_date.slice(0, 7),
         categoryNames[e.category] || e.category,
         e.description,
         String(e.amount),
-        e.payment_method,
-        e.reference,
-        e.notes,
       ]),
       ["", ""],
       ["Payroll", "Gross cost (NGN)", "Paid (NGN)", "Basis"],
@@ -459,23 +439,10 @@ function ExpensesAndProfit() {
             </button>
           </div>
           <p className="mt-2 text-sm leading-6 text-[#647468]">
-            Record money spent on running the gym. Staff salaries and coach commissions are included
-            automatically from payroll.
+            This expense will be recorded in the selected report month automatically. Staff salaries
+            and coach commissions are included automatically from payroll.
           </p>
           <form onSubmit={(e) => void save(e)} className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="text-sm font-bold">
-              Expense date
-              <input
-                type="date"
-                min={FINANCE_START_MONTH + "-01"}
-                max={today}
-                required
-                disabled={!!busy}
-                value={draft.expense_date}
-                onChange={(e) => setDraft({ ...draft, expense_date: e.target.value })}
-                className={field}
-              />
-            </label>
             <label className="text-sm font-bold">
               Category
               <select
@@ -506,7 +473,7 @@ function ExpensesAndProfit() {
               />
             </label>
             <label className="text-sm font-bold">
-              Amount paid (₦)
+              Expense amount (₦)
               <input
                 type="number"
                 inputMode="decimal"
@@ -518,40 +485,6 @@ function ExpensesAndProfit() {
                 value={draft.amount}
                 onChange={(e) => setDraft({ ...draft, amount: e.target.value })}
                 placeholder="0"
-                className={field}
-              />
-            </label>
-            <label className="text-sm font-bold">
-              Payment method
-              <select
-                disabled={!!busy}
-                value={draft.payment_method}
-                onChange={(e) => setDraft({ ...draft, payment_method: e.target.value })}
-                className={field}
-              >
-                <option>Cash</option>
-                <option>POS</option>
-                <option>Bank Transfer</option>
-              </select>
-            </label>
-            <label className="text-sm font-bold sm:col-span-2">
-              Reference / receipt number (optional)
-              <input
-                maxLength={200}
-                disabled={!!busy}
-                value={draft.reference}
-                onChange={(e) => setDraft({ ...draft, reference: e.target.value })}
-                className={field}
-              />
-            </label>
-            <label className="text-sm font-bold sm:col-span-2">
-              Notes (optional)
-              <textarea
-                rows={2}
-                maxLength={1500}
-                disabled={!!busy}
-                value={draft.notes}
-                onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                 className={field}
               />
             </label>
@@ -777,7 +710,7 @@ function ExpensesAndProfit() {
                 <input
                   type="search"
                   value={search}
-                  placeholder="Search description, notes or receipt"
+                  placeholder="Search expense descriptions"
                   onChange={(e) => {
                     setSearch(e.target.value);
                     setPage(0);
@@ -840,20 +773,9 @@ function ExpensesAndProfit() {
                           <span>{categoryNames[e.category]}</span>
                           <span className="flex items-center gap-1">
                             <CalendarDays size={12} />
-                            {dateLabel(e.expense_date)}
+                            {monthLabel(e.expense_date)}
                           </span>
-                          <span>{e.payment_method}</span>
                         </p>
-                        {e.reference && (
-                          <p className="mt-1 break-words text-xs text-[#647468]">
-                            Reference: {e.reference}
-                          </p>
-                        )}
-                        {e.notes && (
-                          <p className="mt-2 whitespace-pre-wrap break-words text-xs leading-5 text-[#647468]">
-                            {e.notes}
-                          </p>
-                        )}
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
                         <strong className="text-base tabular-nums">
