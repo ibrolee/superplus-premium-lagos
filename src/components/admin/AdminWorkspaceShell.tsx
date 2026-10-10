@@ -223,6 +223,13 @@ export const adminGroups: Group[] = [
     icon: FileDown,
     tools: [
       {
+        label: "Expenses & profit",
+        href: "/management-expenses",
+        icon: Wallet,
+        ownerOrAdmin: true,
+        keywords: "expenses profit loss internet electricity petrol gas costs month end finance",
+      },
+      {
         label: "Revenue report",
         href: "/management-revenue",
         icon: Wallet,

@@ -179,6 +179,13 @@ const groupedActions = [
     title: "Reports & website",
     items: [
       {
+        label: "Expenses & profit",
+        description: "Running costs and monthly results after payroll.",
+        href: "/management-expenses",
+        icon: Wallet,
+        ownerOrAdmin: true,
+      },
+      {
         label: "Revenue report",
         description: "Payments and income.",
         href: "/management-revenue",
@@ -209,6 +216,7 @@ const groupedActions = [
 ];
 function AdminWorkspace() {
   const [revenue, setRevenue] = useState<Revenue | null>(null),
+    [canManageExpenses, setCanManageExpenses] = useState(false),
     [loading, setLoading] = useState(true),
     [error, setError] = useState(""),
     [reload, setReload] = useState(0);
@@ -232,6 +240,8 @@ function AdminWorkspace() {
           !["admin", "owner", "manager"].includes(String(staff.role || "").toLowerCase())
         )
           throw Error("Only management can view revenue.");
+        if (!cancelled)
+          setCanManageExpenses(["admin", "owner"].includes(String(staff.role).toLowerCase()));
         const result = await readRevenue();
         if (!cancelled) setRevenue(result);
       } catch (cause) {
@@ -366,24 +376,28 @@ function AdminWorkspace() {
             >
               <h3 className="text-sm font-black text-[#193b2a]">{group.title}</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {group.items.map(({ label, description, href, icon: Icon }) => (
-                  <a
-                    key={label}
-                    href={href}
-                    className="group flex min-w-0 items-start gap-3 rounded-xl border border-[#eef2eb] bg-[#f8faf6] p-3 hover:border-[#9cbb92]"
-                  >
-                    <span className="rounded-lg bg-[#edf6e7] p-2 text-[#38673e]">
-                      <Icon size={18} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <strong className="block text-sm leading-5">{label}</strong>
-                      <span className="mt-0.5 block text-xs leading-5 text-[#657568]">
-                        {description}
+                {group.items
+                  .filter(
+                    (item) => !("ownerOrAdmin" in item && item.ownerOrAdmin) || canManageExpenses,
+                  )
+                  .map(({ label, description, href, icon: Icon }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      className="group flex min-w-0 items-start gap-3 rounded-xl border border-[#eef2eb] bg-[#f8faf6] p-3 hover:border-[#9cbb92]"
+                    >
+                      <span className="rounded-lg bg-[#edf6e7] p-2 text-[#38673e]">
+                        <Icon size={18} />
                       </span>
-                    </span>
-                    <ArrowRight size={15} className="mt-1 shrink-0 text-[#4b7650]" />
-                  </a>
-                ))}
+                      <span className="min-w-0 flex-1">
+                        <strong className="block text-sm leading-5">{label}</strong>
+                        <span className="mt-0.5 block text-xs leading-5 text-[#657568]">
+                          {description}
+                        </span>
+                      </span>
+                      <ArrowRight size={15} className="mt-1 shrink-0 text-[#4b7650]" />
+                    </a>
+                  ))}
               </div>
             </section>
           ))}

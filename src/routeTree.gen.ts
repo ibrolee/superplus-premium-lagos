@@ -14,6 +14,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin-announcements'
 import { Route as AdminApprovalsRouteImport } from './routes/admin-approvals'
 import { Route as AdminEngagementRouteImport } from './routes/admin-engagement'
+import { Route as AdminHistoricalMembersRouteImport } from './routes/admin-historical-members'
 import { Route as AdminMembersRouteImport } from './routes/admin-members'
 import { Route as AdminWorkspaceRouteImport } from './routes/admin-workspace'
 import { Route as AppRouteImport } from './routes/app'
@@ -31,6 +32,7 @@ import { Route as ManagementAttendanceExportRouteImport } from './routes/managem
 import { Route as ManagementBookingsRouteImport } from './routes/management-bookings'
 import { Route as ManagementCommunicationsRouteImport } from './routes/management-communications'
 import { Route as ManagementCustomPlanRouteImport } from './routes/management-custom-plan'
+import { Route as ManagementExpensesRouteImport } from './routes/management-expenses'
 import { Route as ManagementFamilyRouteImport } from './routes/management-family'
 import { Route as ManagementMemberCardRouteImport } from './routes/management-member-card'
 import { Route as ManagementMemberCardsRouteImport } from './routes/management-member-cards'
@@ -110,6 +112,11 @@ const AdminApprovalsRoute = AdminApprovalsRouteImport.update({
 const AdminEngagementRoute = AdminEngagementRouteImport.update({
   id: '/admin-engagement',
   path: '/admin-engagement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminHistoricalMembersRoute = AdminHistoricalMembersRouteImport.update({
+  id: '/admin-historical-members',
+  path: '/admin-historical-members',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMembersRoute = AdminMembersRouteImport.update({
@@ -197,6 +204,11 @@ const ManagementCommunicationsRoute =
 const ManagementCustomPlanRoute = ManagementCustomPlanRouteImport.update({
   id: '/management-custom-plan',
   path: '/management-custom-plan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagementExpensesRoute = ManagementExpensesRouteImport.update({
+  id: '/management-expenses',
+  path: '/management-expenses',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagementFamilyRoute = ManagementFamilyRouteImport.update({
@@ -487,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-engagement': typeof AdminEngagementRoute
+  '/admin-historical-members': typeof AdminHistoricalMembersRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/app': typeof AppRoute
@@ -504,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-expenses': typeof ManagementExpensesRoute
   '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
@@ -566,6 +580,7 @@ export interface FileRoutesByTo {
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-engagement': typeof AdminEngagementRoute
+  '/admin-historical-members': typeof AdminHistoricalMembersRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/app': typeof AppRoute
@@ -582,6 +597,7 @@ export interface FileRoutesByTo {
   '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-expenses': typeof ManagementExpensesRoute
   '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
@@ -645,6 +661,7 @@ export interface FileRoutesById {
   '/admin-announcements': typeof AdminAnnouncementsRoute
   '/admin-approvals': typeof AdminApprovalsRoute
   '/admin-engagement': typeof AdminEngagementRoute
+  '/admin-historical-members': typeof AdminHistoricalMembersRoute
   '/admin-members': typeof AdminMembersRoute
   '/admin-workspace': typeof AdminWorkspaceRoute
   '/app': typeof AppRoute
@@ -662,6 +679,7 @@ export interface FileRoutesById {
   '/management-bookings': typeof ManagementBookingsRoute
   '/management-communications': typeof ManagementCommunicationsRoute
   '/management-custom-plan': typeof ManagementCustomPlanRoute
+  '/management-expenses': typeof ManagementExpensesRoute
   '/management-family': typeof ManagementFamilyRoute
   '/management-member-card': typeof ManagementMemberCardRoute
   '/management-member-cards': typeof ManagementMemberCardsRoute
@@ -726,6 +744,7 @@ export interface FileRouteTypes {
     | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-engagement'
+    | '/admin-historical-members'
     | '/admin-members'
     | '/admin-workspace'
     | '/app'
@@ -743,6 +762,7 @@ export interface FileRouteTypes {
     | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-expenses'
     | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
@@ -805,6 +825,7 @@ export interface FileRouteTypes {
     | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-engagement'
+    | '/admin-historical-members'
     | '/admin-members'
     | '/admin-workspace'
     | '/app'
@@ -821,6 +842,7 @@ export interface FileRouteTypes {
     | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-expenses'
     | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
@@ -883,6 +905,7 @@ export interface FileRouteTypes {
     | '/admin-announcements'
     | '/admin-approvals'
     | '/admin-engagement'
+    | '/admin-historical-members'
     | '/admin-members'
     | '/admin-workspace'
     | '/app'
@@ -900,6 +923,7 @@ export interface FileRouteTypes {
     | '/management-bookings'
     | '/management-communications'
     | '/management-custom-plan'
+    | '/management-expenses'
     | '/management-family'
     | '/management-member-card'
     | '/management-member-cards'
@@ -963,6 +987,7 @@ export interface RootRouteChildren {
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminApprovalsRoute: typeof AdminApprovalsRoute
   AdminEngagementRoute: typeof AdminEngagementRoute
+  AdminHistoricalMembersRoute: typeof AdminHistoricalMembersRoute
   AdminMembersRoute: typeof AdminMembersRoute
   AdminWorkspaceRoute: typeof AdminWorkspaceRoute
   AppRoute: typeof AppRoute
@@ -980,6 +1005,7 @@ export interface RootRouteChildren {
   ManagementBookingsRoute: typeof ManagementBookingsRoute
   ManagementCommunicationsRoute: typeof ManagementCommunicationsRoute
   ManagementCustomPlanRoute: typeof ManagementCustomPlanRoute
+  ManagementExpensesRoute: typeof ManagementExpensesRoute
   ManagementFamilyRoute: typeof ManagementFamilyRoute
   ManagementMemberCardRoute: typeof ManagementMemberCardRoute
   ManagementMemberCardsRoute: typeof ManagementMemberCardsRoute
@@ -1066,6 +1092,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-engagement'
       fullPath: '/admin-engagement'
       preLoaderRoute: typeof AdminEngagementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-historical-members': {
+      id: '/admin-historical-members'
+      path: '/admin-historical-members'
+      fullPath: '/admin-historical-members'
+      preLoaderRoute: typeof AdminHistoricalMembersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-members': {
@@ -1185,6 +1218,13 @@ declare module '@tanstack/react-router' {
       path: '/management-custom-plan'
       fullPath: '/management-custom-plan'
       preLoaderRoute: typeof ManagementCustomPlanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/management-expenses': {
+      id: '/management-expenses'
+      path: '/management-expenses'
+      fullPath: '/management-expenses'
+      preLoaderRoute: typeof ManagementExpensesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/management-family': {
@@ -1610,6 +1650,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminApprovalsRoute: AdminApprovalsRoute,
   AdminEngagementRoute: AdminEngagementRoute,
+  AdminHistoricalMembersRoute: AdminHistoricalMembersRoute,
   AdminMembersRoute: AdminMembersRoute,
   AdminWorkspaceRoute: AdminWorkspaceRoute,
   AppRoute: AppRoute,
@@ -1627,6 +1668,7 @@ const rootRouteChildren: RootRouteChildren = {
   ManagementBookingsRoute: ManagementBookingsRoute,
   ManagementCommunicationsRoute: ManagementCommunicationsRoute,
   ManagementCustomPlanRoute: ManagementCustomPlanRoute,
+  ManagementExpensesRoute: ManagementExpensesRoute,
   ManagementFamilyRoute: ManagementFamilyRoute,
   ManagementMemberCardRoute: ManagementMemberCardRoute,
   ManagementMemberCardsRoute: ManagementMemberCardsRoute,
