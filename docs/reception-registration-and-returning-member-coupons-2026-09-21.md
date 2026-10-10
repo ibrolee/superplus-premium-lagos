@@ -1,0 +1,22 @@
+# Final owner direction: simple direct registration and REGOFF (2026-09-21)
+
+## Customer experience — no registration or payment approval
+1. **Customer already has an online profile:** log in with their email and pay/renew normally on the member dashboard. Existing Paystack workflow continues.
+2. **Gym has an old member record but customer has not used the new site:** log in with the email on their gym record. Existing `link_member_account` can connect the email-verified login to the existing record. Reception can also find their existing member record and renew in person, without creating a duplicate profile or charging the registration fee again.
+3. **No member record found:** reception creates a new member and records the payment at the desk. The same form also allows a direct renewal of a selected existing member. The member and paid membership are active immediately.
+4. Staff record only actual funds received (cash counted, POS success or real gym bank credit) and attest that in the form. No admin preapproval or post-transaction reconciliation queue. A customer screenshot alone is not proof of receipt. Role validation, official plan prices, duplicate contacts, unique external references and retry idempotency remain server-side.
+5. Normal paid reception records use `payments.status='success'`, `memberships.payment_status='paid'`, standard payment metadata and actual paid amount. They appear in `admin_revenue_rows`/dashboard after its existing revenue baseline. Admin-only historical imports remain the separate excluded workflow; do not use them for ordinary paid memberships.
+6. Preserve already-created legacy pending requests so staff can resolve old entries manually. Hide the old approval-first entry points from the main reception navigation; new transactions do not create those requests.
+
+## One coupon: REGOFF
+- Exactly one reusable code: `REGOFF` (case-insensitive). Anyone entering it at checkout may waive the **registration fee only**. This is deliberate; there are no individual coupon allocations, admin approval, expiration or one-use tracking. Keep the full membership fee.
+- An existing member renewing in their profile or through reception pays **no second registration fee** even without a coupon. REGOFF is useful when a returning customer uses the public Join flow to create an online profile and no gym record can be found, or whenever the code is provided.
+- The browser shows membership, registration fee and total. The server independently validates `REGOFF`, recomputes plan and fee, initializes Paystack for the exact amount and writes the calculated coupon/fee to trusted transaction metadata.
+- Paystack verifier checks real SUCCESS status, exact reference, currency, metadata, original full plan price, waived fee and amount. Server-only `finalize_public_join_payment` then idempotently links an existing member by email or creates a single new member, paid membership and successful payment in one transaction. OTP email login remains the proof of account control. Coupon possession never grants access to another member's account.
+
+## Staged source / release gates
+- Staged SQL: `20260921060000_reception_instant_registration.sql` replaces the earlier pending/reconciliation design with `reception_direct_transactions` and a direct paid registration/renewal RPC. `20260921061000_public_regoff_checkout.sql` stages atomic Paystack persistence; neither migration has been applied to production.
+- Staged Edge Functions: `reception-instant-register`, `initialize-public-payment`, `verify-public-payment`, with shared authoritative public pricing. **These have not been deployed or tested on live Supabase**; the existing production Edge code remains unchanged.
+- Client UI is gated by `VITE_RECEPTION_INSTANT_ENABLED` and `VITE_REGOFF_ENABLED` (both off by default). Do not enable until paired database/Edge functions have been installed, isolated tests passed, and the owner has explicitly approved a release.
+- Test migration parse and RLS/permissions on separate test Supabase, signed-in cashier vs inactive/non-staff, exact plan/fee calculations, REGOFF waived vs normal amount, transaction duplicate/retry/reference collisions, renewal extending rather than resetting an active plan, email-verified identity linking, real Paystack test-mode callback/idempotency, regular revenue visibility and historical exclusion.
+- No production merge, live migration, Edge deploy, production env change or live payment test without explicit owner approval.

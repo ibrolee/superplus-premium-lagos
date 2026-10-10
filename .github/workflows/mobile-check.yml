@@ -1,0 +1,42 @@
+name: Mobile app check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - ".github/workflows/mobile-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+      - name: Check Expo dependency compatibility
+        run: npx expo install --check
+      - name: Strict mobile TypeScript check
+        run: npm run typecheck
+      - name: Validate branded PNGs with Expo image processing
+        run: npm run check:assets
+      - name: Prebuild Android native project
+        run: npx expo prebuild --no-install --platform android
+      - name: Bundle Android JavaScript
+        run: npx expo export --platform android --output-dir /tmp/superplus-mobile-android
+      - name: Bundle iOS JavaScript
+        run: npx expo export --platform ios --output-dir /tmp/superplus-mobile-ios

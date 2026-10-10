@@ -1,0 +1,68 @@
+/* Reception 2.0 only. Do not constrain the website's other pages or turn off
+   intentional sideways scrolling inside navigation and filter bars. */
+.reception-responsive {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Flex/grid children otherwise inherit their longest unbreakable content as a
+   minimum width and can push the entire mobile document outside the viewport. */
+.reception-responsive :is(.grid, .flex, section, article, aside, details, form) {
+  min-width: 0;
+}
+.reception-responsive .grid > *,
+.reception-responsive .flex > * {
+  min-width: 0;
+}
+.reception-responsive :is(h1, h2, h3, p, strong, a, dd, dt, summary) {
+  overflow-wrap: anywhere;
+}
+.reception-responsive :is(input:not([type="checkbox"]), textarea, select) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.reception-responsive :is(img, video, canvas) {
+  max-width: 100%;
+}
+
+/* html5-qrcode inserts pixel dimensions inline. Keep the camera *inside* its
+   card, without disabling scrolling anywhere else on the page. */
+.reception-responsive #reception-qr-reader,
+.reception-responsive #reception-qr-reader > div {
+  width: 100%;
+  min-width: 0;
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+.reception-responsive #reception-qr-reader :is(video, canvas, img) {
+  max-width: 100% !important;
+  height: auto;
+}
+.reception-responsive .reception-profile-qr svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 639px) {
+  .reception-responsive .reception-profile-header {
+    padding: 1rem;
+  }
+  .reception-responsive .reception-profile-header h1 {
+    font-size: clamp(1.45rem, 7vw, 2.25rem);
+  }
+  .reception-responsive .reception-profile-qr {
+    max-width: 100%;
+    padding: 0.75rem;
+  }
+  .reception-responsive .reception-record-actions > :is(a, button, span) {
+    flex: 1 1 100%;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+  }
+  .reception-responsive .reception-money {
+    font-size: clamp(1.35rem, 6.5vw, 2rem);
+  }
+}

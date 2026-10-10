@@ -1,0 +1,36 @@
+/* Shared public footer: keep Visit, Portal, Contact, and copyright unchanged in content. */
+footer section[aria-label="Footer call to action"],
+footer section[aria-label="Explore"],
+footer section[aria-label="Business and portal links"] > div:first-child {
+  display: none;
+}
+
+footer > .section-shell {
+  padding-top: 1.75rem;
+  padding-bottom: 1.75rem;
+}
+
+footer > .section-shell > .grid {
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
+}
+
+footer section[aria-label="Business and portal links"] {
+  gap: 0;
+}
+
+@media (min-width: 640px) {
+  footer > .section-shell {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+  footer > .section-shell > .grid {
+    gap: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  footer > .section-shell > .grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, .75fr) minmax(0, 1.15fr);
+  }
+}
