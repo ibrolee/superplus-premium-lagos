@@ -13,6 +13,7 @@ import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { AdminPersistentNavigation } from "@/components/admin/AdminPersistentNavigation";
+import { AdminNavigationProvider } from "@/components/admin/AdminNavigationContext";
 import { ReceptionPersistentNavigation } from "@/components/reception/ReceptionPersistentNavigation";
 import { ReceptionRouteGate } from "@/components/reception/ReceptionRouteGate";
 import { VisitorChat } from "@/components/visitor/VisitorChat";
@@ -251,6 +252,9 @@ function isVisitorPage(pathname: string): boolean {
   );
 }
 function RootComponent() {
+  return <AdminNavigationProvider><RootContent /></AdminNavigationProvider>;
+}
+function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const internal = isInternalWorkspace(pathname);

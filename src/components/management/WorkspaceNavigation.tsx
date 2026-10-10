@@ -3,6 +3,7 @@ import { useRouterState } from '@tanstack/react-router';
 import { Activity, ArrowUpRight, Cake, CalendarDays, ClipboardList, CreditCard, Download, LayoutDashboard, ScanLine, Users, UserPlus, UserRound, Wallet } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { ActionSearch } from './ActionSearch';
+import { useAdminNavigation } from '../admin/AdminNavigationContext';
 
 function StaffToolLink({href,className,readOnly,children}:{href:string;className:string;readOnly:boolean;children:ReactNode}){
  if(readOnly)return <span aria-disabled="true" title="Read-only staff preview" className={`${className} cursor-not-allowed`}>{children}</span>;
@@ -12,8 +13,9 @@ function StaffToolLink({href,className,readOnly,children}:{href:string;className
 /** Secondary bar remains for older management pages; reception sidebar supersedes it on front-desk routes. */
 export function WorkspaceNavigation(){
  const pathname=useRouterState({select:state=>state.location.pathname});
+ const {hasPageNavigation}=useAdminNavigation();
  const onReception=pathname==='/reception-workspace',onStaff=['/staff','/staff-attendance','/staff-admin','/reception-checkin','/staff-missed-scans'].includes(pathname);
- const inWorkspace=onReception||onStaff||['/management-preview','/management-members','/management-attendance','/management-operations','/management-custom-plan','/management-standard-plan','/management-payment-desk','/management-profiles','/management-member-cards','/management-communications','/management-revenue','/management-staff','/management-staff-monthly','/management-staff-review','/management-payroll','/management-attendance-export','/management-payroll-export','/management-new-member-intake','/management-family'].includes(pathname);
+ const inWorkspace=!hasPageNavigation&&(onReception||onStaff||['/management-preview','/management-members','/management-attendance','/management-operations','/management-custom-plan','/management-standard-plan','/management-payment-desk','/management-profiles','/management-member-cards','/management-communications','/management-revenue','/management-staff','/management-staff-monthly','/management-staff-review','/management-payroll','/management-attendance-export','/management-payroll-export','/management-new-member-intake','/management-family'].includes(pathname));
  const[role,setRole]=useState<string|null>(null);
  const[staffPreview,setStaffPreview]=useState(false);
  useEffect(()=>{let cancelled=false;setRole(null);setStaffPreview(false);if(!inWorkspace)return()=>{cancelled=true;};void(async()=>{

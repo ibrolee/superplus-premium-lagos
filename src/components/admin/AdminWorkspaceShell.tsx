@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { usePageAdminNavigation } from "./AdminNavigationContext";
 type Tool = {
   label: string;
   href: string;
@@ -331,6 +332,7 @@ export function AdminWorkspaceShell({
   active: string;
   children: ReactNode;
 }) {
+  usePageAdminNavigation();
   const [role, setRole] = useState<string | null>(null),
     [checking, setChecking] = useState(true),
     [accessError, setAccessError] = useState("");
