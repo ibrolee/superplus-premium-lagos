@@ -280,7 +280,7 @@ export const adminGroups: Group[] = [
       },
       {
         label: "Historical members",
-        href: "/staff-admin#members",
+        href: "/admin-historical-members",
         icon: ShieldCheck,
         adminOnly: true,
         keywords: "admin import excluded revenue legacy",
