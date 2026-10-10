@@ -1,0 +1,14 @@
+/* Admin Portal search 2.0: only the redundant heading immediately above its Navigation control. */
+.spf-admin .spf-main-content > header > div > div > div:first-child {
+  display: none;
+}
+
+/* Keep the remaining Navigation control aligned after removing the duplicate heading. */
+.spf-admin .spf-main-content > header > div > div {
+  justify-content: flex-end;
+}
+
+/* Keep the shared staff tools and its expanded search above the sticky admin header. */
+.spf-admin .spf-main-content > header {
+  z-index: 10;
+}

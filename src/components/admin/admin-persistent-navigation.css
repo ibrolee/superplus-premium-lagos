@@ -1,0 +1,9 @@
+/* Applied only after an active management role has been verified. */
+@media (min-width: 1024px) {
+  body.spf-admin-nav-active { padding-left: 270px; }
+}
+/* The older top-level navigation is redundant for administrators. Reception and staff retain it. */
+body.spf-admin-nav-active nav[aria-label="Super Plus management workspace"],
+body.spf-admin-nav-active nav[aria-label="Staff and reception action navigation"] { display: none; }
+/* The old member directory's embedded sidebar is redundant with the persistent admin sidebar. */
+body.spf-admin-nav-active .reception-responsive > div > aside { display: none; }

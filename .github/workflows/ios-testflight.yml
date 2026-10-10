@@ -1,0 +1,42 @@
+name: iOS TestFlight build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_BUILD_SKIP_LOCKFILE_CHECK: "1"
+
+    steps:
+      - name: Checkout SPF app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Verify Expo dependencies
+        run: npx expo install --check
+
+      - name: Verify TypeScript
+        run: npm run typecheck
+
+      - name: Validate branded assets
+        run: npm run check:assets
+
+      - name: Build iOS production app and submit to TestFlight
+        run: npx eas-cli@latest build --platform ios --profile production --non-interactive --auto-submit --wait

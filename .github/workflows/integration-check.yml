@@ -1,0 +1,82 @@
+name: Integration build and type check
+
+on:
+  push:
+    branches:
+      - integration/september-attendance-missed-scans
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: disposable-test-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # These are placeholders. The CI runner NEVER connects to the live gym database or Paystack.
+      VITE_SUPABASE_URL: https://example.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-not-a-real-key
+    steps:
+      - name: Checkout exact branch commit
+        uses: actions/checkout@v4
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install immutable locked dependencies
+        run: bun install --frozen-lockfile
+      - name: Verify no dependency lockfile changes
+        run: git diff --exit-code -- bun.lock
+      - name: Test public join pricing and REGOFF without real payments
+        run: bun test tests/public-join-pricing.test.ts
+      - name: Test reception and Paystack SQL with isolated disposable PostgreSQL
+        env:
+          PGPASSWORD: disposable-test-only
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then sudo apt-get update -qq && sudo apt-get install -y postgresql-client; fi
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-integration.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-negative-cases.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/reception-production-guard-compatibility.sql
+          psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f tests/sql/member-paystack-recovery.sql
+      - name: Build client, SSR and server without deployment
+        run: bun run build
+      - name: Strict TypeScript check
+        run: bunx tsc --noEmit
+      - name: Verify generated route tree retains all existing routes and adds separate portals
+        shell: bash
+        run: |
+          set -euo pipefail
+          tree=src/routeTree.gen.ts
+          for route in portal portal.staff portal.reception portal.admin staff-reset-password; do
+            grep -Fq "from './routes/$route'" "$tree"
+          done
+          git show HEAD:"$tree" | grep -E "^import .* from './routes/" | sort > /tmp/routes-before.txt
+          grep -E "^import .* from './routes/" "$tree" | sort > /tmp/routes-after.txt
+          if comm -23 /tmp/routes-before.txt /tmp/routes-after.txt | grep .; then
+            echo 'An existing route import was removed or renamed.' >&2
+            exit 1
+          fi
+          grep -Fq 'export const routeTree' "$tree"
+          test "$(wc -l < "$tree")" -gt "$(wc -l < /tmp/routes-before.txt)"
+      - name: Verify no other tracked source changes from the build
+        run: git diff --exit-code -- . ':!bun.lock' ':!src/routeTree.gen.ts'

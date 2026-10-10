@@ -1,0 +1,36 @@
+name: Submit existing iOS build 6 to TestFlight
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ios-submit-build6.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+    steps:
+      - name: Checkout SPF app
+        uses: actions/checkout@v4
+
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.13"
+
+      - name: Install mobile dependencies
+        run: npm install --package-lock=false
+
+      - name: Submit build 6 to App Store Connect / TestFlight
+        run: npx eas-cli@latest submit --platform ios --profile production --id 8763c6f4-03b2-4461-b02a-7ce793356ef5 --non-interactive --wait
