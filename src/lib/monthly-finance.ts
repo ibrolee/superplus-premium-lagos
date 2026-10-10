@@ -14,6 +14,7 @@ export const EXPENSE_CATEGORIES = [
   { value: "electricity", label: "Electricity" },
   { value: "petrol", label: "Petrol" },
   { value: "gas", label: "Gas" },
+  { value: "membership_cards", label: "Membership cards" },
   { value: "other", label: "Other" },
 ] as const;
 export type ExpenseCategory = (typeof EXPENSE_CATEGORIES)[number]["value"];

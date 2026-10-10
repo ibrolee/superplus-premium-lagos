@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   CalendarDays,
   CheckCircle2,
+  CreditCard,
   Download,
   Flame,
   Fuel,
@@ -40,6 +41,7 @@ const categoryIcons = {
   electricity: Zap,
   petrol: Fuel,
   gas: Flame,
+  membership_cards: CreditCard,
   other: Receipt,
 };
 const categoryNames = Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c.value, c.label]));
