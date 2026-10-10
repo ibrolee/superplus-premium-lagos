@@ -204,7 +204,7 @@ export const actions: Action[] = [
   },
   {
     label: "Historical member import",
-    href: "/staff-admin#members",
+    href: "/admin-historical-members",
     description: "Admin-only historical activation excluded from revenue",
     keywords: "legacy import nonrevenue",
     category: "Members & memberships",
