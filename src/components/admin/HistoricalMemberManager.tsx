@@ -12,7 +12,7 @@ function lagosToday() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-export function HistoricalMemberManager({ refreshKey, onChanged }: { refreshKey: number; onChanged: () => void }) {
+export function HistoricalMemberManager({ refreshKey, onChanged, initiallyOpen = false }: { refreshKey: number; onChanged: () => void; initiallyOpen?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [listLoading, setListLoading] = useState(false);
@@ -171,7 +171,7 @@ export function HistoricalMemberManager({ refreshKey, onChanged }: { refreshKey:
   }
 
   return (
-    <details id="members-panel" className="group overflow-hidden rounded-2xl border border-border bg-card">
+    <details id="members-panel" open={initiallyOpen} className="group overflow-hidden rounded-2xl border border-border bg-card">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 [&::-webkit-details-marker]:hidden sm:p-6">
         <div className="flex min-w-0 items-center gap-3">
           <div className="rounded-xl bg-violet-100 p-3 text-violet-700"><UserPlus className="h-5 w-5" /></div>
