@@ -56,17 +56,26 @@ const monthLabel = (value: string) =>
     year: "numeric",
     timeZone: "Africa/Lagos",
   }).format(new Date(value + "T12:00:00Z"));
+const dateLabel = (value: string) =>
+  new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Africa/Lagos",
+  }).format(new Date(value + "T12:00:00Z"));
 const field =
   "mt-2 w-full min-w-0 rounded-xl border border-[#d5e0d0] bg-white px-4 py-3 text-base text-[#193b2a] outline-none focus:border-[#548b4c] disabled:opacity-50";
 type Draft = {
   id: string;
+  expense_date: string;
   category: ExpenseCategory;
   description: string;
   amount: string;
 };
-function blankDraft(): Draft {
+function blankDraft(month: string, today: string): Draft {
   return {
     id: crypto.randomUUID(),
+    expense_date: month === today.slice(0, 7) ? today : month + "-01",
     category: "internet",
     description: "",
     amount: "",
@@ -97,7 +106,7 @@ function ExpensesAndProfit() {
     [notice, setNotice] = useState("");
   const [reload, setReload] = useState(0),
     [formOpen, setFormOpen] = useState(false);
-  const [draft, setDraft] = useState<Draft>(blankDraft);
+  const [draft, setDraft] = useState<Draft>(() => blankDraft(month, today));
   const [editing, setEditing] = useState<Expense | null>(null);
   const [filter, setFilter] = useState<ExpenseCategory | "all">("all"),
     [search, setSearch] = useState(""),
@@ -180,7 +189,7 @@ function ExpensesAndProfit() {
   const disabled = !!busy || loading;
   function openNew() {
     setEditing(null);
-    setDraft(blankDraft());
+    setDraft(blankDraft(month, today));
     setFormOpen(true);
     setError("");
     setNotice("");
@@ -189,6 +198,7 @@ function ExpensesAndProfit() {
     setEditing(expense);
     setDraft({
       id: expense.id,
+      expense_date: expense.expense_date,
       category: expense.category,
       description: expense.description,
       amount: String(expense.amount),
@@ -200,6 +210,17 @@ function ExpensesAndProfit() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy || access !== "allowed") return;
+    const expenseDate = new Date(draft.expense_date + "T12:00:00Z");
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(draft.expense_date) ||
+      !Number.isFinite(expenseDate.getTime()) ||
+      expenseDate.toISOString().slice(0, 10) !== draft.expense_date ||
+      draft.expense_date < FINANCE_START_MONTH + "-01" ||
+      draft.expense_date > today
+    ) {
+      setError("Choose an expense date from 1 October 2026 to today.");
+      return;
+    }
     const amount = Number(draft.amount);
     if (
       !Number.isFinite(amount) ||
@@ -221,8 +242,7 @@ function ExpensesAndProfit() {
     setNotice("");
     try {
       const values = {
-        expense_date:
-          editing?.expense_date ?? (month === today.slice(0, 7) ? today : month + "-01"),
+        expense_date: draft.expense_date,
         category: draft.category,
         description: draft.description.trim(),
         amount,
@@ -251,6 +271,7 @@ function ExpensesAndProfit() {
       );
       setFormOpen(false);
       setEditing(null);
+      setMonth(draft.expense_date.slice(0, 7));
       setReload((v) => v + 1);
       setPage(0);
     } catch (cause) {
@@ -317,9 +338,9 @@ function ExpensesAndProfit() {
         canCalculate ? String(result.profit) : "Unavailable until issues are resolved",
       ],
       ["", ""],
-      ["Expense month", "Category", "Description", "Expense amount (NGN)"],
+      ["Expense date", "Category", "Description", "Expense amount (NGN)"],
       ...data.finance.expenses.map((e) => [
-        e.expense_date.slice(0, 7),
+        e.expense_date,
         categoryNames[e.category] || e.category,
         e.description,
         String(e.amount),
@@ -439,10 +460,23 @@ function ExpensesAndProfit() {
             </button>
           </div>
           <p className="mt-2 text-sm leading-6 text-[#647468]">
-            This expense will be recorded in the selected report month automatically. Staff salaries
+            This expense will be included in the month of its selected date. Staff salaries
             and coach commissions are included automatically from payroll.
           </p>
           <form onSubmit={(e) => void save(e)} className="mt-5 grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-bold">
+              Expense date
+              <input
+                type="date"
+                required
+                min={FINANCE_START_MONTH + "-01"}
+                max={today}
+                value={draft.expense_date}
+                disabled={!!busy}
+                onChange={(e) => setDraft({ ...draft, expense_date: e.target.value })}
+                className={field}
+              />
+            </label>
             <label className="text-sm font-bold">
               Category
               <select
@@ -773,7 +807,7 @@ function ExpensesAndProfit() {
                           <span>{categoryNames[e.category]}</span>
                           <span className="flex items-center gap-1">
                             <CalendarDays size={12} />
-                            {monthLabel(e.expense_date)}
+                            {dateLabel(e.expense_date)}
                           </span>
                         </p>
                       </div>
