@@ -1,4 +1,4 @@
-export type Access = "all" | "staff" | "reception" | "management" | "admin";
+export type Access = "all" | "staff" | "reception" | "management" | "admin" | "ownerOrAdmin";
 export type Category =
   | "Attendance & QR"
   | "Members & memberships"
@@ -276,6 +276,15 @@ export const actions: Action[] = [
     quick: true,
   },
   {
+    label: "Expenses & profit",
+    href: "/management-expenses",
+    description: "Record gym running costs and calculate monthly profit after payroll",
+    keywords: "expenses costs internet electricity petrol gas profit loss month end",
+    category: "Revenue & reports",
+    access: "ownerOrAdmin",
+    quick: true,
+  },
+  {
     label: "Admin revenue report",
     href: "/staff-admin#revenue",
     description: "Original detailed revenue report",
@@ -407,6 +416,7 @@ export function isActionVisible(action: Action, role: string): boolean {
   const normalized = role.trim().toLowerCase(),
     management = ["admin", "owner", "manager"].includes(normalized);
   if (action.access === "admin") return normalized === "admin";
+  if (action.access === "ownerOrAdmin") return ["admin", "owner"].includes(normalized);
   if (action.access === "management") return management;
   if (action.access === "reception") return management || normalized === "reception";
   if (action.access === "staff") return !management && normalized !== "reception";
