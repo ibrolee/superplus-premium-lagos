@@ -274,31 +274,31 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 @keyframes spf-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes spf-grow{from{transform:scaleY(.04);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}@keyframes spf-grow-horizontal{from{transform:scaleX(.04);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}@keyframes spf-pulse{50%{box-shadow:0 0 0 9px color-mix(in srgb, var(--portal-accent) 3.14%, transparent)}}
 @media(prefers-reduced-motion:reduce){.spf-dashboard *, .spf-dashboard *::before,.spf-dashboard *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
 
-/* Bright red / orange / white workspaces. Public marketing pages keep their palette. */
+/* Soft rose / terracotta gradients for account workspaces. */
 .spf-portal-theme {
   --background: oklch(1 0 0);
-  --primary: oklch(.60 .225 20);
+  --primary: oklch(.57 .125 13);
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(.55 .21 20);
+  --secondary: oklch(.52 .11 15);
   --secondary-foreground: oklch(1 0 0);
-  --border: oklch(.87 .07 42);
+  --border: oklch(.89 .025 35);
   --ring: var(--primary);
   --portal-ink: oklch(.23 .02 20);
   --portal-canvas: oklch(1 0 0);
-  --portal-surface: oklch(.96 .04 42);
-  --portal-border: oklch(.87 .07 42);
+  --portal-surface: oklch(.97 .015 35);
+  --portal-border: oklch(.89 .025 35);
   --portal-highlight: oklch(1 0 0);
   --portal-subtle: oklch(.94 .035 45);
-  --portal-accent: oklch(.55 .21 20);
+  --portal-accent: oklch(.52 .11 15);
   --portal-muted: oklch(.45 .02 20);
-  --portal-gradient: linear-gradient(115deg, #d9143b, #da2b28 58%, #ce4311);
-  --portal-orange-gradient: linear-gradient(120deg, #c93612, #d64410 55%, #b94408);
+  --portal-gradient: linear-gradient(125deg, #a64c64, #a9555c 52%, #a46347);
+  --portal-orange-gradient: linear-gradient(125deg, #9d5b4c, #a4674c 55%, #99653f);
   color: var(--portal-ink);
 }
 
 .spf-portal-theme main {
-  background-image: radial-gradient(ellipse at 100% 0%, #ffede1, transparent 52%),
-    radial-gradient(ellipse at 0% 65%, #fff0f2, transparent 48%);
+  background-image: radial-gradient(ellipse at 100% 0%, #fff5ef, transparent 52%),
+    radial-gradient(ellipse at 0% 65%, #fff6f7, transparent 48%);
 }
 
 .spf-portal-theme main .grid > * { min-width: 0; }
@@ -306,9 +306,9 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 .spf-portal-theme [class~="bg-[var(--portal-ink)]"],
 .spf-portal-theme [class~="bg-[var(--portal-accent)]"],
 .spf-portal-theme [class~="bg-secondary"] {
-  background-color: #d9143b;
+  background-color: #a64c64;
   background-image: var(--portal-gradient);
-  box-shadow: 0 8px 24px #dc263322;
+  box-shadow: 0 8px 24px #7d3e4814;
 }
 
 .spf-portal-theme [class~="bg-[var(--portal-ink)]"] [class~="text-[color:var(--portal-border)]"] {
@@ -316,8 +316,8 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 }
 
 .spf-portal-theme [class~="bg-[var(--portal-highlight)]"] {
-  color: #c51c3b;
-  box-shadow: 0 4px 16px #a3152614;
+  color: #a04b60;
+  box-shadow: 0 4px 16px #7d3e480d;
 }
 
 .spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) {
@@ -327,61 +327,61 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
   border: 0;
   border-radius: 24px;
   padding: clamp(20px, 4vw, 30px);
-  color: white;
-  background-color: #d9143b;
-  background-image: radial-gradient(circle at 100% 0%, #ffffff25, transparent 42%),
-    var(--portal-gradient);
-  box-shadow: 0 12px 28px #d82a3525;
+  color: var(--portal-ink);
+  background-color: #fff3ef;
+  background-image: linear-gradient(125deg, #f7e7ec, #f7e9e0 58%, #fff6ed);
+  box-shadow: 0 12px 28px #7d3e4817;
 }
 
-.spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) :is(h1, h2, p, strong) {
-  color: white;
+.spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) :is(h1, h2, strong) {
+  color: var(--portal-ink);
 }
+.spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) p { color: var(--portal-muted); }
 
 .spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) p { opacity: .95; }
-.spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) > div > a { color: white; }
+.spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) > div > a { color: var(--portal-accent); }
 .spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) :is(button, a)[class~="bg-white"] {
-  color: #c51c3b;
+  color: #a04b60;
   border-color: #ffffff80;
 }
 .spf-portal-theme :is(.portal-page-heading, main > div > div:first-child:has(> div > h1), main > div > header:first-child:has(h1)) [class~="bg-[var(--portal-surface)]"] {
   background: white;
-  color: #c51c3b;
+  color: #a04b60;
 }
 
 .spf-portal-theme main :is(section, article)[class~="bg-white"] {
-  border-color: #ffc9b7;
-  border-top: 4px solid #ed4936;
-  box-shadow: 0 8px 28px #d82a3510;
+  border-color: #ead4ce;
+  border-top: 3px solid #cb8b83;
+  box-shadow: 0 8px 28px #7d3e480b;
 }
 
 .spf-portal-theme main :is(section, article)[class~="bg-white"] h2 {
-  color: #c51c3b;
+  color: #a04b60;
 }
 
 .spf-portal-theme .portal-stat {
   border: 0;
   background-image: var(--portal-gradient);
   color: white;
-  box-shadow: 0 8px 22px #d82a3525;
+  box-shadow: 0 8px 22px #7d3e4817;
 }
 .spf-portal-theme .portal-stat :is(span, p, svg) { color: white; }
 .spf-portal-theme .portal-stat:nth-child(4n+2) {
   background-image: var(--portal-orange-gradient);
 }
 .spf-portal-theme .portal-stat:nth-child(4n+3) {
-  background: linear-gradient(125deg, #ffe0bf, #fff2e1);
-  box-shadow: inset 0 0 0 1px #ffb076, 0 8px 22px #eb731014;
+  background: linear-gradient(125deg, #f5e6d8, #fff8ef);
+  box-shadow: inset 0 0 0 1px #e6c5ac, 0 8px 22px #9d5b4c0d;
 }
 .spf-portal-theme .portal-stat:nth-child(4n+4) {
-  background: linear-gradient(125deg, #ffc6d0, #fff0f0);
-  box-shadow: inset 0 0 0 1px #ff9caa, 0 8px 22px #d82a3514;
+  background: linear-gradient(125deg, #f3dee3, #fff6f7);
+  box-shadow: inset 0 0 0 1px #e5bdc9, 0 8px 22px #7d3e480e;
 }
 .spf-portal-theme .portal-stat:nth-child(4n+3),
 .spf-portal-theme .portal-stat:nth-child(4n+4),
 .spf-portal-theme .portal-stat:nth-child(4n+3) :is(span, p, svg),
 .spf-portal-theme .portal-stat:nth-child(4n+4) :is(span, p, svg) {
-  color: #a31b37;
+  color: #854357;
 }
 
 .spf-portal-theme .portal-stat svg {
@@ -392,36 +392,57 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 }
 
 .spf-portal-theme .portal-action-card {
-  border-top: 4px solid #ed4936;
-  background-image: linear-gradient(140deg, white 45%, #fff0e3);
-  box-shadow: 0 6px 22px #d82a3510;
+  border-top: 3px solid #cb8b83;
+  background-image: linear-gradient(140deg, white 45%, #fff6ef);
+  box-shadow: 0 6px 22px #7d3e480b;
 }
-.spf-portal-theme .portal-action-card:nth-child(2n) { border-top-color: #f87927; }
+.spf-portal-theme .portal-action-card:nth-child(2n) { border-top-color: #d3a17f; }
 .spf-portal-theme .portal-action-card:nth-child(3n) {
-  background-image: linear-gradient(140deg, white 45%, #ffe8ed);
+  background-image: linear-gradient(140deg, white 45%, #fcf0f3);
 }
 
 .spf-portal-theme :is(input, textarea, select):focus-visible {
-  outline: 2px solid #ee4a35;
+  outline: 2px solid #b76c70;
   outline-offset: 2px;
 }
 .spf-portal-theme nav [aria-current="page"] {
   background: white;
-  color: #c51c3b;
-  box-shadow: 0 4px 14px #8d152820;
+  color: #a04b60;
+  box-shadow: 0 4px 14px #7d3e4810;
+}
+
+/* Side menus stay light; colour is concentrated in icons and active links. */
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] {
+  color: var(--portal-ink);
+  background: linear-gradient(160deg, #fffafa, #f7e9e9 55%, #f6e9df);
+  box-shadow: 8px 0 32px #60434b16;
+}
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] [class~="text-[color:var(--portal-subtle)]"],
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] [class~="text-[color:var(--portal-border)]"] {
+  color: var(--portal-muted);
+}
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] [class~="text-[color:var(--portal-highlight)]"],
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] svg {
+  color: var(--portal-accent);
+}
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] [class*="border-white/"] {
+  border-color: #e8d4d3;
+}
+.spf-portal-theme aside[class~="bg-[var(--portal-ink)]"] nav [aria-current="page"] {
+  border-left: 3px solid #b96d7d;
 }
 .spf-portal-theme .spf-metric {
-  border-top: 4px solid #ed4936;
-  background: linear-gradient(140deg, white, #fff0e3);
+  border-top: 3px solid #cb8b83;
+  background: linear-gradient(140deg, white, #fff6ef);
 }
-.spf-portal-theme .spf-metric:nth-child(2n) { border-top-color: #f87927; }
+.spf-portal-theme .spf-metric:nth-child(2n) { border-top-color: #d3a17f; }
 .spf-portal-theme .spf-bar-fill {
-  background: linear-gradient(180deg, #ff8c3e, #e32643);
+  background: linear-gradient(180deg, #d5a082, #ad6378);
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .spf-portal-theme :is(.portal-stat, .portal-action-card):hover {
     transform: translateY(-3px);
-    box-shadow: 0 14px 30px #d82a3527;
+    box-shadow: 0 14px 30px #7d3e481a;
   }
 }
