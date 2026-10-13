@@ -331,7 +331,13 @@ export function calculatePtPayout(input: PtPayoutInput) {
 
     const previouslyPaidMembershipIds = new Set(
       payoutRuns
-        .filter((run) => run.period_start !== periodStart)
+        // An unpaid draft is only a projection, not a commission that was paid.
+        // Locked partial payouts also reserve their already-recorded membership cycles.
+        .filter(
+          (run) =>
+            run.period_start !== periodStart &&
+            (run.status === "paid" || run.financial_locked === true),
+        )
         .flatMap((run) =>
           (run.breakdown || []).flatMap((row) => row.payable_membership_ids || []),
         ),
