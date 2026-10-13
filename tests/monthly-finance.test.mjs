@@ -4,6 +4,7 @@ import {
   monthlyPayrollCosts,
   operatingResult,
   FINANCE_START_MONTH,
+  grossSalaryFromRecord,
 } from "../src/lib/monthly-finance.ts";
 const staff = (id, name = id, status = "approved") => ({
   id,
@@ -137,4 +138,10 @@ test("missing settings, conflicting salaries and non-naira records require revie
   const costs = monthlyPayrollCosts(data, "2026-10", "2026-11-02");
   assert.equal(costs.salary, 0);
   assert.match(costs.issues[0], /USD/);
+});
+
+test("legacy salary records reconstruct gross consistently for payroll and finance", () => {
+  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: null, salary_advance_deduction: 40000 }), 100000);
+  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: 100000, salary_advance_deduction: 40000 }), 100000);
+  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: null, salary_advance_deduction: 0 }), 60000);
 });

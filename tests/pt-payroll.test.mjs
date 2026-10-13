@@ -43,7 +43,7 @@ test('same membership never generates a second commission in the second half',()
  const input=fixture();input.payoutPeriodStart='2026-10-16';input.today='2026-10-31';
  const result=calculatePtPayout(input);assert.equal(result.autoPool,0);assert.equal(result.commissionTotal,0);
  assert.equal(result.rows.find(r=>r.trainer_name==='c').trainee_count,2);
- input.payoutPeriodStart='2026-10-01';input.payoutRuns=[{period_start:'2026-09-16',breakdown:[{payable_membership_ids:['c0','c1']}]}];
+ input.payoutPeriodStart='2026-10-01';input.payoutRuns=[{period_start:'2026-09-16',status:'paid',breakdown:[{payable_membership_ids:['c0','c1']}]}];
  assert.equal(calculatePtPayout(input).rows.find(r=>r.trainer_name==='c').trainee_commission,0);
 });
 test('one evaluation does not change performance; two evaluations establish rating',()=>{
@@ -78,4 +78,15 @@ test('cancelled or paused PT cannot inflate coach trainee count or commissions',
  assert.equal(result.rows.find(row=>row.trainer_name==='a').trainee_count,1);
  assert.equal(result.rows.find(row=>row.trainer_name==='a').trainee_commission,10000);
  assert.equal(result.autoPool,50000);
+});
+
+test('unpaid payout drafts do not suppress commissions for other periods',()=> {
+ const input=fixture();
+ input.payoutRuns=[{period_start:'2026-09-16',status:'pending',financial_locked:false,breakdown:[{payable_membership_ids:['c0','c1']}]}];
+ assert.equal(calculatePtPayout(input).rows.find(r=>r.trainer_name==='c').trainee_commission,20000);
+ input.payoutRuns[0].financial_locked=true;
+ assert.equal(calculatePtPayout(input).rows.find(r=>r.trainer_name==='c').trainee_commission,0);
+ input.payoutRuns[0].financial_locked=false;
+ input.payoutRuns[0].status='paid';
+ assert.equal(calculatePtPayout(input).rows.find(r=>r.trainer_name==='c').trainee_commission,0);
 });

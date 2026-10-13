@@ -48,6 +48,8 @@ jobs:
         run: git diff --exit-code -- bun.lock
       - name: Test public join pricing and REGOFF without real payments
         run: bun test tests/public-join-pricing.test.ts
+      - name: Regression-test payroll, commission and finance calculations
+        run: bun test tests/pt-payroll.test.mjs tests/monthly-finance.test.mjs
       - name: Test reception and Paystack SQL with isolated disposable PostgreSQL
         env:
           PGPASSWORD: disposable-test-only
