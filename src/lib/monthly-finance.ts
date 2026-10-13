@@ -106,6 +106,18 @@ export type CostRow = {
   missing: boolean;
 };
 export const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100;
+
+/** Legacy salary rows may store only the net amount and advance deduction.
+ * Keep the gross reconstruction identical in the Salary and Finance screens.
+ */
+export function grossSalaryFromRecord(
+  record: Pick<SalaryRecord, "amount" | "gross_salary_amount" | "salary_advance_deduction">,
+): number {
+  return Number(
+    record.gross_salary_amount ??
+      Number(record.amount) + Number(record.salary_advance_deduction || 0),
+  );
+}
 const ngn = (currency: string | null) => (currency || "NGN").toUpperCase() === "NGN";
 const ADMIN_PLACEHOLDER = "48031602-21f1-4210-945e-2fefd83e6f52";
 
@@ -143,10 +155,7 @@ export function monthlyPayrollCosts(data: PayrollData, month: string, today: str
       );
     // Records store the net balance after an advance. Cost is always the full gross salary.
     const gross = record
-      ? Number(
-          record.gross_salary_amount ??
-            Number(record.amount) + Number(record.salary_advance_deduction || 0),
-        )
+      ? grossSalaryFromRecord(record)
       : Number(setting?.current_monthly_salary || 0);
     const advances = data.advances
       .filter(
