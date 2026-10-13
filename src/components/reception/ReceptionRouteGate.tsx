@@ -78,12 +78,12 @@ export function ReceptionRouteGate() {
     </>;
   }
   return <main className="mx-auto min-h-[55vh] max-w-3xl px-5 py-16">
-    <div role="alert" className="rounded-2xl border border-[#d8e2d5] bg-white p-6 text-[#193327]">
+    <div role="alert" className="rounded-2xl border border-[var(--portal-border)] bg-white p-6 text-[color:var(--portal-ink)]">
       <h1 className="text-2xl font-black">Reception access required</h1>
       <p className="mt-3 text-sm leading-6">{access.status === "signed-out"
         ? "Sign in with an authorised reception or management account to access member records."
         : "Your account does not have reception access. Contact management if you need this permission."}</p>
-      <a href="/staff" className="mt-5 inline-flex rounded-xl bg-[#193327] px-5 py-3 text-sm font-bold text-white">Go to staff portal</a>
+      <a href="/staff" className="mt-5 inline-flex rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-bold text-white">Go to staff portal</a>
     </div>
   </main>;
 }

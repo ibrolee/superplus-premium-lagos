@@ -431,10 +431,10 @@ function ReceptionMemberProfile() {
            </div>
          </div>
          <div className="mt-5 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row">
-           <a href={`/reception-register?memberId=${encodeURIComponent(member.id)}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-black text-white hover:bg-[#2c5737]">
+           <a href={`/reception-register?memberId=${encodeURIComponent(member.id)}`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-black text-white hover:bg-[var(--portal-accent)]">
              {currentMembership ? "Add Membership / Renew" : "Add Membership"}<ArrowRight className="h-4 w-4" />
            </a>
-           <a href="/reception-checkin" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#ccd8cb] px-5 py-3 text-sm font-bold text-[#193b2a] hover:border-[#7fa06e]">
+           <a href="/reception-checkin" className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold text-[color:var(--portal-ink)] hover:border-[var(--portal-muted)]">
              Open QR Check-In<QrCode className="h-4 w-4" />
            </a>
          </div>
