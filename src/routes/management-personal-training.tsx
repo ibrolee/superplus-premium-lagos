@@ -453,18 +453,18 @@ function ManagementPersonalTraining() {
                 setReportsOpen(true);
               }
             }}
-            className="rounded-2xl border border-[var(--portal-border)] bg-white p-4 text-left"
+            className="rounded-2xl border border-[#dce7d8] bg-white p-4 text-left"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">{label}</p>
-              <Icon size={17} className={label === "Confidential reports" && value > 0 ? "text-[#9a3939]" : "text-[color:var(--portal-accent)]"} />
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">{label}</p>
+              <Icon size={17} className={label === "Confidential reports" && value > 0 ? "text-[#9a3939]" : "text-[#2f7746]"} />
             </div>
             <p className="mt-3 text-3xl font-black">{value}</p>
           </button>
         ))}
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+      <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
         <button
           type="button"
           aria-expanded={coachPerformanceOpen}
@@ -472,15 +472,15 @@ function ManagementPersonalTraining() {
           className="flex w-full items-center justify-between gap-4 text-left"
         >
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
               Coach performance
             </p>
             <h2 className="mt-1 text-xl font-black">Evaluation overview</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">Ratings, trainee retention and performance breakdown.</p>
+            <p className="mt-1 text-xs text-[#6c7a70]">Ratings, trainee retention and performance breakdown.</p>
           </div>
           <ChevronDown
             size={22}
-            className={`shrink-0 text-[color:var(--portal-muted)] transition-transform ${coachPerformanceOpen ? "rotate-180" : ""}`}
+            className={`shrink-0 text-[#42634a] transition-transform ${coachPerformanceOpen ? "rotate-180" : ""}`}
           />
         </button>
         {coachPerformanceOpen && (
@@ -489,7 +489,7 @@ function ManagementPersonalTraining() {
               <button
                 type="button"
                 onClick={() => void load()}
-                className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
+                className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
               >
                 <RefreshCw size={15} /> Refresh
               </button>
@@ -521,15 +521,15 @@ function ManagementPersonalTraining() {
             ] as const;
 
             return (
-              <article key={trainer.staff_profile_id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5">
+              <article key={trainer.staff_profile_id} className="rounded-2xl border border-[#e0e9dc] bg-[#f7f9f5] p-4 sm:p-5">
                 <div className="flex items-start gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--portal-ink)] text-white">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white">
                     <Dumbbell size={19} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-black">{trainer.display_name}</h3>
-                      <span className="rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                      <span className="rounded-full bg-[#dfeedd] px-2.5 py-1 text-[10px] font-black text-[#2f7746]">
                         {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
                       </span>
                       <span
@@ -537,13 +537,13 @@ function ManagementPersonalTraining() {
                           "rounded-full px-2.5 py-1 text-[10px] font-black " +
                           (trainer.staff_title?.trim().toLowerCase() === "part-time coach"
                             ? "bg-violet-100 text-violet-800"
-                            : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
+                            : "bg-[#eef2eb] text-[#526357]")
                         }
                       >
                         {trainer.staff_title || "Coach"}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-xs text-[color:var(--portal-muted)]">
+                    <p className="mt-0.5 text-xs text-[#68796d]">
                       {count} evaluation{count === 1 ? "" : "s"}
                     </p>
                   </div>
@@ -552,7 +552,7 @@ function ManagementPersonalTraining() {
                 <div className="mt-4 rounded-2xl bg-white p-4">
                   <div className="flex items-end justify-between gap-3">
                     <div>
-                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
                         Overall coach rating
                       </p>
                       <p className="mt-1 text-3xl font-black">
@@ -571,51 +571,51 @@ function ManagementPersonalTraining() {
                     </span>
                   </div>
                   {!ratingReady && count > 0 && (
-                    <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
+                    <p className="mt-2 text-[11px] leading-5 text-[#6e7c72]">
                       Rating is provisional until this coach has at least 2 evaluations.
                     </p>
                   )}
                   {!count && (
-                    <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
+                    <p className="mt-2 text-[11px] leading-5 text-[#6e7c72]">
                       The overall rating will appear after trainees submit feedback.
                     </p>
                   )}
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
                     Category averages
                   </p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {categories.map(([label, value]) => (
                       <div key={label} className="rounded-xl bg-white p-3">
-                        <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">{label}</p>
+                        <p className="text-[9px] font-black uppercase leading-4 text-[#748078]">{label}</p>
                         <p className="mt-1 text-base font-black">{count ? value.toFixed(1) : "—"} <span className="text-[10px] text-[#9a7b20]">★</span></p>
                       </div>
                     ))}
                     <div className="rounded-xl bg-white p-3">
-                      <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">Programme consistency</p>
+                      <p className="text-[9px] font-black uppercase leading-4 text-[#748078]">Programme consistency</p>
                       <p className="mt-1 text-base font-black">{count ? `${Math.round(programConsistency)}%` : "—"}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[#738176]">
                     What trainees chose next
                   </p>
                   <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-[var(--portal-surface)] p-3">
-                      <p className="text-lg font-black text-[color:var(--portal-accent)]">{count ? `${continueRate}%` : "—"}</p>
-                      <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Continue</p>
+                    <div className="rounded-xl bg-[#eaf5e7] p-3">
+                      <p className="text-lg font-black text-[#2f7746]">{count ? `${continueRate}%` : "—"}</p>
+                      <p className="mt-1 text-[9px] font-black uppercase text-[#55745d]">Continue</p>
                     </div>
                     <div className="rounded-xl bg-amber-50 p-3">
                       <p className="text-lg font-black text-amber-800">{count ? `${changeRate}%` : "—"}</p>
                       <p className="mt-1 text-[9px] font-black uppercase text-amber-700">Change</p>
                     </div>
-                    <div className="rounded-xl bg-[var(--portal-surface)] p-3">
-                      <p className="text-lg font-black text-[color:var(--portal-muted)]">{count ? `${finishRate}%` : "—"}</p>
-                      <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Finish PT</p>
+                    <div className="rounded-xl bg-[#eef0ec] p-3">
+                      <p className="text-lg font-black text-[#58645d]">{count ? `${finishRate}%` : "—"}</p>
+                      <p className="mt-1 text-[9px] font-black uppercase text-[#6f7972]">Finish PT</p>
                     </div>
                   </div>
                 </div>
@@ -627,7 +627,7 @@ function ManagementPersonalTraining() {
         )}
       </section>
 
-      {canViewPayroll && <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+      {canViewPayroll && <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
         <button
           type="button"
           aria-expanded={payoutOpen}
@@ -635,27 +635,27 @@ function ManagementPersonalTraining() {
           className="flex w-full items-center justify-between gap-4 text-left"
         >
           <div className="max-w-2xl">
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
               PT payday calculator
             </p>
             <h2 className="mt-1 text-xl font-black">Coach PT Payout</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+            <p className="mt-1 text-xs text-[#6c7a70]">
               Fixed paydays: 16th of every month, then 1st of the next month together with salary.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <CircleDollarSign className="size-7 text-[color:var(--portal-accent)]" />
+            <CircleDollarSign className="size-7 text-[#2f7746]" />
             <ChevronDown
               size={22}
-              className={`text-[color:var(--portal-muted)] transition-transform ${payoutOpen ? "rotate-180" : ""}`}
+              className={`text-[#42634a] transition-transform ${payoutOpen ? "rotate-180" : ""}`}
             />
           </div>
         </button>
 
         {payoutOpen && (
           <>
-            <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-xs leading-5 text-[color:var(--portal-muted)]">
-              <strong className="text-[color:var(--portal-ink)]">Simple schedule:</strong>{" "}
+            <div className="mt-4 rounded-xl border border-[#dbe6d8] bg-[#f8faf6] p-4 text-xs leading-5 text-[#5e7064]">
+              <strong className="text-[#30483a]">Simple schedule:</strong>{" "}
               PT work from the <strong>1st–15th</strong> is paid on the <strong>16th</strong>.
               PT work from the <strong>16th–last day of the month</strong> is paid on the
               <strong> 1st of the next month</strong> together with salary.
@@ -674,7 +674,7 @@ function ManagementPersonalTraining() {
                     setPayoutMessage("");
                     setError("");
                   }}
-                  className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-semibold outline-none"
+                  className="mt-1.5 w-full rounded-xl border border-[#cedbc9] bg-white px-3 py-3 text-sm font-semibold outline-none"
                 >
                   {payoutPeriodOptions.map((start) => {
                     const period = payPeriodFromStart(start);
@@ -685,7 +685,7 @@ function ManagementPersonalTraining() {
                     );
                   })}
                 </select>
-                <span className="mt-1.5 block font-normal text-[color:var(--portal-muted)]">
+                <span className="mt-1.5 block font-normal text-[#728077]">
                   {selectedPeriod.salaryDay
                     ? `Pay date ${formatDate(selectedPeriod.payDate)} · together with salary`
                     : `Pay date ${formatDate(selectedPeriod.payDate)}`}
@@ -694,10 +694,10 @@ function ManagementPersonalTraining() {
 
             </div>
 
-            <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-4">
-              <p className="text-xs font-black text-[color:var(--portal-muted)]">Automatic 50/30/20 pool</p>
-              <p className="mt-1 text-2xl font-black text-[color:var(--portal-ink)]">{formatMoney(payoutCalculation.autoPool)}</p>
-              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">₦10,000 × payable membership cycles assigned to eligible coaches.</p>
+            <div className="mt-4 rounded-xl border border-[#dfe7dc] bg-white p-4">
+              <p className="text-xs font-black text-[#65806b]">Automatic 50/30/20 pool</p>
+              <p className="mt-1 text-2xl font-black text-[#193b2a]">{formatMoney(payoutCalculation.autoPool)}</p>
+              <p className="mt-1 text-xs text-[#68766d]">₦10,000 × payable membership cycles assigned to eligible coaches.</p>
               {payoutCalculation.poolOverridden && (
                 <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-900">
                   Manually adjusted pool: {formatMoney(payoutCalculation.pool)} · Automatic: {formatMoney(payoutCalculation.autoPool)}
@@ -708,7 +708,7 @@ function ManagementPersonalTraining() {
                   <button type="button" disabled={payoutBusy || payoutCalculation.fullEligibleCount === 0}
                     onClick={() => setAdjustPoolOpen((open) => !open)}
                     aria-expanded={adjustPoolOpen}
-                    className="rounded-xl border border-[var(--portal-border)] px-4 py-2 text-xs font-black disabled:opacity-40">
+                    className="rounded-xl border border-[#cbd8c8] px-4 py-2 text-xs font-black disabled:opacity-40">
                     {adjustPoolOpen ? "Hide adjustment" : "Adjust pool"}
                   </button>
                   {adjustPoolOpen && (
@@ -717,7 +717,7 @@ function ManagementPersonalTraining() {
                       <input type="number" min="0" step="0.01" inputMode="decimal"
                         value={payoutPool ?? String(payoutCalculation.pool)}
                         onChange={(event) => setPayoutPool(event.target.value)} disabled={payoutBusy}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] px-3 py-3 text-sm" />
+                        className="mt-1.5 w-full rounded-xl border border-[#cedbc9] px-3 py-3 text-sm" />
                     </label>
                   )}
                   {(payoutCalculation.poolOverridden || payoutPool !== null) && (
@@ -728,16 +728,16 @@ function ManagementPersonalTraining() {
                   {invalidPool && <p role="alert" className="text-xs text-red-800">Enter a valid amount of ₦0 or more, or use the automatic amount.</p>}
                 </div>
               )}
-              <p className="mt-3 text-xs leading-5 text-[color:var(--portal-muted)]">3+ trainees: 50/30/20 pool. 1–2 trainees: ₦10,000 once per payable membership cycle. 0 trainees: ₦0. Part-time coaches are handled separately.</p>
+              <p className="mt-3 text-xs leading-5 text-[#68766d]">3+ trainees: 50/30/20 pool. 1–2 trainees: ₦10,000 once per payable membership cycle. 0 trainees: ₦0. Part-time coaches are handled separately.</p>
             </div>
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-[var(--portal-surface)] p-3 text-center">
-                <p className="text-xl font-black text-[color:var(--portal-accent)]">50%</p>
-                <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Team share</p>
+              <div className="rounded-xl bg-[#edf5ea] p-3 text-center">
+                <p className="text-xl font-black text-[#2f7746]">50%</p>
+                <p className="text-[9px] font-black uppercase text-[#65766a]">Team share</p>
               </div>
-              <div className="rounded-xl bg-[var(--portal-canvas)] p-3 text-center">
-                <p className="text-xl font-black text-[color:var(--portal-muted)]">30%</p>
-                <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Workload</p>
+              <div className="rounded-xl bg-[#f3f5ed] p-3 text-center">
+                <p className="text-xl font-black text-[#52633f]">30%</p>
+                <p className="text-[9px] font-black uppercase text-[#65766a]">Workload</p>
               </div>
               <div className="rounded-xl bg-[#fff6df] p-3 text-center">
                 <p className="text-xl font-black text-[#8b6d24]">20%</p>
@@ -760,7 +760,7 @@ function ManagementPersonalTraining() {
                 type="button"
                 disabled={payoutBusy || invalidPool || payoutLocked}
                 onClick={() => void savePayoutRun()}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={15} /> {payoutSaving ? "Saving…" : payoutLocked ? "Payments recorded · figures locked" : "Save PT payout"}
               </button>
@@ -769,7 +769,7 @@ function ManagementPersonalTraining() {
                   type="button"
                   disabled={payoutBusy || invalidPool || payoutNeedsSave || today < selectedPayoutRun.pay_date}
                   onClick={() => void markPayoutPaid(selectedPayoutRun)}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--portal-ink)] bg-white px-4 py-3 text-xs font-black text-[color:var(--portal-ink)] disabled:opacity-45"
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#193b2a] bg-white px-4 py-3 text-xs font-black text-[#193b2a] disabled:opacity-45"
                 >
                   <CheckCircle2 size={15} />
                   {today < selectedPayoutRun.pay_date
@@ -798,11 +798,11 @@ function ManagementPersonalTraining() {
 
             <div className="mt-5 grid gap-3 xl:grid-cols-3">
               {payoutCalculation.rows.map((row) => (
-                <article key={row.trainer_staff_profile_id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+                <article key={row.trainer_staff_profile_id} className="rounded-2xl border border-[#dde7d9] bg-[#f8faf6] p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <h3 className="font-black">{row.trainer_name}</h3>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                      <p className="mt-1 text-xs text-[#6a786e]">
                         {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in this pay period
                       </p>
                       <span className={
@@ -820,28 +820,28 @@ function ManagementPersonalTraining() {
                             : "No PT payout"}
                       </span>
                     </div>
-                    <p className="text-xl font-black text-[color:var(--portal-ink)]">{formatMoney(row.recommended_payout)}</p>
+                    <p className="text-xl font-black text-[#193b2a]">{formatMoney(row.recommended_payout)}</p>
                   </div>
 
                   {row.full_pool_eligible ? (
                     <div className="mt-4 grid grid-cols-3 gap-1 text-center">
                       <div className="rounded-xl bg-white p-3">
                         <p className="break-words text-xs font-black">{formatMoney(row.team_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Team</p>
+                        <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Team</p>
                       </div>
                       <div className="rounded-xl bg-white p-3">
                         <p className="break-words text-xs font-black">{formatMoney(row.workload_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Workload</p>
+                        <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Workload</p>
                       </div>
                       <div className="rounded-xl bg-white p-3">
                         <p className="break-words text-xs font-black">{formatMoney(row.performance_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Performance</p>
+                        <p className="mt-1 text-[9px] font-black uppercase text-[#778178]">Performance</p>
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-3">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">Fixed commission</p>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                    <div className="mt-4 rounded-xl border border-[#dce7d9] bg-white p-3">
+                      <p className="text-[9px] font-black uppercase tracking-wider text-[#778178]">Fixed commission</p>
+                      <p className="mt-1 text-xs text-[#68766d]">
                         {Number(row.payable_membership_count || 0) > 0
                           ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
                           : "No new payable PT membership cycle in this period"}
@@ -849,10 +849,10 @@ function ManagementPersonalTraining() {
                     </div>
                   )}
 
-                  <div className="mt-4 space-y-2 text-xs text-[color:var(--portal-muted)]">
+                  <div className="mt-4 space-y-2 text-xs text-[#5f7064]">
                     <div className="flex items-center justify-between gap-3">
                       <span>Two-cycle retention</span>
-                      <strong className="text-[color:var(--portal-ink)]">
+                      <strong className="text-[#33483a]">
                         {row.renewal_rate === null
                           ? "Not enough data"
                           : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
@@ -860,7 +860,7 @@ function ManagementPersonalTraining() {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span>Trainee rating</span>
-                      <strong className="text-[color:var(--portal-ink)]">
+                      <strong className="text-[#33483a]">
                         {row.rating_average === null
                           ? "No ratings"
                           : `${row.rating_average.toFixed(1)}/5 · ${row.rating_count} review${row.rating_count === 1 ? "" : "s"}`}
@@ -871,7 +871,7 @@ function ManagementPersonalTraining() {
               ))}
             </div>
 
-            <div className="mt-4 grid gap-2 rounded-xl bg-[var(--portal-ink)] p-4 text-white sm:grid-cols-3">
+            <div className="mt-4 grid gap-2 rounded-xl bg-[#193b2a] p-4 text-white sm:grid-cols-3">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Pool used</p>
                 <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
@@ -892,8 +892,8 @@ function ManagementPersonalTraining() {
             </div>
 
             {payoutRuns.length > 0 && (
-              <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[.14em] text-[color:var(--portal-muted)]">Recent PT paydays</p>
+              <div className="mt-5 rounded-2xl border border-[#dce6d9] bg-[#fbfcf9] p-4">
+                <p className="text-[10px] font-black uppercase tracking-[.14em] text-[#65905c]">Recent PT paydays</p>
                 <div className="mt-3 grid gap-2">
                   {payoutRuns.slice(0, 6).map((run) => {
                     const total = (run.breakdown || []).reduce(
@@ -912,19 +912,19 @@ function ManagementPersonalTraining() {
                           setPayoutMessage("");
                           setError("");
                         }}
-                        className="flex flex-col gap-2 rounded-xl border border-[var(--portal-border)] bg-white p-3 text-left sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-2 rounded-xl border border-[#dde5da] bg-white p-3 text-left sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div>
                           <p className="text-xs font-black">
                             {formatDate(run.period_start)} – {formatDate(run.period_end)}
                           </p>
-                          <p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">
+                          <p className="mt-1 text-[10px] text-[#6e7b72]">
                             Pay date {formatDate(run.pay_date)}
                             {run.status === "paid" && run.paid_at ? ` · paid ${formatDateTime(run.paid_at)}` : " · pending"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="font-black text-[color:var(--portal-ink)]">{formatMoney(total)}</span>
+                          <span className="font-black text-[#193b2a]">{formatMoney(total)}</span>
                           <span className={
                             "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
                             (run.status === "paid"
@@ -944,7 +944,7 @@ function ManagementPersonalTraining() {
         )}
       </section>}
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+      <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
         <button
           type="button"
           aria-expanded={reportsOpen}
@@ -954,7 +954,7 @@ function ManagementPersonalTraining() {
           <div>
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#8c4a43]">Confidential</p>
             <h2 className="mt-1 text-xl font-black">Coach Reports</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+            <p className="mt-1 text-xs text-[#6c7a70]">
               Private concerns submitted by active PT members. Coaches cannot access these reports.
             </p>
           </div>
@@ -974,7 +974,7 @@ function ManagementPersonalTraining() {
         {reportsOpen && (
           <div className="mt-5 space-y-3">
             {!coachReports.length ? (
-              <p className="rounded-xl border border-dashed border-[var(--portal-border)] p-7 text-center text-sm text-[color:var(--portal-muted)]">
+              <p className="rounded-xl border border-dashed border-[#d8e2d5] p-7 text-center text-sm text-[#647468]">
                 No confidential coach reports have been submitted.
               </p>
             ) : (
@@ -1000,7 +1000,7 @@ function ManagementPersonalTraining() {
                             {report.status}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                        <p className="mt-1 text-xs text-[#66746b]">
                           Submitted {formatDateTime(report.submitted_at)}
                           {report.incident_date ? ` · Incident ${formatDate(report.incident_date)}` : ""}
                         </p>
@@ -1012,7 +1012,7 @@ function ManagementPersonalTraining() {
                       <div>
                         <p className="font-black uppercase tracking-wider text-[#7a827d]">Member</p>
                         <p className="mt-1 text-sm font-bold">{member?.full_name || "Unknown member"}</p>
-                        <p className="mt-0.5 text-[color:var(--portal-muted)]">{member?.phone || member?.email || "No contact"}</p>
+                        <p className="mt-0.5 text-[#68766d]">{member?.phone || member?.email || "No contact"}</p>
                       </div>
                       <div>
                         <p className="font-black uppercase tracking-wider text-[#7a827d]">Reported coach</p>
@@ -1022,7 +1022,7 @@ function ManagementPersonalTraining() {
 
                     <div className="mt-3 rounded-xl bg-white p-4">
                       <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">Member's report</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--portal-muted)]">{report.details}</p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#46564c]">{report.details}</p>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -1041,7 +1041,7 @@ function ManagementPersonalTraining() {
                           type="button"
                           disabled={savingReportId === report.id}
                           onClick={() => void updateCoachReport(report.id, "resolved")}
-                          className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
+                          className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
                         >
                           <CheckCircle2 size={15} /> Resolve
                         </button>
@@ -1066,7 +1066,7 @@ function ManagementPersonalTraining() {
         </p>
       )}
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+      <section className="mt-5 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
         <button
           type="button"
           aria-expanded={membersOpen}
@@ -1074,17 +1074,17 @@ function ManagementPersonalTraining() {
           className="flex w-full items-center justify-between gap-4 text-left"
         >
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
               PT members
             </p>
             <h2 className="mt-1 text-xl font-black">Personal Training Members</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+            <p className="mt-1 text-xs text-[#6c7a70]">
               Coach assignments, renewals, feedback and PT membership records.
             </p>
           </div>
           <ChevronDown
             size={22}
-            className={`shrink-0 text-[color:var(--portal-muted)] transition-transform ${membersOpen ? "rotate-180" : ""}`}
+            className={`shrink-0 text-[#42634a] transition-transform ${membersOpen ? "rotate-180" : ""}`}
           />
         </button>
 
@@ -1100,15 +1100,15 @@ function ManagementPersonalTraining() {
                 className={
                   "rounded-full px-4 py-2 text-xs font-black capitalize " +
                   (view === item
-                    ? "bg-[var(--portal-ink)] text-white"
-                    : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
+                    ? "bg-[#193b2a] text-white"
+                    : "border border-[#d8e2d5] bg-[#f8faf6] text-[#395844]")
                 }
               >
                 {item === "feedback" ? "Feedback" : item}
               </button>
             ))}
           </div>
-          <label className="flex min-w-0 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-3 lg:w-80">
+          <label className="flex min-w-0 items-center gap-2 rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-3 lg:w-80">
             <UserRound size={17} />
             <span className="sr-only">Search PT members</span>
             <input
@@ -1121,13 +1121,13 @@ function ManagementPersonalTraining() {
         </div>
 
         {loading && (
-          <p role="status" className="mt-6 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
+          <p role="status" className="mt-6 rounded-xl bg-[#f4f6f1] p-5 text-sm">
             Loading Personal Training records…
           </p>
         )}
 
         {!loading && !rows.length && (
-          <p className="mt-6 rounded-xl border border-dashed border-[var(--portal-border)] p-8 text-center text-sm text-[color:var(--portal-muted)]">
+          <p className="mt-6 rounded-xl border border-dashed border-[#d8e2d5] p-8 text-center text-sm text-[#647468]">
             No PT records match this view.
           </p>
         )}
@@ -1145,7 +1145,7 @@ function ManagementPersonalTraining() {
               const expiring = active && membership.end_date <= addDays(today, 7);
 
               return (
-                <article key={membership.id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5">
+                <article key={membership.id} className="rounded-2xl border border-[#dce8d9] bg-[#f9fbf7] p-4 sm:p-5">
                   <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -1153,7 +1153,7 @@ function ManagementPersonalTraining() {
                         <span
                           className={
                             "rounded-full px-2.5 py-1 text-[10px] font-black uppercase " +
-                            (active ? "bg-green-100 text-green-800" : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
+                            (active ? "bg-green-100 text-green-800" : "bg-[#ecefe9] text-[#637168]")
                           }
                         >
                           {active ? "Current" : membership.end_date < today ? "Expired" : "Upcoming"}
@@ -1164,7 +1164,7 @@ function ManagementPersonalTraining() {
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                      <p className="mt-1 text-xs text-[#647468]">
                         {member?.phone || member?.email || "No contact"}
                       </p>
                       <p className="mt-3 text-sm font-semibold">
@@ -1178,7 +1178,7 @@ function ManagementPersonalTraining() {
                         value={assignment?.trainer_staff_profile_id || ""}
                         disabled={savingMembershipId === membership.id}
                         onChange={(event) => void assignCoach(membership.id, event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-bold outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#cdd9cb] bg-white px-3 py-3 text-sm font-bold outline-none"
                       >
                         <option value="">Unassigned</option>
                         {trainers.filter((trainer) => trainer.active).map((trainer) => (
@@ -1187,27 +1187,27 @@ function ManagementPersonalTraining() {
                           </option>
                         ))}
                       </select>
-                      <span className="mt-1 block font-normal text-[color:var(--portal-muted)]">
+                      <span className="mt-1 block font-normal text-[#718075]">
                         {assignedTrainer ? "Saved for this PT cycle." : "Choose the member’s actual coach."}
                       </span>
                     </label>
                   </div>
 
                   {evaluation && (
-                    <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+                    <div className="mt-5 rounded-2xl border border-[#d8e4d4] bg-white p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+                          <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
                             Coach evaluation
                           </p>
                           <p className="mt-1 text-xl font-black">
                             {evaluation.overall_rating}/5 <span className="text-[#b28a2d]">★</span>
                           </p>
-                          <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                          <p className="mt-1 text-xs text-[#647468]">
                             Submitted {formatDateTime(evaluation.submitted_at)}
                           </p>
                         </div>
-                        <span className="rounded-full bg-[var(--portal-surface)] px-3 py-1.5 text-[10px] font-black uppercase text-[color:var(--portal-muted)]">
+                        <span className="rounded-full bg-[#eef4eb] px-3 py-1.5 text-[10px] font-black uppercase text-[#42634a]">
                           {evaluation.management_status}
                         </span>
                       </div>
@@ -1221,14 +1221,14 @@ function ManagementPersonalTraining() {
                           ["Motivation", evaluation.motivation_rating],
                           ["Programme", evaluation.program_consistency ? "Yes" : "No"],
                         ].map(([label, value]) => (
-                          <div key={String(label)} className="rounded-xl bg-[var(--portal-canvas)] p-3">
-                            <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">{label}</p>
+                          <div key={String(label)} className="rounded-xl bg-[#f4f7f1] p-3">
+                            <p className="text-[9px] font-black uppercase text-[#748078]">{label}</p>
                             <p className="mt-1 font-black">{value}</p>
                           </div>
                         ))}
                       </div>
 
-                      <div className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">
+                      <div className="mt-4 text-sm leading-6 text-[#52655a]">
                         <p>
                           <strong>Next step:</strong>{" "}
                           {evaluation.continuation_choice === "continue"
@@ -1253,7 +1253,7 @@ function ManagementPersonalTraining() {
                           <button
                             type="button"
                             onClick={() => void updateEvaluation(evaluation, "reviewed")}
-                            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
+                            className="inline-flex items-center gap-2 rounded-xl border border-[#cfdccf] px-4 py-2.5 text-xs font-bold"
                           >
                             <CheckCircle2 size={15} /> Mark reviewed
                           </button>
@@ -1262,7 +1262,7 @@ function ManagementPersonalTraining() {
                           <button
                             type="button"
                             onClick={() => void updateEvaluation(evaluation, "resolved")}
-                            className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white"
                           >
                             <CheckCircle2 size={15} /> Resolve
                           </button>

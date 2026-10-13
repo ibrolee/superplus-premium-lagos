@@ -54,16 +54,16 @@ function AdminHistoricalMembers() {
       subtitle="Recognise previous members and activate memberships paid before the current reporting period."
       active="/admin-historical-members"
     >
-      <section className="mt-7 overflow-hidden rounded-[24px] border border-[var(--portal-border)] bg-white">
-        <div className="flex flex-wrap items-start justify-between gap-4 bg-[var(--portal-ink)] px-5 py-6 text-white sm:px-7">
+      <section className="mt-7 overflow-hidden rounded-[24px] border border-[#dbe6d9] bg-white">
+        <div className="flex flex-wrap items-start justify-between gap-4 bg-[#193b2a] px-5 py-6 text-white sm:px-7">
           <div className="flex min-w-0 items-start gap-3">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--portal-highlight)] text-[color:var(--portal-ink)]">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[#b8ee73] text-[#193b2a]">
               <History size={22} />
             </div>
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[color:var(--portal-highlight)]">Legacy records</p>
+              <p className="text-[11px] font-bold uppercase tracking-[.16em] text-[#b8ee73]">Legacy records</p>
               <h2 className="mt-1 text-xl font-black sm:text-2xl">Historical member management</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[color:var(--portal-border)]">
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[#d5e5d6]">
                 Import a previous member, recognise an earlier payment or activate a membership already paid for.
               </p>
             </div>
@@ -75,14 +75,14 @@ function AdminHistoricalMembers() {
             Member directory <ArrowRight size={15} />
           </a>
         </div>
-        <div className="flex items-start gap-3 px-5 py-4 text-sm leading-6 text-[color:var(--portal-muted)] sm:px-7">
-          <ShieldCheck size={19} className="mt-0.5 shrink-0 text-[color:var(--portal-accent)]" />
+        <div className="flex items-start gap-3 px-5 py-4 text-sm leading-6 text-[#506b59] sm:px-7">
+          <ShieldCheck size={19} className="mt-0.5 shrink-0 text-[#348059]" />
           <p>Historical imports stay outside current revenue totals. Existing payment history is preserved. Use the normal payment flow for money collected today.</p>
         </div>
       </section>
 
       {access === "checking" && (
-        <p role="status" className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white p-5 text-sm text-[color:var(--portal-muted)]">
+        <p role="status" className="mt-5 rounded-2xl border border-[#dbe6d9] bg-white p-5 text-sm text-[#506b59]">
           Checking administrator access...
         </p>
       )}

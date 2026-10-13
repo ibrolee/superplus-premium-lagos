@@ -167,7 +167,7 @@ export function AdminPersistentNavigation() {
       )}
       <aside
         aria-label="Persistent admin sidebar"
-        className={`fixed inset-y-0 left-0 z-[70] flex w-[min(85vw,300px)] flex-col overflow-y-auto bg-[var(--portal-ink)] p-5 text-white shadow-xl transition-transform lg:w-[270px] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-[70] flex w-[min(85vw,300px)] flex-col overflow-y-auto bg-[#152820] p-5 text-white shadow-xl transition-transform lg:w-[270px] lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <button
           type="button"
@@ -182,12 +182,12 @@ export function AdminPersistentNavigation() {
           onClick={closeNavigation}
           className="flex items-center gap-3 rounded-xl px-2 py-2"
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-highlight)] text-lg font-black text-[color:var(--portal-ink)]">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#b8ee73] text-lg font-black text-[#193327]">
             S+
           </span>
           <span>
             <strong className="block text-sm tracking-wide">SUPER PLUS</strong>
-            <span className="text-[11px] text-[color:var(--portal-subtle)]">Admin workspace</span>
+            <span className="text-[11px] text-[#b9c9be]">Admin workspace</span>
           </span>
         </a>
         <nav
@@ -208,7 +208,7 @@ export function AdminPersistentNavigation() {
                   className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-white/10"
                 >
                   <span className="flex items-center gap-3">
-                    <Icon size={17} className="text-[color:var(--portal-highlight)]" />
+                    <Icon size={17} className="text-[#b8ee73]" />
                     {group.name}
                   </span>
                   <ChevronDown size={15} className={open ? "rotate-180" : ""} />
@@ -224,7 +224,7 @@ export function AdminPersistentNavigation() {
                           href={tool.href}
                           onClick={closeNavigation}
                           aria-current={isCurrent ? "page" : undefined}
-                          className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition ${isCurrent ? "bg-[var(--portal-highlight)] text-[color:var(--portal-ink)]" : "text-[color:var(--portal-border)] hover:bg-white/10"}`}
+                          className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition ${isCurrent ? "bg-[#b8ee73] text-[#193327]" : "text-[#d5e3d8] hover:bg-white/10"}`}
                         >
                           <ToolIcon size={15} className="shrink-0" />
                           {tool.label}
@@ -240,32 +240,32 @@ export function AdminPersistentNavigation() {
         <a
           href="/reception-workspace"
           onClick={closeNavigation}
-          className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[color:var(--portal-border)] hover:bg-white/10"
+          className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[#d5e3d8] hover:bg-white/10"
         >
           Switch to Reception Dashboard ↗
         </a>
         <a
           href="/admin-workspace"
           onClick={closeNavigation}
-          className="mt-2 flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[color:var(--portal-border)] hover:bg-white/10"
+          className="mt-2 flex items-center gap-2 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[#d5e3d8] hover:bg-white/10"
         >
           <LayoutDashboard size={16} /> Back to dashboard
         </a>
       </aside>
-      <header className="sticky top-0 z-40 border-b border-[var(--portal-border)] bg-[var(--portal-canvas)]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
+      <header className="sticky top-0 z-40 border-b border-[#e1e8dd] bg-[#f4f6f1]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
         <div className="mx-auto flex max-w-[1400px] items-center gap-3">
           <button
             type="button"
             aria-label="Open admin menu"
             aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(true)}
-            className="rounded-xl border border-[var(--portal-border)] bg-white p-2.5 lg:hidden"
+            className="rounded-xl border border-[#d8e2d5] bg-white p-2.5 lg:hidden"
           >
             <Menu size={21} />
           </button>
           <a
             href="/admin-workspace"
-            className="hidden min-w-0 flex-1 text-xs font-bold text-[color:var(--portal-muted)] sm:block"
+            className="hidden min-w-0 flex-1 text-xs font-bold text-[#526b57] sm:block"
           >
             SUPER PLUS / ADMIN
           </a>
@@ -273,19 +273,19 @@ export function AdminPersistentNavigation() {
             type="button"
             aria-expanded={searchOpen}
             onClick={() => setSearchOpen((open) => !open)}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-3 py-2.5 text-left text-sm text-[color:var(--portal-muted)] sm:max-w-[450px]"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-3 py-2.5 text-left text-sm text-[#647468] sm:max-w-[450px]"
           >
             <Search size={17} />
             <span className="truncate">Search tools or members</span>
           </button>
-          <span className="hidden rounded-full bg-[var(--portal-surface)] px-3 py-2 text-xs font-bold capitalize text-[color:var(--portal-accent)] sm:block">
+          <span className="hidden rounded-full bg-[#edf6e7] px-3 py-2 text-xs font-bold capitalize text-[#356942] sm:block">
             {role}
           </span>
         </div>
         {searchOpen && (
           <div className="relative mx-auto mt-3 max-w-[1400px]">
-            <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-3 shadow-lg">
-              <label className="flex items-center gap-2 rounded-xl bg-[var(--portal-canvas)] px-3">
+            <div className="rounded-2xl border border-[#d8e2d5] bg-white p-3 shadow-lg">
+              <label className="flex items-center gap-2 rounded-xl bg-[#f4f6f1] px-3">
                 <Search size={18} />
                 <span className="sr-only">Search admin tools, actions and members</span>
                 <input
@@ -298,7 +298,7 @@ export function AdminPersistentNavigation() {
               </label>
               {query.trim() && (
                 <div className="mt-3 max-h-[55vh] overflow-y-auto">
-                  <p className="px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                  <p className="px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[#6b806c]">
                     Tools & actions
                   </p>
                   {toolResults.map((tool) => (
@@ -306,20 +306,20 @@ export function AdminPersistentNavigation() {
                       href={tool.href}
                       onClick={closeNavigation}
                       key={`${tool.href}-${tool.label}`}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[var(--portal-surface)]"
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[#edf6e7]"
                     >
                       <ChevronRight size={15} />
                       {tool.label}
                     </a>
                   ))}
                   {!toolResults.length && (
-                    <p className="px-3 py-2 text-xs text-[color:var(--portal-muted)]">No matching tool.</p>
+                    <p className="px-3 py-2 text-xs text-[#66766a]">No matching tool.</p>
                   )}
-                  <p className="mt-2 px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                  <p className="mt-2 px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[#6b806c]">
                     Members
                   </p>
                   {searching && (
-                    <p role="status" className="px-3 text-xs text-[color:var(--portal-muted)]">
+                    <p role="status" className="px-3 text-xs text-[#66766a]">
                       Searching members…
                     </p>
                   )}
@@ -334,13 +334,13 @@ export function AdminPersistentNavigation() {
                         key={member.id}
                         href={`/reception-member/${member.id}`}
                         onClick={closeNavigation}
-                        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[var(--portal-surface)]"
+                        className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[#edf6e7]"
                       >
                         <span className="min-w-0">
                           <strong className="block truncate">
                             {member.full_name || "Unnamed member"}
                           </strong>
-                          <span className="block truncate text-xs text-[color:var(--portal-muted)]">
+                          <span className="block truncate text-xs text-[#66766a]">
                             {member.phone || member.email || "No contact"}
                           </span>
                         </span>
@@ -351,12 +351,12 @@ export function AdminPersistentNavigation() {
                     cleanSearch(query).length >= 2 &&
                     !members.length &&
                     !searchError && (
-                      <p className="px-3 text-xs text-[color:var(--portal-muted)]">No matching members.</p>
+                      <p className="px-3 text-xs text-[#66766a]">No matching members.</p>
                     )}
                   <a
                     href="/admin-members"
                     onClick={closeNavigation}
-                    className="mt-2 block rounded-xl bg-[var(--portal-surface)] px-3 py-3 text-xs font-bold text-[color:var(--portal-accent)]"
+                    className="mt-2 block rounded-xl bg-[#edf6e7] px-3 py-3 text-xs font-bold text-[#356942]"
                   >
                     Open full members list →
                   </a>

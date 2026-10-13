@@ -466,12 +466,12 @@ export function AdminWorkspaceShell({
         onClick={() => setMobileOpen(false)}
         className="flex items-center gap-3 rounded-xl px-2 py-2"
       >
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-highlight)] text-lg font-black text-[color:var(--portal-ink)]">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#b8ee73] text-lg font-black text-[#193327]">
           S+
         </span>
         <span>
           <strong className="block text-sm tracking-wide">SUPER PLUS</strong>
-          <span className="text-[11px] text-[color:var(--portal-subtle)]">Admin workspace</span>
+          <span className="text-[11px] text-[#b9c9be]">Admin workspace</span>
         </span>
       </a>
       <nav
@@ -492,7 +492,7 @@ export function AdminWorkspaceShell({
                 className="flex w-full items-center justify-between gap-2 rounded-xl px-3 py-3 text-left text-sm font-bold hover:bg-white/10"
               >
                 <span className="flex items-center gap-3">
-                  <Icon size={17} className="text-[color:var(--portal-highlight)]" />
+                  <Icon size={17} className="text-[#b8ee73]" />
                   {group.name}
                 </span>
                 <ChevronDown size={15} className={open ? "rotate-180" : ""} />
@@ -507,7 +507,7 @@ export function AdminWorkspaceShell({
                         key={`${tool.href}-${tool.label}`}
                         onClick={() => setMobileOpen(false)}
                         aria-current={active === tool.href ? "page" : undefined}
-                        className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold ${active === tool.href ? "bg-[var(--portal-highlight)] text-[color:var(--portal-ink)]" : "text-[color:var(--portal-border)] hover:bg-white/10"}`}
+                        className={`flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold ${active === tool.href ? "bg-[#b8ee73] text-[#193327]" : "text-[#d5e3d8] hover:bg-white/10"}`}
                       >
                         <SelectedIcon size={15} className="shrink-0" />
                         {tool.label}
@@ -522,7 +522,7 @@ export function AdminWorkspaceShell({
       </nav>
       <a
         href="/reception-workspace"
-        className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[color:var(--portal-border)] hover:bg-white/10"
+        className="mt-3 rounded-xl border border-white/20 px-4 py-3 text-xs font-bold text-[#d5e3d8] hover:bg-white/10"
       >
         Switch to Reception Dashboard ↗
       </a>
@@ -530,13 +530,13 @@ export function AdminWorkspaceShell({
   );
   if (checking)
     return (
-      <main role="status" className="min-h-screen bg-[var(--portal-canvas)] p-8 text-sm">
+      <main role="status" className="min-h-screen bg-[#f4f6f1] p-8 text-sm">
         Checking management access…
       </main>
     );
   if (!role)
     return (
-      <main className="min-h-screen bg-[var(--portal-canvas)] p-8">
+      <main className="min-h-screen bg-[#f4f6f1] p-8">
         <div
           role="alert"
           className="mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-7 text-red-800"
@@ -549,7 +549,7 @@ export function AdminWorkspaceShell({
       </main>
     );
   return (
-    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[var(--portal-canvas)] text-[color:var(--portal-ink)] touch-pan-y lg:flex">
+    <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden bg-[#f4f6f1] text-[#16221c] touch-pan-y lg:flex">
       {mobileOpen && (
         <button
           type="button"
@@ -559,7 +559,7 @@ export function AdminWorkspaceShell({
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-[min(85vw,300px)] flex-col overflow-y-auto bg-[var(--portal-ink)] p-5 text-white transition-transform lg:sticky lg:top-0 lg:z-10 lg:h-screen lg:w-[270px] lg:shrink-0 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex w-[min(85vw,300px)] flex-col overflow-y-auto bg-[#152820] p-5 text-white transition-transform lg:sticky lg:top-0 lg:z-10 lg:h-screen lg:w-[270px] lg:shrink-0 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <button
           type="button"
@@ -572,37 +572,37 @@ export function AdminWorkspaceShell({
         {sidebar}
       </aside>
       <div className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden">
-        <header className="sticky top-0 z-30 box-border w-full max-w-full overflow-x-hidden border-b border-[var(--portal-border)] bg-[var(--portal-canvas)]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
+        <header className="sticky top-0 z-30 box-border w-full max-w-full overflow-x-hidden border-b border-[#e1e8dd] bg-[#f4f6f1]/95 px-4 py-3 backdrop-blur sm:px-7 lg:px-10">
           <div className="mx-auto flex w-full min-w-0 max-w-[1400px] items-center gap-3 overflow-hidden">
             <button
               type="button"
               aria-label="Open menu"
               aria-expanded={mobileOpen}
               onClick={() => setMobileOpen(true)}
-              className="rounded-xl border border-[var(--portal-border)] bg-white p-2.5 lg:hidden"
+              className="rounded-xl border border-[#d8e2d5] bg-white p-2.5 lg:hidden"
             >
               <Menu size={21} />
             </button>
-            <span className="hidden min-w-0 flex-1 text-xs font-bold text-[color:var(--portal-muted)] sm:block">
+            <span className="hidden min-w-0 flex-1 text-xs font-bold text-[#526b57] sm:block">
               SUPER PLUS / ADMIN
             </span>
             <button
               type="button"
               aria-expanded={searchOpen}
               onClick={() => setSearchOpen((open) => !open)}
-              className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-3 py-2.5 text-left text-sm text-[color:var(--portal-muted)] sm:max-w-[450px]"
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-3 py-2.5 text-left text-sm text-[#647468] sm:max-w-[450px]"
             >
               <Search size={17} />
               <span className="truncate">Search tools or members</span>
             </button>
-            <span className="hidden rounded-full bg-[var(--portal-surface)] px-3 py-2 text-xs font-bold capitalize text-[color:var(--portal-accent)] sm:block">
+            <span className="hidden rounded-full bg-[#edf6e7] px-3 py-2 text-xs font-bold capitalize text-[#356942] sm:block">
               {role}
             </span>
           </div>
           {searchOpen && (
             <div className="relative mx-auto mt-3 max-w-[1400px]">
-              <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-3 shadow-lg">
-                <label className="flex items-center gap-2 rounded-xl bg-[var(--portal-canvas)] px-3">
+              <div className="rounded-2xl border border-[#d8e2d5] bg-white p-3 shadow-lg">
+                <label className="flex items-center gap-2 rounded-xl bg-[#f4f6f1] px-3">
                   <Search size={18} />
                   <span className="sr-only">Search admin tools and members</span>
                   <input
@@ -615,23 +615,23 @@ export function AdminWorkspaceShell({
                 </label>
                 {!!query.trim() && (
                   <div className="mt-3 max-h-[55vh] overflow-y-auto">
-                    <p className="px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                    <p className="px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[#6b806c]">
                       Tools & actions
                     </p>
                     {toolResults.map((tool) => (
                       <a
                         href={tool.href}
                         key={`${tool.href}-${tool.label}`}
-                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[var(--portal-surface)]"
+                        className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[#edf6e7]"
                       >
                         <ChevronRight size={15} />
                         {tool.label}
                       </a>
                     ))}
                     {!toolResults.length && (
-                      <p className="px-3 py-2 text-xs text-[color:var(--portal-muted)]">No matching tool.</p>
+                      <p className="px-3 py-2 text-xs text-[#66766a]">No matching tool.</p>
                     )}
-                    <p className="mt-2 px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                    <p className="mt-2 px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[#6b806c]">
                       Members
                     </p>
                     {searching && (
@@ -649,13 +649,13 @@ export function AdminWorkspaceShell({
                         <a
                           key={member.id}
                           href={`/reception-member/${encodeURIComponent(member.id)}`}
-                          className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[var(--portal-surface)]"
+                          className="flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm hover:bg-[#edf6e7]"
                         >
                           <span className="min-w-0">
                             <strong className="block truncate">
                               {member.full_name || "Unnamed member"}
                             </strong>
-                            <span className="block truncate text-xs text-[color:var(--portal-muted)]">
+                            <span className="block truncate text-xs text-[#66766a]">
                               {member.phone || member.email || "No contact"}
                             </span>
                           </span>
@@ -668,7 +668,7 @@ export function AdminWorkspaceShell({
                       !searchError && <p className="px-3 text-xs">No matching members.</p>}
                     <a
                       href="/admin-members"
-                      className="mt-2 block rounded-xl bg-[var(--portal-surface)] px-3 py-3 text-xs font-bold text-[color:var(--portal-accent)]"
+                      className="mt-2 block rounded-xl bg-[#edf6e7] px-3 py-3 text-xs font-bold text-[#356942]"
                     >
                       Open full members list →
                     </a>
@@ -679,13 +679,11 @@ export function AdminWorkspaceShell({
           )}
         </header>
         <main className="mx-auto box-border w-full min-w-0 max-w-full overflow-x-hidden px-4 py-7 sm:max-w-[1480px] sm:px-7 lg:px-10 lg:py-10">
-          <div className="portal-page-heading mb-6">
-          <p className="text-xs font-black uppercase tracking-[.17em] text-[color:var(--portal-muted)]">
+          <p className="text-xs font-black uppercase tracking-[.17em] text-[#65905c]">
             Super Plus / Admin
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm text-[color:var(--portal-muted)]">{subtitle}</p>}
-          </div>
+          {subtitle && <p className="mt-2 text-sm text-[#637469]">{subtitle}</p>}
           {children}
         </main>
       </div>

@@ -777,7 +777,7 @@ function ReceptionCheckInPage() {
   const isCheckIn = result?.type === "in";
 
   return (
-    <main className="reception-responsive min-h-[100svh] overflow-x-hidden bg-[var(--portal-canvas)] px-3 py-3 sm:px-6 sm:py-6">
+    <main className="reception-responsive min-h-[100svh] overflow-x-hidden bg-[#f3f6f1] px-3 py-3 sm:px-6 sm:py-6">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-3">
         <header className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3 shadow-sm">
           <div className="min-w-0">
@@ -857,7 +857,7 @@ function ReceptionCheckInPage() {
 
           <div className="relative h-[58svh] min-h-[360px] max-h-[610px] overflow-hidden bg-black">
             {!scannerStarted && !error && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[var(--portal-ink)] px-7 text-center text-white">
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#101410] px-7 text-center text-white">
                 <div className="flex size-16 items-center justify-center rounded-2xl bg-white/10">
                   <QrCode className="size-8" />
                 </div>
@@ -950,7 +950,7 @@ function ReceptionCheckInPage() {
                   isDenied
                     ? "bg-[#a91f24]"
                     : isCheckIn
-                      ? "bg-[var(--portal-accent)]"
+                      ? "bg-[#17823b]"
                       : "bg-[#176c8a]"
                 }`}
               >

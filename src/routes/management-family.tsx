@@ -73,25 +73,25 @@ function ManagementFamily() {
   }
 
   const allowNew = role !== "reception";
-  return <main className="min-h-screen bg-[var(--portal-canvas)] px-4 py-9 text-[color:var(--portal-ink)] sm:px-8"><div className="mx-auto max-w-6xl">
-    <a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[color:var(--portal-accent)]"><ArrowLeft size={17}/> Operations</a>
-    <div className="mt-5"><p className="text-xs font-black uppercase tracking-[.2em] text-[color:var(--portal-muted)]">Membership operations</p><h1 className="mt-2 text-3xl font-black sm:text-5xl">Family Plan setup</h1><p className="mt-3 max-w-3xl text-sm leading-7 text-[color:var(--portal-muted)]">Use this after the primary member already has a verified paid Family Plan. It links the other two people to that exact paid period without taking another payment. Existing members are reused; management can also create new member profiles.</p></div>
+  return <main className="min-h-screen bg-[#f4f6f1] px-4 py-9 text-[#16221c] sm:px-8"><div className="mx-auto max-w-6xl">
+    <a href="/management-operations" className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"><ArrowLeft size={17}/> Operations</a>
+    <div className="mt-5"><p className="text-xs font-black uppercase tracking-[.2em] text-[#65905c]">Membership operations</p><h1 className="mt-2 text-3xl font-black sm:text-5xl">Family Plan setup</h1><p className="mt-3 max-w-3xl text-sm leading-7 text-[#637469]">Use this after the primary member already has a verified paid Family Plan. It links the other two people to that exact paid period without taking another payment. Existing members are reused; management can also create new member profiles.</p></div>
     {loading && <div className="mt-8 flex items-center gap-3 rounded-2xl border bg-white p-6 text-sm"><Loader2 className="size-5 animate-spin"/> Loading members…</div>}
     {!loading && <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
       <section className="space-y-5">
         <div className="rounded-2xl border bg-white p-5 sm:p-6">
           <h2 className="text-lg font-black">1. Find the paid primary member</h2>
-          <p className="mt-2 text-xs leading-5 text-[color:var(--portal-muted)]">Search by name, email, phone or permanent card number.</p>
-          <label className="mt-4 block text-sm font-bold">Member search<div className="relative mt-2"><Search className="absolute left-3 top-3.5 size-4 text-[color:var(--portal-muted)]"/><input value={query} onChange={(e) => {setQuery(e.target.value);setPrimary(null);}} className="h-12 w-full rounded-xl border pl-10 pr-4 outline-none" placeholder="Start typing…"/></div></label>
-          {filtered.length > 0 && <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border">{filtered.map((m) => <button key={m.id} type="button" onClick={() => {setPrimary(m);setQuery(m.full_name);}} className={`block w-full border-b p-3 text-left text-sm last:border-b-0 ${primary?.id===m.id?"bg-[var(--portal-surface)]":"bg-white hover:bg-[var(--portal-canvas)]"}`}><strong>{m.full_name}</strong><span className="mt-1 block text-xs text-[color:var(--portal-muted)]">{m.email || "No email"} · {m.phone || "No phone"}{m.member_card_number ? ` · SPF-${String(m.member_card_number).padStart(6,"0")}` : ""}</span></button>)}</div>}
-          {primary && <div className="mt-4 rounded-xl bg-[var(--portal-surface)] p-4 text-sm"><CheckCircle2 className="mr-2 inline size-4 text-[color:var(--portal-accent)]"/><strong>{primary.full_name}</strong> selected as primary Family Plan member.</div>}
+          <p className="mt-2 text-xs leading-5 text-[#657568]">Search by name, email, phone or permanent card number.</p>
+          <label className="mt-4 block text-sm font-bold">Member search<div className="relative mt-2"><Search className="absolute left-3 top-3.5 size-4 text-[#728177]"/><input value={query} onChange={(e) => {setQuery(e.target.value);setPrimary(null);}} className="h-12 w-full rounded-xl border pl-10 pr-4 outline-none" placeholder="Start typing…"/></div></label>
+          {filtered.length > 0 && <div className="mt-3 max-h-72 overflow-y-auto rounded-xl border">{filtered.map((m) => <button key={m.id} type="button" onClick={() => {setPrimary(m);setQuery(m.full_name);}} className={`block w-full border-b p-3 text-left text-sm last:border-b-0 ${primary?.id===m.id?"bg-[#eef6e9]":"bg-white hover:bg-[#f7faf5]"}`}><strong>{m.full_name}</strong><span className="mt-1 block text-xs text-[#718075]">{m.email || "No email"} · {m.phone || "No phone"}{m.member_card_number ? ` · SPF-${String(m.member_card_number).padStart(6,"0")}` : ""}</span></button>)}</div>}
+          {primary && <div className="mt-4 rounded-xl bg-[#eef6e9] p-4 text-sm"><CheckCircle2 className="mr-2 inline size-4 text-[#356942]"/><strong>{primary.full_name}</strong> selected as primary Family Plan member.</div>}
         </div>
         <FamilyMemberFields label="2. Family member 2" value={slot2} onChange={setSlot2} disabled={busy} allowNew={allowNew}/>
         <FamilyMemberFields label="3. Family member 3" value={slot3} onChange={setSlot3} disabled={busy} allowNew={allowNew}/>
       </section>
       <aside className="rounded-2xl border bg-white p-6 lg:sticky lg:top-6">
-        <div className="flex items-center gap-3"><Users className="size-5 text-[color:var(--portal-accent)]"/><h2 className="font-black">Complete family group</h2></div>
-        <p className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">The two added people receive their own membership rows with the <strong>same start and expiry dates</strong> as the already-paid primary Family Plan.</p>
+        <div className="flex items-center gap-3"><Users className="size-5 text-[#356942]"/><h2 className="font-black">Complete family group</h2></div>
+        <p className="mt-4 text-sm leading-6 text-[#657568]">The two added people receive their own membership rows with the <strong>same start and expiry dates</strong> as the already-paid primary Family Plan.</p>
         {role === "reception" && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-xs leading-5 text-amber-900">Reception can attach existing members. Creating brand-new member profiles remains restricted to management/admin as part of the existing payment-control rules.</p>}
         {error && <div role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div>}
         {notice && <div role="status" className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-bold text-green-900">{notice}</div>}

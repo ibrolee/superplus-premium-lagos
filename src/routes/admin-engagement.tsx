@@ -118,10 +118,10 @@ type AppNotification = {
 };
 
 const inputClass =
-  "mt-1 box-border w-full min-w-0 max-w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm outline-none focus:border-[var(--portal-muted)]";
+  "mt-1 box-border w-full min-w-0 max-w-full rounded-xl border border-[#d8e2d5] bg-white px-3 py-3 text-sm outline-none focus:border-[#79a56e]";
 
 const buttonClass =
-  "rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50";
+  "rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50";
 
 function dateTime(value: string) {
   return new Intl.DateTimeFormat("en-NG", {
@@ -154,19 +154,19 @@ function CollapsiblePanel({
   children: ReactNode;
 }) {
   return (
-    <details className="group min-w-0 max-w-full overflow-hidden rounded-[20px] border border-[var(--portal-border)] bg-white">
+    <details className="group min-w-0 max-w-full overflow-hidden rounded-[20px] border border-[#e1e8dd] bg-white">
       <summary className="flex min-w-0 cursor-pointer list-none items-center gap-3 px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
         {icon && (
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] text-[color:var(--portal-accent)]">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#edf6e7] text-[#38673e]">
             {icon}
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <strong className="block truncate text-base font-black text-[color:var(--portal-ink)] sm:text-lg">
+          <strong className="block truncate text-base font-black text-[#16221c] sm:text-lg">
             {title}
           </strong>
           {subtitle && (
-            <span className="mt-0.5 block text-xs leading-5 text-[color:var(--portal-muted)]">
+            <span className="mt-0.5 block text-xs leading-5 text-[#657568]">
               {subtitle}
             </span>
           )}
@@ -174,10 +174,10 @@ function CollapsiblePanel({
         {badge}
         <ChevronDown
           size={18}
-          className="shrink-0 text-[color:var(--portal-muted)] transition-transform group-open:rotate-180"
+          className="shrink-0 text-[#526b57] transition-transform group-open:rotate-180"
         />
       </summary>
-      <div className="min-w-0 max-w-full overflow-x-hidden border-t border-[var(--portal-surface)] p-4 sm:p-5">
+      <div className="min-w-0 max-w-full overflow-x-hidden border-t border-[#edf1eb] p-4 sm:p-5">
         {children}
       </div>
     </details>
@@ -955,14 +955,14 @@ function AdminEngagement() {
     >
       <div className="mt-5 min-w-0 max-w-full space-y-3 overflow-x-hidden">
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-          <p className="min-w-0 text-sm leading-6 text-[color:var(--portal-muted)]">
+          <p className="min-w-0 text-sm leading-6 text-[#637469]">
             Changes here feed directly into the Super Plus member app.
           </p>
           <button
             type="button"
             onClick={() => void load()}
             disabled={loading}
-            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-3 py-2.5 text-xs font-bold disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-3 py-2.5 text-xs font-bold disabled:opacity-50"
           >
             <RefreshCw size={15} /> Refresh
           </button>
@@ -980,7 +980,7 @@ function AdminEngagement() {
         {success && (
           <p
             role="status"
-            className="max-w-full break-words rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-sm text-[color:var(--portal-accent)]"
+            className="max-w-full break-words rounded-xl border border-[#bfdab8] bg-[#ecf8e8] p-4 text-sm text-[#285c33]"
           >
             {success}
           </p>
@@ -1013,15 +1013,15 @@ function AdminEngagement() {
             return (
               <article
                 key={item.label}
-                className="min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-4"
+                className="min-w-0 rounded-2xl border border-[#e1e8dd] bg-white p-4"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
+                  <span className="rounded-xl bg-[#edf6e7] p-2 text-[#38673e]">
                     <Icon size={18} />
                   </span>
                   <span className="text-xl font-black tabular-nums">{item.value}</span>
                 </div>
-                <p className="mt-3 truncate text-xs font-black text-[color:var(--portal-muted)]">
+                <p className="mt-3 truncate text-xs font-black text-[#526b57]">
                   {item.label}
                 </p>
               </article>
@@ -1032,32 +1032,32 @@ function AdminEngagement() {
         <section className="grid min-w-0 gap-2 sm:grid-cols-3">
           <a
             href="/staff-blog"
-            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-3.5"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <BookOpen size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
+            <BookOpen size={18} className="shrink-0 text-[#38673e]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Blog</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Manage app articles</span>
+              <span className="block truncate text-[11px] text-[#657568]">Manage app articles</span>
             </span>
           </a>
           <a
             href="/admin-announcements"
-            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-3.5"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <Megaphone size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
+            <Megaphone size={18} className="shrink-0 text-[#38673e]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Announcements</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Member notices</span>
+              <span className="block truncate text-[11px] text-[#657568]">Member notices</span>
             </span>
           </a>
           <a
             href="/management-bookings"
-            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-3.5"
+            className="flex min-w-0 items-center gap-3 rounded-2xl border border-[#e1e8dd] bg-white p-3.5"
           >
-            <Users size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
+            <Users size={18} className="shrink-0 text-[#38673e]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Full session queue</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Booking workspace</span>
+              <span className="block truncate text-[11px] text-[#657568]">Booking workspace</span>
             </span>
           </a>
         </section>
@@ -1067,7 +1067,7 @@ function AdminEngagement() {
           subtitle="Set points earned once per unique gym day from the programme launch onward."
           icon={<Settings2 size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {visitPoints} / day
             </span>
           }
@@ -1086,7 +1086,7 @@ function AdminEngagement() {
               }
               className={inputClass}
             />
-            <span className="mt-2 block text-xs font-normal leading-5 text-[color:var(--portal-muted)]">
+            <span className="mt-2 block text-xs font-normal leading-5 text-[#657568]">
               Multiple check-ins/check-outs on the same Lagos calendar day still earn only one daily points award.
               {settings?.program_started_at
                 ? ` SP Points launched ${dateTime(settings.program_started_at)}; earlier attendance does not count.`
@@ -1166,16 +1166,16 @@ function AdminEngagement() {
           subtitle="Edit targets, bonus points and visibility."
           icon={<Trophy size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {activeBadges} active
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {badges.map((item) => (
-              <article key={item.code} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.code} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-2">
-                  <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
+                  <span className="rounded-xl bg-[#edf6e7] p-2 text-[#38673e]">
                     <Trophy size={17} />
                   </span>
                   <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
@@ -1183,15 +1183,15 @@ function AdminEngagement() {
                   </span>
                 </div>
                 <p className="mt-3 break-words font-black">{item.title}</p>
-                <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                <p className="mt-3 text-xs font-bold text-[color:var(--portal-muted)]">
+                <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
+                <p className="mt-3 text-xs font-bold text-[#45634b]">
                   {item.visit_threshold} visits · +{item.points_reward} pts
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.code} onClick={() => void editBadge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.code} onClick={() => void editBadge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     Edit
                   </button>
-                  <button type="button" disabled={busy === item.code} onClick={() => void toggleBadge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.code} onClick={() => void toggleBadge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     {item.active ? "Hide" : "Publish"}
                   </button>
                 </div>
@@ -1261,19 +1261,19 @@ function AdminEngagement() {
           subtitle="Edit, activate or pause existing challenges."
           icon={<Dumbbell size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {activeChallenges} active
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {challenges.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-black">{item.title}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                    <p className="mt-2 break-words text-xs font-bold text-[color:var(--portal-muted)]">
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
+                    <p className="mt-2 break-words text-xs font-bold text-[#45634b]">
                       {item.target_visits} visits · +{item.points_reward} pts · {item.starts_on} → {item.ends_on}
                     </p>
                   </div>
@@ -1282,16 +1282,16 @@ function AdminEngagement() {
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.id} onClick={() => void editChallenge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.id} onClick={() => void editChallenge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     Edit
                   </button>
-                  <button type="button" disabled={busy === item.id} onClick={() => void toggleChallenge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.id} onClick={() => void toggleChallenge(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     {item.active ? "Deactivate" : "Activate"}
                   </button>
                 </div>
               </article>
             ))}
-            {!challenges.length && <p className="text-sm text-[color:var(--portal-muted)]">No challenges yet.</p>}
+            {!challenges.length && <p className="text-sm text-[#657568]">No challenges yet.</p>}
           </div>
         </CollapsiblePanel>
 
@@ -1330,19 +1330,19 @@ function AdminEngagement() {
           subtitle="Edit costs, inventory and member visibility."
           icon={<Gift size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {activeRewards} active
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {rewards.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-black">{item.name}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                    <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.description}</p>
+                    <p className="mt-2 text-xs font-bold text-[#45634b]">
                       {item.points_cost} pts · {item.inventory === null ? "Unlimited" : `${item.inventory} left`}
                     </p>
                   </div>
@@ -1351,16 +1351,16 @@ function AdminEngagement() {
                   </span>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.id} onClick={() => void editReward(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.id} onClick={() => void editReward(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     Edit
                   </button>
-                  <button type="button" disabled={busy === item.id} onClick={() => void toggleReward(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
+                  <button type="button" disabled={busy === item.id} onClick={() => void toggleReward(item)} className="rounded-xl border border-[#cfdaca] px-3 py-2 text-xs font-bold disabled:opacity-50">
                     {item.active ? "Hide reward" : "Publish reward"}
                   </button>
                 </div>
               </article>
             ))}
-            {!rewards.length && <p className="text-sm text-[color:var(--portal-muted)]">No rewards published yet.</p>}
+            {!rewards.length && <p className="text-sm text-[#657568]">No rewards published yet.</p>}
           </div>
         </CollapsiblePanel>
 
@@ -1369,28 +1369,28 @@ function AdminEngagement() {
           subtitle="PT, classes, massage, pedicure and spa requests."
           icon={<CalendarDays size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {pendingBookings} pending
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {bookings.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-black">{item.service_name}</p>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                    <p className="mt-1 break-words text-xs text-[#657568]">
                       {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
-                    <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">{dateTime(item.preferred_at)}</p>
+                    <p className="mt-2 text-xs font-bold text-[#45634b]">{dateTime(item.preferred_at)}</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
                     {item.status}
                   </span>
                 </div>
-                {item.notes && <p className="mt-3 break-words text-xs leading-5 text-[color:var(--portal-muted)]">Member note: {item.notes}</p>}
-                {item.staff_note && <p className="mt-2 break-words text-xs leading-5 text-[color:var(--portal-muted)]">Staff note: {item.staff_note}</p>}
+                {item.notes && <p className="mt-3 break-words text-xs leading-5 text-[#657568]">Member note: {item.notes}</p>}
+                {item.staff_note && <p className="mt-2 break-words text-xs leading-5 text-[#657568]">Staff note: {item.staff_note}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {item.status === "pending" && (
                     <>
@@ -1410,7 +1410,7 @@ function AdminEngagement() {
                 </div>
               </article>
             ))}
-            {!bookings.length && <p className="text-sm text-[color:var(--portal-muted)]">No member session requests yet.</p>}
+            {!bookings.length && <p className="text-sm text-[#657568]">No member session requests yet.</p>}
           </div>
         </CollapsiblePanel>
 
@@ -1420,14 +1420,14 @@ function AdminEngagement() {
           subtitle="Verify Instagram and TikTok follows before the one-time 10 SP bonus is awarded."
           icon={<Users size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {socialClaims.filter((item) => item.status === "pending").length} pending
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {socialClaims.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-black capitalize">{item.platform}</p>
@@ -1439,11 +1439,11 @@ function AdminEngagement() {
                       }
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-1 inline-flex break-words text-sm font-bold text-[color:var(--portal-accent)] underline underline-offset-2"
+                      className="mt-1 inline-flex break-words text-sm font-bold text-[#356942] underline underline-offset-2"
                     >
                       @{item.handle} · open profile
                     </a>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                    <p className="mt-1 break-words text-xs text-[#657568]">
                       {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
                     <p className="mt-2 text-xs font-bold">+{item.points_reward} SP on approval</p>
@@ -1453,7 +1453,7 @@ function AdminEngagement() {
                   </span>
                 </div>
                 {item.staff_note && (
-                  <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">Note: {item.staff_note}</p>
+                  <p className="mt-3 break-words text-xs text-[#657568]">Note: {item.staff_note}</p>
                 )}
                 {item.status === "pending" && (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -1478,7 +1478,7 @@ function AdminEngagement() {
               </article>
             ))}
             {!socialClaims.length && (
-              <p className="text-sm text-[color:var(--portal-muted)]">No social follow claims yet.</p>
+              <p className="text-sm text-[#657568]">No social follow claims yet.</p>
             )}
           </div>
         </CollapsiblePanel>
@@ -1488,25 +1488,25 @@ function AdminEngagement() {
           subtitle="Approve, reject and fulfil member redemptions."
           icon={<CheckCircle2 size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {redemptions.filter((item) => item.status === "pending").length} pending
             </span>
           }
         >
           <div className="grid min-w-0 gap-3 lg:grid-cols-2">
             {redemptions.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
+              <article key={item.id} className="min-w-0 rounded-2xl border border-[#e4ebe1] bg-[#f8faf6] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-black">{item.reward?.name || "Reward"}</p>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                    <p className="mt-1 break-words text-xs text-[#657568]">
                       {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
                     </p>
                     <p className="mt-2 text-xs font-bold">{item.points_cost} points</p>
                   </div>
                   <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">{item.status}</span>
                 </div>
-                {item.staff_note && <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">Staff: {item.staff_note}</p>}
+                {item.staff_note && <p className="mt-3 break-words text-xs text-[#657568]">Staff: {item.staff_note}</p>}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {item.status === "pending" && (
                     <>
@@ -1522,7 +1522,7 @@ function AdminEngagement() {
                 </div>
               </article>
             ))}
-            {!redemptions.length && <p className="text-sm text-[color:var(--portal-muted)]">No reward redemptions yet.</p>}
+            {!redemptions.length && <p className="text-sm text-[#657568]">No reward redemptions yet.</p>}
           </div>
         </CollapsiblePanel>
 
@@ -1566,26 +1566,26 @@ function AdminEngagement() {
           subtitle="Previously published member updates."
           icon={<Bell size={19} />}
           badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+            <span className="shrink-0 rounded-full bg-[#edf6e7] px-2.5 py-1 text-[10px] font-black text-[#356942]">
               {notifications.length}
             </span>
           }
         >
           <div className="min-w-0 space-y-2">
             {notifications.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-xl border border-[var(--portal-surface)] p-4">
+              <article key={item.id} className="min-w-0 rounded-xl border border-[#e4ebe1] p-4">
                 <div className="flex min-w-0 items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="break-words font-black">{item.title}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.body}</p>
+                    <p className="mt-1 break-words text-xs leading-5 text-[#657568]">{item.body}</p>
                   </div>
-                  <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2 py-1 text-[9px] font-black uppercase text-[color:var(--portal-accent)]">
+                  <span className="shrink-0 rounded-full bg-[#edf6e7] px-2 py-1 text-[9px] font-black uppercase text-[#356942]">
                     {item.kind}
                   </span>
                 </div>
               </article>
             ))}
-            {!notifications.length && <p className="text-sm text-[color:var(--portal-muted)]">No app notifications yet.</p>}
+            {!notifications.length && <p className="text-sm text-[#657568]">No app notifications yet.</p>}
           </div>
         </CollapsiblePanel>
       </div>

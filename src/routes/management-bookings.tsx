@@ -136,7 +136,7 @@ function ManagementBookings() {
       subtitle="Confirm and manage class, personal training and spa requests from the mobile app."
       active="/management-bookings"
     >
-      <section className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+      <section className="mt-7 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
             {["pending", "confirmed", "completed", "declined", "cancelled", "all"].map(
@@ -148,8 +148,8 @@ function ManagementBookings() {
                   className={
                     "rounded-full px-4 py-2 text-xs font-black capitalize " +
                     (status === item
-                      ? "bg-[var(--portal-ink)] text-white"
-                      : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
+                      ? "bg-[#193b2a] text-white"
+                      : "border border-[#d8e2d5] bg-[#f8faf6] text-[#395844]")
                   }
                 >
                   {item}
@@ -160,14 +160,14 @@ function ManagementBookings() {
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
           >
             <RefreshCw size={15} /> Refresh
           </button>
         </div>
 
         {loading && (
-          <p role="status" className="mt-6 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
+          <p role="status" className="mt-6 rounded-xl bg-[#f4f6f1] p-5 text-sm">
             Loading booking requests…
           </p>
         )}
@@ -179,7 +179,7 @@ function ManagementBookings() {
         )}
 
         {!loading && !error && !rows.length && (
-          <p className="mt-6 rounded-xl border border-dashed border-[var(--portal-border)] p-8 text-center text-sm text-[color:var(--portal-muted)]">
+          <p className="mt-6 rounded-xl border border-dashed border-[#d8e2d5] p-8 text-center text-sm text-[#647468]">
             No {status === "all" ? "" : status} booking requests.
           </p>
         )}
@@ -189,37 +189,37 @@ function ManagementBookings() {
             {rows.map((booking) => (
               <article
                 key={booking.id}
-                className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-5"
+                className="rounded-2xl border border-[#dce8d9] bg-[#f8faf6] p-5"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+                    <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#65905c]">
                       {booking.service_type.replaceAll("_", " ")}
                     </p>
                     <h2 className="mt-1 text-xl font-black">{booking.service_name}</h2>
-                    <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--portal-muted)]">
+                    <p className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[#47604d]">
                       <CalendarDays size={16} /> {dateTime(booking.preferred_at)}
                     </p>
                   </div>
-                  <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-[#395844]">
                     {booking.status}
                   </span>
                 </div>
 
                 <div className="mt-4 rounded-xl bg-white p-4">
                   <p className="font-black">{booking.member?.full_name || "Member"}</p>
-                  <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                  <p className="mt-1 text-xs text-[#647468]">
                     {booking.member?.phone || booking.member?.email || "No contact"}
                   </p>
                 </div>
 
                 {!!booking.notes && (
-                  <p className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">
+                  <p className="mt-4 text-sm leading-6 text-[#586a5c]">
                     <strong>Member note:</strong> {booking.notes}
                   </p>
                 )}
                 {!!booking.staff_note && (
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--portal-muted)]">
+                  <p className="mt-2 text-sm leading-6 text-[#586a5c]">
                     <strong>Staff note:</strong> {booking.staff_note}
                   </p>
                 )}
@@ -230,7 +230,7 @@ function ManagementBookings() {
                       <button
                         type="button"
                         onClick={() => void setBookingStatus(booking, "confirmed")}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white"
                       >
                         <CheckCircle2 size={15} /> Confirm
                       </button>
@@ -247,12 +247,12 @@ function ManagementBookings() {
                     <button
                       type="button"
                       onClick={() => void setBookingStatus(booking, "completed")}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white"
                     >
                       <CheckCircle2 size={15} /> Mark completed
                     </button>
                   )}
-                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-[11px] font-semibold text-[color:var(--portal-muted)]">
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-3 py-2 text-[11px] font-semibold text-[#647468]">
                     <Clock3 size={14} /> Requested {dateTime(booking.created_at)}
                   </span>
                 </div>

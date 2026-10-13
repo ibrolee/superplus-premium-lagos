@@ -10,15 +10,15 @@ function ManagementMemberDashboardPreview() {
   const { memberId } = Route.useParams();
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--portal-canvas)]">
-      <div className="sticky top-0 z-[90] border-b border-[var(--portal-subtle)] bg-[var(--portal-ink)] px-3 py-3 text-white shadow-lg sm:px-5">
+    <div className="min-h-[100dvh] bg-[#f3f6f0]">
+      <div className="sticky top-0 z-[90] border-b border-[#bfd0bb] bg-[#193b2a] px-3 py-3 text-white shadow-lg sm:px-5">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--portal-highlight)] text-[color:var(--portal-ink)]">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#b8ee73] text-[#193b2a]">
               <Eye size={18} />
             </span>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.15em] text-[color:var(--portal-highlight)]">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[.15em] text-[#b8ee73]">
                 <ShieldCheck size={13} />
                 Read-only admin preview
               </div>

@@ -382,10 +382,10 @@ function ManagementStaffManagement() {
           { label: "Pending", value: counts.pending, icon: Clock3 },
           { label: "PT coaches", value: counts.coaches, icon: BriefcaseBusiness },
         ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+          <div key={label} className="rounded-2xl border border-[#dce7d8] bg-white p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">{label}</p>
-              <Icon size={17} className="text-[color:var(--portal-accent)]" />
+              <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">{label}</p>
+              <Icon size={17} className="text-[#2f7746]" />
             </div>
             <p className="mt-3 text-3xl font-black">{value}</p>
           </div>
@@ -404,21 +404,21 @@ function ManagementStaffManagement() {
       )}
 
       {loading ? (
-        <div className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-8 text-sm text-[color:var(--portal-muted)]">
+        <div className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-8 text-sm text-[#647468]">
           Loading staff management…
         </div>
       ) : !authorized ? null : (
         <section className="mt-5 grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-          <div className="rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-5">
+          <div className="rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-accent)]">Team directory</p>
+                <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Team directory</p>
                 <h2 className="mt-1 text-xl font-black">Choose a staff member</h2>
               </div>
               <button
                 type="button"
                 onClick={() => void load()}
-                className="grid size-10 place-items-center rounded-xl border border-[var(--portal-border)] text-[color:var(--portal-accent)]"
+                className="grid size-10 place-items-center rounded-xl border border-[#d8e2d5] text-[#356942]"
                 aria-label="Refresh staff"
               >
                 <RefreshCw size={16} />
@@ -426,12 +426,12 @@ function ManagementStaffManagement() {
             </div>
 
             <label className="relative mt-4 block">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--portal-muted)]" />
+              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#79907b]" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search name, title or staff ID"
-                className="w-full rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] py-3 pl-10 pr-3 text-sm outline-none focus:border-[var(--portal-muted)]"
+                className="w-full rounded-xl border border-[#d8e2d5] bg-[#f8faf6] py-3 pl-10 pr-3 text-sm outline-none focus:border-[#63915f]"
               />
             </label>
 
@@ -444,8 +444,8 @@ function ManagementStaffManagement() {
                   className={
                     "shrink-0 rounded-full px-3 py-2 text-[10px] font-black capitalize " +
                     (filter === value
-                      ? "bg-[var(--portal-ink)] text-white"
-                      : "border border-[var(--portal-border)] bg-white text-[color:var(--portal-muted)]")
+                      ? "bg-[#193b2a] text-white"
+                      : "border border-[#d8e2d5] bg-white text-[#607264]")
                   }
                 >
                   {value === "all" ? "All" : value}
@@ -465,14 +465,14 @@ function ManagementStaffManagement() {
                     className={
                       "w-full rounded-2xl border p-4 text-left transition " +
                       (selected
-                        ? "border-[var(--portal-accent)] bg-[var(--portal-surface)]"
-                        : "border-[var(--portal-border)] bg-white hover:border-[var(--portal-subtle)]")
+                        ? "border-[#87b77e] bg-[#eef6e9]"
+                        : "border-[#e1e8dd] bg-white hover:border-[#b9d0b4]")
                     }
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-[color:var(--portal-ink)]">{profile.full_name}</p>
-                        <p className="mt-1 truncate text-[11px] text-[color:var(--portal-muted)]">
+                        <p className="truncate text-sm font-black text-[#203426]">{profile.full_name}</p>
+                        <p className="mt-1 truncate text-[11px] text-[#718172]">
                           {[profile.position || profile.role, profile.department].filter(Boolean).join(" · ") || "Staff"}
                         </p>
                       </div>
@@ -480,9 +480,9 @@ function ManagementStaffManagement() {
                         {statusLabel(profile.status)}
                       </span>
                     </div>
-                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--portal-surface)] pt-3">
-                      <span className="text-[10px] font-bold text-[color:var(--portal-muted)]">{profile.staff_id || "No staff ID"}</span>
-                      <span className="text-[10px] font-black text-[color:var(--portal-accent)]">
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e4ebe1] pt-3">
+                      <span className="text-[10px] font-bold text-[#718172]">{profile.staff_id || "No staff ID"}</span>
+                      <span className="text-[10px] font-black text-[#315d3d]">
                         {salary ? formatMoney(salary.current_monthly_salary, salary.currency) : "Salary not set"}
                       </span>
                     </div>
@@ -490,7 +490,7 @@ function ManagementStaffManagement() {
                 );
               })}
               {!visible.length && (
-                <p className="rounded-xl border border-dashed border-[var(--portal-border)] p-6 text-center text-xs text-[color:var(--portal-muted)]">
+                <p className="rounded-xl border border-dashed border-[#d8e2d5] p-6 text-center text-xs text-[#748276]">
                   No staff match this search.
                 </p>
               )}
@@ -499,21 +499,21 @@ function ManagementStaffManagement() {
 
           <div className="min-w-0">
             {!selectedStaff ? (
-              <div className="rounded-[24px] border border-[var(--portal-border)] bg-white p-8 text-center text-sm text-[color:var(--portal-muted)]">
+              <div className="rounded-[24px] border border-[#d8e5d4] bg-white p-8 text-center text-sm text-[#647468]">
                 Select a staff member to manage their profile.
               </div>
             ) : (
               <div className="space-y-5">
-                <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+                <section className="rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--portal-ink)] text-white">
+                      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#193b2a] text-white">
                         <UserCog size={22} />
                       </span>
                       <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-accent)]">Staff profile</p>
+                        <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#397748]">Staff profile</p>
                         <h2 className="mt-1 truncate text-2xl font-black">{selectedStaff.full_name}</h2>
-                        <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                        <p className="mt-1 text-xs text-[#6b796f]">
                           {selectedStaff.staff_id || "No staff ID"} · {selectedStaff.email || "No email"}
                           {!selectedStaff.auth_user_id && <span className="mt-1 block">Payroll profile · No login account</span>}
                         </p>
@@ -525,49 +525,49 @@ function ManagementStaffManagement() {
                   </div>
 
                   <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Full name
                       <input
                         value={form.full_name}
                         onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[var(--portal-muted)]"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[#63915f]"
                       />
                     </label>
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Phone
                       <input
                         value={form.phone}
                         onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[var(--portal-muted)]"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[#63915f]"
                       />
                     </label>
-                    <label className="text-xs font-black text-[color:var(--portal-ink)] sm:col-span-2">
+                    <label className="text-xs font-black text-[#34483a] sm:col-span-2">
                       Address
                       <textarea
                         rows={2}
                         value={form.address}
                         onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))}
-                        className="mt-1.5 w-full resize-y rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[var(--portal-muted)]"
+                        className="mt-1.5 w-full resize-y rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[#63915f]"
                       />
                     </label>
                   </div>
                 </section>
 
-                <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+                <section className="rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
                   <div className="flex items-start gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--portal-surface)] text-[color:var(--portal-accent)]">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#eef6e9] text-[#356942]">
                       <BriefcaseBusiness size={18} />
                     </span>
                     <div>
                       <h3 className="text-lg font-black">Employment</h3>
-                      <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
+                      <p className="mt-1 text-xs leading-5 text-[#6c7a70]">
                         Staff title controls PT coach classification. In-house Coach joins the 50/30/20 PT payout pool; Part-time Coach stays outside it.
                       </p>
                     </div>
                   </div>
 
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Staff title / position
                       <input
                         list="modern-staff-title-options"
@@ -582,68 +582,68 @@ function ManagementStaffManagement() {
                           }));
                         }}
                         placeholder="Choose or type a staff title"
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[var(--portal-muted)]"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none focus:border-[#63915f]"
                       />
                       <datalist id="modern-staff-title-options">
                         {staffTitleSuggestions.map((title) => <option key={title} value={title} />)}
                       </datalist>
                     </label>
 
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Department
                       <select
                         value={form.department}
                         onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none"
                       >
                         <option value="">Not assigned</option>
                         {departments.map((department) => <option key={department}>{department}</option>)}
                       </select>
                     </label>
 
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Employment type
                       <select
                         value={form.employment_type}
                         onChange={(event) => setForm((current) => ({ ...current, employment_type: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none"
                       >
                         {employmentTypes.map((type) => <option key={type}>{type}</option>)}
                       </select>
                     </label>
 
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Employment date
                       <input
                         type="date"
                         value={form.employment_date}
                         onChange={(event) => setForm((current) => ({ ...current, employment_date: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none"
                       />
                     </label>
 
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Staff portal role
                       <select
                         value={form.role}
                         onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none"
                       >
                         {roleOptions.map((role) => (
                           <option key={role.value} value={role.value}>{role.label}</option>
                         ))}
                       </select>
-                      <span className="mt-1.5 block text-[10px] font-normal leading-4 text-[color:var(--portal-muted)]">
+                      <span className="mt-1.5 block text-[10px] font-normal leading-4 text-[#758178]">
                         Admin/reception workspace access is managed separately through Staff account requests.
                       </span>
                     </label>
 
-                    <label className="text-xs font-black text-[color:var(--portal-ink)]">
+                    <label className="text-xs font-black text-[#34483a]">
                       Staff status
                       <select
                         value={form.status}
                         onChange={(event) => setForm((current) => ({ ...current, status: event.target.value as StaffStatus }))}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-normal outline-none"
+                        className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-sm font-normal outline-none"
                       >
                         {(["pending", "approved", "suspended", "inactive"] as const).map((status) => (
                           <option key={status} value={status}>{statusLabel(status)}</option>
@@ -653,20 +653,20 @@ function ManagementStaffManagement() {
                   </div>
                 </section>
 
-                <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+                <section className="rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
                   <div className="flex items-start gap-3">
-                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--portal-surface)] text-[color:var(--portal-accent)]">
+                    <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#eef6e9] text-[#356942]">
                       <CircleDollarSign size={19} />
                     </span>
                     <div>
                       <h3 className="text-lg font-black">Current monthly salary</h3>
-                      <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
+                      <p className="mt-1 text-xs leading-5 text-[#6c7a70]">
                         This is the staff member's current base salary for future payroll calculations. It does not create a payment record.
                       </p>
                     </div>
                   </div>
 
-                  <label className="mt-5 block text-xs font-black text-[color:var(--portal-ink)]">
+                  <label className="mt-5 block text-xs font-black text-[#34483a]">
                     Monthly salary (₦)
                     <input
                       type="number"
@@ -675,24 +675,24 @@ function ManagementStaffManagement() {
                       value={form.salary}
                       onChange={(event) => setForm((current) => ({ ...current, salary: event.target.value }))}
                       placeholder="e.g. 120000"
-                      className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-base font-black outline-none focus:border-[var(--portal-muted)]"
+                      className="mt-1.5 w-full rounded-xl border border-[#d4dfd1] bg-white px-3 py-3 text-base font-black outline-none focus:border-[#63915f]"
                     />
-                    <span className="mt-1.5 block text-[10px] font-normal text-[color:var(--portal-muted)]">
+                    <span className="mt-1.5 block text-[10px] font-normal text-[#758178]">
                       Leave blank to clear the current salary. Salary payment history remains separate in Payroll.
                     </span>
                   </label>
                 </section>
 
-                <div className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-[var(--portal-border)] bg-white/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2 text-xs text-[color:var(--portal-muted)]">
-                    <ShieldCheck size={16} className="text-[color:var(--portal-accent)]" />
+                <div className="sticky bottom-3 z-10 flex flex-col gap-2 rounded-2xl border border-[#cfdccf] bg-white/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2 text-xs text-[#607264]">
+                    <ShieldCheck size={16} className="text-[#356942]" />
                     Changes apply to this staff profile after saving.
                   </div>
                   <button
                     type="button"
                     disabled={saving}
                     onClick={() => void saveSelectedStaff()}
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-black text-white disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-black text-white disabled:opacity-50"
                   >
                     {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
                     {saving ? "Saving…" : "Save staff changes"}
@@ -705,7 +705,7 @@ function ManagementStaffManagement() {
       )}
 
       {authorized && (
-        <section className="mt-5 flex items-start gap-3 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-4 text-xs leading-5 text-[color:var(--portal-muted)]">
+        <section className="mt-5 flex items-start gap-3 rounded-2xl border border-[#d9e6d2] bg-[#eef6e9] p-4 text-xs leading-5 text-[#476149]">
           <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
           <p>
             <strong>Clean separation:</strong> Staff Management now handles profiles, employment and current salary. Staff Directory remains the attendance view, while payment records stay in Payroll.

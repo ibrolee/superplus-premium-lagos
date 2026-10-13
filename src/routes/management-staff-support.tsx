@@ -10,13 +10,13 @@ function ReviewCard({ row, busy, onSave }: { row: Row; busy: boolean; onSave: (i
   const [response, setResponse] = useState(row.admin_response);
   useEffect(() => { setStatus(row.status); setResponse(row.admin_response); }, [row.status, row.admin_response]);
   return <article className="rounded-2xl border bg-white p-4 sm:p-5">
-    <div className="flex flex-wrap justify-between gap-2"><div><h2 className="break-words font-bold">{row.subject}</h2><p className="mt-1 text-xs text-[color:var(--portal-muted)]">{row.staff_profiles?.full_name || "Staff"} · {row.staff_profiles?.position || "Staff"}</p></div><span className="text-xs font-bold">{supportStatus(row.status)}</span></div>
-    <p className="mt-2 text-xs capitalize text-[color:var(--portal-muted)]">{row.submission_type} · {supportDate(row.submitted_at)}</p>
+    <div className="flex flex-wrap justify-between gap-2"><div><h2 className="break-words font-bold">{row.subject}</h2><p className="mt-1 text-xs text-[#647468]">{row.staff_profiles?.full_name || "Staff"} · {row.staff_profiles?.position || "Staff"}</p></div><span className="text-xs font-bold">{supportStatus(row.status)}</span></div>
+    <p className="mt-2 text-xs capitalize text-[#647468]">{row.submission_type} · {supportDate(row.submitted_at)}</p>
     <p className="mt-4 whitespace-pre-wrap break-words text-sm">{row.details}</p>
     <form onSubmit={(event) => { event.preventDefault(); onSave(row.id, status, response); }} className="mt-5 space-y-3">
       <label className="block text-xs font-bold">Status<select value={status} disabled={busy} onChange={(event) => setStatus(event.target.value as Row["status"])} className="mt-1 block w-full rounded-xl border p-3 text-sm"><option value="open">Submitted</option><option value="in_review">In review</option><option value="resolved">Resolved</option></select></label>
       <label className="block text-xs font-bold">Response to staff<textarea rows={3} maxLength={5000} required={status === "resolved"} value={response} disabled={busy} onChange={(event) => setResponse(event.target.value)} className="mt-1 block w-full rounded-xl border p-3 text-sm" /></label>
-      <button disabled={busy || (status === "resolved" && !response.trim())} className="rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-bold text-white disabled:opacity-40">Save review</button>
+      <button disabled={busy || (status === "resolved" && !response.trim())} className="rounded-xl bg-[#193b2a] px-4 py-3 text-xs font-bold text-white disabled:opacity-40">Save review</button>
     </form>
   </article>;
 }
@@ -70,9 +70,9 @@ function StaffSupport() {
     {authorized && <>
       <div className="mt-4 grid gap-3 sm:grid-cols-3"><label className="text-xs font-bold">Status<select value={filter} onChange={(event) => setFilter(event.target.value)} className="mt-1 block w-full rounded-xl border bg-white p-3 text-sm"><option value="all">All statuses</option><option value="open">Submitted</option><option value="in_review">In review</option><option value="resolved">Resolved</option></select></label><label className="text-xs font-bold">Type<select value={type} onChange={(event) => setType(event.target.value)} className="mt-1 block w-full rounded-xl border bg-white p-3 text-sm"><option value="all">All messages</option><option value="request">Requests</option><option value="complaint">Complaints</option></select></label><label className="text-xs font-bold">Search<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Staff name or message" className="mt-1 block w-full rounded-xl border bg-white p-3 text-sm" /></label></div>
       <button disabled={loading || busy} onClick={() => setReload((value) => value + 1)} className="mt-4 text-xs font-bold underline disabled:opacity-40">Refresh messages</button>
-      <p className="mt-3 text-xs text-[color:var(--portal-muted)]">{rows.filter((row) => row.status !== "resolved").length} outstanding · {filtered.length} shown. Staff see their own messages and responses only.</p>
+      <p className="mt-3 text-xs text-[#647468]">{rows.filter((row) => row.status !== "resolved").length} outstanding · {filtered.length} shown. Staff see their own messages and responses only.</p>
       <div className="mt-5 space-y-4">{filtered.map((row) => <ReviewCard key={row.id} row={row} busy={busy || loading} onSave={(id, status, response) => void save(id, status, response)} />)}</div>
-      {!loading && filtered.length === 0 && <p className="mt-5 text-sm text-[color:var(--portal-muted)]">No matching staff requests or complaints.</p>}
+      {!loading && filtered.length === 0 && <p className="mt-5 text-sm text-[#647468]">No matching staff requests or complaints.</p>}
     </>}
   </AdminWorkspaceShell>;
 }

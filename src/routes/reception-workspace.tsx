@@ -260,15 +260,15 @@ function ReceptionWorkspace() {
     },
   ];
   return (
-    <main className="reception-responsive min-h-screen bg-[var(--portal-canvas)] px-4 py-5 text-[color:var(--portal-ink)] sm:px-7 lg:px-10 lg:py-7">
+    <main className="reception-responsive min-h-screen bg-[#f4f6f1] px-4 py-5 text-[#193327] sm:px-7 lg:px-10 lg:py-7">
       <div className="mx-auto max-w-[1400px] space-y-5">
-        <header className="portal-page-heading flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dce8d9] bg-white p-4">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[.2em] text-[color:var(--portal-muted)]">
+            <p className="text-[10px] font-black uppercase tracking-[.2em] text-[#679361]">
               Super Plus / Front desk
             </p>
             <h1 className="mt-1 text-2xl font-black sm:text-3xl">Reception dashboard</h1>
-            <p className="mt-1 text-sm text-[color:var(--portal-muted)]">
+            <p className="mt-1 text-sm text-[#647468]">
               Registration, renewals, check-in and member follow-ups.
             </p>
           </div>
@@ -276,7 +276,7 @@ function ReceptionWorkspace() {
             type="button"
             onClick={() => setRefresh((n) => n + 1)}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"
           >
             <RefreshCw size={17} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
@@ -293,27 +293,27 @@ function ReceptionWorkspace() {
           </div>
         )}
         {loading && (
-          <p role="status" className="rounded-2xl border border-[var(--portal-border)] bg-white p-6 text-sm">
+          <p role="status" className="rounded-2xl border border-[#dce8d9] bg-white p-6 text-sm">
             Checking staff access and loading the member directory…
           </p>
         )}
         {!loading && authorized && !error && (
           <>
-            <section className="relative overflow-hidden rounded-2xl bg-[var(--portal-ink)] p-4 text-white sm:p-5">
+            <section className="relative overflow-hidden rounded-2xl bg-[#193b2a] p-4 text-white sm:p-5">
               <div className="relative flex flex-wrap items-center justify-between gap-4">
                 <div className="max-w-2xl">
-                  <p className="text-xs font-bold text-[color:var(--portal-highlight)]">{dateLabel} · Lagos time</p>
+                  <p className="text-xs font-bold text-[#b8ee73]">{dateLabel} · Lagos time</p>
                   <h2 className="mt-1 text-2xl font-black leading-tight sm:text-3xl">
                     Ready for today's members.
                   </h2>
-                  <p className="mt-2 max-w-xl text-sm leading-6 text-[color:var(--portal-border)]">
+                  <p className="mt-2 max-w-xl text-sm leading-6 text-[#d2e2d4]">
                     Register, renew, search profiles and scan QR from one front-desk workspace.
                   </p>
                 </div>
                 <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
                   <a
                     href="/reception-register"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-highlight)] px-4 py-3 text-sm font-black text-[color:var(--portal-ink)]"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#b8ee73] px-4 py-3 text-sm font-black text-[#173326]"
                   >
                     <UserPlus size={18} /> Register
                   </a>
@@ -331,7 +331,7 @@ function ReceptionWorkspace() {
                 <h2 className="text-lg font-black">Member snapshot</h2>
                 <a
                   href="/management-members"
-                  className="inline-flex items-center gap-2 text-xs font-bold text-[color:var(--portal-accent)]"
+                  className="inline-flex items-center gap-2 text-xs font-bold text-[#356942]"
                 >
                   Directory <ArrowRight size={15} />
                 </a>
@@ -341,11 +341,11 @@ function ReceptionWorkspace() {
                   <a
                     key={label}
                     href={href}
-                    className="portal-stat block min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-3 hover:border-[var(--portal-accent)]"
+                    className="block min-w-0 rounded-2xl border border-[#dce8d9] bg-white p-3 hover:border-[#a8c9a1]"
                   >
-                    <span className="flex items-center justify-between gap-2 text-[11px] font-semibold leading-4 text-[color:var(--portal-muted)]">
+                    <span className="flex items-center justify-between gap-2 text-[11px] font-semibold leading-4 text-[#607366]">
                       <span>{label}</span>
-                      <Icon size={16} className="text-[color:var(--portal-muted)]" />
+                      <Icon size={16} className="text-[#54815c]" />
                     </span>
                     <span className="mt-2 block text-2xl font-black tabular-nums">
                       {value.toLocaleString("en-NG")}
@@ -355,14 +355,14 @@ function ReceptionWorkspace() {
               </div>
             </section>
             <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)]">
-              <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-5 sm:p-7">
+              <section className="rounded-[24px] border border-[#dce8d9] bg-white p-5 sm:p-7">
                 <h2 className="text-2xl font-black">Find a member</h2>
-                <p className="mt-2 text-sm text-[color:var(--portal-muted)]">
+                <p className="mt-2 text-sm text-[#607366]">
                   Search name, phone or email. Open their existing profile instead of registering
                   them twice.
                 </p>
-                <label className="mt-5 flex items-center gap-3 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4">
-                  <Search size={19} className="text-[color:var(--portal-muted)]" />
+                <label className="mt-5 flex items-center gap-3 rounded-xl border border-[#d8e2d5] bg-[#f7faf4] px-4">
+                  <Search size={19} className="text-[#54815c]" />
                   <span className="sr-only">Search members</span>
                   <input
                     type="search"
@@ -379,15 +379,15 @@ function ReceptionWorkspace() {
                         <a
                           key={m.id}
                           href={`/reception-member/${encodeURIComponent(m.id)}`}
-                          className="flex items-center justify-between gap-3 rounded-xl border border-[var(--portal-surface)] p-4 text-sm"
+                          className="flex items-center justify-between gap-3 rounded-xl border border-[#e6ede2] p-4 text-sm"
                         >
                           <span>
                             <strong className="block">{m.full_name || "Unnamed member"}</strong>
-                            <span className="text-xs text-[color:var(--portal-muted)]">
+                            <span className="text-xs text-[#637469]">
                               {m.phone || m.email || "No contact"}
                             </span>
                           </span>
-                          <span className="text-xs font-bold text-[color:var(--portal-accent)]">View profile →</span>
+                          <span className="text-xs font-bold text-[#356942]">View profile →</span>
                         </a>
                       ))
                     ) : (
@@ -395,14 +395,14 @@ function ReceptionWorkspace() {
                     )}
                   </div>
                 ) : (
-                  <p className="mt-4 text-xs text-[color:var(--portal-muted)]">
+                  <p className="mt-4 text-xs text-[#849387]">
                     Tip: Use the top search to find both members and tools.
                   </p>
                 )}
               </section>
-              <section className="rounded-[24px] border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 sm:p-7">
+              <section className="rounded-[24px] border border-[#dce8d9] bg-[#eaf4e4] p-5 sm:p-7">
                 <h2 className="text-2xl font-black">Follow up today</h2>
-                <p className="mt-2 text-sm text-[color:var(--portal-muted)]">Expiry reminders and birthdays.</p>
+                <p className="mt-2 text-sm text-[#586e5a]">Expiry reminders and birthdays.</p>
                 <div className="mt-5 space-y-3">
                   <a
                     href="/management-communications#renewal-messages"
@@ -428,26 +428,26 @@ function ReceptionWorkspace() {
                   <a
                     key={label}
                     href={href}
-                    className="portal-action-card group flex min-h-28 flex-col justify-between rounded-2xl border border-[var(--portal-border)] bg-white p-4 hover:border-[var(--portal-accent)]"
+                    className="group flex min-h-28 flex-col justify-between rounded-2xl border border-[#dce8d9] bg-white p-4 hover:border-[#9fca91]"
                   >
                     <span className="flex items-center justify-between">
-                      <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
+                      <span className="rounded-xl bg-[#edf6e7] p-2 text-[#427a43]">
                         <Icon size={18} />
                       </span>
                       <ArrowRight size={16} />
                     </span>
                     <span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--portal-muted)]">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#68905d]">
                         {tag}
                       </span>
                       <strong className="mt-1 block text-base">{label}</strong>
-                      <span className="mt-1 block text-xs leading-5 text-[color:var(--portal-muted)]">{detail}</span>
+                      <span className="mt-1 block text-xs leading-5 text-[#647468]">{detail}</span>
                     </span>
                   </a>
                 ))}
               </div>
             </section>
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-5 text-xs leading-6 text-[color:var(--portal-muted)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#dce8d9] bg-white p-5 text-xs leading-6 text-[#5b705d]">
               <p>
                 Normal successful payments appear in revenue. Admin historical imports remain the
                 separate non-revenue workflow.
@@ -456,13 +456,13 @@ function ReceptionWorkspace() {
                 <div className="flex gap-3">
                   <a
                     href="/management-revenue"
-                    className="inline-flex items-center gap-1 font-bold text-[color:var(--portal-accent)]"
+                    className="inline-flex items-center gap-1 font-bold text-[#356942]"
                   >
                     <Wallet size={15} /> Revenue
                   </a>
                   <a
                     href="/admin-workspace"
-                    className="inline-flex items-center gap-1 font-bold text-[color:var(--portal-accent)]"
+                    className="inline-flex items-center gap-1 font-bold text-[#356942]"
                   >
                     <LayoutDashboard size={15} /> Admin
                   </a>
