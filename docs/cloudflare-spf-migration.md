@@ -41,3 +41,7 @@ GitHub Actions `cloudflare-spf-migration-dryrun.yml` installs frozen Bun deps, r
 ## No-interruption handoff
 
 Keep production on Vercel while building and verifying a temporary `*.workers.dev` preview. When approved, prepare DNS/SSL and hostname rollback. Make the public switch only after the owner approves a tested configuration. Cancel Vercel Pro only after the portfolio and gym are both stable on Cloudflare. JIS Beauty & Fashion is not launched; do not migrate or launch it unintentionally.
+
+## Preview trigger after Cloudflare project connection — 13 October 2026
+
+Cloudflare Worker creation was reported completed by the owner. This documentation-only commit triggers a new build of the isolated migration branch if Cloudflare GitHub Preview Builds are enabled for the connected repository. The first deployment may have originated from `main`, which does **not** include this branch's Wrangler configuration; validate this branch specifically. Do not switch domains, change Paystack callbacks, merge this branch, or perform production member/payroll mutations as part of preview setup.
