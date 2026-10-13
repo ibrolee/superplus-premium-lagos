@@ -1,0 +1,31 @@
+name: Cloudflare SPF migration build check
+
+on:
+  push:
+    branches:
+      - migration/cloudflare-spf-2026-10-13
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: SPF Cloudflare build and packaging, no deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install frozen dependencies
+        run: bun install --frozen-lockfile
+      - name: Build TanStack Start and Nitro
+        run: bun run build
+      - name: Check Worker output
+        run: |
+          test -f .output/server/index.mjs
+          test -d .output/public
+      - name: Wrangler packaging dry-run (no Cloudflare token or deployment)
+        run: npx --yes wrangler@4.135.0 deploy --dry-run --outdir .cloudflare-dryrun
