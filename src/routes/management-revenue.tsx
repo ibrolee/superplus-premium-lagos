@@ -112,7 +112,7 @@ const sourceLabels: Record<Source, string> = {
   bank_transfer: "Bank Transfer",
   other: "Other",
 };
-const chartColors = ["var(--portal-ink)", "var(--primary)", "oklch(.74 .12 50)", "var(--portal-accent)", "var(--portal-highlight)", "var(--portal-muted)"];
+const chartColors = ["var(--primary)", "oklch(.66 .19 48)", "oklch(.74 .12 50)", "var(--portal-accent)", "oklch(.84 .12 40)", "oklch(.57 .13 35)"];
 function planOf(payment: Payment) {
   const plan = payment.metadata?.["plan_name"];
   return typeof plan === "string" && plan.trim() ? plan : "Membership payment";
@@ -342,7 +342,7 @@ function ManagementRevenue() {
   return (
     <main className="min-h-screen bg-[var(--portal-canvas)] px-4 py-8 text-[color:var(--portal-ink)] sm:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="portal-page-heading flex flex-wrap items-start justify-between gap-4">
           <div>
             <a
               href="/management-operations"
@@ -511,7 +511,7 @@ function ManagementRevenue() {
               ].map(({ title, value, note, icon: Icon }) => (
                 <div
                   key={title}
-                  className="min-w-0 rounded-[22px] border border-[var(--portal-border)] bg-white p-5"
+                  className="portal-stat min-w-0 rounded-[22px] border border-[var(--portal-border)] bg-white p-5"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-bold text-[color:var(--portal-muted)]">{title}</span>
@@ -545,10 +545,10 @@ function ManagementRevenue() {
                     <h3 className="text-sm font-black">Source mix</h3>
                     <BarChart3 size={17} className="text-[color:var(--portal-accent)]" />
                   </div>
-                  <div className="mt-4 flex items-center gap-4">
+                  <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
                     <div
                       aria-hidden="true"
-                      className="size-28 shrink-0 rounded-full"
+                      className="mx-auto size-28 shrink-0 rounded-full sm:mx-0"
                       style={{ background: pieGradient(sourceChart) }}
                     />
                     <div className="min-w-0 flex-1 space-y-2">
@@ -579,10 +579,10 @@ function ManagementRevenue() {
                     <h3 className="text-sm font-black">Top plans</h3>
                     <CreditCard size={17} className="text-[color:var(--portal-accent)]" />
                   </div>
-                  <div className="mt-4 flex items-center gap-4">
+                  <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
                     <div
                       aria-hidden="true"
-                      className="size-28 shrink-0 rounded-full"
+                      className="mx-auto size-28 shrink-0 rounded-full sm:mx-0"
                       style={{ background: pieGradient(planBreakdown) }}
                     />
                     <div className="min-w-0 flex-1 space-y-2">

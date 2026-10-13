@@ -258,8 +258,10 @@ function RootContent() {
   const { queryClient } = Route.useRouteContext();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const internal = isInternalWorkspace(pathname);
+  const colourfulPortal = internal || ["/member", "/member-family", "/my-qr", "/login", "/family-join"].includes(pathname);
   return (
     <QueryClientProvider client={queryClient}>
+      <div className={colourfulPortal ? "spf-portal-theme contents" : "contents"}>
       {!internal && (
         <>
           <UtilityBar />
@@ -280,6 +282,7 @@ function RootContent() {
       )}
       <Toaster position="top-center" richColors />
       <GlobalUnhandledErrorToasts />
+      </div>
     </QueryClientProvider>
   );
 }

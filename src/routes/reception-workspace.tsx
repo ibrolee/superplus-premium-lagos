@@ -262,7 +262,7 @@ function ReceptionWorkspace() {
   return (
     <main className="reception-responsive min-h-screen bg-[var(--portal-canvas)] px-4 py-5 text-[color:var(--portal-ink)] sm:px-7 lg:px-10 lg:py-7">
       <div className="mx-auto max-w-[1400px] space-y-5">
-        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+        <header className="portal-page-heading flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[.2em] text-[color:var(--portal-muted)]">
               Super Plus / Front desk
@@ -341,7 +341,7 @@ function ReceptionWorkspace() {
                   <a
                     key={label}
                     href={href}
-                    className="block min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-3 hover:border-[var(--portal-accent)]"
+                    className="portal-stat block min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-3 hover:border-[var(--portal-accent)]"
                   >
                     <span className="flex items-center justify-between gap-2 text-[11px] font-semibold leading-4 text-[color:var(--portal-muted)]">
                       <span>{label}</span>
@@ -428,7 +428,7 @@ function ReceptionWorkspace() {
                   <a
                     key={label}
                     href={href}
-                    className="group flex min-h-28 flex-col justify-between rounded-2xl border border-[var(--portal-border)] bg-white p-4 hover:border-[var(--portal-accent)]"
+                    className="portal-action-card group flex min-h-28 flex-col justify-between rounded-2xl border border-[var(--portal-border)] bg-white p-4 hover:border-[var(--portal-accent)]"
                   >
                     <span className="flex items-center justify-between">
                       <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">

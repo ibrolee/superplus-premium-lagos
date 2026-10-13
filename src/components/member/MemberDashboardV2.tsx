@@ -657,7 +657,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
     </div>}
 
     <div className={"mx-auto max-w-6xl px-4 py-5 sm:px-7 sm:py-9" + (readOnly ? " pointer-events-none" : "")}>
-      <header className="flex items-center justify-between gap-3">
+      <header className="portal-page-heading flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[.18em] text-[color:var(--portal-accent)]">Super Plus member</p>
           <h1 className="mt-1 truncate font-display text-3xl font-black uppercase sm:text-5xl">Hi, {firstName} 👋</h1>

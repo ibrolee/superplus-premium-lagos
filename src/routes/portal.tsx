@@ -39,7 +39,7 @@ function PortalDirectory() {
   return (
     <main className="min-h-dvh bg-[var(--portal-canvas)] px-4 py-5 text-[color:var(--portal-ink)] sm:px-7 sm:py-8 lg:py-12">
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-3 shadow-sm">
+        <div className="portal-page-heading flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-3 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--portal-ink)] font-black text-[color:var(--portal-highlight)]">
               S+
@@ -64,7 +64,7 @@ function PortalDirectory() {
             <Link
               key={to}
               to={to}
-              className="group grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-3 shadow-sm transition hover:border-[var(--portal-muted)] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--portal-accent)] sm:p-4 md:flex md:flex-col md:items-stretch"
+              className="portal-action-card group grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white p-3 shadow-sm transition hover:border-[var(--portal-muted)] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--portal-accent)] sm:p-4 md:flex md:flex-col md:items-stretch"
             >
               <span className="flex size-10 items-center justify-center rounded-xl bg-[var(--portal-ink)] text-[color:var(--portal-highlight)]">
                 <Icon size={22} aria-hidden="true" />

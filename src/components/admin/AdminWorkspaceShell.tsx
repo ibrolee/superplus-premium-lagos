@@ -679,11 +679,13 @@ export function AdminWorkspaceShell({
           )}
         </header>
         <main className="mx-auto box-border w-full min-w-0 max-w-full overflow-x-hidden px-4 py-7 sm:max-w-[1480px] sm:px-7 lg:px-10 lg:py-10">
+          <div className="portal-page-heading mb-6">
           <p className="text-xs font-black uppercase tracking-[.17em] text-[color:var(--portal-muted)]">
             Super Plus / Admin
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">{title}</h1>
           {subtitle && <p className="mt-2 text-sm text-[color:var(--portal-muted)]">{subtitle}</p>}
+          </div>
           {children}
         </main>
       </div>

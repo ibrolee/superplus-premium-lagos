@@ -1117,7 +1117,7 @@ function StaffPage() {
             <a href="/management-staff" className="font-bold underline underline-offset-4">Exit preview</a>
           </div>
         )}
-        <header className="flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-4">
+        <header className="portal-page-heading flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-4">
           <div className="flex min-w-0 items-center gap-3">
             <img
               src="/header-logo.png"
