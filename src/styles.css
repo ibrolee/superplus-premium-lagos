@@ -65,6 +65,15 @@
 
 :root {
   --radius: 0.375rem;
+  /* Portal palette: shared by members, staff, reception and management. */
+  --portal-ink: var(--secondary);
+  --portal-canvas: var(--background);
+  --portal-surface: oklch(.965 .012 45);
+  --portal-border: var(--border);
+  --portal-highlight: oklch(.86 .085 40);
+  --portal-subtle: oklch(.80 .014 45);
+  --portal-accent: oklch(.48 .16 28);
+  --portal-muted: var(--muted-foreground);
   --background: oklch(0.985 0.004 85);
   --foreground: oklch(0.155 0.008 30);
   --card: oklch(1 0 0);
@@ -196,17 +205,17 @@ button:not(:disabled):active, a:active { transform: scale(.985); }
 a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 .section-shell img { transition: transform .35s ease; }
 .section-shell a:hover img { transform: scale(1.035); }
-.spf-admin { background: linear-gradient(145deg, #f7f8fc, #fff8f5 60%, #f3f8f5); color: #20242b; }
+.spf-admin { background: linear-gradient(145deg, #f7f8fc, #fff8f5 60%, var(--portal-canvas)); color: #20242b; }
 .spf-admin > header { background: #fff; border-color: #e8eaf0; box-shadow: 0 3px 22px #20242b08; }
 .spf-admin > header h1 { letter-spacing: -.025em; }
 .spf-admin > div > section > details { border: 1px solid #e6e9ef; border-radius: 20px; background: #fff; box-shadow: 0 12px 35px #252b4010; transition: box-shadow .25s ease, transform .25s ease; }
 .spf-admin > div > section > details:hover { box-shadow: 0 16px 45px #252b4019; }
 .spf-admin > div > section > details > summary { min-height: 112px; background: linear-gradient(105deg, #fff 58%, #fff2eb); }
-.spf-admin > div > section:nth-of-type(2) > details > summary { background: linear-gradient(105deg, #fff 58%, #ecf9f0); }
+.spf-admin > div > section:nth-of-type(2) > details > summary { background: linear-gradient(105deg, #fff 58%, var(--portal-canvas)); }
 .spf-admin > div > section:nth-of-type(3) > details > summary { background: linear-gradient(105deg, #fff 58%, #f0efff); }
 .spf-admin > div > section > details > summary:hover { background-color: #faf9ff; }
 .spf-admin > div > section > details > summary svg { color: #e54b32; }
-.spf-admin > div > section:nth-of-type(2) > details > summary svg { color: #188451; }
+.spf-admin > div > section:nth-of-type(2) > details > summary svg { color: var(--portal-accent); }
 .spf-admin > div > section:nth-of-type(3) > details > summary svg { color: #7154cb; }
 .spf-admin [class*="border-border"][class*="bg-background"] { border-radius: 12px; }
 .spf-admin button:not(:disabled):hover, .spf-admin nav a:hover { box-shadow: 0 4px 14px #e54b3217; }
@@ -229,38 +238,164 @@ a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px soli
 }
 
 /* Super Plus workspace: dashboard reference-inspired layout and motion. */
-.spf-dashboard{--spf-ink:#17392e;--spf-green:#178653;background:#f6f8f6;color:#1b2d28;font-family:Manrope,system-ui,sans-serif}
+.spf-dashboard{--spf-ink:var(--portal-ink);--spf-brand:var(--portal-accent);background:var(--portal-canvas);color:var(--portal-ink);font-family:Manrope,system-ui,sans-serif}
 .spf-dashboard .spf-main-content{min-width:0;min-height:100vh}
 .spf-dashboard .spf-side-nav{display:none}
 .spf-dashboard .spf-overview{display:grid;gap:22px;margin-bottom:34px}
 .spf-dashboard .spf-welcome{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;animation:spf-rise .55s ease both}
 .spf-dashboard .spf-welcome h2{font-size:clamp(1.65rem,3vw,2.55rem);font-weight:800;letter-spacing:-.055em;line-height:1.15;margin:9px 0}
-.spf-dashboard .spf-welcome h2 span{color:#20a46d}
-.spf-dashboard .spf-welcome p{font-size:.83rem;color:#708078;max-width:580px}
-.spf-dashboard .spf-eyebrow{font-size:.68rem;letter-spacing:.16em;font-weight:800;color:#188652;display:flex;align-items:center;gap:9px}
-.spf-dashboard .spf-live-dot{height:8px;width:8px;background:#24c779;border-radius:50%;box-shadow:0 0 0 5px #24c77920;animation:spf-pulse 2s infinite}
-.spf-dashboard .spf-refresh{border:1px solid #d9e7dd;background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:9px;font-size:.76rem;font-weight:800;transition:transform .2s,box-shadow .2s}
-.spf-dashboard .spf-refresh:hover{transform:translateY(-2px);box-shadow:0 8px 22px #163f2714}
+.spf-dashboard .spf-welcome h2 span{color:var(--portal-accent)}
+.spf-dashboard .spf-welcome p{font-size:.83rem;color:var(--portal-muted);max-width:580px}
+.spf-dashboard .spf-eyebrow{font-size:.68rem;letter-spacing:.16em;font-weight:800;color:var(--portal-accent);display:flex;align-items:center;gap:9px}
+.spf-dashboard .spf-live-dot{height:8px;width:8px;background:var(--portal-accent);border-radius:50%;box-shadow:0 0 0 5px color-mix(in srgb, var(--portal-accent) 12.55%, transparent);animation:spf-pulse 2s infinite}
+.spf-dashboard .spf-refresh{border:1px solid var(--portal-border);background:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:9px;font-size:.76rem;font-weight:800;transition:transform .2s,box-shadow .2s}
+.spf-dashboard .spf-refresh:hover{transform:translateY(-2px);box-shadow:0 8px 22px color-mix(in srgb, var(--portal-ink) 7.84%, transparent)}
 .spf-dashboard .spf-metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.spf-dashboard .spf-metric{min-width:0;border:1px solid #e4ece6;background:#fff;border-radius:17px;padding:19px;box-shadow:0 3px 12px #193a2507;transition:transform .25s,box-shadow .25s;animation:spf-rise .65s both}
+.spf-dashboard .spf-metric{min-width:0;border:1px solid var(--portal-surface);background:#fff;border-radius:17px;padding:19px;box-shadow:0 3px 12px color-mix(in srgb, var(--portal-ink) 2.75%, transparent);transition:transform .25s,box-shadow .25s;animation:spf-rise .65s both}
 .spf-dashboard .spf-metric:nth-child(2){animation-delay:.07s}.spf-dashboard .spf-metric:nth-child(3){animation-delay:.14s}.spf-dashboard .spf-metric:nth-child(4){animation-delay:.21s}
-.spf-dashboard .spf-metric:hover,.spf-dashboard .spf-insight:hover{transform:translateY(-4px);box-shadow:0 14px 34px #1b3b2515}
-.spf-dashboard .spf-metric-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:.72rem;font-weight:800;color:#61746a}
-.spf-dashboard .spf-metric-top svg{padding:8px;width:34px;height:34px;border-radius:10px;background:#dcf9e9;color:#168754}
-.spf-dashboard .spf-metric-purple .spf-metric-top svg{background:#efe9ff;color:#7850d5}.spf-dashboard .spf-metric-blue .spf-metric-top svg{background:#e3f0ff;color:#3472d0}.spf-dashboard .spf-metric-orange .spf-metric-top svg{background:#fff0dd;color:#dd8c2c}
+.spf-dashboard .spf-metric:hover,.spf-dashboard .spf-insight:hover{transform:translateY(-4px);box-shadow:0 14px 34px color-mix(in srgb, var(--portal-ink) 8.24%, transparent)}
+.spf-dashboard .spf-metric-top{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:.72rem;font-weight:800;color:var(--portal-muted)}
+.spf-dashboard .spf-metric-top svg{padding:8px;width:34px;height:34px;border-radius:10px;background:var(--portal-surface);color:var(--portal-accent)}
+.spf-dashboard .spf-metric-purple .spf-metric-top svg{background:var(--portal-surface);color:var(--portal-accent)}.spf-dashboard .spf-metric-blue .spf-metric-top svg{background:var(--muted);color:var(--portal-ink)}.spf-dashboard .spf-metric-orange .spf-metric-top svg{background:var(--portal-surface);color:var(--primary)}
 .spf-dashboard .spf-metric strong{display:block;font-size:clamp(1.4rem,2.4vw,2rem);font-weight:900;letter-spacing:-.055em;margin:12px 0 8px;overflow-wrap:anywhere}
-.spf-dashboard .spf-metric small{display:block;border-top:1px solid #edf1ee;padding-top:12px;color:#819087;font-size:.67rem}
+.spf-dashboard .spf-metric small{display:block;border-top:1px solid var(--portal-surface);padding-top:12px;color:var(--portal-muted);font-size:.67rem}
 .spf-dashboard .spf-insights-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:17px}
-.spf-dashboard .spf-insight{min-width:0;background:#fff;border:1px solid #e5ede7;border-radius:18px;padding:23px;box-shadow:0 3px 12px #193a2507;transition:transform .25s,box-shadow .25s;animation:spf-rise .7s .16s both}
-.spf-dashboard .spf-insight-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:20px}.spf-dashboard .spf-insight h3{font-weight:850;font-size:1rem;letter-spacing:-.025em}.spf-dashboard .spf-insight-heading p{font-size:.68rem;color:#87948b;margin-top:4px}.spf-dashboard .spf-chart-pill{background:#eaf8ef;color:#197e4c;border-radius:100px;padding:6px 10px;font-size:.65rem;font-weight:800}
-.spf-dashboard .spf-bars{display:flex;align-items:end;justify-content:space-around;gap:8px;height:205px}.spf-dashboard .spf-bar-column{height:100%;min-width:0;flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;gap:8px}.spf-dashboard .spf-bar-value{font-size:.57rem;font-weight:700;color:#73867b;white-space:nowrap}.spf-dashboard .spf-bar-track{width:min(100%,43px);height:140px;display:flex;align-items:flex-end}.spf-dashboard .spf-bar-fill{width:100%;background:linear-gradient(180deg,#9aecc0,#3dba7b);border-radius:7px 7px 2px 2px;animation:spf-grow 1s ease both;transition:filter .2s}.spf-dashboard .spf-bar-column:last-child .spf-bar-fill{background:linear-gradient(180deg,#25795a,#133d31)}.spf-dashboard .spf-bar-column:hover .spf-bar-fill{filter:brightness(.85)}.spf-dashboard .spf-bar-month{font-size:.68rem;color:#788b7f}
-.spf-dashboard .spf-plan-list{display:grid;gap:17px}.spf-dashboard .spf-plan-item>div:first-child{display:flex;align-items:center;gap:9px;font-size:.73rem}.spf-dashboard .spf-plan-item strong{margin-left:auto}.spf-dashboard .spf-plan-dot,.spf-dashboard .spf-staff-status{height:8px;width:8px;border-radius:50%;background:#165840;flex-shrink:0}.spf-dashboard .spf-dot-1{background:#39b57c}.spf-dashboard .spf-dot-2{background:#8bdfb1}.spf-dashboard .spf-dot-3{background:#d0f4df}.spf-dashboard .spf-plan-track{height:6px;border-radius:10px;background:#eff4ef;margin-top:9px;overflow:hidden}.spf-dashboard .spf-plan-track div{height:100%;background:linear-gradient(90deg,#1c7352,#76db9d);border-radius:10px;animation:spf-grow-horizontal 1s ease both}
-.spf-dashboard .spf-text-action{font-size:.69rem;font-weight:850;color:#15824e;margin-top:20px;text-align:left;transition:transform .2s}.spf-dashboard .spf-text-action:hover{transform:translateX(4px)}.spf-dashboard .spf-empty{font-size:.76rem;color:#829189;padding:20px 0}
-.spf-dashboard .spf-activity{display:flex;align-items:center;gap:12px;border-bottom:1px solid #eef1ee;padding:12px 0;min-width:0}.spf-dashboard .spf-activity-icon{width:31px;height:31px;flex-shrink:0;display:grid;place-items:center;background:#ddf8e8;color:#14884e;border-radius:10px;font-weight:900}.spf-dashboard .spf-activity>div{min-width:0;flex:1}.spf-dashboard .spf-activity strong,.spf-dashboard .spf-activity small{display:block;overflow-wrap:anywhere}.spf-dashboard .spf-activity strong{font-size:.72rem}.spf-dashboard .spf-activity small{font-size:.62rem;color:#87948b;margin-top:3px}.spf-dashboard .spf-activity-amount{font-size:.7rem;font-weight:800;overflow-wrap:anywhere;text-align:right}.spf-dashboard .spf-staff-row{width:100%;display:flex;align-items:center;gap:11px;text-align:left;border-bottom:1px solid #eef1ee;padding:12px 0;font-size:.75rem;transition:padding .2s}.spf-dashboard .spf-staff-row:hover{padding-left:5px}.spf-dashboard .spf-staff-row strong{margin-left:auto}.spf-dashboard .spf-status-pending{background:#e8a13e}.spf-dashboard .spf-status-suspended{background:#d85e60}.spf-dashboard .spf-status-inactive{background:#a1aca5}
-.spf-dashboard #revenue-panel,.spf-dashboard #attendance-panel,.spf-dashboard #staff-panel{border:1px solid #e1eae3;border-radius:18px;background:#fff;box-shadow:0 4px 16px #193a2508;overflow:hidden;transition:box-shadow .25s}.spf-dashboard #revenue-panel:hover,.spf-dashboard #attendance-panel:hover,.spf-dashboard #staff-panel:hover{box-shadow:0 12px 30px #193a2510}.spf-dashboard #revenue-panel[open]>summary,.spf-dashboard #attendance-panel[open]>summary,.spf-dashboard #staff-panel[open]>summary{background:#f0faf3}.spf-dashboard details[open]>div{animation:spf-rise .3s ease both}
-@media(min-width:1100px){.spf-dashboard .spf-side-nav{position:fixed;inset:0 auto 0 0;width:238px;z-index:40;background:#fff;border-right:1px solid #e6eee8;display:flex;flex-direction:column;padding:28px 14px;gap:5px}.spf-dashboard .spf-main-content{margin-left:238px}.spf-dashboard .spf-side-brand{display:flex;align-items:center;gap:11px;padding:4px 8px 34px;font-size:.86rem;font-weight:950;letter-spacing:-.035em}.spf-dashboard .spf-side-brand small{display:block;font-size:.55rem;letter-spacing:.18em;color:#739080;margin-top:2px}.spf-dashboard .spf-brand-mark{display:grid;place-items:center;width:35px;height:35px;background:#15573b;color:white;border-radius:11px;font-weight:900}.spf-dashboard .spf-side-caption{font-size:.6rem;letter-spacing:.16em;color:#9aaba0;font-weight:900;padding:8px 14px 13px}.spf-dashboard .spf-side-nav button,.spf-dashboard .spf-side-nav a{display:flex;align-items:center;gap:13px;text-align:left;padding:13px 14px;border-radius:10px;font-size:.75rem;font-weight:750;color:#63766a;transition:background .2s,color .2s,transform .2s}.spf-dashboard .spf-side-nav button:hover,.spf-dashboard .spf-side-nav a:hover{background:#e8f7ee;color:#136b43;transform:translateX(3px)}.spf-dashboard .spf-side-nav button:first-of-type{background:#e6f6ed;color:#137d4a}.spf-dashboard .spf-side-bottom{margin-top:auto;border-top:1px solid #e9eee9;padding-top:14px;display:grid;gap:5px}.spf-dashboard header details.group\/nav{display:none}}
+.spf-dashboard .spf-insight{min-width:0;background:#fff;border:1px solid var(--portal-surface);border-radius:18px;padding:23px;box-shadow:0 3px 12px color-mix(in srgb, var(--portal-ink) 2.75%, transparent);transition:transform .25s,box-shadow .25s;animation:spf-rise .7s .16s both}
+.spf-dashboard .spf-insight-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:20px}.spf-dashboard .spf-insight h3{font-weight:850;font-size:1rem;letter-spacing:-.025em}.spf-dashboard .spf-insight-heading p{font-size:.68rem;color:var(--portal-muted);margin-top:4px}.spf-dashboard .spf-chart-pill{background:var(--portal-canvas);color:var(--portal-accent);border-radius:100px;padding:6px 10px;font-size:.65rem;font-weight:800}
+.spf-dashboard .spf-bars{display:flex;align-items:end;justify-content:space-around;gap:8px;height:205px}.spf-dashboard .spf-bar-column{height:100%;min-width:0;flex:1;display:flex;align-items:center;flex-direction:column;justify-content:flex-end;gap:8px}.spf-dashboard .spf-bar-value{font-size:.57rem;font-weight:700;color:var(--portal-muted);white-space:nowrap}.spf-dashboard .spf-bar-track{width:min(100%,43px);height:140px;display:flex;align-items:flex-end}.spf-dashboard .spf-bar-fill{width:100%;background:linear-gradient(180deg,var(--portal-highlight),var(--portal-accent));border-radius:7px 7px 2px 2px;animation:spf-grow 1s ease both;transition:filter .2s}.spf-dashboard .spf-bar-column:last-child .spf-bar-fill{background:linear-gradient(180deg,var(--portal-accent),var(--portal-ink))}.spf-dashboard .spf-bar-column:hover .spf-bar-fill{filter:brightness(.85)}.spf-dashboard .spf-bar-month{font-size:.68rem;color:var(--portal-muted)}
+.spf-dashboard .spf-plan-list{display:grid;gap:17px}.spf-dashboard .spf-plan-item>div:first-child{display:flex;align-items:center;gap:9px;font-size:.73rem}.spf-dashboard .spf-plan-item strong{margin-left:auto}.spf-dashboard .spf-plan-dot,.spf-dashboard .spf-staff-status{height:8px;width:8px;border-radius:50%;background:var(--portal-ink);flex-shrink:0}.spf-dashboard .spf-dot-1{background:var(--portal-accent)}.spf-dashboard .spf-dot-2{background:var(--portal-highlight)}.spf-dashboard .spf-dot-3{background:var(--portal-highlight)}.spf-dashboard .spf-plan-track{height:6px;border-radius:10px;background:var(--portal-canvas);margin-top:9px;overflow:hidden}.spf-dashboard .spf-plan-track div{height:100%;background:linear-gradient(90deg,var(--portal-accent),var(--portal-highlight));border-radius:10px;animation:spf-grow-horizontal 1s ease both}
+.spf-dashboard .spf-text-action{font-size:.69rem;font-weight:850;color:var(--portal-accent);margin-top:20px;text-align:left;transition:transform .2s}.spf-dashboard .spf-text-action:hover{transform:translateX(4px)}.spf-dashboard .spf-empty{font-size:.76rem;color:var(--portal-muted);padding:20px 0}
+.spf-dashboard .spf-activity{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--portal-surface);padding:12px 0;min-width:0}.spf-dashboard .spf-activity-icon{width:31px;height:31px;flex-shrink:0;display:grid;place-items:center;background:var(--portal-surface);color:var(--portal-accent);border-radius:10px;font-weight:900}.spf-dashboard .spf-activity>div{min-width:0;flex:1}.spf-dashboard .spf-activity strong,.spf-dashboard .spf-activity small{display:block;overflow-wrap:anywhere}.spf-dashboard .spf-activity strong{font-size:.72rem}.spf-dashboard .spf-activity small{font-size:.62rem;color:var(--portal-muted);margin-top:3px}.spf-dashboard .spf-activity-amount{font-size:.7rem;font-weight:800;overflow-wrap:anywhere;text-align:right}.spf-dashboard .spf-staff-row{width:100%;display:flex;align-items:center;gap:11px;text-align:left;border-bottom:1px solid var(--portal-surface);padding:12px 0;font-size:.75rem;transition:padding .2s}.spf-dashboard .spf-staff-row:hover{padding-left:5px}.spf-dashboard .spf-staff-row strong{margin-left:auto}.spf-dashboard .spf-status-pending{background:#e8a13e}.spf-dashboard .spf-status-suspended{background:#d85e60}.spf-dashboard .spf-status-inactive{background:var(--portal-muted)}
+.spf-dashboard #revenue-panel,.spf-dashboard #attendance-panel,.spf-dashboard #staff-panel{border:1px solid var(--portal-surface);border-radius:18px;background:#fff;box-shadow:0 4px 16px color-mix(in srgb, var(--portal-ink) 3.14%, transparent);overflow:hidden;transition:box-shadow .25s}.spf-dashboard #revenue-panel:hover,.spf-dashboard #attendance-panel:hover,.spf-dashboard #staff-panel:hover{box-shadow:0 12px 30px color-mix(in srgb, var(--portal-ink) 6.27%, transparent)}.spf-dashboard #revenue-panel[open]>summary,.spf-dashboard #attendance-panel[open]>summary,.spf-dashboard #staff-panel[open]>summary{background:var(--portal-canvas)}.spf-dashboard details[open]>div{animation:spf-rise .3s ease both}
+@media(min-width:1100px){.spf-dashboard .spf-side-nav{position:fixed;inset:0 auto 0 0;width:238px;z-index:40;background:#fff;border-right:1px solid var(--portal-surface);display:flex;flex-direction:column;padding:28px 14px;gap:5px}.spf-dashboard .spf-main-content{margin-left:238px}.spf-dashboard .spf-side-brand{display:flex;align-items:center;gap:11px;padding:4px 8px 34px;font-size:.86rem;font-weight:950;letter-spacing:-.035em}.spf-dashboard .spf-side-brand small{display:block;font-size:.55rem;letter-spacing:.18em;color:var(--portal-muted);margin-top:2px}.spf-dashboard .spf-brand-mark{display:grid;place-items:center;width:35px;height:35px;background:var(--portal-ink);color:white;border-radius:11px;font-weight:900}.spf-dashboard .spf-side-caption{font-size:.6rem;letter-spacing:.16em;color:var(--portal-muted);font-weight:900;padding:8px 14px 13px}.spf-dashboard .spf-side-nav button,.spf-dashboard .spf-side-nav a{display:flex;align-items:center;gap:13px;text-align:left;padding:13px 14px;border-radius:10px;font-size:.75rem;font-weight:750;color:var(--portal-muted);transition:background .2s,color .2s,transform .2s}.spf-dashboard .spf-side-nav button:hover,.spf-dashboard .spf-side-nav a:hover{background:var(--portal-surface);color:var(--portal-ink);transform:translateX(3px)}.spf-dashboard .spf-side-nav button:first-of-type{background:var(--portal-surface);color:var(--portal-accent)}.spf-dashboard .spf-side-bottom{margin-top:auto;border-top:1px solid var(--portal-surface);padding-top:14px;display:grid;gap:5px}.spf-dashboard header details.group\/nav{display:none}}
 @media(min-width:700px){.spf-dashboard .spf-metric-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:760px){.spf-dashboard .spf-insights-grid{grid-template-columns:minmax(0,1fr)}.spf-dashboard .spf-metric{padding:14px}.spf-dashboard .spf-insight{padding:17px}.spf-dashboard .spf-activity-amount{max-width:90px}.spf-dashboard .spf-bars{gap:3px}.spf-dashboard .spf-bar-value{font-size:.48rem}}
 @media(max-width:380px){.spf-dashboard .spf-metric-grid{grid-template-columns:1fr}}
-@keyframes spf-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes spf-grow{from{transform:scaleY(.04);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}@keyframes spf-grow-horizontal{from{transform:scaleX(.04);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}@keyframes spf-pulse{50%{box-shadow:0 0 0 9px #24c77908}}
+@keyframes spf-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}@keyframes spf-grow{from{transform:scaleY(.04);transform-origin:bottom}to{transform:scaleY(1);transform-origin:bottom}}@keyframes spf-grow-horizontal{from{transform:scaleX(.04);transform-origin:left}to{transform:scaleX(1);transform-origin:left}}@keyframes spf-pulse{50%{box-shadow:0 0 0 9px color-mix(in srgb, var(--portal-accent) 3.14%, transparent)}}
 @media(prefers-reduced-motion:reduce){.spf-dashboard *, .spf-dashboard *::before,.spf-dashboard *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+/* Approved logo treatment: white surfaces, black type and red-to-orange accents. */
+.spf-logo-theme {
+  --background: #f7f7f8;
+  --foreground: #141416;
+  --card: #ffffff;
+  --card-foreground: #141416;
+  --primary: #ed1027;
+  --primary-foreground: #ffffff;
+  --secondary: #141416;
+  --secondary-foreground: #ffffff;
+  --muted: #f2f2f4;
+  --muted-foreground: #69696f;
+  --accent: #fff3ed;
+  --accent-foreground: #a42c18;
+  --border: #e8e8ec;
+  --input: #e8e8ec;
+  --ring: #ed1027;
+  --portal-ink: #141416;
+  --portal-canvas: #f7f7f8;
+  --portal-surface: #fff3ed;
+  --portal-border: #e8e8ec;
+  --portal-highlight: #fff3ed;
+  --portal-subtle: #69696f;
+  --portal-accent: #c42b22;
+  --portal-muted: #69696f;
+  --spf-logo-gradient: linear-gradient(110deg, #ed1027, #f43b20 52%, #ff6414);
+  color: var(--portal-ink);
+}
+
+.spf-logo-theme main .grid > * { min-width: 0; }
+.spf-logo-theme .spf-gradient-text {
+  background: var(--spf-logo-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Former green feature panels follow the white centre and coloured rim of the logo. */
+.spf-logo-theme :is(main, section, article, div, nav, aside)[class~="bg-[var(--portal-ink)]"] {
+  color: var(--portal-ink);
+  border: 2px solid transparent;
+  background: linear-gradient(white, white) padding-box, var(--spf-logo-gradient) border-box;
+  box-shadow: 0 8px 25px #14141608;
+}
+.spf-logo-theme :is(main, section, article, div, nav, aside)[class~="bg-[var(--portal-ink)]"] [class~="text-white"] {
+  color: var(--portal-ink);
+}
+.spf-logo-theme :is(main, section, article, div, nav, aside)[class~="bg-[var(--portal-ink)]"] [class*="text-white/"],
+.spf-logo-theme :is(main, section, article, div, nav, aside)[class~="bg-[var(--portal-ink)]"] [class~="text-[color:var(--portal-border)]"] {
+  color: var(--portal-muted);
+}
+.spf-logo-theme :is(main, section, article, div, nav, aside)[class~="bg-[var(--portal-ink)]"] [class*="border-white/"] {
+  border-color: var(--portal-border);
+}
+.spf-logo-theme [class~="text-[color:var(--portal-highlight)]"] { color: var(--portal-accent); }
+.spf-logo-theme [class~="bg-white/15"] { background: var(--border); }
+.spf-logo-theme [class*="placeholder:text-white/"]::placeholder {
+  color: var(--portal-muted);
+  opacity: 1;
+}
+
+/* Gradient actions use black lettering, just like the lettering inside the logo. */
+.spf-logo-theme :is(button, a, span)[class~="bg-[var(--portal-ink)]"],
+.spf-logo-theme :is(button, a, span)[class~="bg-[var(--portal-highlight)]"],
+.spf-logo-theme :is(button, a)[class~="bg-primary"],
+.spf-logo-theme :is(button, a)[class~="bg-[var(--portal-accent)]"] {
+  color: #27100a;
+  border-color: transparent;
+  background: var(--spf-logo-gradient);
+  box-shadow: 0 5px 12px #f03b171a;
+}
+.spf-logo-theme [class~="h-full"][class~="bg-[var(--portal-highlight)]"],
+.spf-logo-theme .spf-bar-fill {
+  background: var(--spf-logo-gradient);
+}
+.spf-logo-theme .spf-membership-card > div:first-child h2 {
+  display: inline-block;
+  background: var(--spf-logo-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+.spf-logo-theme .spf-membership-card :is(button, a)[class~="w-full"] {
+  white-space: normal;
+  height: auto;
+  min-height: 3rem;
+  line-height: 1.4;
+  padding-inline: .75rem;
+}
+
+/* The menus retain the approved white navigation and restrained active highlight. */
+.spf-logo-theme aside[class~="bg-[var(--portal-ink)]"] {
+  border: 0;
+  border-right: 1px solid var(--portal-border);
+  background: white;
+  box-shadow: 8px 0 28px #14141608;
+}
+.spf-logo-theme aside :is(a, button)[class~="bg-[var(--portal-highlight)]"],
+.spf-logo-theme nav [aria-current="page"] {
+  border-left: 3px solid #ed1027;
+  background: var(--portal-surface);
+  color: var(--portal-ink);
+  box-shadow: none;
+}
+.spf-logo-theme aside :is(a, button)[class~="bg-[var(--portal-highlight)]"] svg,
+.spf-logo-theme nav [aria-current="page"] svg { color: #ed1027; }
+.spf-logo-theme aside :is(a, button):hover { background: var(--portal-surface); }
+.spf-logo-theme .spf-metric { background: white; border-color: var(--portal-border); }
+.spf-logo-theme .spf-metric-top svg { color: var(--portal-accent); background: var(--portal-surface); }
+.spf-logo-theme .spf-metric-purple .spf-metric-top svg,
+.spf-logo-theme .spf-metric-blue .spf-metric-top svg,
+.spf-logo-theme .spf-metric-orange .spf-metric-top svg {
+  color: var(--portal-accent);
+  background: var(--portal-surface);
+}
+.spf-logo-theme :is(input, textarea, select):focus-visible {
+  outline: 2px solid #ed1027;
+  outline-offset: 2px;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .spf-logo-theme :is(button, a)[class~="bg-primary"]:hover,
+  .spf-logo-theme :is(button, a)[class~="bg-[var(--portal-highlight)]"]:hover {
+    filter: brightness(.97);
+  }
+}

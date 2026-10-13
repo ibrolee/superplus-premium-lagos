@@ -112,7 +112,7 @@ const sourceLabels: Record<Source, string> = {
   bank_transfer: "Bank Transfer",
   other: "Other",
 };
-const chartColors = ["#193d2b", "#b8ee73", "#4f8b57", "#8bbf80", "#d7eacb", "#6f7f71"];
+const chartColors = ["#ed1027", "#ff6414", "#f43b20", "#dc3d4b", "#c33719", "#141416"];
 function planOf(payment: Payment) {
   const plan = payment.metadata?.["plan_name"];
   return typeof plan === "string" && plan.trim() ? plan : "Membership payment";
@@ -134,7 +134,7 @@ function addDays(day: string, amount: number) {
 }
 function pieGradient(items: { amount: number }[]) {
   const total = items.reduce((sum, item) => sum + item.amount, 0);
-  if (!total) return "conic-gradient(#e8efe4 0deg 360deg)";
+  if (!total) return "conic-gradient(var(--portal-surface) 0deg 360deg)";
   let cursor = 0;
   return `conic-gradient(${items
     .map((item, index) => {
@@ -340,21 +340,21 @@ function ManagementRevenue() {
   const currentPage = Math.min(page, totalPages);
   const visible = filtered.slice((currentPage - 1) * LIST_SIZE, currentPage * LIST_SIZE);
   return (
-    <main className="min-h-screen bg-[#f4f6f1] px-4 py-8 text-[#16221c] sm:px-8">
+    <main className="min-h-screen bg-[var(--portal-canvas)] px-4 py-8 text-[color:var(--portal-ink)] sm:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <a
               href="/management-operations"
-              className="inline-flex items-center gap-2 text-sm font-bold text-[#356942]"
+              className="inline-flex items-center gap-2 text-sm font-bold text-[color:var(--portal-accent)]"
             >
               <ArrowLeft size={16} /> Operations hub
             </a>
-            <p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[#62905b]">
+            <p className="mt-7 text-xs font-black uppercase tracking-[.2em] text-[color:var(--portal-muted)]">
               Super Plus / Management
             </p>
             <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-5xl">Revenue report</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-[#647468]">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:var(--portal-muted)]">
               Management-only, read-only figures from your existing revenue reporting functions.
               Lagos reporting dates.
             </p>
@@ -363,13 +363,13 @@ function ManagementRevenue() {
             type="button"
             disabled={loading}
             onClick={() => setReload((value) => value + 1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-sm font-bold disabled:opacity-50"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
         {loading && (
-          <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[#607264]">
+          <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white p-6 text-sm text-[color:var(--portal-muted)]">
             <Loader2 size={20} className="animate-spin" /> Verifying management access and loading
             the full revenue ledger…
           </div>
@@ -387,7 +387,7 @@ function ManagementRevenue() {
         )}
         {!loading && authorized && (
           <>
-            <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[#d9e6d2] bg-[#eef6e9] p-5 text-sm leading-6 text-[#476149]">
+            <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 text-sm leading-6 text-[color:var(--portal-muted)]">
               <ShieldCheck className="mt-0.5 shrink-0" size={20} />
               <p>
                 <strong>Historical revenue protected.</strong> Uses the database-owned reporting
@@ -398,11 +398,11 @@ function ManagementRevenue() {
             </div>
             <section
               aria-label="Revenue filters"
-              className="mt-7 rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-7"
+              className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-5 sm:p-7"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-black">Reporting period</h2>
-                <span className="text-xs text-[#748276]">Baseline: {formatDate(baseline)}</span>
+                <span className="text-xs text-[color:var(--portal-muted)]">Baseline: {formatDate(baseline)}</span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {(
@@ -422,7 +422,7 @@ function ManagementRevenue() {
                       setPeriod(value);
                       setPage(1);
                     }}
-                    className={`rounded-full px-4 py-2.5 text-xs font-bold ${period === value ? "bg-[#193d2b] text-white" : "border border-[#dbe6d7] bg-[#f8faf6] text-[#526b57]"}`}
+                    className={`rounded-full px-4 py-2.5 text-xs font-bold ${period === value ? "bg-[var(--portal-ink)] text-white" : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]"}`}
                   >
                     {label}
                   </button>
@@ -430,7 +430,7 @@ function ManagementRevenue() {
               </div>
               {period === "custom" && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="grid gap-1.5 text-xs font-bold text-[#617567]">
+                  <label className="grid gap-1.5 text-xs font-bold text-[color:var(--portal-muted)]">
                     Start date
                     <input
                       type="date"
@@ -440,10 +440,10 @@ function ManagementRevenue() {
                         setCustomStart(event.target.value);
                         setPage(1);
                       }}
-                      className="rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-4 py-3 text-sm text-[#16221c]"
+                      className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4 py-3 text-sm text-[color:var(--portal-ink)]"
                     />
                   </label>
-                  <label className="grid gap-1.5 text-xs font-bold text-[#617567]">
+                  <label className="grid gap-1.5 text-xs font-bold text-[color:var(--portal-muted)]">
                     End date
                     <input
                       type="date"
@@ -454,12 +454,12 @@ function ManagementRevenue() {
                         setCustomEnd(event.target.value);
                         setPage(1);
                       }}
-                      className="rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-4 py-3 text-sm text-[#16221c]"
+                      className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4 py-3 text-sm text-[color:var(--portal-ink)]"
                     />
                   </label>
                 </div>
               )}
-              <p className="mt-6 text-xs font-black uppercase tracking-wider text-[#617567]">
+              <p className="mt-6 text-xs font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
                 Payment source
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -472,7 +472,7 @@ function ManagementRevenue() {
                       setSource(value);
                       setPage(1);
                     }}
-                    className={`rounded-full px-4 py-2.5 text-xs font-bold ${source === value ? "bg-[#193d2b] text-white" : "border border-[#dbe6d7] bg-[#f8faf6] text-[#526b57]"}`}
+                    className={`rounded-full px-4 py-2.5 text-xs font-bold ${source === value ? "bg-[var(--portal-ink)] text-white" : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]"}`}
                   >
                     {sourceLabels[value]}
                   </button>
@@ -511,44 +511,44 @@ function ManagementRevenue() {
               ].map(({ title, value, note, icon: Icon }) => (
                 <div
                   key={title}
-                  className="min-w-0 rounded-[22px] border border-[#e1e8dd] bg-white p-5"
+                  className="min-w-0 rounded-[22px] border border-[var(--portal-border)] bg-white p-5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[#627468]">{title}</span>
-                    <Icon size={19} className="shrink-0 text-[#3b6b38]" />
+                    <span className="text-xs font-bold text-[color:var(--portal-muted)]">{title}</span>
+                    <Icon size={19} className="shrink-0 text-[color:var(--portal-accent)]" />
                   </div>
                   <p className="mt-5 break-words text-2xl font-black tabular-nums sm:text-3xl">
                     {value}
                   </p>
-                  <p className="mt-2 text-xs text-[#748276]">{note}</p>
+                  <p className="mt-2 text-xs text-[color:var(--portal-muted)]">{note}</p>
                 </div>
               ))}
             </section>
-            <section className="mt-6 rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-7">
+            <section className="mt-6 rounded-[24px] border border-[var(--portal-border)] bg-white p-5 sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-black">Revenue visuals</h2>
-                  <p className="mt-1 text-xs text-[#748276]">
+                  <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                     Based on the selected period and source filters.
                   </p>
                 </div>
                 <a
                   href="/staff-admin#revenue-panel"
-                  className="inline-flex items-center gap-2 text-xs font-bold text-[#356942]"
+                  className="inline-flex items-center gap-2 text-xs font-bold text-[color:var(--portal-accent)]"
                 >
                   Original admin report <ArrowRight size={15} />
                 </a>
               </div>
               <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,.9fr)_minmax(0,.9fr)_minmax(0,1.2fr)]">
-                <article className="rounded-2xl border border-[#e2e9dd] bg-[#f8faf6] p-4">
+                <article className="rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-black">Source mix</h3>
-                    <BarChart3 size={17} className="text-[#356942]" />
+                    <BarChart3 size={17} className="text-[color:var(--portal-accent)]" />
                   </div>
-                  <div className="mt-4 flex items-center gap-4">
+                  <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
                     <div
                       aria-hidden="true"
-                      className="size-28 shrink-0 rounded-full"
+                      className="mx-auto size-28 shrink-0 rounded-full sm:mx-0"
                       style={{ background: pieGradient(sourceChart) }}
                     />
                     <div className="min-w-0 flex-1 space-y-2">
@@ -569,20 +569,20 @@ function ManagementRevenue() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-[#748276]">No revenue in this selection.</p>
+                        <p className="text-sm text-[color:var(--portal-muted)]">No revenue in this selection.</p>
                       )}
                     </div>
                   </div>
                 </article>
-                <article className="rounded-2xl border border-[#e2e9dd] bg-[#f8faf6] p-4">
+                <article className="rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-black">Top plans</h3>
-                    <CreditCard size={17} className="text-[#356942]" />
+                    <CreditCard size={17} className="text-[color:var(--portal-accent)]" />
                   </div>
-                  <div className="mt-4 flex items-center gap-4">
+                  <div className="mt-4 flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
                     <div
                       aria-hidden="true"
-                      className="size-28 shrink-0 rounded-full"
+                      className="mx-auto size-28 shrink-0 rounded-full sm:mx-0"
                       style={{ background: pieGradient(planBreakdown) }}
                     />
                     <div className="min-w-0 flex-1 space-y-2">
@@ -603,15 +603,15 @@ function ManagementRevenue() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-[#748276]">No plan revenue in this selection.</p>
+                        <p className="text-sm text-[color:var(--portal-muted)]">No plan revenue in this selection.</p>
                       )}
                     </div>
                   </div>
                 </article>
-                <article className="rounded-2xl border border-[#e2e9dd] bg-[#f8faf6] p-4">
+                <article className="rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-sm font-black">7-day cash inflow</h3>
-                    <Wallet size={17} className="text-[#356942]" />
+                    <Wallet size={17} className="text-[color:var(--portal-accent)]" />
                   </div>
                   <div className="mt-5 flex h-36 items-end gap-2">
                     {dailyTrend.map((item) => (
@@ -620,28 +620,28 @@ function ManagementRevenue() {
                         className="flex min-w-0 flex-1 flex-col items-center gap-2"
                       >
                         <div
-                          className="flex w-full items-end rounded-t-lg bg-[#dfead9]"
+                          className="flex w-full items-end rounded-t-lg bg-[var(--portal-border)]"
                           style={{ height: `${Math.max(8, (item.amount / maxDaily) * 120)}px` }}
                         >
-                          <span className="block w-full rounded-t-lg bg-[#193d2b]" />
+                          <span className="block w-full rounded-t-lg bg-[var(--portal-ink)]" />
                         </div>
-                        <span className="text-[10px] font-bold text-[#748276]">
+                        <span className="text-[10px] font-bold text-[color:var(--portal-muted)]">
                           {item.day.slice(5)}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <p className="mt-3 text-xs text-[#748276]">
+                  <p className="mt-3 text-xs text-[color:var(--portal-muted)]">
                     Highest day: {formatMoney(maxDaily === 1 ? 0 : maxDaily)}
                   </p>
                 </article>
               </div>
             </section>
-            <section className="mt-6 rounded-[24px] border border-[#e1e8dd] bg-white p-5 sm:p-7">
+            <section className="mt-6 rounded-[24px] border border-[var(--portal-border)] bg-white p-5 sm:p-7">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-black">Successful transactions</h2>
-                  <p className="mt-1 text-xs text-[#748276]">
+                  <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                     {filtered.length} matching payments · {selected.length} in selected period ·
                     read-only
                   </p>
@@ -655,25 +655,25 @@ function ManagementRevenue() {
                       setPage(1);
                     }}
                     placeholder="Search customer, reference, plan or method"
-                    className="w-full rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-4 py-3 text-sm outline-none focus:border-[#63915f] sm:w-72"
+                    className="w-full rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4 py-3 text-sm outline-none focus:border-[var(--portal-muted)] sm:w-72"
                   />
                 </label>
               </div>
-              <div className="mt-5 divide-y divide-[#e7ede4]">
+              <div className="mt-5 divide-y divide-[var(--portal-surface)]">
                 {visible.map((payment) => (
                   <div key={payment.id} className="flex flex-wrap items-center gap-3 py-4">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef6e8] text-[#38673e]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] text-[color:var(--portal-accent)]">
                       <CreditCard size={18} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-bold">{customerNameOf(payment)}</p>
-                      <p className="mt-1 truncate text-xs font-semibold text-[#53685a]">
+                      <p className="mt-1 truncate text-xs font-semibold text-[color:var(--portal-muted)]">
                         {planOf(payment)}
                       </p>
-                      <p className="mt-1 text-xs text-[#718172]">
+                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                         {sourceLabels[sourceOf(payment)]} · {formatDate(paymentDate(payment))}
                       </p>
-                      <p className="mt-1 break-all font-mono text-[11px] text-[#809080]">
+                      <p className="mt-1 break-all font-mono text-[11px] text-[color:var(--portal-muted)]">
                         {payment.paystack_reference || payment.id}
                       </p>
                     </div>
@@ -683,28 +683,28 @@ function ManagementRevenue() {
                   </div>
                 ))}
                 {visible.length === 0 && (
-                  <p className="py-10 text-center text-sm text-[#748276]">
+                  <p className="py-10 text-center text-sm text-[color:var(--portal-muted)]">
                     No successful payments match the current filters.
                   </p>
                 )}
               </div>
-              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e7ede4] pt-5">
+              <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--portal-surface)] pt-5">
                 <button
                   type="button"
                   disabled={currentPage <= 1}
                   onClick={() => setPage((n) => Math.max(1, n - 1))}
-                  className="inline-flex items-center gap-1 rounded-xl border border-[#d8e2d5] px-3 py-2 text-xs font-bold disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40"
                 >
                   <ChevronLeft size={16} /> Previous
                 </button>
-                <span className="text-xs text-[#748276]">
+                <span className="text-xs text-[color:var(--portal-muted)]">
                   {currentPage} / {totalPages}
                 </span>
                 <button
                   type="button"
                   disabled={currentPage >= totalPages}
                   onClick={() => setPage((n) => n + 1)}
-                  className="inline-flex items-center gap-1 rounded-xl border border-[#d8e2d5] px-3 py-2 text-xs font-bold disabled:opacity-40"
+                  className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40"
                 >
                   Next <ChevronRight size={16} />
                 </button>

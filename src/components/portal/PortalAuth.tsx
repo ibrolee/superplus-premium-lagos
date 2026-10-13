@@ -177,23 +177,23 @@ export function PortalAuth({ portal }: { portal: Portal }) {
   }
 
   return (
-    <main className="min-h-dvh bg-[#f4f6f1] px-4 py-5 text-[#183125] sm:px-6 sm:py-8">
-      <div className="mx-auto w-full max-w-lg rounded-2xl border border-[#dce6d8] bg-white p-4 shadow-sm sm:p-6">
+    <main className="min-h-dvh bg-[var(--portal-canvas)] px-4 py-5 text-[color:var(--portal-ink)] sm:px-6 sm:py-8">
+      <div className="mx-auto w-full max-w-lg rounded-2xl border border-[var(--portal-border)] bg-white p-4 shadow-sm sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <Link to="/portal" className="text-xs font-bold text-[#356942]">
+            <Link to="/portal" className="text-xs font-bold text-[color:var(--portal-accent)]">
               ← All portals
             </Link>
-            <p className="mt-4 text-[10px] font-black uppercase tracking-[.18em] text-[#527a59]">
+            <p className="mt-4 text-[10px] font-black uppercase tracking-[.18em] text-[color:var(--portal-muted)]">
               Super Plus Fitness &amp; Spa
             </p>
             <h1 className="mt-1 text-2xl font-black sm:text-3xl">{title[portal]}</h1>
           </div>
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#193b2a] text-[#b8ee73]">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-ink)] text-[color:var(--portal-highlight)]">
             {portal === "admin" ? <ShieldCheck /> : <LogIn />}
           </div>
         </div>
-        <p className="mt-2 text-sm leading-6 text-[#617466]">{helper[portal]}</p>
+        <p className="mt-2 text-sm leading-6 text-[color:var(--portal-muted)]">{helper[portal]}</p>
         {loading ? (
           <p role="status" className="mt-6 text-sm">
             Checking your session…
@@ -225,7 +225,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                         setError("");
                         setNotice("");
                       }}
-                      className={`rounded-xl p-3 text-sm font-bold ${!register ? "bg-[#193b2a] text-white" : "bg-[#edf4e9]"}`}
+                      className={`rounded-xl p-3 text-sm font-bold ${!register ? "bg-[var(--portal-ink)] text-white" : "bg-[var(--portal-surface)]"}`}
                     >
                       Sign in
                     </button>
@@ -236,7 +236,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                         setError("");
                         setNotice("");
                       }}
-                      className={`rounded-xl p-3 text-sm font-bold ${register ? "bg-[#193b2a] text-white" : "bg-[#edf4e9]"}`}
+                      className={`rounded-xl p-3 text-sm font-bold ${register ? "bg-[var(--portal-ink)] text-white" : "bg-[var(--portal-surface)]"}`}
                     >
                       Apply as staff
                     </button>
@@ -276,7 +276,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                       autoComplete="username"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      className="min-w-0 rounded-xl border p-3 read-only:bg-[#f5f8f3]"
+                      className="min-w-0 rounded-xl border p-3 read-only:bg-[var(--portal-canvas)]"
                     />
                   </label>
                   {!recovery && (
@@ -296,7 +296,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                   <button
                     type="submit"
                     disabled={busy}
-                    className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[#193b2a] p-3.5 font-bold text-white disabled:opacity-60"
+                    className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] p-3.5 font-bold text-white disabled:opacity-60"
                   >
                     {busy
                       ? "Please wait…"
@@ -316,7 +316,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                     setError("");
                     setNotice("");
                   }}
-                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#356942] underline"
+                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--portal-accent)] underline"
                 >
                   <KeyRound size={15} />
                   {recovery ? "Back to sign in" : "Forgot password?"}
@@ -339,7 +339,7 @@ export function PortalAuth({ portal }: { portal: Portal }) {
                 {notice}
               </p>
             )}
-            <p className="mt-5 rounded-xl bg-[#f4f8f1] p-3 text-xs leading-5 text-[#657769]">
+            <p className="mt-5 rounded-xl bg-[var(--portal-canvas)] p-3 text-xs leading-5 text-[color:var(--portal-muted)]">
               This portal checks your authenticated account and assigned role. Protected pages and
               database permissions still control access.
             </p>

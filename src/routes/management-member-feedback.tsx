@@ -222,58 +222,58 @@ function ManagementMemberFeedback() {
           { label: "Issues", value: counts.issues, icon: MessageSquareWarning },
           { label: "Resolved", value: counts.resolved, icon: CheckCircle2 },
         ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-[#dce7d8] bg-white p-4">
+          <div key={label} className="rounded-2xl border border-[var(--portal-border)] bg-white p-4">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">{label}</p>
-              <Icon size={17} className="text-[#2f7746]" />
+              <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">{label}</p>
+              <Icon size={17} className="text-[color:var(--portal-accent)]" />
             </div>
             <p className="mt-3 text-3xl font-black">{value}</p>
           </div>
         ))}
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
+      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">Private experience ratings</p>
+            <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">Private experience ratings</p>
             <h2 className="mt-1 text-xl font-black">App & gym feedback</h2>
-            <p className="mt-1 text-xs leading-5 text-[#657568]">
+            <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
               These are private Super Plus ratings. The member receives the same one-time 10 SP bonus whether the rating is high or low.
             </p>
           </div>
           <button
             type="button"
             onClick={() => void load()}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
           >
             <RefreshCw size={15} /> Refresh
           </button>
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-[#dce7d8] bg-[#f8faf6] p-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">App feedback</p>
+          <div className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">App feedback</p>
             <p className="mt-2 text-3xl font-black">{experienceSummary.appAverage} / 5</p>
-            <p className="mt-1 text-xs text-[#657568]">{experienceSummary.appCount} submission{experienceSummary.appCount === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">{experienceSummary.appCount} submission{experienceSummary.appCount === 1 ? "" : "s"}</p>
           </div>
-          <div className="rounded-2xl border border-[#dce7d8] bg-[#f8faf6] p-4">
-            <p className="text-[10px] font-black uppercase tracking-wider text-[#68796d]">Gym experience</p>
+          <div className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">Gym experience</p>
             <p className="mt-2 text-3xl font-black">{experienceSummary.gymAverage} / 5</p>
-            <p className="mt-1 text-xs text-[#657568]">{experienceSummary.gymCount} submission{experienceSummary.gymCount === 1 ? "" : "s"}</p>
+            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">{experienceSummary.gymCount} submission{experienceSummary.gymCount === 1 ? "" : "s"}</p>
           </div>
         </div>
 
         {!!experienceRows.length && (
           <div className="mt-4 grid gap-3 xl:grid-cols-2">
             {experienceRows.slice(0, 20).map((row) => (
-              <article key={row.id} className="rounded-2xl border border-[#e4ebe1] bg-[#fbfcfa] p-4">
+              <article key={row.id} className="rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs font-black uppercase text-[#38673e]">
+                    <p className="text-xs font-black uppercase text-[color:var(--portal-accent)]">
                       {row.feedback_kind === "app" ? "App Feedback" : "Gym Experience"}
                     </p>
                     <p className="mt-1 font-black">{row.member?.full_name || "Member"}</p>
-                    <p className="mt-1 text-xs text-[#68766d]">
+                    <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                       {row.member?.phone || row.member?.email || "No contact"}
                     </p>
                   </div>
@@ -283,13 +283,13 @@ function ManagementMemberFeedback() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {Object.entries(row.ratings || {}).map(([key, value]) => (
-                    <span key={key} className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold capitalize text-[#536359]">
+                    <span key={key} className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold capitalize text-[color:var(--portal-muted)]">
                       {key.replaceAll("_", " ")}: {value}/5
                     </span>
                   ))}
                 </div>
                 {row.comments && (
-                  <p className="mt-3 whitespace-pre-wrap rounded-xl bg-white p-3 text-sm leading-6 text-[#46564c]">
+                  <p className="mt-3 whitespace-pre-wrap rounded-xl bg-white p-3 text-sm leading-6 text-[color:var(--portal-muted)]">
                     {row.comments}
                   </p>
                 )}
@@ -302,14 +302,14 @@ function ManagementMemberFeedback() {
         )}
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-[#d8e5d4] bg-white p-4 sm:p-6">
-        <div className="flex items-start gap-3 rounded-2xl border border-[#d7e5d4] bg-[#f3f8f0] p-4">
-          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#193b2a] text-white">
+      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
+        <div className="flex items-start gap-3 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--portal-ink)] text-white">
             <ShieldCheck size={18} />
           </span>
           <div>
-            <p className="text-sm font-black text-[#244f32]">Management-only confidential queue</p>
-            <p className="mt-1 text-xs leading-5 text-[#607366]">
+            <p className="text-sm font-black text-[color:var(--portal-ink)]">Management-only confidential queue</p>
+            <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
               Members are told that only authorised Super Plus management accounts can access these submissions.
               Coaches, other staff and reception cannot read them through their dashboards.
             </p>
@@ -326,8 +326,8 @@ function ManagementMemberFeedback() {
                 className={
                   "rounded-full px-4 py-2 text-xs font-black capitalize " +
                   (status === item
-                    ? "bg-[#193b2a] text-white"
-                    : "border border-[#d8e2d5] bg-[#f8faf6] text-[#395844]")
+                    ? "bg-[var(--portal-ink)] text-white"
+                    : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
                 }
               >
                 {item}
@@ -345,8 +345,8 @@ function ManagementMemberFeedback() {
                   className={
                     "rounded-full px-3 py-2 text-[11px] font-black capitalize " +
                     (type === item
-                      ? "bg-[#e5f2df] text-[#245c36]"
-                      : "border border-[#d8e2d5] bg-white text-[#627068]")
+                      ? "bg-[var(--portal-surface)] text-[color:var(--portal-accent)]"
+                      : "border border-[var(--portal-border)] bg-white text-[color:var(--portal-muted)]")
                   }
                 >
                   {item === "all" ? "All types" : item}
@@ -356,7 +356,7 @@ function ManagementMemberFeedback() {
             <button
               type="button"
               onClick={() => void load()}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
             >
               <RefreshCw size={15} /> Refresh
             </button>
@@ -366,13 +366,13 @@ function ManagementMemberFeedback() {
         <label className="relative mt-4 block">
           <Search
             size={16}
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#7b887e]"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[color:var(--portal-muted)]"
           />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search member, category, subject or details"
-            className="w-full rounded-xl border border-[#d8e2d5] bg-[#fbfcfa] py-3 pl-10 pr-4 text-sm outline-none"
+            className="w-full rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] py-3 pl-10 pr-4 text-sm outline-none"
           />
         </label>
 
@@ -388,11 +388,11 @@ function ManagementMemberFeedback() {
         )}
 
         {loading ? (
-          <p role="status" className="mt-5 rounded-xl bg-[#f4f6f1] p-5 text-sm">
+          <p role="status" className="mt-5 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
             Loading confidential member feedback…
           </p>
         ) : !filteredRows.length ? (
-          <p className="mt-5 rounded-xl border border-dashed border-[#d8e2d5] p-8 text-center text-sm text-[#647468]">
+          <p className="mt-5 rounded-xl border border-dashed border-[var(--portal-border)] p-8 text-center text-sm text-[color:var(--portal-muted)]">
             No matching member submissions.
           </p>
         ) : (
@@ -404,7 +404,7 @@ function ManagementMemberFeedback() {
                   "rounded-2xl border p-5 " +
                   (row.submission_type === "issue"
                     ? "border-[#ecd8d4] bg-[#fffaf8]"
-                    : "border-[#dce8d9] bg-[#f8faf6]")
+                    : "border-[var(--portal-border)] bg-[var(--portal-canvas)]")
                 }
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -420,14 +420,14 @@ function ManagementMemberFeedback() {
                       >
                         {row.submission_type}
                       </span>
-                      <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-[#526357]">
+                      <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-black uppercase text-[color:var(--portal-muted)]">
                         {categoryLabel(row.category)}
                       </span>
                     </div>
                     <h2 className="mt-3 text-lg font-black">
                       {row.subject || (row.submission_type === "suggestion" ? "Member suggestion" : "Member issue report")}
                     </h2>
-                    <p className="mt-1 text-xs text-[#68766d]">
+                    <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                       Submitted {formatDateTime(row.submitted_at)}
                     </p>
                   </div>
@@ -448,7 +448,7 @@ function ManagementMemberFeedback() {
                 <div className="mt-4 rounded-xl bg-white p-4">
                   <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">Member</p>
                   <p className="mt-1 text-sm font-black">{row.member?.full_name || "Member"}</p>
-                  <p className="mt-1 text-xs text-[#68766d]">
+                  <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                     {row.member?.phone || row.member?.email || "No contact"}
                   </p>
                 </div>
@@ -457,13 +457,13 @@ function ManagementMemberFeedback() {
                   <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">
                     {row.submission_type === "suggestion" ? "Suggestion" : "Issue details"}
                   </p>
-                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#46564c]">{row.details}</p>
+                  <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--portal-muted)]">{row.details}</p>
                 </div>
 
                 {!!row.management_note && (
-                  <div className="mt-3 rounded-xl border border-[#d8e2d5] bg-white p-4">
+                  <div className="mt-3 rounded-xl border border-[var(--portal-border)] bg-white p-4">
                     <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">Management note</p>
-                    <p className="mt-2 text-sm leading-6 text-[#46564c]">{row.management_note}</p>
+                    <p className="mt-2 text-sm leading-6 text-[color:var(--portal-muted)]">{row.management_note}</p>
                   </div>
                 )}
 
@@ -473,7 +473,7 @@ function ManagementMemberFeedback() {
                       type="button"
                       disabled={savingId === row.id}
                       onClick={() => void updateStatus(row, "reviewed")}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50"
                     >
                       <CheckCircle2 size={15} /> Mark reviewed
                     </button>
@@ -483,12 +483,12 @@ function ManagementMemberFeedback() {
                       type="button"
                       disabled={savingId === row.id}
                       onClick={() => void updateStatus(row, "resolved")}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50"
                     >
                       <CheckCircle2 size={15} /> Resolve
                     </button>
                   )}
-                  <span className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] bg-white px-3 py-2 text-[11px] font-semibold text-[#647468]">
+                  <span className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-3 py-2 text-[11px] font-semibold text-[color:var(--portal-muted)]">
                     <Clock3 size={14} /> {formatDateTime(row.submitted_at)}
                   </span>
                 </div>

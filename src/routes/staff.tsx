@@ -1120,7 +1120,7 @@ function StaffPage() {
         <header className="flex flex-wrap items-center justify-between gap-3 border border-border bg-card p-4">
           <div className="flex min-w-0 items-center gap-3">
             <img
-              src="/header-logo.png"
+              src="/footer-logo-circular.webp"
               alt="Super Plus Fitness & Spa"
               className="h-12 w-12 shrink-0 object-contain"
             />

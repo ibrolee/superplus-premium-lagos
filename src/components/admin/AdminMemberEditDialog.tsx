@@ -33,7 +33,7 @@ function valuesFromMember(member: MemberDetails): FormValues {
   return values;
 }
 
-const inputClass = "mt-1.5 w-full min-w-0 rounded-xl border border-[#ced9ca] bg-white px-3.5 py-3 text-sm text-[#193327] outline-none focus:border-[#4d824d] focus:ring-2 focus:ring-[#b8ee73]/30 disabled:bg-gray-100";
+const inputClass = "mt-1.5 w-full min-w-0 rounded-xl border border-[var(--portal-border)] bg-white px-3.5 py-3 text-sm text-[color:var(--portal-ink)] outline-none focus:border-[var(--portal-accent)] focus:ring-2 focus:ring-[var(--portal-highlight)]/30 disabled:bg-gray-100";
 
 export function AdminMemberEditDialog({ member, onClose, onSaved }: {
   member: MemberSummary;
@@ -114,7 +114,7 @@ export function AdminMemberEditDialog({ member, onClose, onSaved }: {
   }
 
   const field = (key: Field, label: string, type = "text", placeholder?: string) => (
-    <label key={key} className="block min-w-0 text-xs font-bold text-[#304838]">
+    <label key={key} className="block min-w-0 text-xs font-bold text-[color:var(--portal-ink)]">
       {label}
       <input type={type} value={form?.[key] ?? ""}
         onChange={(event) => change(key, event.target.value)}
@@ -130,31 +130,31 @@ export function AdminMemberEditDialog({ member, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto bg-black/65 p-3 sm:p-5">
       <section role="dialog" aria-modal="true" aria-labelledby="edit-member-title"
-        className="my-auto flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-[#f8faf6] shadow-2xl">
-        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[#dfe7dc] bg-white px-5 py-4 sm:px-7">
+        className="my-auto flex max-h-[94dvh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-[var(--portal-canvas)] shadow-2xl">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-[var(--portal-border)] bg-white px-5 py-4 sm:px-7">
           <div className="min-w-0">
-            <h2 id="edit-member-title" className="flex items-center gap-2 text-xl font-black text-[#193327]">
-              <Pencil size={20} className="text-[#518c43]" /> Edit Profile
+            <h2 id="edit-member-title" className="flex items-center gap-2 text-xl font-black text-[color:var(--portal-ink)]">
+              <Pencil size={20} className="text-[color:var(--portal-accent)]" /> Edit Profile
             </h2>
-            <p className="mt-1 break-words text-sm text-[#526b57]">{member.full_name || "Unnamed member"}</p>
-            <p className="mt-1 break-all text-[11px] text-[#728374]">Member ID: {member.id}</p>
+            <p className="mt-1 break-words text-sm text-[color:var(--portal-muted)]">{member.full_name || "Unnamed member"}</p>
+            <p className="mt-1 break-all text-[11px] text-[color:var(--portal-muted)]">Member ID: {member.id}</p>
           </div>
           <button type="button" aria-label="Close edit profile" disabled={saving} onClick={onClose}
-            className="rounded-lg p-2 hover:bg-[#f1f5ed] disabled:opacity-50"><X size={22} /></button>
+            className="rounded-lg p-2 hover:bg-[var(--portal-canvas)] disabled:opacity-50"><X size={22} /></button>
         </header>
-        {loading && <p role="status" className="flex items-center gap-2 px-6 py-10 text-sm text-[#637469]"><Loader2 className="animate-spin" size={18} /> Loading the latest profile…</p>}
+        {loading && <p role="status" className="flex items-center gap-2 px-6 py-10 text-sm text-[color:var(--portal-muted)]"><Loader2 className="animate-spin" size={18} /> Loading the latest profile…</p>}
         {!loading && !form && <div className="space-y-4 p-6"><p role="alert" className="text-sm text-red-700">{error || "Unable to load this profile."}</p><button type="button" onClick={onClose} className="rounded-xl border px-5 py-3 text-sm font-bold">Close</button></div>}
         {!loading && form && (
           <form onSubmit={save} className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-7">
-              <p className="rounded-xl border border-[#d4e6c8] bg-[#eff8e9] p-3 text-xs text-[#38583c]">
+              <p className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-3 text-xs text-[color:var(--portal-muted)]">
                 You are editing personal details only. Memberships, payments, attendance, QR codes, card numbers and login credentials will not change.
               </p>
               {record?.auth_user_id && <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
                 This member has a login. Changing the profile email here does not change the email they use to sign in.
               </p>}
               <div>
-                <h3 className="mb-3 text-sm font-black text-[#193327]">Identity and contact</h3>
+                <h3 className="mb-3 text-sm font-black text-[color:var(--portal-ink)]">Identity and contact</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {field("full_name", "Full name *")}
                   {field("phone", "Phone number", "tel")}
@@ -162,14 +162,14 @@ export function AdminMemberEditDialog({ member, onClose, onSaved }: {
                   {field("gender", "Gender (optional)")}
                   {field("date_of_birth", "Full date of birth", "date")}
                 </div>
-                <p className="mt-3 text-xs text-[#637469]">If the birth year is unknown, leave the full date blank and use birthday day and month below. A full date automatically sets the birthday.</p>
+                <p className="mt-3 text-xs text-[color:var(--portal-muted)]">If the birth year is unknown, leave the full date blank and use birthday day and month below. A full date automatically sets the birthday.</p>
                 <div className="mt-3 grid grid-cols-2 gap-4 sm:max-w-sm">
                   {field("birth_day", "Birthday day", "number", "1–31")}
                   {field("birth_month", "Birthday month", "number", "1–12")}
                 </div>
               </div>
               <div>
-                <h3 className="mb-3 text-sm font-black text-[#193327]">Address</h3>
+                <h3 className="mb-3 text-sm font-black text-[color:var(--portal-ink)]">Address</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {field("address", "Full address")}
                   {field("address_street", "Street")}
@@ -181,16 +181,16 @@ export function AdminMemberEditDialog({ member, onClose, onSaved }: {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {field("labels", "Labels")}
-                <label className="block min-w-0 text-xs font-bold text-[#304838] sm:col-span-2">
+                <label className="block min-w-0 text-xs font-bold text-[color:var(--portal-ink)] sm:col-span-2">
                   Admin notes
                   <textarea value={form.notes} onChange={(event) => change("notes", event.target.value)} rows={4} maxLength={5000} disabled={saving} className={inputClass} />
                 </label>
               </div>
               {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
             </div>
-            <footer className="flex shrink-0 flex-wrap justify-end gap-3 border-t border-[#dfe7dc] bg-white px-5 py-4 sm:px-7">
-              <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-[#d2ddd0] px-5 py-3 text-sm font-bold disabled:opacity-50">Cancel</button>
-              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-black text-white disabled:opacity-50">
+            <footer className="flex shrink-0 flex-wrap justify-end gap-3 border-t border-[var(--portal-border)] bg-white px-5 py-4 sm:px-7">
+              <button type="button" onClick={onClose} disabled={saving} className="rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold disabled:opacity-50">Cancel</button>
+              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-black text-white disabled:opacity-50">
                 {saving && <Loader2 size={16} className="animate-spin" />}
                 {saving ? "Saving…" : "Save profile changes"}
               </button>

@@ -121,44 +121,44 @@ function AdminMembers() {
 
   return (
     <AdminWorkspaceShell title="Members list" subtitle="Find a member and open their profile." active="/admin-members">
-      <section className="mt-7 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-7">
+      <section className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[#d8e2d5] bg-[#f8faf6] px-4 sm:max-w-xl">
-            <Search size={18} className="shrink-0 text-[#69816f]" />
+          <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4 sm:max-w-xl">
+            <Search size={18} className="shrink-0 text-[color:var(--portal-muted)]" />
             <span className="sr-only">Search member name, phone or email</span>
             <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }}
               placeholder="Search name, phone or email" className="min-w-0 w-full bg-transparent py-3.5 text-sm outline-none" />
           </label>
           <button type="button" disabled={loading || deleting} onClick={() => setReload((value) => value + 1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-3 text-sm font-bold disabled:opacity-50">
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-3 text-sm font-bold disabled:opacity-50">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
-        {message && <p role="status" className="mt-5 rounded-xl border border-[#bdd7b8] bg-[#f2f8f0] p-4 text-sm text-[#254f2e]">{message}</p>}
-        {loading && <p role="status" className="mt-7 text-sm text-[#637469]">Loading member records…</p>}
+        {message && <p role="status" className="mt-5 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-sm text-[color:var(--portal-ink)]">{message}</p>}
+        {loading && <p role="status" className="mt-7 text-sm text-[color:var(--portal-muted)]">Loading member records…</p>}
         {!loading && error && <p role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
         {!loading && !error && <>
-          <p className="mt-5 text-xs text-[#637469]">{matches.length.toLocaleString("en-NG")} member{matches.length === 1 ? "" : "s"} found</p>
-          <div className="mt-4 divide-y divide-[#e7ede4]">
+          <p className="mt-5 text-xs text-[color:var(--portal-muted)]">{matches.length.toLocaleString("en-NG")} member{matches.length === 1 ? "" : "s"} found</p>
+          <div className="mt-4 divide-y divide-[var(--portal-surface)]">
             {visible.map((member) => (
               <article key={member.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-                <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[#edf5e7] font-black text-[#38673e]">
+                <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] font-black text-[color:var(--portal-accent)]">
                   {member.full_name?.trim().charAt(0).toUpperCase() || <UserRound size={19} />}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="break-words text-sm font-bold">{member.full_name || "Unnamed member"}</p>
-                  <p className="mt-1 break-words text-xs text-[#637469]">{member.phone || "No phone"}{member.email ? ` · ${member.email}` : ""}</p>
+                  <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">{member.phone || "No phone"}{member.email ? ` · ${member.email}` : ""}</p>
                 </div>
                 <div className="col-span-2 flex w-full flex-wrap items-center gap-2 lg:col-span-1 lg:ml-auto lg:w-auto">
-                  <a href={`/management-member-preview/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#2c5737]">
+                  <a href={`/management-member-preview/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white hover:bg-[var(--portal-accent)]">
                     <Eye size={15} /> View Dashboard
                   </a>
-                  <a href={`/reception-member/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#b4c9b0] bg-white px-4 py-2.5 text-xs font-bold text-[#285a32] hover:bg-[#f1f8ed]">
+                  <a href={`/reception-member/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--portal-subtle)] bg-white px-4 py-2.5 text-xs font-bold text-[color:var(--portal-accent)] hover:bg-[var(--portal-canvas)]">
                     View Profile <ArrowRight size={15} />
                   </a>
                   {isAdmin && <button type="button" disabled={openingMemberId !== null || deleting}
                     onClick={() => { setMessage(""); setEditingMember(member); }}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[#b4c9b0] bg-white px-4 py-2.5 text-xs font-bold text-[#285a32] hover:bg-[#f1f8ed] disabled:opacity-50">
+                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--portal-subtle)] bg-white px-4 py-2.5 text-xs font-bold text-[color:var(--portal-accent)] hover:bg-[var(--portal-canvas)] disabled:opacity-50">
                     <Pencil size={15} /> Edit Profile
                   </button>}
                   {isAdmin && <button type="button" disabled={openingMemberId !== null || deleting}
@@ -169,16 +169,16 @@ function AdminMembers() {
                 </div>
               </article>
             ))}
-            {!visible.length && <p className="py-12 text-center text-sm text-[#637469]">No members match your search.</p>}
+            {!visible.length && <p className="py-12 text-center text-sm text-[color:var(--portal-muted)]">No members match your search.</p>}
           </div>
-          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e7ede4] pt-5">
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--portal-surface)] pt-5">
             <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}
-              className="inline-flex items-center gap-1 rounded-xl border border-[#d8e2d5] px-3 py-2 text-xs font-bold disabled:opacity-40">
+              className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40">
               <ChevronLeft size={16} /> Previous
             </button>
-            <span className="text-xs text-[#637469]">Page {currentPage} of {pageCount}</span>
+            <span className="text-xs text-[color:var(--portal-muted)]">Page {currentPage} of {pageCount}</span>
             <button type="button" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}
-              className="inline-flex items-center gap-1 rounded-xl border border-[#d8e2d5] px-3 py-2 text-xs font-bold disabled:opacity-40">
+              className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40">
               Next <ChevronRight size={16} />
             </button>
           </div>
@@ -198,8 +198,8 @@ function AdminMembers() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 id="delete-member-title" className="text-xl font-black text-red-800">Permanently delete member?</h2>
-              <p className="mt-2 break-words text-sm font-bold text-[#193b2a]">{preview.member_name}</p>
-              <p className="mt-1 break-all text-xs text-[#637469]">Member ID: {preview.member_id}</p>
+              <p className="mt-2 break-words text-sm font-bold text-[color:var(--portal-ink)]">{preview.member_name}</p>
+              <p className="mt-1 break-all text-xs text-[color:var(--portal-muted)]">Member ID: {preview.member_id}</p>
             </div>
             <button type="button" aria-label="Close deletion confirmation" disabled={deleting}
               onClick={() => { setPreview(null); setConfirmation(""); }}
@@ -208,28 +208,28 @@ function AdminMembers() {
           <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
             This permanently deletes the website profile and its linked records, including payment history. Financial reports may change. This does not issue a refund, erase bank or Paystack records, or delete the member's login account.
           </p>
-          <div className="mt-5 rounded-xl border border-[#e1e8dd] p-4">
-            <h3 className="mb-3 text-sm font-black text-[#193b2a]">Records selected for deletion</h3>
+          <div className="mt-5 rounded-xl border border-[var(--portal-border)] p-4">
+            <h3 className="mb-3 text-sm font-black text-[color:var(--portal-ink)]">Records selected for deletion</h3>
             <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
               {deletionCountLabels.map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between gap-3">
-                  <dt className="text-[#637469]">{label}</dt>
+                  <dt className="text-[color:var(--portal-muted)]">{label}</dt>
                   <dd className="font-bold tabular-nums">{Number(preview.counts[key] || 0).toLocaleString("en-NG")}</dd>
                 </div>
               ))}
             </dl>
-            <p className="mt-3 text-xs text-[#637469]">Related reminders and reconciliation records will also be removed.</p>
+            <p className="mt-3 text-xs text-[color:var(--portal-muted)]">Related reminders and reconciliation records will also be removed.</p>
           </div>
-          <label className="mt-5 block text-sm font-bold text-[#193b2a]">
+          <label className="mt-5 block text-sm font-bold text-[color:var(--portal-ink)]">
             Type DELETE to confirm
             <input type="text" autoComplete="off" spellCheck={false} value={confirmation}
               disabled={deleting} onChange={(event) => setConfirmation(event.target.value)} placeholder="DELETE"
-              className="mt-2 block w-full rounded-xl border border-[#cbd5c8] px-4 py-3 font-mono text-base outline-none focus:border-red-500 disabled:opacity-50" />
+              className="mt-2 block w-full rounded-xl border border-[var(--portal-border)] px-4 py-3 font-mono text-base outline-none focus:border-red-500 disabled:opacity-50" />
           </label>
           {deleteError && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{deleteError}</p>}
           <div className="mt-5 flex flex-wrap justify-end gap-3">
             <button type="button" disabled={deleting} onClick={() => { setPreview(null); setConfirmation(""); }}
-              className="rounded-xl border border-[#cbd5c8] px-5 py-3 text-sm font-bold disabled:opacity-50">Keep Profile</button>
+              className="rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold disabled:opacity-50">Keep Profile</button>
             <button type="button" disabled={deleting || confirmation !== "DELETE"} onClick={deleteProfile}
               className="rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40">
               {deleting ? "Deleting…" : "Permanently Delete Profile"}

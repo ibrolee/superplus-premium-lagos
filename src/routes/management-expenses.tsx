@@ -66,7 +66,7 @@ const dateLabel = (value: string) =>
     timeZone: "Africa/Lagos",
   }).format(new Date(value + "T12:00:00Z"));
 const field =
-  "mt-2 w-full min-w-0 rounded-xl border border-[#d5e0d0] bg-white px-4 py-3 text-base text-[#193b2a] outline-none focus:border-[#548b4c] disabled:opacity-50";
+  "mt-2 w-full min-w-0 rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-base text-[color:var(--portal-ink)] outline-none focus:border-[var(--portal-accent)] disabled:opacity-50";
 const DESCRIPTION_LIMIT = 10000;
 type Draft = {
   id: string;
@@ -369,7 +369,7 @@ function ExpensesAndProfit() {
       active="/management-expenses"
     >
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
-        <label className="text-xs font-bold text-[#536f55]">
+        <label className="text-xs font-bold text-[color:var(--portal-muted)]">
           Report month
           <input
             type="month"
@@ -413,7 +413,7 @@ function ExpensesAndProfit() {
               type="button"
               disabled={disabled}
               onClick={openNew}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-4 py-3 text-sm font-bold text-white disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-sm font-bold text-white disabled:opacity-40"
             >
               <Plus size={18} />
               Add expense
@@ -449,7 +449,7 @@ function ExpensesAndProfit() {
       {access === "allowed" && formOpen && (
         <section
           aria-labelledby="expense-form-title"
-          className="mt-5 rounded-2xl border border-[#ccddc4] bg-white p-5 sm:p-7"
+          className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white p-5 sm:p-7"
         >
           <div className="flex items-center justify-between gap-3">
             <h2 id="expense-form-title" className="flex items-center gap-2 text-xl font-black">
@@ -461,12 +461,12 @@ function ExpensesAndProfit() {
               aria-label="Close expense form"
               disabled={!!busy}
               onClick={() => setFormOpen(false)}
-              className="rounded-lg p-2 hover:bg-[#edf6e7]"
+              className="rounded-lg p-2 hover:bg-[var(--portal-surface)]"
             >
               <X size={20} />
             </button>
           </div>
-          <p className="mt-2 text-sm leading-6 text-[#647468]">
+          <p className="mt-2 text-sm leading-6 text-[color:var(--portal-muted)]">
             This expense will be included in the month of its selected date. Staff salaries
             and coach commissions are included automatically from payroll.
           </p>
@@ -513,7 +513,7 @@ function ExpensesAndProfit() {
                 onChange={(e) => setDraft({ ...draft, description: e.target.value })}
                 className={field + " resize-y"}
               />
-              <span className="mt-1 block text-xs font-normal text-[#647468]">
+              <span className="mt-1 block text-xs font-normal text-[color:var(--portal-muted)]">
                 {draft.description.length.toLocaleString()} / 10,000 characters
               </span>
             </label>
@@ -537,7 +537,7 @@ function ExpensesAndProfit() {
               <button
                 type="submit"
                 disabled={!!busy}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
+                className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-bold text-white disabled:opacity-40"
               >
                 {busy === "save" ? (
                   <Loader2 size={17} className="animate-spin" />
@@ -586,20 +586,20 @@ function ExpensesAndProfit() {
             ].map(({ label, value, note, icon: Icon }) => (
               <article
                 key={label}
-                className="min-w-0 rounded-2xl border border-[#dce8d9] bg-white p-5"
+                className="min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-5"
               >
-                <div className="flex items-center justify-between gap-2 text-[#607663]">
+                <div className="flex items-center justify-between gap-2 text-[color:var(--portal-muted)]">
                   <p className="text-xs font-bold">{label}</p>
                   <Icon size={19} />
                 </div>
                 <p className="mt-4 break-words text-2xl font-black tabular-nums">{value}</p>
-                <p className="mt-2 text-xs text-[#647468]">{note}</p>
+                <p className="mt-2 text-xs text-[color:var(--portal-muted)]">{note}</p>
               </article>
             ))}
             <article
               className={
                 "min-w-0 rounded-2xl p-5 text-white " +
-                (canCalculate && result.profit < 0 ? "bg-[#823d38]" : "bg-[#193b2a]")
+                (canCalculate && result.profit < 0 ? "bg-[#823d38]" : "bg-[var(--portal-ink)]")
               }
             >
               <div className="flex items-center justify-between gap-2">
@@ -619,7 +619,7 @@ function ExpensesAndProfit() {
               </p>
             </article>
           </section>
-          <p className="mt-3 text-xs leading-6 text-[#647468]">
+          <p className="mt-3 text-xs leading-6 text-[color:var(--portal-muted)]">
             Revenue collected − recorded operating expenses − gross salaries and coach commissions
             for{" "}
             {new Intl.DateTimeFormat("en-NG", { month: "long", year: "numeric" }).format(
@@ -664,7 +664,7 @@ function ExpensesAndProfit() {
             </div>
           )}
           <section className="mt-6 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
-            <div className="rounded-2xl border border-[#dce8d9] bg-white p-5 sm:p-6">
+            <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-5 sm:p-6">
               <h2 className="text-lg font-black">Expenses by category</h2>
               <div className="mt-5 space-y-4">
                 {EXPENSE_CATEGORIES.map((c) => {
@@ -678,14 +678,14 @@ function ExpensesAndProfit() {
                     <div key={c.value}>
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="flex items-center gap-2 font-bold">
-                          <Icon size={17} className="text-[#548b4c]" />
+                          <Icon size={17} className="text-[color:var(--portal-accent)]" />
                           {c.label}
                         </span>
                         <strong className="tabular-nums">{money(amount)}</strong>
                       </div>
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#edf3e9]">
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--portal-surface)]">
                         <div
-                          className="h-full rounded-full bg-[#5a914f]"
+                          className="h-full rounded-full bg-[var(--portal-accent)]"
                           style={{ width: share + "%" }}
                         />
                       </div>
@@ -694,7 +694,7 @@ function ExpensesAndProfit() {
                 })}
               </div>
             </div>
-            <div className="rounded-2xl border border-[#dce8d9] bg-white p-5 sm:p-6">
+            <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-5 sm:p-6">
               <h2 className="flex items-center gap-2 text-lg font-black">
                 <Wallet size={20} />
                 Payroll breakdown
@@ -708,7 +708,7 @@ function ExpensesAndProfit() {
                   ["Still to pay", payroll.outstanding],
                 ].map(([label, amount]) => (
                   <div key={String(label)} className="flex flex-wrap justify-between gap-2">
-                    <dt className="text-[#647468]">{label}</dt>
+                    <dt className="text-[color:var(--portal-muted)]">{label}</dt>
                     <dd className="font-black tabular-nums">{money(Number(amount))}</dd>
                   </div>
                 ))}
@@ -724,7 +724,7 @@ function ExpensesAndProfit() {
                       <div key={r.id} className="flex items-start justify-between gap-3 text-xs">
                         <span>
                           {r.name}
-                          <span className="mt-1 block text-[#647468]">
+                          <span className="mt-1 block text-[color:var(--portal-muted)]">
                             {r.missing ? "Needs review" : r.estimated ? "Estimate" : "Saved record"}
                           </span>
                         </span>
@@ -735,19 +735,19 @@ function ExpensesAndProfit() {
               </details>
               <a
                 href="/management-salary-payments"
-                className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-[#38673e] underline"
+                className="mt-5 inline-flex items-center gap-1 text-xs font-bold text-[color:var(--portal-accent)] underline"
               >
                 Open salary payments <ArrowUpRight size={15} />
               </a>
             </div>
           </section>
-          <section className="mt-6 rounded-2xl border border-[#dce8d9] bg-white p-5 sm:p-6">
+          <section className="mt-6 rounded-2xl border border-[var(--portal-border)] bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="flex items-center gap-2 text-xl font-black">
                 <Receipt size={21} />
                 Expense history
               </h2>
-              <span className="text-xs text-[#647468]">{expenses.length} matching records</span>
+              <span className="text-xs text-[color:var(--portal-muted)]">{expenses.length} matching records</span>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <label className="min-w-0 flex-1">
@@ -783,12 +783,12 @@ function ExpensesAndProfit() {
               </label>
             </div>
             {visible.length === 0 ? (
-              <div className="mt-5 rounded-xl bg-[#f5f8f2] p-7 text-center">
-                <Receipt size={30} className="mx-auto text-[#65905c]" />
+              <div className="mt-5 rounded-xl bg-[var(--portal-canvas)] p-7 text-center">
+                <Receipt size={30} className="mx-auto text-[color:var(--portal-muted)]" />
                 <h3 className="mt-3 font-black">
                   {data.finance.expense_count ? "No matching expenses" : "No expenses recorded yet"}
                 </h3>
-                <p className="mt-2 text-sm text-[#647468]">
+                <p className="mt-2 text-sm text-[color:var(--portal-muted)]">
                   {data.finance.expense_count
                     ? "Try another category or search."
                     : "Add October running costs to begin tracking the gym's monthly result."}
@@ -797,26 +797,26 @@ function ExpensesAndProfit() {
                   <button
                     type="button"
                     onClick={openNew}
-                    className="mt-4 rounded-xl bg-[#193b2a] px-4 py-3 text-sm font-bold text-white"
+                    className="mt-4 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-sm font-bold text-white"
                   >
                     Add first expense
                   </button>
                 )}
               </div>
             ) : (
-              <div className="mt-5 divide-y divide-[#edf2e9]">
+              <div className="mt-5 divide-y divide-[var(--portal-surface)]">
                 {visible.map((e) => {
                   const Icon = categoryIcons[e.category] || Receipt;
                   return (
                     <article key={e.id} className="flex flex-wrap items-start gap-3 py-4">
-                      <span className="rounded-xl bg-[#edf6e7] p-3 text-[#548b4c]">
+                      <span className="rounded-xl bg-[var(--portal-surface)] p-3 text-[color:var(--portal-accent)]">
                         <Icon size={20} />
                       </span>
                       <div className="min-w-0 flex-1">
                         <p className="whitespace-pre-wrap break-words text-sm font-black">
                           {e.description}
                         </p>
-                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#647468]">
+                        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[color:var(--portal-muted)]">
                           <span>{categoryNames[e.category]}</span>
                           <span className="flex items-center gap-1">
                             <CalendarDays size={12} />
@@ -834,7 +834,7 @@ function ExpensesAndProfit() {
                             aria-label={"Edit " + e.description}
                             disabled={disabled}
                             onClick={() => edit(e)}
-                            className="rounded-lg border p-2 text-[#548b4c] disabled:opacity-40"
+                            className="rounded-lg border p-2 text-[color:var(--portal-accent)] disabled:opacity-40"
                           >
                             <Pencil size={15} />
                           </button>

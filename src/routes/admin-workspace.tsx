@@ -290,11 +290,11 @@ function AdminWorkspace() {
     >
       <section
         aria-labelledby="financial-heading"
-        className="mt-7 rounded-[24px] border border-[#e1e8dd] bg-white p-4 sm:p-7"
+        className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-7"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[.15em] text-[#65905c]">
+            <p className="text-xs font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
               01 / Finance
             </p>
             <h2 id="financial-heading" className="mt-1 text-2xl font-black">
@@ -305,13 +305,13 @@ function AdminWorkspace() {
             type="button"
             onClick={() => setReload((v) => v + 1)}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8e2d5] px-4 py-2.5 text-xs font-bold disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold disabled:opacity-50"
           >
             <RefreshCw size={16} /> Refresh
           </button>
         </div>
         {loading && (
-          <p role="status" className="mt-6 rounded-xl bg-[#f4f6f1] p-5 text-sm">
+          <p role="status" className="mt-6 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
             Loading revenue…
           </p>
         )}
@@ -333,17 +333,17 @@ function AdminWorkspace() {
               {cards.map((card) => (
                 <article
                   key={card.label}
-                  className="min-w-0 rounded-2xl border border-[#dce8d9] bg-[#f8faf6] p-5"
+                  className="min-w-0 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-5"
                 >
-                  <p className="text-sm font-semibold text-[#5f7463]">{card.label}</p>
+                  <p className="text-sm font-semibold text-[color:var(--portal-muted)]">{card.label}</p>
                   <p className="mt-3 break-words text-2xl font-black tabular-nums sm:text-3xl">
                     {card.value}
                   </p>
-                  <p className="mt-2 text-xs text-[#657568]">{card.note}</p>
+                  <p className="mt-2 text-xs text-[color:var(--portal-muted)]">{card.note}</p>
                 </article>
               ))}
             </div>
-            <p className="mt-4 text-xs leading-5 text-[#657568]">
+            <p className="mt-4 text-xs leading-5 text-[color:var(--portal-muted)]">
               Successful front-desk and Paystack payments appear in revenue after the reporting
               baseline. Admin historical imports and excluded records remain outside revenue.
               Recorded cash/POS/transfers reflect staff confirmation of funds received.
@@ -353,28 +353,28 @@ function AdminWorkspace() {
         <div className="mt-5 flex flex-wrap gap-3">
           <a
             href="/management-revenue"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#193b2a] px-5 py-3 text-sm font-bold text-white"
+            className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-sm font-bold text-white"
           >
             Full revenue report <ArrowRight size={17} />
           </a>
           <a
             href="/admin-approvals"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#ccd8cb] px-5 py-3 text-sm font-bold text-[#193b2a]"
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold text-[color:var(--portal-ink)]"
           >
             Staff requests <ArrowRight size={17} />
           </a>
         </div>
       </section>
       <section className="mt-8">
-        <p className="text-xs font-black uppercase tracking-[.15em] text-[#65905c]">02 / Tools</p>
+        <p className="text-xs font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">02 / Tools</p>
         <h2 className="mt-1 text-2xl font-black">Grouped admin actions</h2>
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           {groupedActions.map((group) => (
             <section
               key={group.title}
-              className="rounded-[20px] border border-[#e1e8dd] bg-white p-4"
+              className="rounded-[20px] border border-[var(--portal-border)] bg-white p-4"
             >
-              <h3 className="text-sm font-black text-[#193b2a]">{group.title}</h3>
+              <h3 className="text-sm font-black text-[color:var(--portal-ink)]">{group.title}</h3>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {group.items
                   .filter(
@@ -384,18 +384,18 @@ function AdminWorkspace() {
                     <a
                       key={label}
                       href={href}
-                      className="group flex min-w-0 items-start gap-3 rounded-xl border border-[#eef2eb] bg-[#f8faf6] p-3 hover:border-[#9cbb92]"
+                      className="group flex min-w-0 items-start gap-3 rounded-xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-3 hover:border-[var(--portal-muted)]"
                     >
-                      <span className="rounded-lg bg-[#edf6e7] p-2 text-[#38673e]">
+                      <span className="rounded-lg bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
                         <Icon size={18} />
                       </span>
                       <span className="min-w-0 flex-1">
                         <strong className="block text-sm leading-5">{label}</strong>
-                        <span className="mt-0.5 block text-xs leading-5 text-[#657568]">
+                        <span className="mt-0.5 block text-xs leading-5 text-[color:var(--portal-muted)]">
                           {description}
                         </span>
                       </span>
-                      <ArrowRight size={15} className="mt-1 shrink-0 text-[#4b7650]" />
+                      <ArrowRight size={15} className="mt-1 shrink-0 text-[color:var(--portal-muted)]" />
                     </a>
                   ))}
               </div>
@@ -403,7 +403,7 @@ function AdminWorkspace() {
           ))}
         </div>
       </section>
-      <section className="mt-8 rounded-2xl border border-[#dce8d9] bg-[#edf6e7] p-5 text-xs leading-6 text-[#536f55]">
+      <section className="mt-8 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 text-xs leading-6 text-[color:var(--portal-muted)]">
         <div className="flex items-start gap-3">
           <CheckCircle2 size={19} className="mt-0.5 shrink-0" />
           <p>
