@@ -6,6 +6,7 @@ import { CheckCircle2, RefreshCw, Wallet } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { IfeanyiContractPayroll, type ContractSummary } from "@/components/admin/IfeanyiContractPayroll";
 import { supabase } from "@/lib/supabase";
+import { grossSalaryFromRecord } from "@/lib/monthly-finance";
 import { calculatePtPayout, calendarDate, lagosToday, formatDate, formatMoney, type Trainer, type PtMembership, type Assignment, type Evaluation, type PtPayoutRun } from "@/lib/pt-payroll";
 
 export const Route = createFileRoute("/management-salary-payments")({ component: SalaryPayments });
@@ -91,7 +92,7 @@ function SalaryPayments() {
     const records = data.payments.filter((payment) => payment.staff_profile_id === staff.id && payment.pay_period_start === start && payment.pay_period_end === end && payment.status !== "cancelled" && (payment.payroll_kind === null || payment.payroll_kind === "monthly_salary"));
     const record = records[0];
     const setting = data.settings.find((setting) => setting.staff_profile_id === staff.id);
-    const gross = record ? Number(record.gross_salary_amount ?? record.amount) : setting ? Number(setting.current_monthly_salary) : null;
+    const gross = record ? grossSalaryFromRecord(record) : setting ? Number(setting.current_monthly_salary) : null;
     const advance = record?.status === "paid" ? Number(record.salary_advance_deduction || 0) : data.advances.filter((item) => item.staff_profile_id === staff.id && item.salary_month === start && item.status === "paid").reduce((sum, item) => sum + Number(item.amount), 0);
     const unresolved = data.advances.some((item) => item.staff_profile_id === staff.id && item.salary_month === start && ["pending", "approved"].includes(item.status));
     const amount = record?.status === "paid" ? Number(record.amount) : gross === null ? null : Math.max(0, cents(gross - advance));
