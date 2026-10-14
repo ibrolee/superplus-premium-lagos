@@ -65,6 +65,7 @@ import { Route as ReceptionCheckinRouteImport } from './routes/reception-checkin
 import { Route as ReceptionDashboardRouteImport } from './routes/reception-dashboard'
 import { Route as ReceptionRegisterRouteImport } from './routes/reception-register'
 import { Route as ReceptionWorkspaceRouteImport } from './routes/reception-workspace'
+import { Route as SpaBookingRouteImport } from './routes/spa-booking'
 import { Route as SpaRecoveryRouteImport } from './routes/spa-recovery'
 import { Route as StaffRouteImport } from './routes/staff'
 import { Route as StaffAccountRequestsRouteImport } from './routes/staff-account-requests'
@@ -376,6 +377,11 @@ const ReceptionWorkspaceRoute = ReceptionWorkspaceRouteImport.update({
   path: '/reception-workspace',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SpaBookingRoute = SpaBookingRouteImport.update({
+  id: '/spa-booking',
+  path: '/spa-booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SpaRecoveryRoute = SpaRecoveryRouteImport.update({
   id: '/spa-recovery',
   path: '/spa-recovery',
@@ -550,6 +556,7 @@ export interface FileRoutesByFullPath {
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
+  '/spa-booking': typeof SpaBookingRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
   '/staff-account-requests': typeof StaffAccountRequestsRoute
@@ -630,6 +637,7 @@ export interface FileRoutesByTo {
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
+  '/spa-booking': typeof SpaBookingRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
   '/staff-account-requests': typeof StaffAccountRequestsRoute
@@ -712,6 +720,7 @@ export interface FileRoutesById {
   '/reception-dashboard': typeof ReceptionDashboardRoute
   '/reception-register': typeof ReceptionRegisterRoute
   '/reception-workspace': typeof ReceptionWorkspaceRoute
+  '/spa-booking': typeof SpaBookingRoute
   '/spa-recovery': typeof SpaRecoveryRoute
   '/staff': typeof StaffRoute
   '/staff-account-requests': typeof StaffAccountRequestsRoute
@@ -795,6 +804,7 @@ export interface FileRouteTypes {
     | '/reception-dashboard'
     | '/reception-register'
     | '/reception-workspace'
+    | '/spa-booking'
     | '/spa-recovery'
     | '/staff'
     | '/staff-account-requests'
@@ -875,6 +885,7 @@ export interface FileRouteTypes {
     | '/reception-dashboard'
     | '/reception-register'
     | '/reception-workspace'
+    | '/spa-booking'
     | '/spa-recovery'
     | '/staff'
     | '/staff-account-requests'
@@ -956,6 +967,7 @@ export interface FileRouteTypes {
     | '/reception-dashboard'
     | '/reception-register'
     | '/reception-workspace'
+    | '/spa-booking'
     | '/spa-recovery'
     | '/staff'
     | '/staff-account-requests'
@@ -1038,6 +1050,7 @@ export interface RootRouteChildren {
   ReceptionDashboardRoute: typeof ReceptionDashboardRoute
   ReceptionRegisterRoute: typeof ReceptionRegisterRoute
   ReceptionWorkspaceRoute: typeof ReceptionWorkspaceRoute
+  SpaBookingRoute: typeof SpaBookingRoute
   SpaRecoveryRoute: typeof SpaRecoveryRoute
   StaffRoute: typeof StaffRoute
   StaffAccountRequestsRoute: typeof StaffAccountRequestsRoute
@@ -1451,6 +1464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReceptionWorkspaceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/spa-booking': {
+      id: '/spa-booking'
+      path: '/spa-booking'
+      fullPath: '/spa-booking'
+      preLoaderRoute: typeof SpaBookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/spa-recovery': {
       id: '/spa-recovery'
       path: '/spa-recovery'
@@ -1701,6 +1721,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReceptionDashboardRoute: ReceptionDashboardRoute,
   ReceptionRegisterRoute: ReceptionRegisterRoute,
   ReceptionWorkspaceRoute: ReceptionWorkspaceRoute,
+  SpaBookingRoute: SpaBookingRoute,
   SpaRecoveryRoute: SpaRecoveryRoute,
   StaffRoute: StaffRoute,
   StaffAccountRequestsRoute: StaffAccountRequestsRoute,
@@ -1722,3 +1743,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
