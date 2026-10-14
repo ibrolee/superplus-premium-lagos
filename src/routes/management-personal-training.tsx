@@ -11,6 +11,7 @@ import {
   Save,
   ShieldAlert,
   Star,
+  Trash2,
   UserRound,
   Users,
 } from "lucide-react";
@@ -45,6 +46,7 @@ function ManagementPersonalTraining() {
   const [adjustPoolOpen, setAdjustPoolOpen] = useState(false);
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutMarkingId, setPayoutMarkingId] = useState<string | null>(null);
+  const [payoutDiscardingId, setPayoutDiscardingId] = useState<string | null>(null);
   const [payoutMessage, setPayoutMessage] = useState("");
   const [view, setView] = useState<View>("current");
   const [query, setQuery] = useState("");
@@ -288,7 +290,7 @@ function ManagementPersonalTraining() {
 
   const invalidPool = payoutPool !== null &&
     (!payoutPool.trim() || !Number.isFinite(Number(payoutPool)) || Number(payoutPool) < 0);
-  const payoutBusy = loading || payoutSaving || payoutMarkingId !== null;
+  const payoutBusy = loading || payoutSaving || payoutMarkingId !== null || payoutDiscardingId !== null;
   const payoutNeedsSave = selectedPayoutRun?.status === "pending" && !payoutLocked && (
     Math.abs(Number(selectedPayoutRun.payout_pool) - payoutCalculation.pool) > 0.01 ||
     Math.abs(Number(selectedPayoutRun.auto_payout_pool) - payoutCalculation.autoPool) > 0.01 ||
@@ -333,6 +335,45 @@ function ManagementPersonalTraining() {
       await load();
     }
     setPayoutSaving(false);
+  }
+
+  async function discardPayoutRun(run: PtPayoutRun) {
+    if (!canViewPayroll || payoutBusy || run.status !== "pending" || run.financial_locked) return;
+    const total = (run.breakdown || []).reduce(
+      (sum, row) => sum + Number(row.recommended_payout || 0), 0,
+    );
+    if (!window.confirm(
+      `Discard the saved PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}?\n\nPay date: ${formatDate(run.pay_date)}\nTotal: ${formatMoney(total)}\n\nThis removes the unpaid saved record. You can calculate and save this period again.`,
+    )) return;
+
+    setPayoutDiscardingId(run.id);
+    setError("");
+    setPayoutMessage("");
+    try {
+      const { data, error: discardError } = await supabase
+        .from("pt_semimonthly_payout_runs")
+        .delete()
+        .eq("id", run.id)
+        .eq("status", "pending")
+        .eq("financial_locked", false)
+        .select("id");
+      if (discardError) throw discardError;
+      if (!data?.length) {
+        setError("This payday could not be discarded. It may have been paid, locked or already removed. Refresh and try again.");
+        return;
+      }
+      setPayoutRuns((runs) => runs.filter((item) => item.id !== run.id));
+      if (run.period_start === payoutPeriodStart) {
+        setPayoutPool(null);
+        setAdjustPoolOpen(false);
+      }
+      await load();
+      setPayoutMessage(`PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)} discarded. You can save this period again when ready.`);
+    } catch (discardError) {
+      setError(discardError instanceof Error ? discardError.message : "Could not discard this payday. Refresh and try again.");
+    } finally {
+      setPayoutDiscardingId(null);
+    }
   }
 
   async function markPayoutPaid(run: PtPayoutRun) {
@@ -901,40 +942,56 @@ function ManagementPersonalTraining() {
                       0,
                     );
                     return (
-                      <button
-                        type="button"
+                      <div
                         key={run.id}
-                        disabled={payoutBusy}
-                        onClick={() => {
-                          setPayoutPeriodStart(run.period_start);
-                          setAdjustPoolOpen(false);
-                          setPayoutPool(null);
-                          setPayoutMessage("");
-                          setError("");
-                        }}
-                        className="flex flex-col gap-2 rounded-xl border border-[var(--portal-border)] bg-white p-3 text-left sm:flex-row sm:items-center sm:justify-between"
+                        className="rounded-xl border border-[var(--portal-border)] bg-white p-3"
                       >
-                        <div>
-                          <p className="text-xs font-black">
-                            {formatDate(run.period_start)} – {formatDate(run.period_end)}
-                          </p>
-                          <p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">
-                            Pay date {formatDate(run.pay_date)}
-                            {run.status === "paid" && run.paid_at ? ` · paid ${formatDateTime(run.paid_at)}` : " · pending"}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-[color:var(--portal-ink)]">{formatMoney(total)}</span>
-                          <span className={
-                            "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
-                            (run.status === "paid"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-amber-100 text-amber-800")
-                          }>
-                            {run.status}
-                          </span>
-                        </div>
-                      </button>
+                        <button
+                          type="button"
+                          disabled={payoutBusy}
+                          onClick={() => {
+                            setPayoutPeriodStart(run.period_start);
+                            setAdjustPoolOpen(false);
+                            setPayoutPool(null);
+                            setPayoutMessage("");
+                            setError("");
+                          }}
+                          className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div>
+                            <p className="text-xs font-black">
+                              {formatDate(run.period_start)} – {formatDate(run.period_end)}
+                            </p>
+                            <p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">
+                              Pay date {formatDate(run.pay_date)}
+                              {run.status === "paid" && run.paid_at ? ` · paid ${formatDateTime(run.paid_at)}` : " · pending"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-[color:var(--portal-ink)]">{formatMoney(total)}</span>
+                            <span className={
+                              "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                              (run.status === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-amber-100 text-amber-800")
+                            }>
+                              {run.status}
+                            </span>
+                          </div>
+                        </button>
+                        {run.status === "pending" && !run.financial_locked && (
+                          <button
+                            type="button"
+                            disabled={payoutBusy}
+                            onClick={() => void discardPayoutRun(run)}
+                            aria-label={`Discard payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}`}
+                            className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-50"
+                          >
+                            <Trash2 size={14} />
+                            {payoutDiscardingId === run.id ? "Discarding…" : "Discard payday"}
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
