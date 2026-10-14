@@ -1,6 +1,6 @@
 # Super Plus Fitness — Cloudflare migration readiness (NO LIVE CUTOVER)
 
-**Scope:** test-only branch `migration/cloudflare-spf-2026-10-13` of the existing Super Plus Fitness application. This branch must not be merged into `main` or pointed at `superplusfitness.com` until approved functional tests pass.
+**Scope:** Cloudflare Worker candidate for the existing Super Plus Fitness application. On 14 October 2026, the owner explicitly authorized proceeding toward production and accepting a Vercel fallback if problems arise. Promotion of *configuration files only* to `main` is permitted for a production Worker build. Domain DNS must remain unchanged until that Worker is checked and Wix DNS is prepared. Auth/permissions and payment sandbox validation remain incomplete; the owner accepts a staged cutover, not a guarantee of instant rollback.
 
 ## Architecture
 
@@ -45,3 +45,13 @@ Keep production on Vercel while building and verifying a temporary `*.workers.de
 ## Preview trigger after Cloudflare project connection — 13 October 2026
 
 Cloudflare Worker creation was reported completed by the owner. This documentation-only commit triggers a new build of the isolated migration branch if Cloudflare GitHub Preview Builds are enabled for the connected repository. The first deployment may have originated from `main`, which does **not** include this branch's Wrangler configuration; validate this branch specifically. Do not switch domains, change Paystack callbacks, merge this branch, or perform production member/payroll mutations as part of preview setup.
+
+## Owner-approved staged production — 14 October 2026
+
+- The owner authorized advancing this Cloudflare migration even though full transactional checks were not completed. Avoid any real member/payroll/payment test mutations.
+- Merging the configuration branch will cause the Cloudflare-connected Worker to build production from `main`; **it does not modify Wix nameservers or the live domain**. The existing Vercel website remains the primary public host until DNS is changed.
+- Verify the production Workers URL and ensure Cloudflare Access will not block customers before directing traffic to it.
+- Cloudflare Workers Custom Domains require an **active zone**. Wix permits custom nameservers on registered domains according to current Wix support; preserve all A, CNAME, TXT, MX and additional records found in Wix before changing NS.
+- After Cloudflare DNS is active, configure both apex and www. For example, retain `superplusfitness.com` to `www.superplusfitness.com` HTTPS redirect, since code currently uses both hostnames for Paystack callbacks. Preserve existing DKIM `resend._domainkey` TXT and any MX/SPF/DMARC records. A Worker Custom Domain cannot be added to an existing hostname CNAME record; replace relevant conflicting record *only at the moment of attaching the Worker*.
+- Keep Vercel deployments and project connected for rollback. Nameserver updates may propagate slowly. Rollback routing by switching Worker Custom Domain back to Vercel origin in Cloudflare DNS can be faster than resetting Wix nameservers, once Cloudflare remains authoritative.
+- Do not cancel Vercel Pro before confirming full customer and staff functionality and a completed monitoring period.
