@@ -609,7 +609,7 @@ function LoginRoute() {
           <div className="mt-8 border-t border-border pt-6 text-center">
             <p className="text-xs text-muted-foreground">Not a member yet?</p>
             <a
-              href="https://members.superplusfitness.com/pricing-plans/list"
+              href="/membership"
               className="mt-2 inline-block text-sm font-bold uppercase text-primary hover:underline"
               rel="noopener noreferrer"
             >

@@ -350,11 +350,11 @@ export function ServiceCard({
           className={`${compact ? "mt-4 pt-3" : "mt-6 pt-4"} flex items-center justify-between border-t border-border`}
         >
           <span className="text-xs font-bold uppercase text-muted-foreground">
-            Available at Super Plus Fitness
+            Book & pay for this service
           </span>
 
           <Button asChild variant="ghost" size="icon">
-            <Link to="/contact" aria-label={`Enquire about ${service.name}`}>
+            <Link to="/spa-booking" search={{ service: service.id, reference: "" }} aria-label={`Book and pay for ${service.name}`}>
               <ArrowRight />
             </Link>
           </Button>

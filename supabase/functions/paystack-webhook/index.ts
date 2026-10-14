@@ -1,3 +1,4 @@
+import { finalizeSpaPayment } from '../_shared/spa-payment.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
@@ -24,7 +25,7 @@ Deno.serve(async (request: Request) => {
     const event = JSON.parse(rawBody);
     if (event?.event !== 'charge.success') return json({ received: true, ignored: true });
     const reference = String(event?.data?.reference || '').trim();
-    if (!/^SPF-\d+-[0-9a-f-]{36}$/i.test(reference)) return json({ received: true, ignored: true });
+    if (!/^SPF-(?:SPA-)?\d+-[0-9a-f-]{36}$/i.test(reference)) return json({ received: true, ignored: true });
     // The webhook is signed, and we independently verify with Paystack before granting membership.
     const verified = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       { headers: { Authorization: `Bearer ${secret}` }, signal: AbortSignal.timeout(12000) });
@@ -39,6 +40,10 @@ Deno.serve(async (request: Request) => {
     }
     const meta = transaction.metadata || {};
     const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    if (meta.source === 'spa_booking') {
+      await finalizeSpaPayment(admin, transaction);
+      return json({ received: true });
+    }
     if (meta.source === 'member_dashboard') {
       if (typeof meta.member_id !== 'string' || typeof meta.auth_user_id !== 'string' || typeof meta.plan_id !== 'string') {
         return json({ error: 'Missing member checkout metadata' }, 422);

@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CalendarDays, CheckCircle2, Clock3, RefreshCw, XCircle } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { supabase } from "@/lib/supabase";
+import { spaStaff } from "../../supabase/functions/_shared/spa-services";
 import { getFunctionErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/management-bookings")({
@@ -12,6 +13,10 @@ export const Route = createFileRoute("/management-bookings")({
 type Booking = {
   id: string;
   member_id: string;
+  spa?: boolean;
+  amount?: number;
+  reference?: string;
+  assigned_staff?: string;
   service_type: string;
   service_name: string;
   preferred_at: string;
@@ -55,8 +60,28 @@ function ManagementBookings() {
       )
       .order("preferred_at", { ascending: true });
 
-    const { data, error: queryError } =
-      status === "all" ? await query : await query.eq("status", status);
+    const spaQuery = supabase
+      .from("spa_bookings")
+      .select(
+        "id,service_name,preferred_at,notes,status,staff_note,created_at,full_name,email,phone,amount,reference,assigned_staff",
+      )
+      .not("payment_id", "is", null)
+      .order("preferred_at", { ascending: true });
+    const [memberResult, spaResult] = await Promise.all([
+      status === "all" ? query : query.eq("status", status),
+      status === "all" ? spaQuery : spaQuery.eq("status", status),
+    ]);
+    const data = [
+      ...(memberResult.data || []),
+      ...(spaResult.data || []).map((b) => ({
+        ...b,
+        spa: true,
+        service_type: "spa",
+        member_id: "",
+        member: { full_name: b.full_name, email: b.email, phone: b.phone },
+      })),
+    ].sort((a, b) => Date.parse(a.preferred_at) - Date.parse(b.preferred_at));
+    const queryError = memberResult.error || spaResult.error;
 
     if (queryError) {
       setRows([]);
@@ -72,7 +97,23 @@ function ManagementBookings() {
     void load();
   }, [load]);
 
+  async function assignSpaStaff(booking: Booking, person: string) {
+    const { error: assignmentError } = await supabase
+      .from("spa_bookings")
+      .update({ assigned_staff: person || null, updated_at: new Date().toISOString() })
+      .eq("id", booking.id);
+    if (assignmentError) {
+      window.alert(assignmentError.message);
+      return;
+    }
+    await load();
+  }
+
   async function setBookingStatus(booking: Booking, nextStatus: string) {
+    if (booking.spa && nextStatus === "confirmed" && !booking.assigned_staff) {
+      window.alert("Assign available spa staff before confirming this appointment.");
+      return;
+    }
     const promptLabel =
       nextStatus === "confirmed"
         ? "Optional note for the member (e.g. coach or room):"
@@ -82,8 +123,16 @@ function ManagementBookings() {
     const note = window.prompt(promptLabel, booking.staff_note ?? "");
     if (note === null) return;
 
+    if (
+      booking.spa &&
+      nextStatus === "declined" &&
+      !window.confirm(
+        "This booking is paid. Contact the customer to arrange an alternative or a Paystack refund. Declining does not refund the payment. Continue?",
+      )
+    )
+      return;
     const { error: updateError } = await supabase
-      .from("member_bookings")
+      .from(booking.spa ? "spa_bookings" : "member_bookings")
       .update({
         status: nextStatus,
         staff_note: note.trim() || null,
@@ -97,7 +146,7 @@ function ManagementBookings() {
     }
 
     let notificationError = "";
-    if (["confirmed", "declined", "completed"].includes(nextStatus)) {
+    if (!booking.spa && ["confirmed", "declined", "completed"].includes(nextStatus)) {
       const title =
         nextStatus === "confirmed"
           ? "Booking confirmed"
@@ -132,30 +181,28 @@ function ManagementBookings() {
 
   return (
     <AdminWorkspaceShell
-      title="Member bookings"
-      subtitle="Confirm and manage class, personal training and spa requests from the mobile app."
+      title="Member & spa bookings"
+      subtitle="Manage app requests and paid website spa bookings. Contact spa customers to confirm their appointment time."
       active="/management-bookings"
     >
       <section className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-2">
-            {["pending", "confirmed", "completed", "declined", "cancelled", "all"].map(
-              (item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => setStatus(item)}
-                  className={
-                    "rounded-full px-4 py-2 text-xs font-black capitalize " +
-                    (status === item
-                      ? "bg-[var(--portal-ink)] text-white"
-                      : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
-                  }
-                >
-                  {item}
-                </button>
-              ),
-            )}
+            {["pending", "confirmed", "completed", "declined", "cancelled", "all"].map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setStatus(item)}
+                className={
+                  "rounded-full px-4 py-2 text-xs font-black capitalize " +
+                  (status === item
+                    ? "bg-[var(--portal-ink)] text-white"
+                    : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
+                }
+              >
+                {item}
+              </button>
+            ))}
           </div>
           <button
             type="button"
@@ -173,7 +220,10 @@ function ManagementBookings() {
         )}
 
         {!loading && error && (
-          <p role="alert" className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+          <p
+            role="alert"
+            className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"
+          >
             {error}
           </p>
         )}
@@ -209,10 +259,36 @@ function ManagementBookings() {
                 <div className="mt-4 rounded-xl bg-white p-4">
                   <p className="font-black">{booking.member?.full_name || "Member"}</p>
                   <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                    {booking.member?.phone || booking.member?.email || "No contact"}
+                    {booking.member?.phone || "No phone"} · {booking.member?.email || "No email"}
                   </p>
                 </div>
 
+                {booking.spa && (
+                  <div className="mt-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm">
+                    <strong>Paid · ₦{Number(booking.amount).toLocaleString("en-NG")}</strong>
+                    <p className="mt-1 break-all text-xs">{booking.reference}</p>
+                    <label className="mt-3 block text-xs font-bold">
+                      Assign spa staff
+                      <select
+                        value={booking.assigned_staff || ""}
+                        onChange={(e) => void assignSpaStaff(booking, e.target.value)}
+                        disabled={["completed", "declined", "cancelled"].includes(booking.status)}
+                        className="mt-2 min-h-11 w-full rounded-xl border bg-white px-3 text-sm"
+                      >
+                        <option value="">Unassigned</option>
+                        {spaStaff.map((person) => (
+                          <option key={person} value={person}>
+                            {person}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <p className="mt-2 text-xs">
+                      Contact the customer using the details above to confirm the time. Declining
+                      does not issue a refund.
+                    </p>
+                  </div>
+                )}
                 {!!booking.notes && (
                   <p className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">
                     <strong>Member note:</strong> {booking.notes}

@@ -227,79 +227,8 @@ export const publicMembershipOptions: MembershipPlan[] = [
   },
 ];
 
-export type RecoveryService = {
-  id: string;
-  name: string;
-  description: string;
-  price: number | null;
-  duration?: string;
-  image?: string;
-};
-
-export const recoveryServices: RecoveryService[] = [
-  {
-    id: "vip-chair",
-    name: "VIP Chair",
-    description: "A dedicated relaxation and wellness session.",
-    price: 7000,
-    duration: "1 hour",
-  },
-  {
-    id: "ultra-slim-machine",
-    name: "Ultra Slim Machine",
-    description: "A focused wellness session using our Ultra Slim machine.",
-    price: 5000,
-    duration: "30 mins",
-  },
-  {
-    id: "blood-circulation-machine",
-    name: "Blood Circulation Machine",
-    description: "A wellness session using our blood circulation machine.",
-    price: 5000,
-    duration: "30 mins",
-  },
-  {
-    id: "foot-massager",
-    name: "Foot Massager",
-    description: "A dedicated foot relaxation and recovery session.",
-    price: 5000,
-    duration: "30 mins",
-  },
-  {
-    id: "pulse-massager",
-    name: "Pulse Massager",
-    description: "A focused massage session using our pulse massager.",
-    price: 7000,
-    duration: "30 mins",
-  },
-  {
-    id: "detox-machine",
-    name: "Detox Machine",
-    description: "A wellness session using our detox machine.",
-    price: 7000,
-    duration: "30 mins",
-  },
-  {
-    id: "full-body-massage",
-    name: "Full Body Massage",
-    description: "A full-body massage session.",
-    price: 15000,
-    duration: "30 mins",
-  },
-  {
-    id: "quantum-therapy",
-    name: "Quantum Therapy",
-    description: "A dedicated quantum therapy session.",
-    price: 7000,
-    duration: "30 mins",
-  },
-  {
-    id: "pedicure",
-    name: "Pedicure",
-    description: "Professional pedicure service.",
-    price: 10000,
-  },
-];
+export { recoveryServices } from "../../supabase/functions/_shared/spa-services";
+export type { RecoveryService } from "../../supabase/functions/_shared/spa-services";
 
 export const facilities = [
   {
