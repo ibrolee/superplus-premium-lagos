@@ -18,6 +18,6 @@ test("private tools and dangerous schemes cannot be injected into editable navig
 });
 test("Staff Portal buttons link straight to the working sign-in route",()=>{
  const source=readFileSync(new URL("../src/components/portal/SiteChrome.tsx",import.meta.url),"utf8");
- assert.match(source,/label:"Staff Portal",href:"\\/portal\\/staff"/);
- assert.match(source,/label:'Staff Portal',to:'\\/portal\\/staff'/);
+ assert.ok(source.includes('label:"Staff Portal",href:"/portal/staff"'));
+ assert.ok(source.includes("{label:'Staff Portal',to:'/portal/staff'}"));
 });
