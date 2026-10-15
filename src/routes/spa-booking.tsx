@@ -7,7 +7,7 @@ import { useLiveSpaServices, useWebsiteSetting, fallbackBooking, type BookingCon
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 import { pageHead } from "@/lib/seo";
-import { validateSpaTime } from "../../supabase/functions/_shared/spa-services";
+import { validateSpaTimestamp } from "../../supabase/functions/_shared/spa-services";
 
 export const Route = createFileRoute("/spa-booking")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -81,7 +81,19 @@ function SpaBooking() {
     const preferredAt = `${date}T${time}:00+01:00`;
     try {
       // Checkout validates the exact currently published hours and booking capacity.
-      validateSpaTime(preferredAt, Number(service.duration_minutes)||30);
+      const timeValue=validateSpaTimestamp(preferredAt);
+      const lagos=new Date(Date.parse(timeValue)+3600000);
+      const sun=lagos.getUTCDay()===0;
+      const start=sun?bookingConfig.sun_open:bookingConfig.mon_sat_open;
+      const end=sun?bookingConfig.sun_close:bookingConfig.mon_sat_close;
+      const minute=(text:string)=>{const [h,m]=text.split(":").map(Number);return h*60+m;};
+      const selected=lagos.getUTCHours()*60+lagos.getUTCMinutes();
+      if(selected<minute(start)||selected+Number(service.duration_minutes||30)>minute(end))
+        throw Error("The selected session is outside the published booking hours.");
+      if((selected-minute(start))%bookingConfig.slot_minutes!==0)
+        throw Error("Choose a time aligned to the booking intervals.");
+      if(Date.parse(timeValue)<Date.now()+bookingConfig.lead_hours*3600000)
+        throw Error("Please choose a later appointment.");
     } catch (e) {
       setError((e as Error).message);
       return;
@@ -281,7 +293,7 @@ function SpaBooking() {
                 </label>
               </div>
               <p className="text-xs leading-5 text-muted-foreground">
-                All times are Lagos time. Monday–Saturday: 6 AM–8:30 PM. Sunday: 6:30 AM–7 PM.
+                All times are Lagos time. Monday–Saturday: {bookingConfig.mon_sat_open}–{bookingConfig.mon_sat_close}. Sunday: {bookingConfig.sun_open}–{bookingConfig.sun_close}.
                 Choose a time that allows your session to finish before closing.
               </p>
               <label className="block text-sm font-bold">
