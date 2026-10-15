@@ -285,7 +285,7 @@ function SpaBooking() {
                   <input
                     required
                     type="time"
-                    step={900}
+                    step={Math.max(15,bookingConfig.slot_minutes)*60}
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     className={field}
