@@ -21,6 +21,8 @@ const isServiceAmount = (s: string) => /^\d+(\.\d{1,2})?$/.test(s) && Number(s) 
 
 export function SpaCommissions({ month, staff, records, disabled, onChanged }: Props) {
   const today = lagosToday();
+  const monthEnd = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 0))
+    .toISOString().slice(0, 10);
   const [staffId, setStaffId] = useState("");
   const [service, setService] = useState("");
   const [customer, setCustomer] = useState("");
@@ -136,7 +138,7 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
       <div className="col-span-2 rounded-xl bg-[var(--portal-ink)] p-3 text-white sm:col-span-1"><p className="text-[11px] text-white/75">Still owed</p><p className="mt-1 text-lg font-black">{money(total - paid)}</p></div>
     </div>
     <p className="mt-3 text-xs leading-5 text-[color:var(--portal-muted)]">
-      Completed and paid website spa bookings are recorded automatically for the assigned staff. Use the form below only for services handled directly at the gym; do not record website bookings twice.
+      Completed and paid website spa bookings are recorded automatically for the assigned staff. Use the form below only for services handled directly at the gym; do not record website bookings twice. Manual commission entries do not create a customer payment or add revenue.
     </p>
     <form onSubmit={(event) => void save(event)} className="mt-4 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
       <h3 className="flex items-center gap-2 text-sm font-black"><Plus size={16} />Add spa service commission</h3>
@@ -148,7 +150,7 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
           </select>
         </label>
         <label className="text-xs font-bold">Service date
-          <input className={field} type="date" required min={month + "-01"} max={today < month + "-31" ? today : month + "-31"} value={date} disabled={blocked}
+          <input className={field} type="date" required min={month + "-01"} max={today < monthEnd ? today : monthEnd} value={date} disabled={blocked}
             onChange={(event) => setDate(event.target.value)} />
         </label>
         <label className="text-xs font-bold">Spa service performed
