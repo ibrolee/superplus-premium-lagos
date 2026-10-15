@@ -5,6 +5,7 @@ import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { WebsiteSettingsEditor } from "@/components/admin/WebsiteSettingsEditor";
 import { CmsPageAdmin } from "@/components/admin/CmsPageAdmin";
 import { CmsConfigAdmin } from "@/components/admin/CmsConfigAdmin";
+import {WebsiteStage2,type SiteScope} from "@/components/admin/WebsiteStage2";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
@@ -25,6 +26,7 @@ const tools = [
 
 function WebsiteControls(){
  const [verified,setVerified]=useState(false);
+ const [scope,setScope]=useState<SiteScope>({pages:false,design:false,campaigns:false,enquiries:false,admin:false});
  const [loading,setLoading]=useState(true);
  const [reload,setReload]=useState(0);
  const [plans,setPlans]=useState<Plan[]>([]);
@@ -38,14 +40,20 @@ function WebsiteControls(){
  const [busy,setBusy]=useState("");
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
- const [tab,setTab]=useState<"prices"|"coupons"|"site"|"pages"|"design"|"content"|"history">("pages");
+ const [tab,setTab]=useState<"prices"|"coupons"|"site"|"pages"|"design"|"stage2"|"content"|"history">("pages");
  const load=useCallback(async()=>{
    setLoading(true);setError("");
    try{
      const { data:auth,error:authError }=await supabase.auth.getUser();
      if(authError||!auth.user)throw Error("Sign in to your admin account.");
      const {data:user,error:userError}=await supabase.from("staff_users").select("role,active").eq("auth_user_id",auth.user.id).maybeSingle();
-     if(userError||!user?.active||!["admin","owner"].includes(user.role))throw Error("Website Controls are available only to active admin or owner accounts.");
+     if(userError||!user?.active||!["admin","owner","manager"].includes(user.role))throw Error("An active management account is required.");
+     const {data:permissions,error:permissionError}=await supabase.rpc("wc_staff_site_permissions");
+     if(permissionError)throw permissionError;
+     const permitted=permissions as SiteScope;
+     if(!Object.values(permitted).some(Boolean))throw Error("Your account has not been granted Website Content permissions.");
+     setScope(permitted);
+     if(!permitted.admin){setPlans([]);setCoupons([]);setAudit([]);setVerified(true);setTab(permitted.pages?"pages":permitted.design?"design":"stage2");return;}
      const [p,c,h]=await Promise.all([
        supabase.from("membership_plans").select("id,name,price,duration_days,active").order("price"),
        supabase.from("website_coupons").select("code,description,active,discount_type,expires_on,updated_at").order("code"),
@@ -114,13 +122,14 @@ function WebsiteControls(){
  const disabled=loading||!!busy||!verified;
  return <AdminWorkspaceShell title="Website Control Centre" subtitle="Manage page designs, photos, menus, prices, brand identity and business settings without editing code." active="/management-website-controls">
    <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-     <div><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--portal-muted)]">Admin & owner only</p>
+     <div><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--portal-muted)]">{scope.admin?"Admin & owner controls":"Delegated website editor"}</p>
        <h1 className="mt-1 text-2xl font-black">Your website, your controls</h1>
        <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Update commercial settings safely. Financial updates are logged and do not rewrite historic payment records.</p></div>
      <button onClick={()=>setReload(v=>v+1)} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-xs font-black disabled:opacity-50"><RefreshCw size={16}/>Refresh</button>
    </div>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Website control sections">
-     {([["pages","Page builder",Pencil],["design","Design & media",Images],["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Business settings",Settings2],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+     {([["pages","Page builder",Pencil],["design","Design & media",Images],["stage2","Business & marketing",Megaphone],["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Business settings",Settings2],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+       .filter(([id])=>id==="pages"?scope.pages:id==="design"?scope.design:id==="stage2"?(scope.campaigns||scope.enquiries||scope.admin):scope.admin)
        .map(([id,label,Icon])=><button key={id} type="button" role="tab" aria-selected={tab===id} onClick={()=>setTab(id)}
          className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black ${tab===id?"bg-[var(--portal-ink)] text-white":"border border-[var(--portal-border)] bg-white"}`}>
          <Icon size={15}/>{label}</button>)}
@@ -128,7 +137,7 @@ function WebsiteControls(){
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</p>}
    {loading&&<p className="mt-5 text-sm">Loading live website settings…</p>}
-   {verified&&tab==="prices"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="prices"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Membership plan prices</h2>
      <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Prices come from the same official plan list used by reception and new online checkout. Change the price, not a member's active plan or payment history. Registration fees remain governed separately.</p>
      <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -153,7 +162,7 @@ function WebsiteControls(){
      </div>
      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900"><ShieldCheck size={15} className="mr-1 inline"/>Plan names, durations and deleting plans are restricted here to protect existing member records. Contact developers only for new plan types or changes to how checkout works.</p>
    </section>}
-   {verified&&tab==="coupons"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="coupons"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Registration coupons</h2>
      <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Create unlimited unique registration-fee waiver codes, set expiry dates and disable old codes. Disabled codes stay in history instead of being permanently deleted. This does not discount an existing member's renewal or membership price.</p>
      <form onSubmit={event=>void saveCoupon(event)} className="mt-5 rounded-2xl bg-[var(--portal-canvas)] p-4">
@@ -180,10 +189,11 @@ function WebsiteControls(){
        </article>;
      })}</div>
    </section>}
-   {verified&&tab==="pages"&&<CmsPageAdmin/>}
-   {verified&&tab==="design"&&<CmsConfigAdmin/>}
-   {verified&&tab==="site"&&<WebsiteSettingsEditor/>}
-   {verified&&tab==="content"&&<section className="mt-5">
+   {verified&&scope.pages&&tab==="pages"&&<CmsPageAdmin/>}
+   {verified&&scope.design&&tab==="design"&&<CmsConfigAdmin/>}
+   {verified&&tab==="stage2"&&(scope.campaigns||scope.enquiries||scope.admin)&&<WebsiteStage2 permissions={scope}/>}
+   {verified&&scope.admin&&tab==="site"&&<WebsiteSettingsEditor/>}
+   {verified&&scope.admin&&tab==="content"&&<section className="mt-5">
      <h2 className="mb-2 text-xl font-black">Content and business operations</h2>
      <p className="mb-5 text-sm text-[var(--portal-muted)]">These tools already exist. Open them from this central dashboard instead of asking anyone to edit website code.</p>
      <div className="grid gap-3 sm:grid-cols-2">{tools.map(({name,description,href,icon:Icon})=><a key={href} href={href} className="group rounded-2xl border bg-white p-5 hover:border-[var(--portal-accent)]">
@@ -194,7 +204,7 @@ function WebsiteControls(){
        <strong>Now under Website editor:</strong> spa services, booking times, homepage hero, contact information, FAQs, gym rules and membership descriptions. Registration fee changes and extra discount types require additional billing checks, so those remain protected.
      </div>
    </section>}
-   {verified&&tab==="history"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="history"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Recent management changes</h2>
      <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">Recorded change history for membership pricing and coupon settings. Kept even when a coupon is disabled.</p>
      <div className="mt-4 divide-y">{audit.map(item=><article key={item.id} className="py-3">
