@@ -5,11 +5,13 @@ import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { WebsiteSettingsEditor } from "@/components/admin/WebsiteSettingsEditor";
 import { CmsPageAdmin } from "@/components/admin/CmsPageAdmin";
 import { CmsConfigAdmin } from "@/components/admin/CmsConfigAdmin";
+import {WebsiteStage2,type SiteScope} from "@/components/admin/WebsiteStage2";
+import {BulkPricing} from "@/components/admin/BulkPricing";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
 type Plan = { id: string; name: string; price: number; duration_days: number; active: boolean };
-type Coupon = { code: string; description: string; active: boolean; discount_type: string; expires_on: string | null; updated_at: string };
+type Coupon = { code: string; description: string; active: boolean; discount_type: string; starts_on: string | null; expires_on: string | null; updated_at: string };
 type Audit = { id: string; changed_at: string; changed_by: string | null; kind: string; record_key: string; previous_value: Record<string,unknown>|null; next_value: Record<string,unknown>|null };
 const money = (amount:number) => new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(amount);
 const input = "mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-sm text-[var(--portal-ink)] outline-none focus:border-[var(--portal-accent)] disabled:opacity-50";
@@ -25,6 +27,7 @@ const tools = [
 
 function WebsiteControls(){
  const [verified,setVerified]=useState(false);
+ const [scope,setScope]=useState<SiteScope>({pages:false,design:false,campaigns:false,enquiries:false,admin:false});
  const [loading,setLoading]=useState(true);
  const [reload,setReload]=useState(0);
  const [plans,setPlans]=useState<Plan[]>([]);
@@ -35,20 +38,27 @@ function WebsiteControls(){
  const [couponCode,setCouponCode]=useState("");
  const [couponDescription,setCouponDescription]=useState("");
  const [couponExpiry,setCouponExpiry]=useState("");
+ const [couponStart,setCouponStart]=useState("");
  const [busy,setBusy]=useState("");
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
- const [tab,setTab]=useState<"prices"|"coupons"|"site"|"pages"|"design"|"content"|"history">("pages");
+ const [tab,setTab]=useState<"prices"|"coupons"|"site"|"pages"|"design"|"stage2"|"content"|"history">("pages");
  const load=useCallback(async()=>{
    setLoading(true);setError("");
    try{
      const { data:auth,error:authError }=await supabase.auth.getUser();
      if(authError||!auth.user)throw Error("Sign in to your admin account.");
      const {data:user,error:userError}=await supabase.from("staff_users").select("role,active").eq("auth_user_id",auth.user.id).maybeSingle();
-     if(userError||!user?.active||!["admin","owner"].includes(user.role))throw Error("Website Controls are available only to active admin or owner accounts.");
+     if(userError||!user?.active||!["admin","owner","reception"].includes(user.role))throw Error("An active management account is required.");
+     const {data:permissions,error:permissionError}=await supabase.rpc("wc_staff_site_permissions");
+     if(permissionError)throw permissionError;
+     const permitted=permissions as SiteScope;
+     if(!Object.values(permitted).some(Boolean))throw Error("Your account has not been granted Website Content permissions.");
+     setScope(permitted);
+     if(!permitted.admin){setPlans([]);setCoupons([]);setAudit([]);setVerified(true);setTab(permitted.pages?"pages":permitted.design?"design":"stage2");return;}
      const [p,c,h]=await Promise.all([
        supabase.from("membership_plans").select("id,name,price,duration_days,active").order("price"),
-       supabase.from("website_coupons").select("code,description,active,discount_type,expires_on,updated_at").order("code"),
+       supabase.from("website_coupons").select("code,description,active,discount_type,starts_on,expires_on,updated_at").order("code"),
        supabase.from("website_control_audit").select("id,changed_at,changed_by,kind,record_key,previous_value,next_value").order("changed_at",{ascending:false}).limit(40),
      ]);
      if(p.error)throw p.error;if(c.error)throw c.error;if(h.error)throw h.error;
@@ -91,11 +101,12 @@ function WebsiteControls(){
    if(!/^[A-Z0-9_-]{3,24}$/.test(code)){setError("Coupon must be 3–24 letters, numbers, hyphens or underscores.");return;}
    if(!window.confirm(`Save coupon ${code}? This coupon waives the one-time registration fee on eligible new sign-ups. It does not discount membership prices.`))return;
    setBusy("coupon");setError("");setNotice("");
-   const {error:saveError}=await supabase.rpc("admin_site_save_coupon",{
-     p_code:code,p_description:couponDescription.trim(),p_active:true,p_expires_on:couponExpiry||null,
+   const {error:saveError}=await supabase.rpc("admin_site_upsert_scheduled_coupon",{
+     p_code:code,p_description:couponDescription.trim(),p_active:true,p_expires_on:couponExpiry||null,p_starts_on:couponStart||null,
    });
    if(saveError)setError(saveError.message);else{
-     setNotice(`Registration coupon ${code} saved and active.`);setCouponCode("");setCouponDescription("");setCouponExpiry("");setReload(v=>v+1);
+     setNotice(`Registration coupon ${code} saved with its activation date.`);
+     setCouponCode("");setCouponDescription("");setCouponExpiry("");setCouponStart("");setReload(v=>v+1);
    }
    setBusy("");
  }
@@ -114,13 +125,14 @@ function WebsiteControls(){
  const disabled=loading||!!busy||!verified;
  return <AdminWorkspaceShell title="Website Control Centre" subtitle="Manage page designs, photos, menus, prices, brand identity and business settings without editing code." active="/management-website-controls">
    <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-     <div><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--portal-muted)]">Admin & owner only</p>
+     <div><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--portal-muted)]">{scope.admin?"Admin & owner controls":"Delegated website editor"}</p>
        <h1 className="mt-1 text-2xl font-black">Your website, your controls</h1>
        <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Update commercial settings safely. Financial updates are logged and do not rewrite historic payment records.</p></div>
      <button onClick={()=>setReload(v=>v+1)} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-xs font-black disabled:opacity-50"><RefreshCw size={16}/>Refresh</button>
    </div>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Website control sections">
-     {([["pages","Page builder",Pencil],["design","Design & media",Images],["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Business settings",Settings2],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+     {([["pages","Page builder",Pencil],["design","Design & media",Images],["stage2","Business & marketing",Megaphone],["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Business settings",Settings2],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+       .filter(([id])=>id==="pages"?scope.pages:id==="design"?scope.design:id==="stage2"?(scope.campaigns||scope.enquiries||scope.admin):scope.admin)
        .map(([id,label,Icon])=><button key={id} type="button" role="tab" aria-selected={tab===id} onClick={()=>setTab(id)}
          className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black ${tab===id?"bg-[var(--portal-ink)] text-white":"border border-[var(--portal-border)] bg-white"}`}>
          <Icon size={15}/>{label}</button>)}
@@ -128,7 +140,7 @@ function WebsiteControls(){
    {error&&<p role="alert" className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-800">{error}</p>}
    {notice&&<p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</p>}
    {loading&&<p className="mt-5 text-sm">Loading live website settings…</p>}
-   {verified&&tab==="prices"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="prices"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Membership plan prices</h2>
      <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Prices come from the same official plan list used by reception and new online checkout. Change the price, not a member's active plan or payment history. Registration fees remain governed separately.</p>
      <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -151,9 +163,10 @@ function WebsiteControls(){
            </button>
        </article>)}
      </div>
+     <BulkPricing plans={editable} onSaved={()=>setReload(v=>v+1)}/>
      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900"><ShieldCheck size={15} className="mr-1 inline"/>Plan names, durations and deleting plans are restricted here to protect existing member records. Contact developers only for new plan types or changes to how checkout works.</p>
    </section>}
-   {verified&&tab==="coupons"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="coupons"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Registration coupons</h2>
      <p className="mt-2 text-sm leading-6 text-[var(--portal-muted)]">Create unlimited unique registration-fee waiver codes, set expiry dates and disable old codes. Disabled codes stay in history instead of being permanently deleted. This does not discount an existing member's renewal or membership price.</p>
      <form onSubmit={event=>void saveCoupon(event)} className="mt-5 rounded-2xl bg-[var(--portal-canvas)] p-4">
@@ -162,6 +175,7 @@ function WebsiteControls(){
          <label className="text-xs font-bold">Code<input required maxLength={24} value={couponCode} disabled={disabled} onChange={e=>setCouponCode(e.target.value.toUpperCase())} placeholder="WELCOME26" className={input}/></label>
          <label className="text-xs font-bold">Description<input maxLength={250} value={couponDescription} disabled={disabled} onChange={e=>setCouponDescription(e.target.value)} placeholder="Welcome promotion" className={input}/></label>
          <label className="text-xs font-bold">Expires on (optional)<input type="date" value={couponExpiry} disabled={disabled} onChange={e=>setCouponExpiry(e.target.value)} className={input}/></label>
+         <label className="text-xs font-bold">Starts on (optional)<input type="date" value={couponStart} disabled={disabled} onChange={e=>setCouponStart(e.target.value)} className={input}/></label>
        </div>
        <p className="mt-3 text-xs text-[var(--portal-muted)]">Coupon benefit: waive 100% of the new-member one-time registration fee only.</p>
        <button type="submit" disabled={disabled} className="mt-3 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-xs font-black text-white disabled:opacity-50">Save registration coupon</button>
@@ -171,19 +185,20 @@ function WebsiteControls(){
        const expired=!!coupon.expires_on&&coupon.expires_on<new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Lagos",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
        return <article key={coupon.code} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--portal-border)] p-4">
          <div><p className="font-black tracking-wider">{coupon.code} <span className="ml-2 rounded-lg bg-[var(--portal-canvas)] px-2 py-1 text-[10px] font-bold tracking-normal">{!coupon.active?"Disabled":expired?"Expired":"Active"}</span></p>
-           <p className="mt-1 text-xs text-[var(--portal-muted)]">{coupon.description||"Registration fee waiver"} · {coupon.expires_on?`Expires ${coupon.expires_on}`:"No expiry"}</p></div>
+           <p className="mt-1 text-xs text-[var(--portal-muted)]">{coupon.description||"Registration fee waiver"} · {coupon.starts_on?`Starts ${coupon.starts_on} · `:""}{coupon.expires_on?`Expires ${coupon.expires_on}`:"No expiry"}</p></div>
          <div className="flex gap-2">
-           <button type="button" disabled={disabled} onClick={()=>{setCouponCode(coupon.code);setCouponDescription(coupon.description);setCouponExpiry(coupon.expires_on||"");window.scrollTo({top:0,behavior:"smooth"});}} className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Edit</button>
+           <button type="button" disabled={disabled} onClick={()=>{setCouponCode(coupon.code);setCouponDescription(coupon.description);setCouponExpiry(coupon.expires_on||"");setCouponStart(coupon.starts_on||"");window.scrollTo({top:0,behavior:"smooth"});}} className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Edit</button>
            <button type="button" disabled={disabled} onClick={()=>void changeCoupon(coupon,!coupon.active)} className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-black disabled:opacity-50 ${coupon.active?"border-red-200 text-red-700":"border-green-200 text-green-700"}`}>
              {coupon.active?<><Trash2 size={13}/>Disable</>:<><CheckCircle2 size={13}/>Enable</>}</button>
          </div>
        </article>;
      })}</div>
    </section>}
-   {verified&&tab==="pages"&&<CmsPageAdmin/>}
-   {verified&&tab==="design"&&<CmsConfigAdmin/>}
-   {verified&&tab==="site"&&<WebsiteSettingsEditor/>}
-   {verified&&tab==="content"&&<section className="mt-5">
+   {verified&&scope.pages&&tab==="pages"&&<CmsPageAdmin/>}
+   {verified&&scope.design&&tab==="design"&&<CmsConfigAdmin/>}
+   {verified&&tab==="stage2"&&(scope.campaigns||scope.enquiries||scope.admin)&&<WebsiteStage2 permissions={scope}/>}
+   {verified&&scope.admin&&tab==="site"&&<WebsiteSettingsEditor/>}
+   {verified&&scope.admin&&tab==="content"&&<section className="mt-5">
      <h2 className="mb-2 text-xl font-black">Content and business operations</h2>
      <p className="mb-5 text-sm text-[var(--portal-muted)]">These tools already exist. Open them from this central dashboard instead of asking anyone to edit website code.</p>
      <div className="grid gap-3 sm:grid-cols-2">{tools.map(({name,description,href,icon:Icon})=><a key={href} href={href} className="group rounded-2xl border bg-white p-5 hover:border-[var(--portal-accent)]">
@@ -194,7 +209,7 @@ function WebsiteControls(){
        <strong>Now under Website editor:</strong> spa services, booking times, homepage hero, contact information, FAQs, gym rules and membership descriptions. Registration fee changes and extra discount types require additional billing checks, so those remain protected.
      </div>
    </section>}
-   {verified&&tab==="history"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
+   {verified&&scope.admin&&tab==="history"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
      <h2 className="text-xl font-black">Recent management changes</h2>
      <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">Recorded change history for membership pricing and coupon settings. Kept even when a coupon is disabled.</p>
      <div className="mt-4 divide-y">{audit.map(item=><article key={item.id} className="py-3">

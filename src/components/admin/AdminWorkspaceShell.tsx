@@ -265,7 +265,6 @@ export const adminGroups: Group[] = [
         label: "Website controls",
         href: "/management-website-controls",
         icon: Settings2,
-        ownerOrAdmin: true,
         keywords: "website pricing change plan price coupons promo codes discount registration edit content settings no code",
       },
     ],
@@ -318,6 +317,7 @@ export const adminGroups: Group[] = [
   },
 ];
 export function canSeeAdminTool(tool: Tool, role: string | null) {
+  if(role==="reception")return tool.href==="/management-website-controls";
   return (
     !!role &&
     (!tool.adminOnly || role === "admin") &&
@@ -407,7 +407,7 @@ export function AdminWorkspaceShell({
           .maybeSingle();
         if (error) throw error;
         const next = String(staff?.role || "").toLowerCase();
-        if (!staff?.active || !["admin", "owner", "manager"].includes(next))
+        if (!staff?.active || !(["admin", "owner", "manager"].includes(next) || (active==="/management-website-controls"&&next==="reception")))
           throw Error("An active management account is required.");
         if (!cancelled) setRole(next);
       } catch (cause) {

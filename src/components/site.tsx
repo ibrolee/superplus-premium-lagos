@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -413,11 +414,31 @@ export function FacilityGrid({ limit }: { limit?: number }) {
 }
 
 export function ContactForm({ partnership = false }: { partnership?: boolean }) {
-  function submit(event: FormEvent<HTMLFormElement>) {
+  const [sending,setSending]=useState(false);
+  const [formError,setFormError]=useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    toast("Thanks — this form is ready to connect", {
-      description: "Until delivery is connected, please call, email or WhatsApp our team directly.",
+    if(sending)return;
+    const form=event.currentTarget;
+    const values=new FormData(form);
+    setSending(true);setFormError("");
+    const {data,error}=await supabase.rpc("wc_submit_enquiry",{
+      p_kind:partnership?"hmo":"contact",
+      p_name:String(values.get("name")||""),
+      p_email:String(values.get("email")||""),
+      p_phone:String(values.get("phone")||""),
+      p_message:String(values.get("message")||""),
+      p_organization:String(values.get("organization")||""),
+      p_website:String(values.get("website")||""),
+    });
+    setSending(false);
+    if(error||!data?.received){
+      setFormError(error?.message||"Could not deliver your message. Please try WhatsApp or call us.");
+      return;
+    }
+    form.reset();
+    toast.success("Your enquiry has been delivered to Super Plus Fitness.",{
+      description:"Our team can now review it in the management inbox.",
     });
   }
 
@@ -456,12 +477,13 @@ export function ContactForm({ partnership = false }: { partnership?: boolean }) 
         />
       </label>
 
-      <Button type="submit" size="lg">
-        Send enquiry <ArrowRight />
+      <div aria-hidden="true" className="absolute -left-[10000px] h-px overflow-hidden"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div>
+      {formError&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-800">{formError}</p>}
+      <Button type="submit" size="lg" disabled={sending}>
+        {sending?"Sending…":"Send enquiry"} <ArrowRight />
       </Button>
-
       <p className="text-xs text-muted-foreground">
-        Online delivery is awaiting connection. For an immediate response, use WhatsApp or call us.
+        Messages are delivered to our private management inbox. For an urgent response, call or WhatsApp us.
       </p>
     </form>
   );

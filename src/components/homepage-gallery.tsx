@@ -1,3 +1,4 @@
+import {PublicCampaigns} from "@/components/cms/PublicCampaigns";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Dumbbell, HeartPulse, Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -368,6 +369,8 @@ export function HomePageGallery({
           </Button>
         </div>
       </section>
+      <PublicCampaigns kind="event" compact/>
+      <PublicCampaigns kind="promotion" compact/>
       <LocationSection compact />
       <FinalCTA />
     </main>

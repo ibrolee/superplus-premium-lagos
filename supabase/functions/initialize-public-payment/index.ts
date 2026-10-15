@@ -23,10 +23,10 @@ Deno.serve(async(req:Request)=>{
   let allowedCoupons=new Set<string>();
   if(couponCode){
     const {data:coupon,error:couponError}=await admin.from('website_coupons')
-      .select('code,active,expires_on,discount_type').eq('code',couponCode).maybeSingle();
+      .select('code,active,starts_on,expires_on,discount_type').eq('code',couponCode).maybeSingle();
     if(couponError)return respond({error:'Coupon validation is temporarily unavailable. No payment has started.'},503);
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-    if(coupon?.active&&coupon.discount_type==='registration_waiver'&&(!coupon.expires_on||coupon.expires_on>=today))
+    if(coupon?.active&&coupon.discount_type==='registration_waiver'&&(!coupon.starts_on||coupon.starts_on<=today)&&(!coupon.expires_on||coupon.expires_on>=today))
       allowedCoupons.add(couponCode);
   }
   let pricing:ReturnType<typeof couponPricing>;

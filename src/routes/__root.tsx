@@ -250,6 +250,7 @@ function isVisitorPage(pathname: string): boolean {
       "/blog",
       "/join",
       "/app",
+      "/events",
     ].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname) || /^\/pages\/[a-z0-9-]+\/?$/.test(pathname)
   );
 }
