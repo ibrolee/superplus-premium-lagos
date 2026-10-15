@@ -1,4 +1,6 @@
 import { SalaryAdvanceRequests } from "@/components/admin/SalaryAdvanceRequests";
+import { SpaCommissions } from "@/components/admin/SpaCommissions";
+import type { SpaCommission } from "@/lib/spa-commissions";
 import type { SalaryAdvance } from "@/components/StaffSalaryAdvance";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
@@ -13,8 +15,8 @@ export const Route = createFileRoute("/management-salary-payments")({ component:
 type Staff = { id: string; full_name: string; position: string | null; status: string };
 type Setting = { staff_profile_id: string; current_monthly_salary: number; currency: string };
 type Payment = { gross_salary_amount: number | null; salary_advance_deduction: number; id: string; staff_profile_id: string; amount: number; currency: string; pay_period_start: string | null; pay_period_end: string | null; payment_date: string | null; scheduled_pay_date: string | null; status: string; payroll_kind: string | null; pt_payout_run_id: string | null; notes: string | null };
-type Data = { advances: SalaryAdvance[]; staff: Staff[]; settings: Setting[]; payments: Payment[]; trainers: Trainer[]; memberships: PtMembership[]; assignments: Assignment[]; evaluations: Evaluation[]; runs: PtPayoutRun[] };
-const empty: Data = { advances: [], staff: [], settings: [], payments: [], trainers: [], memberships: [], assignments: [], evaluations: [], runs: [] };
+type Data = { spaCommissions: SpaCommission[]; advances: SalaryAdvance[]; staff: Staff[]; settings: Setting[]; payments: Payment[]; trainers: Trainer[]; memberships: PtMembership[]; assignments: Assignment[]; evaluations: Evaluation[]; runs: PtPayoutRun[] };
+const empty: Data = { spaCommissions: [], advances: [], staff: [], settings: [], payments: [], trainers: [], memberships: [], assignments: [], evaluations: [], runs: [] };
 // Exclude the administrative placeholder, not active staff with saved salaries.
 // Coach Ifeanyi's commission-only contract is handled in its own section.
 const NON_PAYROLL_STAFF_IDS = new Set([
@@ -63,7 +65,7 @@ function SalaryPayments() {
         const { data: account, error: accountError } = await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
         if (accountError) throw accountError;
         if (!account?.active || !["admin", "owner"].includes(account.role)) throw Error("Salary payments are available to active admin and owner accounts.");
-        const [staff, settings, payments, trainers, memberships, assignments, evaluations, runs, advances] = await Promise.all([
+        const [staff, settings, payments, trainers, memberships, assignments, evaluations, runs, advances, spaCommissions] = await Promise.all([
           readAll<Staff>("staff_profiles", "id,full_name,position,status"),
           readAll<Setting>("staff_salary_settings", "staff_profile_id,current_monthly_salary,currency"),
           readAll<Payment>("staff_salary_records", "id,staff_profile_id,amount,currency,pay_period_start,pay_period_end,payment_date,scheduled_pay_date,status,payroll_kind,pt_payout_run_id,notes,gross_salary_amount,salary_advance_deduction"),
@@ -74,9 +76,10 @@ function SalaryPayments() {
           readAll<Evaluation>("pt_evaluations", "membership_id,member_id,trainer_staff_profile_id,overall_rating,submitted_at"),
           readAll<PtPayoutRun>("pt_semimonthly_payout_runs", "id,period_start,period_end,pay_date,auto_payout_pool,payout_pool,breakdown,status,financial_locked,paid_at,created_by,updated_at"),
           readAll<SalaryAdvance>("staff_salary_advances", "id,staff_profile_id,salary_month,amount,salary_snapshot,currency,reason,status,requested_at,review_note,paid_at"),
+          readAll<SpaCommission>("spa_staff_commissions", "id,booking_id,source,staff_profile_id,service_name,customer_name,service_date,service_amount,commission_rate,commission_amount,notes,status,paid_at,created_at"),
         ]);
         if (!cancelled) {
-          setData({ staff, settings, payments, memberships, assignments, evaluations, runs, advances,
+          setData({ staff, settings, payments, memberships, assignments, evaluations, runs, advances, spaCommissions,
             trainers: trainers.filter((trainer) => !excluded(staff.find((person) => person.id === trainer.staff_profile_id) || { id: "", full_name: trainer.display_name, position: null, status: "" }))
               .map((trainer) => ({ ...trainer, staff_title: staff.find((person) => person.id === trainer.staff_profile_id)?.position || null })),
           });
@@ -112,13 +115,19 @@ function SalaryPayments() {
     return { ...calculation, run, locked, dirty, invalid, rows };
   }), [data, month, start, today, overrides]);
   const totals = useMemo(() => {
-    const byCurrency: Record<string, { salary: number; pt: number; paid: number; due: number }> = {};
-    const entry = (currency: string) => byCurrency[currency] ||= { salary: 0, pt: 0, paid: 0, due: 0 };
+    const byCurrency: Record<string, { salary: number; pt: number; spa: number; paid: number; due: number }> = {};
+    const entry = (currency: string) => byCurrency[currency] ||= { salary: 0, pt: 0, spa: 0, paid: 0, due: 0 };
     salaryRows.forEach((row) => { if (row.amount !== null && !row.conflict) { const total = entry(row.currency); total.salary += row.gross || 0; total.paid += row.advance; if (row.paid) total.paid += row.amount; else total.due += row.amount; } });
     ptPeriods.forEach((period) => period.rows.forEach((row) => { const total = entry("NGN"); const amount = cents(row.recommended_payout); total.pt += amount; if (row.payment || period.run?.status === "paid") total.paid += amount; else total.due += amount; }));
     const contract = entry("NGN"); contract.pt += contractSummary.total; contract.paid += contractSummary.paid; contract.due += contractSummary.total - contractSummary.paid;
+    data.spaCommissions.filter((item) => item.service_date.slice(0, 7) === month).forEach((item) => {
+      const total = entry("NGN"); const amount = cents(item.commission_amount);
+      total.spa += amount;
+      if (item.status === "paid") total.paid += amount;
+      else total.due += amount;
+    });
     return Object.entries(byCurrency);
-  }, [salaryRows, ptPeriods, contractSummary]);
+  }, [salaryRows, ptPeriods, contractSummary, data.spaCommissions, month]);
   async function act(key: string, confirmation: string | null, action: () => PromiseLike<{ error: { message: string } | null }>) {
     if (loading || busy || (confirmation && !window.confirm(confirmation))) return;
     setBusy(key); setError(""); setMessage("");
@@ -132,10 +141,10 @@ function SalaryPayments() {
   }
   const disabled = loading || !!busy;
   const matches = (name: string) => name.toLowerCase().includes(search.trim().toLowerCase());
-  return <AdminWorkspaceShell title="Salary payments" subtitle="Monthly staff salaries and twice-monthly coach PT payments." active="/management-salary-payments">
+  return <AdminWorkspaceShell title="Salary payments" subtitle="Monthly staff salaries, coach PT payouts and 30% spa service commissions." active="/management-salary-payments">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <label className="text-xs font-bold">Salary month
-        <input type="month" value={month} max={today.slice(0, 7)} disabled={disabled} onChange={(event) => { if (event.target.value) { setMonth(event.target.value); setOverrides({}); setAdjusting(""); setMessage(""); } }} className="mt-2 block rounded-xl border bg-white p-3 text-sm" />
+        <input type="month" min="2026-10" value={month} max={today.slice(0, 7)} disabled={disabled} onChange={(event) => { if (event.target.value) { setMonth(event.target.value); setOverrides({}); setAdjusting(""); setMessage(""); } }} className="mt-2 block rounded-xl border bg-white p-3 text-sm" />
       </label>
       <button disabled={disabled} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border bg-white p-3 text-xs font-bold disabled:opacity-40"><RefreshCw size={16} />Refresh</button>
     </div>
@@ -145,11 +154,13 @@ function SalaryPayments() {
     {authorized && <>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">{totals.map(([currency, total]) => <div key={currency} className="rounded-2xl bg-[var(--portal-ink)] p-5 text-white">
         <p className="text-xs font-bold text-white/70">Total outstanding · {currency}</p><p className="mt-1 text-3xl font-black">{money(total.due, currency)}</p>
-        <p className="mt-3 text-xs leading-6 text-white/75">Monthly salary {money(total.salary, currency)} · PT {money(total.pt, currency)}<br />Marked paid {money(total.paid, currency)}</p>
+        <p className="mt-3 text-xs leading-6 text-white/75">Monthly salary {money(total.salary, currency)} · PT {money(total.pt, currency)} · Spa {money(total.spa, currency)}<br />Marked paid {money(total.paid, currency)}</p>
       </div>)}</div>
       <p className="mt-3 text-xs leading-5 text-[color:var(--portal-muted)]">Current-month amounts are provisional until the period closes. Monthly salaries use saved staff salary settings. Ifeanyi’s commission-only contract payments are listed separately below.</p>
       <SalaryAdvanceRequests requests={data.advances.filter((request) => request.salary_month === start)} staff={data.staff} busy={disabled} onAction={(request, action, note) => void act(`advance-${request.id}`, action === "paid" ? `Confirm ${money(request.amount, request.currency)} has been transferred to this staff member? This permanently records the advance and reduces their remaining salary.` : null, () => supabase.rpc("management_review_salary_advance", { p_request_id: request.id, p_action: action, p_note: note }))} />
       <IfeanyiContractPayroll month={month} reload={reload} onSummary={setContractSummary} />
+      <SpaCommissions month={month} staff={data.staff} records={data.spaCommissions} disabled={disabled}
+        onChanged={() => setReload((value) => value + 1)} />
       <label className="mt-5 block"><span className="sr-only">Search staff</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search staff name" className="w-full rounded-xl border bg-white p-3 text-sm" /></label>
       <section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
         <h2 className="flex items-center gap-2 text-xl font-black"><Wallet size={20} />Monthly salaries</h2>

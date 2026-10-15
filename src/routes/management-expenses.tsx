@@ -339,6 +339,7 @@ function ExpensesAndProfit() {
       ["Operating expenses", String(data.finance.expense_total)],
       ["Gross staff salaries", String(payroll.salary)],
       ["Coach commissions", String(payroll.pt)],
+      ["Spa staff commissions (30%)", String(payroll.spa)],
       ["Total payroll cost", String(payroll.total)],
       [
         "Operating profit / loss",
@@ -354,7 +355,7 @@ function ExpensesAndProfit() {
       ]),
       ["", ""],
       ["Payroll", "Gross cost (NGN)", "Paid (NGN)", "Basis"],
-      ...[...payroll.salaries, ...payroll.coachRows].map((r) => [
+      ...[...payroll.salaries, ...payroll.coachRows, ...payroll.spaRows].map((r) => [
         r.name,
         String(r.amount),
         String(r.paid),
@@ -620,7 +621,7 @@ function ExpensesAndProfit() {
             </article>
           </section>
           <p className="mt-3 text-xs leading-6 text-[color:var(--portal-muted)]">
-            Revenue collected − recorded operating expenses − gross salaries and coach commissions
+            Revenue collected − recorded operating expenses − gross salaries, coach commissions and spa staff commissions
             for{" "}
             {new Intl.DateTimeFormat("en-NG", { month: "long", year: "numeric" }).format(
               new Date(month + "-01T12:00:00Z"),
@@ -703,6 +704,7 @@ function ExpensesAndProfit() {
                 {[
                   ["Gross staff salaries", payroll.salary],
                   ["Coach PT / contract commissions", payroll.pt],
+                  ["Spa staff commissions (30%)", payroll.spa],
                   ["Total payroll cost", payroll.total],
                   ["Already paid, including advances", payroll.paid],
                   ["Still to pay", payroll.outstanding],
@@ -718,7 +720,7 @@ function ExpensesAndProfit() {
                   View salary and commission costs
                 </summary>
                 <div className="mt-3 space-y-3">
-                  {[...payroll.salaries, ...payroll.coachRows]
+                  {[...payroll.salaries, ...payroll.coachRows, ...payroll.spaRows]
                     .filter((r) => r.amount > 0 || r.missing)
                     .map((r) => (
                       <div key={r.id} className="flex items-start justify-between gap-3 text-xs">

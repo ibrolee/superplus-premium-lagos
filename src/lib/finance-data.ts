@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { SpaCommission } from "./spa-commissions";
 import type { Assignment, Evaluation, PtMembership, PtPayoutRun, Trainer } from "./pt-payroll";
 import type {
   Advance,
@@ -46,6 +47,7 @@ export async function loadFinanceMonth(
     assignments,
     evaluations,
     runs,
+    spaCommissions,
   ] = await Promise.all([
     supabase.rpc("admin_get_finance_month", { p_month_start: month + "-01" }),
     supabase.rpc("management_get_ifeanyi_payroll", { p_month_start: month + "-01" }),
@@ -88,6 +90,11 @@ export async function loadFinanceMonth(
       "pt_semimonthly_payout_runs",
       "id,period_start,period_end,pay_date,auto_payout_pool,payout_pool,breakdown,status,financial_locked,paid_at,created_by,updated_at",
     ),
+    supabase.from("spa_staff_commissions")
+      .select("id,booking_id,source,staff_profile_id,service_name,customer_name,service_date,service_amount,commission_rate,commission_amount,notes,status,paid_at,created_at")
+      .gte("service_date", month + "-01")
+      .lt("service_date", new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5, 7)), 1)).toISOString().slice(0, 10))
+      .then(({ data, error }) => { if (error) throw error; return (data || []) as SpaCommission[]; }),
   ]);
   if (finance.error) throw finance.error;
   if (contract.error) throw contract.error;
@@ -97,6 +104,7 @@ export async function loadFinanceMonth(
     finance: finance.data as FinanceMonth,
     payroll: {
       staff,
+      spaCommissions,
       settings,
       records,
       advances,
