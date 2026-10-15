@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CheckCircle2, Plus, Scissors, Trash2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { lagosToday } from "@/lib/pt-payroll";
-import { SPA_COMMISSION_RATE, spaCommissionAmount, type SpaCommission } from "@/lib/spa-commissions";
+import { SPA_COMMISSION_RATE, spaCommissionAmount, spaPayPeriods, type SpaCommission } from "@/lib/spa-commissions";
 import { recoveryServices } from "../../../supabase/functions/_shared/spa-services";
 
 type Staff = { id: string; full_name: string; status: string; position: string | null };
@@ -59,6 +59,25 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
     }
     return [...output.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name));
   }, [monthly, staff]);
+  const periods = useMemo(() => spaPayPeriods(month).map((period) => {
+    const entries = monthly.filter((item) =>
+      item.service_date >= period.periodStart && item.service_date <= period.periodEnd);
+    const groups = new Map<string, { name: string; services: number; total: number; paid: number; pending: number }>();
+    for (const item of entries) {
+      const name = staff.find((person) => person.id === item.staff_profile_id)?.full_name || "Staff record";
+      const summary = groups.get(item.staff_profile_id) || { name, services: 0, total: 0, paid: 0, pending: 0 };
+      const commission = Number(item.commission_amount);
+      summary.services += 1;
+      summary.total += commission;
+      if (item.status === "paid") summary.paid += commission;
+      else summary.pending += commission;
+      groups.set(item.staff_profile_id, summary);
+    }
+    return {
+      ...period, groups: [...groups.entries()].sort((a, b) => a[1].name.localeCompare(b[1].name)),
+      total: entries.reduce((sum, item) => sum + Number(item.commission_amount), 0),
+    };
+  }), [month, monthly, staff]);
   const canSave = !!staffId && service.trim().length >= 2 && service.trim().length <= 150 &&
     isServiceAmount(amount) && date.startsWith(month) && date <= today &&
     customer.length <= 120 && notes.length <= 1000;
@@ -93,18 +112,23 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
     setBusy("");
   }
 
-  async function markPaid(item: SpaCommission) {
-    if (blocked || item.status !== "pending") return;
-    const person = staff.find((row) => row.id === item.staff_profile_id)?.full_name || "this staff member";
-    if (!window.confirm(`Confirm you have paid ${money(item.commission_amount)} spa commission to ${person} for ${item.service_name}? This permanently locks the record.`)) return;
-    setBusy(item.id);
+  async function markPeriodPaid(staffIdToPay: string, periodStart: string, payDate: string, amountDue: number) {
+    if (blocked || amountDue <= 0 || today < payDate) return;
+    const person = staff.find((row) => row.id === staffIdToPay)?.full_name || "this staff member";
+    const formattedPeriod = spaPayPeriods(periodStart.slice(0, 7)).find((row) => row.periodStart === periodStart);
+    const amount = Math.round(amountDue * 100) / 100;
+    if (!window.confirm(`Confirm that ${money(amount)} spa commission was paid to ${person} for ${formattedPeriod?.periodStart} – ${formattedPeriod?.periodEnd}? This settles all pending spa services for the period and permanently locks the paid entries.`)) return;
+    setBusy(staffIdToPay + periodStart);
     setError("");
     setNotice("");
-    const { data, error: updateError } = await supabase.from("spa_staff_commissions")
-      .update({ status: "paid" }).eq("id", item.id).eq("status", "pending").select("id");
+    const { data, error: updateError } = await supabase.rpc("management_mark_spa_staff_commissions_paid", {
+      p_staff_profile_id: staffIdToPay,
+      p_period_start: periodStart,
+      p_expected_amount: amount,
+    });
     if (updateError) setError(updateError.message);
-    else if (!data?.length) setError("This commission was already processed. Refresh before trying again.");
-    else { setNotice("Spa commission marked paid."); onChanged(); }
+    else if (!data?.success) setError("Could not confirm the spa payout. Refresh and try again.");
+    else { setNotice(`Recorded ${money(amount)} spa commission paid to ${person} for ${formattedPeriod?.label}.`); onChanged(); }
     setBusy("");
   }
 
@@ -127,7 +151,7 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
       <div>
         <h2 className="flex items-center gap-2 text-xl font-black"><Scissors size={21} />Spa service commissions</h2>
         <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
-          The staff member who performed each spa service receives a fixed {Math.round(SPA_COMMISSION_RATE * 100)}% of the service amount. Separate from salary and PT commission.
+          The staff member who performed each spa service earns {Math.round(SPA_COMMISSION_RATE * 100)}%, paid twice monthly: 1st–15th on the 16th, and 16th–month end on the next month’s 1st. Separate from salary and PT commission.
         </p>
       </div>
       <span className="rounded-xl bg-orange-100 px-3 py-2 text-xs font-black text-orange-900">30% staff commission</span>
@@ -188,6 +212,40 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
         <p className="mt-1 text-xs text-[color:var(--portal-muted)]">{money(row.total - row.paid)} unpaid</p>
       </div>)}
     </div>}
+    <div className="mt-5 space-y-4" aria-label="Spa commission payday periods">
+      <h3 className="text-base font-black">Spa commission payouts · 16th & 1st</h3>
+      {periods.map((period) => <section key={period.periodStart}
+        className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-black">Services: {period.label}</p>
+            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">{period.periodStart} to {period.periodEnd}</p>
+            <p className="mt-1 text-xs font-semibold">Payday: {period.payDate}</p>
+          </div>
+          <p className="text-base font-black">Earned: {money(period.total)}</p>
+        </div>
+        <div className="mt-3 space-y-2">
+          {period.groups.length === 0 && <p className="rounded-lg bg-white p-3 text-xs text-[color:var(--portal-muted)]">No spa services for this payout period.</p>}
+          {period.groups.map(([personId, item]) => <div key={personId}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white p-3">
+            <div>
+              <p className="text-sm font-black">{item.name}</p>
+              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                {item.services} service(s) · Total {money(item.total)} · Paid {money(item.paid)}
+              </p>
+              <p className="mt-1 text-xs font-bold">Still owed: {money(item.pending)}</p>
+            </div>
+            {item.pending > 0 ? <button type="button"
+              disabled={blocked || today < period.payDate}
+              onClick={() => void markPeriodPaid(personId, period.periodStart, period.payDate, item.pending)}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-40">
+              <CheckCircle2 size={15} />
+              {today < period.payDate ? `Pay on ${period.payDate}` : "Mark spa payout paid"}
+            </button> : <p className="text-xs font-bold text-green-800">All commissions paid</p>}
+          </div>)}
+        </div>
+      </section>)}
+    </div>
     <div className="mt-5 space-y-2">
       <h3 className="text-sm font-black">Spa commission records · {month}</h3>
       {monthly.length === 0 && <p className="rounded-xl bg-[var(--portal-canvas)] p-4 text-xs text-[color:var(--portal-muted)]">No spa services recorded for this month yet.</p>}
@@ -211,15 +269,11 @@ export function SpaCommissions({ month, staff, records, disabled, onChanged }: P
             </p>
           </div>
         </div>
-        {item.status === "pending" && <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" disabled={blocked} onClick={() => void markPaid(item)}
-            className="inline-flex items-center gap-2 rounded-lg bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white disabled:opacity-40">
-            <CheckCircle2 size={14} />Mark commission paid
-          </button>
-          {item.source === "manual" && <button type="button" disabled={blocked} onClick={() => void remove(item)}
+        {item.status === "pending" && item.source === "manual" && <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" disabled={blocked} onClick={() => void remove(item)}
             className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-4 py-2.5 text-xs font-bold text-red-700 disabled:opacity-40">
             <Trash2 size={14} />Delete unpaid entry
-          </button>}
+          </button>
         </div>}
         {item.status === "paid" && item.paid_at && <p className="mt-2 text-xs text-[color:var(--portal-muted)]">Payment recorded on {new Date(item.paid_at).toLocaleDateString("en-NG", { timeZone: "Africa/Lagos" })}</p>}
       </article>)}
