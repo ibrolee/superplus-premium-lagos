@@ -32,9 +32,18 @@ import {
   calculatePtPayout,
 } from "@/lib/pt-payroll";
 
-// Postgres JSONB reorders object keys; compare saved drafts by values, not key order.
-const canonicalPayoutBreakdown = (value: unknown) => JSON.stringify(value, (_key, entry) =>
-  entry && typeof entry === "object" && !Array.isArray(entry)
+// JSONB can reorder keys, and membership queries can return a different row order.
+// Normalise both coach rows and membership ID arrays before deciding a draft changed.
+const canonicalPayoutBreakdown = (value: unknown) => JSON.stringify(
+  Array.isArray(value)
+    ? (value as PtPayoutBreakdown[])
+      .map((row) => ({
+        ...row,
+        payable_membership_ids: [...(row.payable_membership_ids || [])].sort(),
+      }))
+      .sort((a, b) => a.trainer_staff_profile_id.localeCompare(b.trainer_staff_profile_id))
+    : value,
+  (_key, entry) => entry && typeof entry === "object" && !Array.isArray(entry)
     ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)))
     : entry,
 );
