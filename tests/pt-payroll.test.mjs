@@ -90,3 +90,34 @@ test('unpaid payout drafts do not suppress commissions for other periods',()=> {
  input.payoutRuns[0].status='paid';
  assert.equal(calculatePtPayout(input).rows.find(r=>r.trainer_name==='c').trainee_commission,0);
 });
+
+test('custom per-coach payout counts adjust pool and workload without changing actual trainees',()=> {
+ const input=fixture();
+ input.traineeCountOverrides={a:8,b:8,c:0};
+ const adjusted=calculatePtPayout(input);
+ assert.equal(adjusted.autoPool,160000);
+ assert.equal(adjusted.totalRecommended,160000);
+ assert.equal(adjusted.rows.find(r=>r.trainer_name==='a').trainee_count,8);
+ assert.equal(adjusted.rows.find(r=>r.trainer_name==='a').actual_trainee_count,3);
+ assert.equal(adjusted.rows.find(r=>r.trainer_name==='b').trainee_count,8);
+ assert.equal(adjusted.rows.find(r=>r.trainer_name==='c').trainee_commission,0);
+ assert.equal(adjusted.rows.find(r=>r.trainer_name==='e'),undefined);
+ // Saved drafts keep their overrides even when opened from salary reporting.
+ input.selectedPayoutRun={status:'pending',period_start:'2026-10-01',payout_pool:160000,auto_payout_pool:160000,breakdown:adjusted.rows};
+ delete input.traineeCountOverrides;
+ assert.equal(calculatePtPayout(input).autoPool,160000);
+ input.traineeCountOverrides={a:null};
+ const cleared=calculatePtPayout(input);
+ assert.equal(cleared.rows.find(r=>r.trainer_name==='a').trainee_count,3);
+ assert.equal(cleared.rows.find(r=>r.trainer_name==='b').trainee_count,8);
+ assert.equal(cleared.autoPool,110000);
+});
+test('manual count below three uses fixed commission and zero is accepted',()=>{
+ const input=fixture();input.traineeCountOverrides={a:2,b:0,c:1};
+ const result=calculatePtPayout(input);
+ assert.equal(result.autoPool,0);
+ assert.equal(result.totalRecommended,30000);
+ assert.equal(result.rows.find(r=>r.trainer_name==='a').trainee_commission,20000);
+ assert.equal(result.rows.find(r=>r.trainer_name==='b').recommended_payout,0);
+ assert.equal(result.rows.find(r=>r.trainer_name==='c').trainee_commission,10000);
+});
