@@ -1,4 +1,3 @@
-import {PublicCampaigns} from "@/components/cms/PublicCampaigns";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Dumbbell, HeartPulse, Target } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -15,10 +14,7 @@ import {
   type GalleryDisplayItem,
 } from "@/components/gallery/GalleryExperience";
 import { supabase } from "@/lib/supabase";
-import { images } from "@/lib/site-data";
-import {useLivePlans} from "@/lib/use-live-plans";
-import {useLiveSpaServices,useWebsiteSetting,fallbackHome,type HomeConfig} from "@/lib/website-settings";
-import {useCmsConfig,standardFacilities,type CmsFacility} from "@/lib/stage1-cms";
+import { images, membershipPlans, recoveryServices } from "@/lib/site-data";
 
 type BlogPost = {
   id: string;
@@ -169,11 +165,12 @@ export function HomePageGallery({
 }: {
   initialGalleryItems?: GalleryDisplayItem[];
 }) {
-  const {plans:livePlans}=useLivePlans(false);
-  const featuredPlans=["monthly","quarterly","vip-silver","personal-training"].map(id=>livePlans.find(plan=>plan.id===id));
-  const {services:recoveryServices}=useLiveSpaServices();
-  const {value:home}=useWebsiteSetting<HomeConfig>("homepage",fallbackHome);
-  const facilityConfig=useCmsConfig<{items:CmsFacility[]}>("facilities",standardFacilities);
+  const featuredPlans = [
+    membershipPlans[2],
+    membershipPlans[3],
+    membershipPlans[6],
+    membershipPlans[9],
+  ];
   const experience = [
     {
       name: "Fitness",
@@ -194,10 +191,9 @@ export function HomePageGallery({
   ];
   return (
     <main className="overflow-x-clip">
-      {home.announcement_enabled&&home.announcement&&<div className="bg-primary px-5 py-3 text-center text-sm font-bold text-primary-foreground">{home.announcement}</div>}
       <section className="relative min-h-[76svh] overflow-hidden bg-secondary text-secondary-foreground sm:min-h-[82svh]">
         <img
-          src={home.image||images.hero}
+          src={images.hero}
           alt="Illustrative strength-training scene"
           width={1536}
           height={1024}
@@ -211,10 +207,13 @@ export function HomePageGallery({
             <span>Fitness • Spa • Recovery</span>
           </div>
           <h1 className="display-title max-w-4xl text-[clamp(3rem,10vw,6.8rem)] leading-[0.95]">
-            {home.title}<br /><span className="text-primary">{home.highlight}</span>
+            Build stronger.
+            <br />
+            <span className="text-primary">Live better.</span>
           </h1>
           <p className="mt-4 max-w-xl text-sm leading-6 text-secondary-foreground/85 sm:text-base">
-            {home.subtitle}
+            Modern fitness, personal training, spa and recovery — all under one roof in Shomolu,
+            Lagos.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button asChild size="lg">
@@ -252,14 +251,6 @@ export function HomePageGallery({
         </div>
       </section>
       <GalleryExperience compact {...(initialGalleryItems !== undefined ? { initialItems: initialGalleryItems } : {})} />
-      {facilityConfig.items?.some(item=>item.visible!==false)&&<section className="py-8 sm:py-10">
-        <div className="section-shell"><div className="flex flex-wrap items-end justify-between gap-2"><h2 className="font-display text-2xl font-black uppercase sm:text-3xl">Our facilities</h2><Link to="/gallery" className="text-xs font-bold text-primary">View gallery →</Link></div>
-        <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-3">
-        {facilityConfig.items.filter(item=>item.visible!==false).map(item=><article key={item.id} className="min-w-[210px] max-w-[250px] shrink-0 snap-start overflow-hidden rounded-xl border bg-card">
-         {item.image&&<img src={item.image} alt={item.name} loading="lazy" className="h-32 w-full object-cover"/>}
-         <div className="p-3"><h3 className="text-sm font-black">{item.name}</h3><p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{item.description}</p></div>
-        </article>)}</div></div>
-      </section>}
       <section className="py-10 sm:py-12">
         <div className="section-shell">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -369,8 +360,6 @@ export function HomePageGallery({
           </Button>
         </div>
       </section>
-      <PublicCampaigns kind="event" compact/>
-      <PublicCampaigns kind="promotion" compact/>
       <LocationSection compact />
       <FinalCTA />
     </main>

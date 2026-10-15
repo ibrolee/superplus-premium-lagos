@@ -1,8 +1,8 @@
 export async function compressImageForWeb(
   source: Blob,
-  options: { maxDimension?: number; quality?: number; outputType?: "image/jpeg" | "image/png" } = {},
+  options: { maxDimension?: number; quality?: number } = {},
 ): Promise<Blob> {
-  const { maxDimension = 1400, quality = 0.76, outputType = "image/jpeg" } = options;
+  const { maxDimension = 1400, quality = 0.76 } = options;
   const objectUrl = URL.createObjectURL(source);
 
   try {
@@ -25,16 +25,14 @@ export async function compressImageForWeb(
     if (!context) throw new Error("Browser image optimization is unavailable.");
 
     // JPEG has no alpha channel. Use white behind transparent PNG/WebP assets.
-    if (outputType === "image/jpeg") {
-      context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, width, height);
-    }
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
     context.drawImage(image, 0, 0, width, height);
 
     return await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (blob) => (blob ? resolve(blob) : reject(new Error("Could not export optimized image."))),
-        outputType,
+        "image/jpeg",
         quality,
       );
     });

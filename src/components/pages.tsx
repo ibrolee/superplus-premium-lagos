@@ -11,8 +11,6 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
-import { useLivePlans } from "@/lib/use-live-plans";
-import { useLiveSpaServices } from "@/lib/website-settings";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,9 +35,12 @@ import {
 } from "@/lib/site-data";
 
 export function HomePage() {
-  const { plans: currentPlans } = useLivePlans(false);
-  const preview = ["monthly", "quarterly", "vip-silver", "personal-training"]
-    .map((id) => currentPlans.find((plan) => plan.id === id));
+  const preview = [
+    membershipPlans[2],
+    membershipPlans[3],
+    membershipPlans[6],
+    membershipPlans[9],
+  ];
 
   return (
     <main>
@@ -341,9 +342,7 @@ function Split({
 }
 
 export function MembershipPage() {
-  const {services:activeSpaServices}=useLiveSpaServices();
   const [filter, setFilter] = useState("All");
-  const { plans: livePlans, loading: planLoading, error: planError } = useLivePlans();
 
   const filters = [
     "All",
@@ -357,8 +356,8 @@ export function MembershipPage() {
 
   const plans =
     filter === "All"
-      ? livePlans
-      : livePlans.filter((plan) => plan.category === filter);
+      ? publicMembershipOptions
+      : publicMembershipOptions.filter((plan) => plan.category === filter);
 
   return (
     <main>
@@ -399,7 +398,7 @@ export function MembershipPage() {
               </IntegrationNotice>
 
               <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {activeSpaServices.map((service) => (
+                {recoveryServices.map((service) => (
                   <ServiceCard key={service.id} service={service} />
                 ))}
               </div>
@@ -505,7 +504,6 @@ export function FacilitiesPage() {
 }
 
 export function SpaRecoveryPage() {
-  const {services:activeSpaServices}=useLiveSpaServices();
   return (
     <main>
       <PageHero
@@ -524,7 +522,7 @@ export function SpaRecoveryPage() {
           />
 
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {activeSpaServices.map((service) => (
+            {recoveryServices.map((service) => (
               <ServiceCard key={service.id} service={service} />
             ))}
           </div>

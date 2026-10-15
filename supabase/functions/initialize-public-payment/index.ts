@@ -10,27 +10,15 @@ Deno.serve(async(req:Request)=>{
   if(!key||!url||!serviceKey)return respond({error:'Payment system is not configured.'},503);
   const body=await req.json();const planId=String(body?.planId||'').trim();const plan=plans[planId];
   if(!plan)return respond({error:'Invalid membership plan.'},400);
-  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
-  // Server-side catalog is authoritative for all future checkout prices.
-  let effectivePlan=plan;
-  if(planId!=='registration-only'){
-    const {data:official,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.databaseName).maybeSingle();
-    if(planError||!official?.active||!Number.isFinite(Number(official.price))||Number(official.price)<=0)
-      return respond({error:'This membership plan is temporarily unavailable. No payment has started.'},503);
-    effectivePlan={...plan,price:Number(official.price),durationDays:Number(official.duration_days)};
-  }
-  const couponCode=String(body?.couponCode||'').trim().toUpperCase();
-  let allowedCoupons=new Set<string>();
-  if(couponCode){
-    const {data:coupon,error:couponError}=await admin.from('website_coupons')
-      .select('code,active,starts_on,expires_on,discount_type').eq('code',couponCode).maybeSingle();
-    if(couponError)return respond({error:'Coupon validation is temporarily unavailable. No payment has started.'},503);
-    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-    if(coupon?.active&&coupon.discount_type==='registration_waiver'&&(!coupon.starts_on||coupon.starts_on<=today)&&(!coupon.expires_on||coupon.expires_on>=today))
-      allowedCoupons.add(couponCode);
-  }
   let pricing:ReturnType<typeof couponPricing>;
-  try{pricing=couponPricing(effectivePlan,couponCode,allowedCoupons);}catch(cause){return respond({error:cause instanceof Error?cause.message:'Invalid coupon code.'},400);}
+  try{pricing=couponPricing(plan,body?.couponCode);}catch(cause){return respond({error:cause instanceof Error?cause.message:'Invalid coupon code.'},400);}
+  const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
+  if(planId!=='registration-only'){
+  const {data:official,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.databaseName).maybeSingle();
+  if(planError||!official?.active||Number(official.price)!==plan.price||Number(official.duration_days)!==plan.durationDays){
+   return respond({error:'Membership prices are being updated. No payment has started; please try again shortly or contact reception.'},503);
+  }
+  }
 
   let email='',name='',phone='';let birthDay=0,birthMonth=0;let familyMembers:unknown[]|null=null;
   if(planId==='family'){
@@ -70,7 +58,7 @@ Deno.serve(async(req:Request)=>{
   }
 
   const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
-  const metadata:Record<string,unknown>={source:'public_join',pricing_version:'website-dynamic-v2',reference,plan_id:planId,plan_name:plan.name,membership_amount_naira:pricing.membershipAmount,registration_amount_naira:pricing.registrationAmount,total_amount_naira:pricing.totalAmount,coupon_code:pricing.couponCode,duration_days:effectivePlan.durationDays};
+  const metadata:Record<string,unknown>={source:'public_join',pricing_version:'registration-7000-v1',reference,plan_id:planId,plan_name:plan.name,membership_amount_naira:pricing.membershipAmount,registration_amount_naira:pricing.registrationAmount,total_amount_naira:pricing.totalAmount,coupon_code:pricing.couponCode,duration_days:plan.durationDays};
   if(trainerId)metadata.trainer_staff_profile_id=trainerId;
   if(familyMembers)metadata.family_members=familyMembers;
   else Object.assign(metadata,{full_name:name,email,phone,birth_day:birthDay,birth_month:birthMonth});

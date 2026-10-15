@@ -1,4 +1,3 @@
-import { useWebsiteSetting, fallbackBusiness, type BusinessConfig } from "@/lib/website-settings";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -315,15 +313,6 @@ export function ServiceCard({
 }) {
   return (
     <article className="group border border-border bg-card">
-      {service.image && (
-        <img
-          src={service.image}
-          alt={`${service.name} at Super Plus Fitness`}
-          loading="lazy"
-          decoding="async"
-          className="h-48 w-full object-cover sm:h-56"
-        />
-      )}
       <div className={compact ? "p-4 sm:p-5" : "p-6 sm:p-7"}>
         <div className={`flex items-start justify-between ${compact ? "gap-3" : "gap-5"}`}>
           <div>
@@ -414,31 +403,11 @@ export function FacilityGrid({ limit }: { limit?: number }) {
 }
 
 export function ContactForm({ partnership = false }: { partnership?: boolean }) {
-  const [sending,setSending]=useState(false);
-  const [formError,setFormError]=useState("");
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if(sending)return;
-    const form=event.currentTarget;
-    const values=new FormData(form);
-    setSending(true);setFormError("");
-    const {data,error}=await supabase.rpc("wc_submit_enquiry",{
-      p_kind:partnership?"hmo":"contact",
-      p_name:String(values.get("name")||""),
-      p_email:String(values.get("email")||""),
-      p_phone:String(values.get("phone")||""),
-      p_message:String(values.get("message")||""),
-      p_organization:String(values.get("organization")||""),
-      p_website:String(values.get("website")||""),
-    });
-    setSending(false);
-    if(error||!data?.received){
-      setFormError(error?.message||"Could not deliver your message. Please try WhatsApp or call us.");
-      return;
-    }
-    form.reset();
-    toast.success("Your enquiry has been delivered to Super Plus Fitness.",{
-      description:"Our team can now review it in the management inbox.",
+
+    toast("Thanks — this form is ready to connect", {
+      description: "Until delivery is connected, please call, email or WhatsApp our team directly.",
     });
   }
 
@@ -477,13 +446,12 @@ export function ContactForm({ partnership = false }: { partnership?: boolean }) 
         />
       </label>
 
-      <div aria-hidden="true" className="absolute -left-[10000px] h-px overflow-hidden"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div>
-      {formError&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-xs text-red-800">{formError}</p>}
-      <Button type="submit" size="lg" disabled={sending}>
-        {sending?"Sending…":"Send enquiry"} <ArrowRight />
+      <Button type="submit" size="lg">
+        Send enquiry <ArrowRight />
       </Button>
+
       <p className="text-xs text-muted-foreground">
-        Messages are delivered to our private management inbox. For an urgent response, call or WhatsApp us.
+        Online delivery is awaiting connection. For an immediate response, use WhatsApp or call us.
       </p>
     </form>
   );
@@ -505,8 +473,6 @@ function Field({ label, name, type = "text" }: { label: string; name: string; ty
 }
 
 export function LocationSection({ compact = false }: { compact?: boolean }) {
-  const {value:biz}=useWebsiteSetting<BusinessConfig>("business",fallbackBusiness);
-  const hours=[{days:"Monday–Saturday",hours:biz.mon_sat_hours},{days:"Sunday",hours:biz.sun_hours}];
   return (
     <section className={`bg-muted ${compact ? "py-10 sm:py-12" : "py-20"}`}>
       <div
@@ -530,20 +496,20 @@ export function LocationSection({ compact = false }: { compact?: boolean }) {
           >
             <p className="flex gap-3">
               <MapPin className="shrink-0 text-primary" />
-              {biz.address}
+              {contact.address}
             </p>
 
             <p className="flex gap-3">
               <Phone className="shrink-0 text-primary" />
-              {biz.phone}
+              {contact.phone}
             </p>
 
             <p className="flex gap-3">
               <Mail className="shrink-0 text-primary" />
-              {biz.email}
+              {contact.email}
             </p>
 
-            {hours.map((item) => (
+            {openingHours.map((item) => (
               <p key={item.days} className="flex gap-3">
                 <Clock3 className="shrink-0 text-primary" />
 
@@ -558,11 +524,11 @@ export function LocationSection({ compact = false }: { compact?: boolean }) {
 
           <div className={`${compact ? "mt-5" : "mt-7"} flex flex-wrap gap-2`}>
             <Button asChild>
-              <a href={`tel:${biz.phone.replace(/[^+0-9]/g,'')}`}>Call</a>
+              <a href={`tel:${contact.phoneHref}`}>Call</a>
             </Button>
 
             <Button asChild variant="outline">
-              <a href={"https://wa.me/"+biz.whatsapp.replace(/[^0-9]/g,"")} target="_blank" rel="noreferrer">
+              <a href={contact.whatsapp} target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
             </Button>
