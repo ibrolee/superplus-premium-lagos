@@ -12,7 +12,7 @@ import {
 } from "@/components/site";
 import { supabase } from "@/lib/supabase";
 import { facilities, images } from "@/lib/site-data";
-import { useLiveSpaServices, useWebsiteSetting, fallbackHome, type HomeConfig } from "@/lib/website-settings";
+import { useLiveSpaServices, useWebsiteSetting, fallbackHome, fallbackWebsiteContent, type HomeConfig, type WebsiteTextConfig } from "@/lib/website-settings";
 import { useLivePlans } from "@/lib/use-live-plans";
 
 type BlogPost = {
@@ -103,6 +103,7 @@ export function HomePageV2() {
   const { plans: livePlans } = useLivePlans(false);
   const { services: recoveryServices } = useLiveSpaServices();
   const { value: home } = useWebsiteSetting<HomeConfig>("homepage",fallbackHome);
+  const {value:siteText}=useWebsiteSetting<WebsiteTextConfig>("website_content",fallbackWebsiteContent);
   const featuredPlans = ["monthly", "quarterly", "vip-silver", "personal-training"]
     .map((id) => livePlans.find((plan) => plan.id === id));
   const experience = [
@@ -210,6 +211,16 @@ export function HomePageV2() {
           <Button asChild size="lg" className="lg:justify-self-end"><Link to="/hmo">HMO & corporate partnerships <ArrowRight /></Link></Button>
         </div>
       </section>
+      {(siteText.faq.length>0||siteText.rules.length>0)&&<section className="py-14 sm:py-20" id="gym-information">
+       <div className="section-shell grid gap-10 lg:grid-cols-2">
+         {siteText.faq.length>0&&<div><h2 className="font-display text-3xl font-black uppercase">Frequently asked questions</h2>
+           <div className="mt-5 space-y-2">{siteText.faq.map((item,index)=><details key={index} className="rounded-xl border bg-card p-4">
+             <summary className="cursor-pointer text-sm font-bold">{item.question}</summary>
+             <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.answer}</p></details>)}</div></div>}
+         {siteText.rules.length>0&&<div><h2 className="font-display text-3xl font-black uppercase">Gym rules</h2>
+           <ul className="mt-5 space-y-2">{siteText.rules.map((rule,index)=><li key={index} className="rounded-xl border bg-card px-4 py-3 text-sm">{index+1}. {rule}</li>)}</ul></div>}
+       </div>
+      </section>}
       <LocationSection />
       <FinalCTA />
     </main>
