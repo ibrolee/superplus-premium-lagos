@@ -182,7 +182,7 @@ function ManagementBookings() {
   return (
     <AdminWorkspaceShell
       title="Member & spa bookings"
-      subtitle="Manage app requests and paid website spa bookings. Contact spa customers to confirm their appointment time."
+      subtitle="Manage app requests and paid website spa bookings. Assign who performed the service; completed paid spa bookings automatically earn that worker a 30% commission."
       active="/management-bookings"
     >
       <section className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
