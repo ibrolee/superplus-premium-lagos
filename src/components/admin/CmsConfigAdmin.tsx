@@ -125,6 +125,7 @@ export function CmsConfigAdmin(){
   {tab==="media"&&!loading&&<div className="space-y-4">
    <div className="rounded-xl border bg-white p-4">
     <h3 className="text-lg font-black">Shared Media Library</h3><p className="mt-2 text-xs text-[var(--portal-muted)]">Upload once, then use the same photo in page sections, facilities, branding, homepage or spa services. Archiving hides it from selection but preserves published pages.</p>
+    <a href="/staff-gallery" target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex rounded-lg border px-3 py-2 text-xs font-bold text-orange-700">Manage website videos in Media Gallery ↗</a>
     <div className="mt-4"><WebsiteImageUploader title="Upload a new website photo" value="" onChange={()=>setRefresh(x=>x+1)} kind="content" disabled={disabled} onUploading={setUploading}/></div>
     <label className="mt-5 block text-xs font-bold">Search images<input value={search} onChange={e=>setSearch(e.target.value)} className={field} placeholder="Search by name or category"/></label>
    </div>
