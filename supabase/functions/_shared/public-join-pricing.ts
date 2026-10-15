@@ -19,13 +19,13 @@ plans['registration-only'] = registrationOnlyPlan;
 // In-flight checkouts created before this pricing version retain their verified amount.
 export function verifiedCheckoutPlan(planId: string, pricingVersion: unknown): JoinPlan | undefined {
  const plan = plans[planId];
- return plan && pricingVersion !== 'registration-7000-v1' && ['semi-annual','vip-gold'].includes(planId) ? { ...plan, registration:3000 } : plan;
+ return plan && pricingVersion !== 'registration-7000-v1' && pricingVersion !== 'website-dynamic-v2' && ['semi-annual','vip-gold'].includes(planId) ? { ...plan, registration:3000 } : plan;
 }
 const registrationFeeCoupons = new Set(['REGOFF', 'REGSF']);
-export function couponPricing(plan: JoinPlan, raw: unknown) {
+export function couponPricing(plan: JoinPlan, raw: unknown, allowedCoupons: ReadonlySet<string> = registrationFeeCoupons) {
  const code=String(raw||'').trim().toUpperCase();
  if(plan === registrationOnlyPlan && code) throw new Error('Coupons do not apply to registration-only payments.');
- if(code && !registrationFeeCoupons.has(code)) throw new Error('Invalid coupon code.');
- const registrationAmount=registrationFeeCoupons.has(code)?0:plan.registration;
+ if(code && !allowedCoupons.has(code)) throw new Error('Invalid or inactive registration coupon code.');
+ const registrationAmount=code && allowedCoupons.has(code)?0:plan.registration;
  return { couponCode: code||null, membershipAmount: plan.price, registrationAmount, totalAmount: plan.price+registrationAmount };
 }

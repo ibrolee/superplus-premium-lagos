@@ -2,24 +2,27 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { publicMembershipOptions, formatNaira } from '@/lib/site-data';
+import { formatNaira } from '@/lib/site-data';
+import { useLivePlans } from '@/lib/use-live-plans';
 import { supabase } from '@/lib/supabase';
 import { getFunctionErrorMessage, getUserErrorMessage } from '@/lib/user-error';
 
 export const Route = createFileRoute('/join')({ component: JoinPage });
 type Trainer = { staff_profile_id: string; display_name: string };
 function JoinPage() {
+ const { plans: publicMembershipOptions, loading: loadingPlans, error: planError } = useLivePlans();
  const [selectedPlanId,setSelectedPlanId]=useState('monthly');
  const [fullName,setFullName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
  const [birthDay,setBirthDay]=useState(''),[birthMonth,setBirthMonth]=useState('');
  const [coupon,setCoupon]=useState(''),[loading,setLoading]=useState(false),[error,setError]=useState('');
  const [trainers,setTrainers]=useState<Trainer[]>([]),[trainerId,setTrainerId]=useState('');
- useEffect(()=>{let live=true;const params=new URLSearchParams(window.location.search);const plan=params.get('plan');if(plan==='personal-training-only'){window.location.replace('/login');return()=>{live=false;};}if(plan==='family'){window.location.replace('/family-join');return()=>{live=false;};}if(plan&&publicMembershipOptions.some(p=>p.id===plan))setSelectedPlanId(plan);void(async()=>{const {data}=await supabase.from('pt_trainers').select('staff_profile_id,display_name').eq('active',true).order('sort_order');if(live)setTrainers((data||[]) as Trainer[]);})();return()=>{live=false;};},[]);
- const selectedPlan=useMemo(()=>publicMembershipOptions.find(p=>p.id===selectedPlanId)||publicMembershipOptions[0]!,[selectedPlanId]);
+ useEffect(()=>{let live=true;const params=new URLSearchParams(window.location.search);const plan=params.get('plan');if(plan==='personal-training-only'){window.location.replace('/login');return()=>{live=false;};}if(plan==='family'){window.location.replace('/family-join');return()=>{live=false;};}if(plan)setSelectedPlanId(plan);void(async()=>{const {data}=await supabase.from('pt_trainers').select('staff_profile_id,display_name').eq('active',true).order('sort_order');if(live)setTrainers((data||[]) as Trainer[]);})();return()=>{live=false;};},[]);
+ const selectedPlan=useMemo(()=>publicMembershipOptions.find(p=>p.id===selectedPlanId)||publicMembershipOptions[0]!,[selectedPlanId,publicMembershipOptions]);
  const cleanCoupon=coupon.trim().toUpperCase();
  const registrationFee=selectedPlan.registration;
  const totalAmount=selectedPlan.price+registrationFee;
  async function handleSubmit(event:FormEvent<HTMLFormElement>){event.preventDefault();setError('');
+  if(loadingPlans||planError||!publicMembershipOptions.some(p=>p.id===selectedPlanId)){setError('Current prices are unavailable. Refresh before paying.');return;}
   const name=fullName.trim(),mail=email.trim().toLowerCase(),mobile=phone.trim(),day=Number(birthDay),month=Number(birthMonth);
   if(!name||!mail.includes('@')||!mobile||!Number.isInteger(day)||day<1||day>31||!Number.isInteger(month)||month<1||month>12){setError('Enter your name, email, phone and valid birth day/month.');return;}
   setLoading(true);
@@ -34,6 +37,7 @@ function JoinPage() {
  }
  return <main className="min-h-screen bg-background"><section className="border-b bg-card"><div className="mx-auto max-w-7xl px-6 py-5 lg:px-8"><Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4"/> Back to Super Plus Fitness</Link></div></section>
  <section className="px-6 py-10 sm:py-14 lg:px-8"><div className="mx-auto max-w-6xl"><div className="mx-auto max-w-2xl text-center"><p className="text-sm font-semibold uppercase tracking-[.18em] text-primary">Membership</p><h1 className="mt-3 text-3xl font-bold sm:text-5xl">Join Super Plus Fitness</h1><p className="mt-4 text-base text-muted-foreground">Choose a plan and pay securely through Paystack. Existing members with a profile can <Link to="/login" className="font-semibold text-primary underline">log in and renew</Link> without a registration fee.</p></div>
+ {planError&&<p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-red-800">{planError}</p>}
  <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_420px] lg:items-start"><div><h2 className="mb-4 text-xl font-semibold">Choose your plan</h2><div className="grid gap-4 sm:grid-cols-2">{publicMembershipOptions.map(plan=>{const selected=plan.id===selectedPlan.id;return <button key={plan.id} type="button" onClick={()=>{if(plan.id==='personal-training-only'){window.location.href='/login';return;}if(plan.id==='family'){window.location.href='/family-join';return;}setSelectedPlanId(plan.id);if(plan.id!=='personal-training')setTrainerId('');setError('');}} disabled={loading} className={`relative rounded-2xl border p-5 text-left transition-all ${selected?'border-primary ring-2 ring-primary/20':'border-border hover:border-primary/50'}`}>
   {plan.badge&&<span className="absolute right-4 top-4 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">{plan.badge}</span>}
   <div className="pr-16"><h3 className="text-lg font-semibold">{plan.name}</h3><p className="mt-1 text-sm text-muted-foreground">{plan.duration}</p></div><div className="mt-5 text-2xl font-bold">{formatNaira(plan.id==='registration-only'?plan.registration:plan.price)}</div><div className="mt-3 space-y-1 text-sm text-muted-foreground"><p>{plan.id==='personal-training-only'?'For existing active gym members · no new registration fee':plan.id==='registration-only'?'Register now; choose a membership later':`One-time registration fee: ${formatNaira(plan.registration)}`}</p>{plan.id!=='personal-training-only'&&<p className="font-medium text-foreground">Total before coupon: {formatNaira(plan.price+plan.registration)}</p>}</div><div className="mt-5 flex items-center gap-2 text-sm font-semibold">{selected?'Selected':'Select plan'}{selected&&<CheckCircle2 className="size-4"/>}</div>
@@ -48,6 +52,6 @@ function JoinPage() {
  <label className="block text-sm font-medium">Phone number<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" required disabled={loading} placeholder="08012345678" className="mt-2 h-12 w-full rounded-xl border bg-background px-4 text-sm outline-none focus:border-primary"/></label>
  <label className="block text-sm font-medium">Date of birth (day and month)</label><div className="grid grid-cols-2 gap-3"><select value={birthDay} onChange={e=>setBirthDay(e.target.value)} aria-label="Birth day" required disabled={loading} className="h-12 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Day</option>{Array.from({length:31},(_,i)=>i+1).map(day=><option key={day} value={day}>{day}</option>)}</select><select value={birthMonth} onChange={e=>setBirthMonth(e.target.value)} aria-label="Birth month" required disabled={loading} className="h-12 w-full rounded-xl border bg-background px-3 text-sm"><option value="">Month</option>{['January','February','March','April','May','June','July','August','September','October','November','December'].map((month,index)=><option key={month} value={index+1}>{month}</option>)}</select></div><p className="text-xs text-muted-foreground">Only the day and month are needed for birthday benefits.</p>
  {error&&<div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}
- <Button type="submit" size="lg" className="h-12 w-full" disabled={loading}>{loading?<><Loader2 className="mr-2 size-4 animate-spin"/>Connecting to Paystack…</>:<>Continue to payment <ArrowRight className="ml-2 size-4"/></>}</Button><p className="text-center text-xs leading-5 text-muted-foreground">You will be redirected to Paystack to complete payment securely.</p>
+ <Button type="submit" size="lg" className="h-12 w-full" disabled={loading||loadingPlans||!!planError}>{loading?<><Loader2 className="mr-2 size-4 animate-spin"/>Connecting to Paystack…</>:<>Continue to payment <ArrowRight className="ml-2 size-4"/></>}</Button><p className="text-center text-xs leading-5 text-muted-foreground">You will be redirected to Paystack to complete payment securely.</p>
  </form></div></div></div></div></section></main>;
 }

@@ -3,14 +3,16 @@ import { useMemo, useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Loader2, ShieldCheck, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FamilyMemberFields, emptyFamilyMember, familyMemberPayload, familyMemberValid, type FamilyMemberInput } from "@/components/family/FamilyMemberFields";
-import { formatNaira, membershipPlans } from "@/lib/site-data";
+import { formatNaira } from "@/lib/site-data";
+import { useLivePlans } from "@/lib/use-live-plans";
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 
 export const Route = createFileRoute("/family-join")({ component: FamilyJoinPage });
 
 function FamilyJoinPage() {
-  const plan = useMemo(() => membershipPlans.find((item) => item.id === "family"), []);
+  const { plans, loading: planLoading, error: planError } = useLivePlans(false);
+  const plan = useMemo(() => plans.find((item) => item.id === "family"), [plans]);
   const [members, setMembers] = useState<FamilyMemberInput[]>([emptyFamilyMember(), emptyFamilyMember(), emptyFamilyMember()]);
   const [coupon, setCoupon] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +25,7 @@ function FamilyJoinPage() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    if (!plan) { setError("Family Plan is unavailable right now."); return; }
+    if (planLoading || planError || !plan) { setError("Current Family Plan pricing is unavailable. Refresh before paying."); return; }
     if (!members.every(familyMemberValid)) { setError("Complete valid details for all three family members."); return; }
     const emails = members.map((item) => item.email.trim().toLowerCase());
     if (new Set(emails).size !== 3) { setError("Each family member must use a different email address."); return; }

@@ -11,7 +11,8 @@ import {
   ServiceCard,
 } from "@/components/site";
 import { supabase } from "@/lib/supabase";
-import { facilities, images, membershipPlans, recoveryServices } from "@/lib/site-data";
+import { facilities, images, recoveryServices } from "@/lib/site-data";
+import { useLivePlans } from "@/lib/use-live-plans";
 
 type BlogPost = {
   id: string;
@@ -98,7 +99,9 @@ function HomeJournal() {
 
 /** Preserve the original homepage's identity, imagery, sections and four displayed plans. */
 export function HomePageV2() {
-  const featuredPlans = [membershipPlans[2], membershipPlans[3], membershipPlans[6], membershipPlans[9]];
+  const { plans: livePlans } = useLivePlans(false);
+  const featuredPlans = ["monthly", "quarterly", "vip-silver", "personal-training"]
+    .map((id) => livePlans.find((plan) => plan.id === id));
   const experience = [
     { name: "Fitness", description: "Modern equipment and spaces designed for strength, cardio and everyday fitness.", icon: Dumbbell },
     { name: "Training", description: "Personal and group training designed around your goals.", icon: Target },

@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
+import { useLivePlans } from "@/lib/use-live-plans";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,12 +36,9 @@ import {
 } from "@/lib/site-data";
 
 export function HomePage() {
-  const preview = [
-    membershipPlans[2],
-    membershipPlans[3],
-    membershipPlans[6],
-    membershipPlans[9],
-  ];
+  const { plans: currentPlans } = useLivePlans(false);
+  const preview = ["monthly", "quarterly", "vip-silver", "personal-training"]
+    .map((id) => currentPlans.find((plan) => plan.id === id));
 
   return (
     <main>
@@ -343,6 +341,7 @@ function Split({
 
 export function MembershipPage() {
   const [filter, setFilter] = useState("All");
+  const { plans: livePlans, loading: planLoading, error: planError } = useLivePlans();
 
   const filters = [
     "All",
@@ -356,8 +355,8 @@ export function MembershipPage() {
 
   const plans =
     filter === "All"
-      ? publicMembershipOptions
-      : publicMembershipOptions.filter((plan) => plan.category === filter);
+      ? livePlans
+      : livePlans.filter((plan) => plan.category === filter);
 
   return (
     <main>
