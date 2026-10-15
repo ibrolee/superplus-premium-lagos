@@ -6,6 +6,7 @@ import { WebsiteSettingsEditor } from "@/components/admin/WebsiteSettingsEditor"
 import { CmsPageAdmin } from "@/components/admin/CmsPageAdmin";
 import { CmsConfigAdmin } from "@/components/admin/CmsConfigAdmin";
 import {WebsiteStage2,type SiteScope} from "@/components/admin/WebsiteStage2";
+import {BulkPricing} from "@/components/admin/BulkPricing";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
@@ -163,6 +164,7 @@ function WebsiteControls(){
            </button>
        </article>)}
      </div>
+     <BulkPricing plans={editable} onSaved={()=>setReload(v=>v+1)}/>
      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900"><ShieldCheck size={15} className="mr-1 inline"/>Plan names, durations and deleting plans are restricted here to protect existing member records. Contact developers only for new plan types or changes to how checkout works.</p>
    </section>}
    {verified&&scope.admin&&tab==="coupons"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">
