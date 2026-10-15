@@ -1,3 +1,4 @@
+import { useWebsiteSetting, fallbackBusiness, type BusinessConfig } from "@/lib/website-settings";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -473,6 +474,8 @@ function Field({ label, name, type = "text" }: { label: string; name: string; ty
 }
 
 export function LocationSection({ compact = false }: { compact?: boolean }) {
+  const {value:biz}=useWebsiteSetting<BusinessConfig>("business",fallbackBusiness);
+  const hours=[{days:"Monday–Saturday",hours:biz.mon_sat_hours},{days:"Sunday",hours:biz.sun_hours}];
   return (
     <section className={`bg-muted ${compact ? "py-10 sm:py-12" : "py-20"}`}>
       <div
@@ -496,20 +499,20 @@ export function LocationSection({ compact = false }: { compact?: boolean }) {
           >
             <p className="flex gap-3">
               <MapPin className="shrink-0 text-primary" />
-              {contact.address}
+              {biz.address}
             </p>
 
             <p className="flex gap-3">
               <Phone className="shrink-0 text-primary" />
-              {contact.phone}
+              {biz.phone}
             </p>
 
             <p className="flex gap-3">
               <Mail className="shrink-0 text-primary" />
-              {contact.email}
+              {biz.email}
             </p>
 
-            {openingHours.map((item) => (
+            {hours.map((item) => (
               <p key={item.days} className="flex gap-3">
                 <Clock3 className="shrink-0 text-primary" />
 
@@ -524,11 +527,11 @@ export function LocationSection({ compact = false }: { compact?: boolean }) {
 
           <div className={`${compact ? "mt-5" : "mt-7"} flex flex-wrap gap-2`}>
             <Button asChild>
-              <a href={`tel:${contact.phoneHref}`}>Call</a>
+              <a href={`tel:${biz.phoneHref}`}>Call</a>
             </Button>
 
             <Button asChild variant="outline">
-              <a href={contact.whatsapp} target="_blank" rel="noreferrer">
+              <a href={"https://wa.me/"+biz.whatsapp.replace(/[^0-9]/g,"")} target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
             </Button>
