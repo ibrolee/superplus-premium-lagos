@@ -11,7 +11,8 @@ import {
   ServiceCard,
 } from "@/components/site";
 import { supabase } from "@/lib/supabase";
-import { facilities, images, recoveryServices } from "@/lib/site-data";
+import { facilities, images } from "@/lib/site-data";
+import { useLiveSpaServices, useWebsiteSetting, fallbackHome, fallbackWebsiteContent, type HomeConfig, type WebsiteTextConfig } from "@/lib/website-settings";
 import { useLivePlans } from "@/lib/use-live-plans";
 
 type BlogPost = {
@@ -100,6 +101,9 @@ function HomeJournal() {
 /** Preserve the original homepage's identity, imagery, sections and four displayed plans. */
 export function HomePageV2() {
   const { plans: livePlans } = useLivePlans(false);
+  const { services: recoveryServices } = useLiveSpaServices();
+  const { value: home } = useWebsiteSetting<HomeConfig>("homepage",fallbackHome);
+  const {value:siteText}=useWebsiteSetting<WebsiteTextConfig>("website_content",fallbackWebsiteContent);
   const featuredPlans = ["monthly", "quarterly", "vip-silver", "personal-training"]
     .map((id) => livePlans.find((plan) => plan.id === id));
   const experience = [
@@ -110,18 +114,19 @@ export function HomePageV2() {
 
   return (
     <main className="overflow-x-clip">
+      {home.announcement_enabled&&home.announcement&&<div className="bg-orange-600 px-5 py-3 text-center text-sm font-bold text-white">{home.announcement}</div>}
       <section className="relative min-h-[calc(100svh-3.5rem)] overflow-hidden bg-secondary text-secondary-foreground sm:min-h-[calc(100svh-4rem)]">
-        <img src={images.hero} alt="Illustrative strength-training scene" width={1536} height={1024} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[60%_center] sm:object-center" />
+        <img src={home.image||images.hero} alt="Super Plus Fitness gym" width={1536} height={1024} fetchPriority="high" className="absolute inset-0 h-full w-full object-cover object-[60%_center] sm:object-center" />
         <div className="absolute inset-0 bg-gradient-to-t from-secondary/95 via-secondary/60 to-secondary/30" />
         <div className="relative section-shell flex min-h-[calc(100svh-3.5rem)] flex-col justify-end pb-10 pt-24 sm:min-h-[calc(100svh-4rem)] sm:pb-16">
           <div className="mb-5 flex flex-wrap gap-x-5 gap-y-1 text-[10px] font-bold uppercase text-secondary-foreground/85">
             <span>Shomolu, Lagos</span><span>Fitness • Spa • Recovery</span>
           </div>
           <h1 className="display-title max-w-5xl text-[clamp(3.8rem,14vw,9rem)] leading-[0.97]">
-            Build stronger.<br /><span className="text-primary">Live better.</span>
+            {home.title}<br /><span className="text-primary">{home.highlight}</span>
           </h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-secondary-foreground/85 sm:text-lg">
-            Modern fitness, personal training, spa and recovery — all under one roof in Shomolu, Lagos.
+            {home.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg"><Link to="/join">Join now <ArrowRight /></Link></Button>
@@ -206,6 +211,16 @@ export function HomePageV2() {
           <Button asChild size="lg" className="lg:justify-self-end"><Link to="/hmo">HMO & corporate partnerships <ArrowRight /></Link></Button>
         </div>
       </section>
+      {(siteText.faq.length>0||siteText.rules.length>0)&&<section className="py-14 sm:py-20" id="gym-information">
+       <div className="section-shell grid gap-10 lg:grid-cols-2">
+         {siteText.faq.length>0&&<div><h2 className="font-display text-3xl font-black uppercase">Frequently asked questions</h2>
+           <div className="mt-5 space-y-2">{siteText.faq.map((item,index)=><details key={index} className="rounded-xl border bg-card p-4">
+             <summary className="cursor-pointer text-sm font-bold">{item.question}</summary>
+             <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.answer}</p></details>)}</div></div>}
+         {siteText.rules.length>0&&<div><h2 className="font-display text-3xl font-black uppercase">Gym rules</h2>
+           <ul className="mt-5 space-y-2">{siteText.rules.map((rule,index)=><li key={index} className="rounded-xl border bg-card px-4 py-3 text-sm">{index+1}. {rule}</li>)}</ul></div>}
+       </div>
+      </section>}
       <LocationSection />
       <FinalCTA />
     </main>

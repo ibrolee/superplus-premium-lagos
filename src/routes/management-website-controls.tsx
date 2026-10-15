@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { ArrowUpRight, CheckCircle2, Clock3, CreditCard, FileClock, Gift, Images, Megaphone, Pencil, RefreshCw, Settings2, ShieldCheck, Ticket, Trash2, Wallet } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
+import { WebsiteSettingsEditor } from "@/components/admin/WebsiteSettingsEditor";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
@@ -35,7 +36,7 @@ function WebsiteControls(){
  const [busy,setBusy]=useState("");
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
- const [tab,setTab]=useState<"prices"|"coupons"|"content"|"history">("prices");
+ const [tab,setTab]=useState<"prices"|"coupons"|"site"|"content"|"history">("prices");
  const load=useCallback(async()=>{
    setLoading(true);setError("");
    try{
@@ -70,6 +71,16 @@ function WebsiteControls(){
      setNotice(`${plan.name} updated to ${money(price)}. Live prices are refreshed on new visits and checkouts.`);
      setEditingPrice(null);setReload(v=>v+1);
    }
+   setBusy("");
+ }
+ async function changePlanActive(plan:Plan){
+   if(busy||!verified)return;
+   const active=!plan.active;
+   if(!window.confirm(`${active?"Show":"Hide"} ${plan.name} on the website and for new registrations? Existing memberships remain active and unchanged.`))return;
+   setBusy(plan.id);setError("");setNotice("");
+   const {error:saveError}=await supabase.rpc("admin_site_set_plan_active",{p_plan_id:plan.id,p_active:active});
+   if(saveError)setError(saveError.message);
+   else{setNotice(`${plan.name} is now ${active?"available":"hidden"} for new sign-ups.`);setReload(v=>v+1);}
    setBusy("");
  }
  async function saveCoupon(event:FormEvent<HTMLFormElement>){
@@ -107,7 +118,7 @@ function WebsiteControls(){
      <button onClick={()=>setReload(v=>v+1)} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-xs font-black disabled:opacity-50"><RefreshCw size={16}/>Refresh</button>
    </div>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Website control sections">
-     {([["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+     {([["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Website editor",Pencil],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
        .map(([id,label,Icon])=><button key={id} type="button" role="tab" aria-selected={tab===id} onClick={()=>setTab(id)}
          className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black ${tab===id?"bg-[var(--portal-ink)] text-white":"border border-[var(--portal-border)] bg-white"}`}>
          <Icon size={15}/>{label}</button>)}
@@ -132,6 +143,10 @@ function WebsiteControls(){
            <button onClick={()=>{setEditingPrice(plan.id);setPriceDraft(String(plan.price));setError("");}} disabled={disabled}
              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-white px-4 py-2.5 text-xs font-bold disabled:opacity-50">
              <Pencil size={14}/>Change price</button>}
+           <button type="button" disabled={disabled} onClick={()=>void changePlanActive(plan)}
+              className={`ml-2 mt-4 rounded-xl border px-3 py-2.5 text-xs font-bold disabled:opacity-50 ${plan.active?"border-red-200 text-red-700":"border-green-200 text-green-700"}`}>
+              {plan.active?"Hide plan":"Show plan"}
+           </button>
        </article>)}
      </div>
      <p className="mt-4 rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-900"><ShieldCheck size={15} className="mr-1 inline"/>Plan names, durations and deleting plans are restricted here to protect existing member records. Contact developers only for new plan types or changes to how checkout works.</p>
@@ -163,6 +178,7 @@ function WebsiteControls(){
        </article>;
      })}</div>
    </section>}
+   {verified&&tab==="site"&&<WebsiteSettingsEditor/>}
    {verified&&tab==="content"&&<section className="mt-5">
      <h2 className="mb-2 text-xl font-black">Content and business operations</h2>
      <p className="mb-5 text-sm text-[var(--portal-muted)]">These tools already exist. Open them from this central dashboard instead of asking anyone to edit website code.</p>
@@ -171,7 +187,7 @@ function WebsiteControls(){
        <h3 className="mt-4 font-black">{name}</h3><p className="mt-1 text-xs leading-5 text-[var(--portal-muted)]">{description}</p>
      </a>)}</div>
      <div className="mt-5 rounded-xl border border-dashed p-4 text-xs leading-6 text-[var(--portal-muted)]">
-       <strong>Planned next:</strong> fully editable spa service catalogue and prices, registration fees, opening hours, contact details, home banners, FAQs and website menu links. Those require connecting their checkout or page rendering before enabling edits.
+       <strong>Now under Website editor:</strong> spa services, booking times, homepage hero, contact information, FAQs, gym rules and membership descriptions. Registration fee changes and extra discount types require additional billing checks, so those remain protected.
      </div>
    </section>}
    {verified&&tab==="history"&&<section className="mt-5 rounded-2xl border bg-white p-4 sm:p-6">

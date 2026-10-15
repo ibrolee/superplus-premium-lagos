@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { membershipPlans, publicMembershipOptions, type MembershipPlan } from "@/lib/site-data";
+import { useWebsiteSetting, fallbackMembershipDisplay, type MembershipDisplayConfig } from "@/lib/website-settings";
 
 /** Prices and active plans from the database, with bundled catalog as an initial skeleton.
  * Checkout still independently verifies every amount with the server.
  */
 export function useLivePlans(includeRegistration = true) {
+  const {value:display}=useWebsiteSetting<MembershipDisplayConfig>("membership_display",fallbackMembershipDisplay);
   const fallback = includeRegistration ? publicMembershipOptions : membershipPlans;
   const [plans, setPlans] = useState<MembershipPlan[]>(fallback);
   const [loading, setLoading] = useState(true);
@@ -34,5 +36,9 @@ export function useLivePlans(includeRegistration = true) {
     })();
     return () => { alive = false; };
   }, [includeRegistration]);
-  return { plans, loading, error };
+  const shown=plans.map(plan=>{
+    const override=display.plans?.[plan.name];
+    return !override?plan:{...plan,benefits:override.benefits?.length?override.benefits:plan.benefits,badge:override.badge||plan.badge};
+  });
+  return { plans:shown, loading, error };
 }
