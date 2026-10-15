@@ -527,7 +527,7 @@ export function LocationSection({ compact = false }: { compact?: boolean }) {
 
           <div className={`${compact ? "mt-5" : "mt-7"} flex flex-wrap gap-2`}>
             <Button asChild>
-              <a href={`tel:${biz.phoneHref}`}>Call</a>
+              <a href={`tel:${biz.phone.replace(/[^+0-9]/g,'')}`}>Call</a>
             </Button>
 
             <Button asChild variant="outline">
