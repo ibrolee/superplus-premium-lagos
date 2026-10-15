@@ -8,7 +8,7 @@ export function CmsBlockPreview({block}:{block:CmsBlock}){
  const callToAction=block.button_label&&block.button_href?
   <a className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground" href={safeCmsHref(block.button_href)}>{block.button_label}<ArrowRight size={16}/></a>:null;
  if(block.type==="image")return <section className="section-shell py-8"><figure className="mx-auto max-w-5xl overflow-hidden rounded-2xl border">{block.image&&<img src={block.image} alt={block.heading||"SPF image"} loading="lazy" className="w-full max-h-[520px] object-cover"/>}{(block.heading||block.body)&&<figcaption className="p-5">{block.heading&&<h2 className="text-2xl font-bold">{block.heading}</h2>}{block.body&&<p className="mt-2 whitespace-pre-line text-muted-foreground">{block.body}</p>}</figcaption>}</figure></section>;
- if(block.type==="quote")return <section className="bg-muted py-10"><div className="section-shell max-w-4xl text-center"><Quote className="mx-auto text-primary" size={28}/><blockquote className="mt-4 whitespace-pre-line text-xl font-semibold italic">{block.body}</blockquote><p className="mt-3 font-bold">{block.heading}</p></div></section>;
+ if(block.type==="quote")return <section className="bg-muted py-10"><div className="section-shell max-w-4xl text-center"><Quote className="mx-auto" style={{color:"var(--cms-accent,var(--primary))"}} size={28}/><blockquote className="mt-4 whitespace-pre-line text-xl font-semibold italic">{block.body}</blockquote><p className="mt-3 font-bold">{block.heading}</p></div></section>;
  if(block.type==="hero")return <section className="relative overflow-hidden bg-secondary py-16 text-white sm:py-24">
    {block.image&&<img src={block.image} className="absolute inset-0 h-full w-full object-cover opacity-35" alt="" loading="lazy"/>}
    <div className="section-shell relative"><h2 className="max-w-4xl font-display text-4xl font-black uppercase sm:text-6xl">{block.heading}</h2><p className="mt-4 max-w-2xl whitespace-pre-line leading-7 text-white/85">{block.body}</p>{callToAction}</div>
@@ -50,9 +50,10 @@ export function CmsBrandingEffects(){
  useEffect(()=>{
   const root=document.documentElement;
   root.style.setProperty("--primary",brand.primary||standardBrand.primary);
+  root.style.setProperty("--cms-accent",brand.accent||standardBrand.accent);
   const favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-  if(favicon&&brand.favicon)favicon.href=brand.favicon;
-  return()=>{root.style.removeProperty("--primary");};
+  if(favicon&&brand.favicon){favicon.href=brand.favicon;favicon.type="image/jpeg";}
+  return()=>{root.style.removeProperty("--primary");root.style.removeProperty("--cms-accent");};
  },[brand.primary,brand.favicon]);
  return null;
 }
