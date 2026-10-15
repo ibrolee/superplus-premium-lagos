@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { contact, formatNaira, recoveryServices } from "@/lib/site-data";
+import { contact, formatNaira } from "@/lib/site-data";
+import { useLiveSpaServices, useWebsiteSetting, fallbackBooking, type BookingConfig } from "@/lib/website-settings";
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 import { pageHead } from "@/lib/seo";
@@ -32,8 +33,10 @@ const field =
   "mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-4 py-3 text-base";
 function SpaBooking() {
   const search = Route.useSearch();
+  const {services:recoveryServices,loading:spaLoading}=useLiveSpaServices();
+  const {value:bookingConfig}=useWebsiteSetting<BookingConfig>("booking",fallbackBooking);
   const [serviceId, setServiceId] = useState(
-    search["service"] || recoveryServices[0]?.id || "vip-chair",
+    search["service"] || "vip-chair",
   );
   const [name, setName] = useState(""),
     [email, setEmail] = useState(""),
@@ -77,7 +80,8 @@ function SpaBooking() {
     }
     const preferredAt = `${date}T${time}:00+01:00`;
     try {
-      validateSpaTime(preferredAt, service.id === "vip-chair" ? 60 : 30);
+      // Checkout validates the exact currently published hours and booking capacity.
+      validateSpaTime(preferredAt, Number(service.duration_minutes)||30);
     } catch (e) {
       setError((e as Error).message);
       return;
@@ -199,7 +203,7 @@ function SpaBooking() {
             onSubmit={(event) => void submit(event)}
             className="space-y-5 rounded-3xl border bg-card p-5 sm:p-8"
           >
-            <fieldset disabled={busy} className="space-y-5">
+            <fieldset disabled={busy||spaLoading} className="space-y-5">
               <label className="block text-sm font-bold">
                 Service
                 <select
