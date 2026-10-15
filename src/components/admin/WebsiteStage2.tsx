@@ -158,15 +158,15 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
    </div>
   </div>}
   {!loading&&section==="permissions"&&permissions.admin&&<div className="rounded-xl border bg-white p-4">
-   <h3 className="font-black">Delegated website access</h3><p className="mt-2 text-xs leading-6 text-[var(--portal-muted)]">Only active manager accounts can receive delegated content permissions. No access to membership prices, coupons, payroll or member payments is granted.</p>
-   <div className="mt-4 space-y-3">{staff.filter(u=>u.role==="manager").map(user=>{
+   <h3 className="font-black">Delegated website access</h3><p className="mt-2 text-xs leading-6 text-[var(--portal-muted)]">Only active reception accounts can receive delegated content permissions. No access to membership prices, coupons, payroll or member payments is granted.</p>
+   <div className="mt-4 space-y-3">{staff.filter(u=>u.role==="reception").map(user=>{
     const p=permissionsForm[user.auth_user_id]||{auth_user_id:user.auth_user_id,can_pages:false,can_design:false,can_campaigns:false,can_enquiries:false};
     return <div key={user.auth_user_id} className="rounded-xl border p-4"><h4 className="font-bold">{user.full_name||"Manager"}</h4>
      <div className="mt-3 flex flex-wrap gap-3">{([["can_pages","Pages"],["can_design","Design & media"],["can_campaigns","Events & promotions"],["can_enquiries","Enquiries"]] as const).map(([prop,label])=>
      <label key={prop} className="flex items-center gap-2 text-xs font-semibold"><input type="checkbox" checked={p[prop]} onChange={e=>setPermissionsForm(prev=>({...prev,[user.auth_user_id]:{...p,[prop]:e.target.checked}}))}/>{label}</label>)}</div>
      <button disabled={disable} className="mt-3 rounded-lg bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white" onClick={()=>void savePermission(user)}>Save permissions</button>
     </div>
-   })}</div>{!staff.some(x=>x.role==="manager")&&<p className="mt-4 text-xs">No active manager accounts are currently eligible. Owners and admins already have full website access.</p>}
+   })}</div>{!staff.some(x=>x.role==="reception")&&<p className="mt-4 text-xs">No active reception accounts are currently eligible. Owners and admins already have full website access.</p>}
   </div>}
  </section>;
 }
