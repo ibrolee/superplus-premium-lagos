@@ -3,6 +3,8 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { ArrowUpRight, CheckCircle2, Clock3, CreditCard, FileClock, Gift, Images, Megaphone, Pencil, RefreshCw, Settings2, ShieldCheck, Ticket, Trash2, Wallet } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { WebsiteSettingsEditor } from "@/components/admin/WebsiteSettingsEditor";
+import { CmsPageAdmin } from "@/components/admin/CmsPageAdmin";
+import { CmsConfigAdmin } from "@/components/admin/CmsConfigAdmin";
 import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
@@ -36,7 +38,7 @@ function WebsiteControls(){
  const [busy,setBusy]=useState("");
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
- const [tab,setTab]=useState<"prices"|"coupons"|"site"|"content"|"history">("prices");
+ const [tab,setTab]=useState<"prices"|"coupons"|"site"|"pages"|"design"|"content"|"history">("pages");
  const load=useCallback(async()=>{
    setLoading(true);setError("");
    try{
@@ -110,7 +112,7 @@ function WebsiteControls(){
    setBusy("");
  }
  const disabled=loading||!!busy||!verified;
- return <AdminWorkspaceShell title="Website Control Centre" subtitle="Manage SPF website pricing, coupons, content and settings without editing code." active="/management-website-controls">
+ return <AdminWorkspaceShell title="Website Control Centre" subtitle="Manage page designs, photos, menus, prices, brand identity and business settings without editing code." active="/management-website-controls">
    <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
      <div><p className="text-xs font-black uppercase tracking-[.16em] text-[var(--portal-muted)]">Admin & owner only</p>
        <h1 className="mt-1 text-2xl font-black">Your website, your controls</h1>
@@ -118,7 +120,7 @@ function WebsiteControls(){
      <button onClick={()=>setReload(v=>v+1)} disabled={disabled} className="inline-flex items-center gap-2 rounded-xl border bg-white px-4 py-3 text-xs font-black disabled:opacity-50"><RefreshCw size={16}/>Refresh</button>
    </div>
    <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Website control sections">
-     {([["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Website editor",Pencil],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
+     {([["pages","Page builder",Pencil],["design","Design & media",Images],["prices","Membership prices",CreditCard],["coupons","Coupons",Ticket],["site","Business settings",Settings2],["content","Content & tools",Settings2],["history","Change history",Clock3]] as const)
        .map(([id,label,Icon])=><button key={id} type="button" role="tab" aria-selected={tab===id} onClick={()=>setTab(id)}
          className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-xs font-black ${tab===id?"bg-[var(--portal-ink)] text-white":"border border-[var(--portal-border)] bg-white"}`}>
          <Icon size={15}/>{label}</button>)}
@@ -178,6 +180,8 @@ function WebsiteControls(){
        </article>;
      })}</div>
    </section>}
+   {verified&&tab==="pages"&&<CmsPageAdmin/>}
+   {verified&&tab==="design"&&<CmsConfigAdmin/>}
    {verified&&tab==="site"&&<WebsiteSettingsEditor/>}
    {verified&&tab==="content"&&<section className="mt-5">
      <h2 className="mb-2 text-xl font-black">Content and business operations</h2>
