@@ -62,6 +62,13 @@ export function CmsConfigAdmin(){
   if(e)setError(e.message);else{setNotice("Published successfully.");setRefresh(x=>x+1);}
   setBusy("");
  }
+ async function discard(){
+  if(!row||disabled||!window.confirm("Discard all unpublished edits in this section? The live website will stay unchanged."))return;
+  setBusy("discard");setError("");setNotice("");
+  const {error:e}=await supabase.rpc("wc_admin_discard_config",{p_key:tab,p_revision:row.revision});
+  if(e)setError(e.message);else{setNotice("Draft discarded. Published settings restored.");setRefresh(x=>x+1);}
+  setBusy("");
+ }
  async function restore(v:Version){
   if(!row||!window.confirm("Restore this previous version to a draft? Live website remains unchanged until you publish."))return;
   setBusy("restore");setError("");
@@ -165,7 +172,8 @@ export function CmsConfigAdmin(){
     <button type="button" disabled={disabled||!changed} onClick={()=>void save()} className="rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-bold text-white disabled:opacity-40"><Save size={14} className="mr-1 inline"/>Save Draft</button>
     <button type="button" disabled={disabled} onClick={()=>setPreview(x=>!x)} className="rounded-xl border px-4 py-3 text-xs font-bold">Preview changes</button>
     <button type="button" disabled={disabled||changed||!pending} onClick={()=>void publish()} className="rounded-xl bg-orange-600 px-4 py-3 text-xs font-black text-white disabled:opacity-40"><UploadCloud size={14} className="mr-1 inline"/>Publish Live</button>
-    {changed&&<p className="w-full text-xs text-orange-700">Save your draft before publishing.</p>}
+        <button type="button" disabled={disabled||(!changed&&!pending)} onClick={()=>void discard()} className="rounded-xl border border-red-300 px-4 py-3 text-xs font-bold text-red-700 disabled:opacity-40"><Trash2 size={14} className="mr-1 inline"/>Discard Draft</button>
+     {changed&&<p className="w-full text-xs text-orange-700">Save your draft before publishing.</p>}
    </div>
    {preview&&<div className="rounded-xl border border-dashed bg-white p-4"><p className="text-xs font-black text-orange-700">PRIVATE PREVIEW</p>
     {tab==="navigation"?<div className="mt-3 flex flex-wrap gap-2">{(draft.header||[]).map((x:any,i:number)=><span key={i} className="rounded-lg border px-3 py-2 text-xs">{x.label}</span>)}</div>:
