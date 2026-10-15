@@ -26,7 +26,7 @@ export function spaCommissionAmount(serviceAmount: number) {
  * Payment is due the day after that half-month closes (Lagos dates).
  */
 export function spaPayPeriods(month: string) {
-  if (!/^\\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw Error("Invalid spa commission month.");
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw Error("Invalid spa commission month.");
   const year = Number(month.slice(0, 4));
   const monthNumber = Number(month.slice(5, 7));
   const monthEnd = new Date(Date.UTC(year, monthNumber, 0)).toISOString().slice(0, 10);
