@@ -43,6 +43,7 @@ function ManagementPersonalTraining() {
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
   const [payoutPeriodStart, setPayoutPeriodStart] = useState(currentPayPeriodStart());
   const [payoutPool, setPayoutPool] = useState<string | null>(null);
+  const [traineeCountInputs, setTraineeCountInputs] = useState<Record<string, string | null>>({});
   const [adjustPoolOpen, setAdjustPoolOpen] = useState(false);
   const [payoutSaving, setPayoutSaving] = useState(false);
   const [payoutMarkingId, setPayoutMarkingId] = useState<string | null>(null);
@@ -282,10 +283,26 @@ function ManagementPersonalTraining() {
     (row) => row.period_start === payoutPeriodStart,
   ) || null;
 
+  const savedTraineeCounts = new Map(
+    (selectedPayoutRun?.breakdown || [])
+      .filter((row) => row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined)
+      .map((row) => [row.trainer_staff_profile_id, row.payout_trainee_count_override as number]),
+  );
+  const invalidTraineeCounts = Object.values(traineeCountInputs).some(
+    (value) => value !== null && (!/^(0|[1-9][0-9]*)$/.test(value) || Number(value) > 500),
+  );
+  const traineeCountOverrides = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    Object.entries(traineeCountInputs).forEach(([id, value]) => {
+      if (value === null) result[id] = null;
+      else if (/^(0|[1-9][0-9]*)$/.test(value) && Number(value) <= 500) result[id] = Number(value);
+    });
+    return result;
+  }, [traineeCountInputs]);
   const payoutCalculation = useMemo(() => calculatePtPayout({
     trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool,
-    payoutRuns, selectedPayoutRun, today,
-  }), [trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool, payoutRuns, selectedPayoutRun, today]);
+    payoutRuns, selectedPayoutRun, today, traineeCountOverrides,
+  }), [trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool, payoutRuns, selectedPayoutRun, today, traineeCountOverrides]);
   const payoutLocked = selectedPayoutRun?.status === "paid" || selectedPayoutRun?.financial_locked === true;
 
   const invalidPool = payoutPool !== null &&
@@ -298,7 +315,12 @@ function ManagementPersonalTraining() {
   );
 
   async function savePayoutRun() {
-    if (payoutBusy || invalidPool) return;
+    if (payoutBusy) return;
+    if (invalidTraineeCounts) {
+      setError("Enter whole trainee numbers between 0 and 500, or clear a field to use the website count.");
+      return;
+    }
+    if (invalidPool) return;
     if (payoutLocked) {
       setError("Payments have been recorded for this PT payout. Its figures are locked.");
       return;
@@ -332,6 +354,7 @@ function ManagementPersonalTraining() {
         `PT payout saved for ${formatDate(payoutCalculation.periodStart)} – ${formatDate(payoutCalculation.periodEnd)}. Pay date: ${formatDate(payoutCalculation.payDate)}.`,
       );
       setPayoutPool(null);
+      setTraineeCountInputs({});
       await load();
     }
     setPayoutSaving(false);
@@ -365,6 +388,7 @@ function ManagementPersonalTraining() {
       setPayoutRuns((runs) => runs.filter((item) => item.id !== run.id));
       if (run.period_start === payoutPeriodStart) {
         setPayoutPool(null);
+        setTraineeCountInputs({});
         setAdjustPoolOpen(false);
       }
       await load();
@@ -377,7 +401,7 @@ function ManagementPersonalTraining() {
   }
 
   async function markPayoutPaid(run: PtPayoutRun) {
-    if (run.status === "paid" || payoutBusy || invalidPool) return;
+    if (run.status === "paid" || payoutBusy || invalidPool || invalidTraineeCounts) return;
     if (payoutNeedsSave) {
       setError("The calculation has changed. Save PT payout before marking it paid.");
       return;
@@ -712,6 +736,7 @@ function ManagementPersonalTraining() {
                     setPayoutPeriodStart(event.target.value);
                     setAdjustPoolOpen(false);
                     setPayoutPool(null);
+                    setTraineeCountInputs({});
                     setPayoutMessage("");
                     setError("");
                   }}
@@ -735,10 +760,58 @@ function ManagementPersonalTraining() {
 
             </div>
 
+            <div className="mt-4 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+              <h3 className="text-sm font-black text-[color:var(--portal-ink)]">Coach trainee count for payout</h3>
+              <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
+                Leave blank to use the website count. Enter a custom whole number for each coach when management needs to adjust this payday. This changes payroll only, not member assignments.
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {payoutCalculation.rows.map((row) => {
+                  const coachId = row.trainer_staff_profile_id;
+                  const inputValue = Object.prototype.hasOwnProperty.call(traineeCountInputs, coachId)
+                    ? traineeCountInputs[coachId] ?? ""
+                    : savedTraineeCounts.has(coachId) ? String(savedTraineeCounts.get(coachId)) : "";
+                  const custom = row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined;
+                  return (
+                    <div key={coachId} className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-3">
+                      <label htmlFor={`pt-payout-count-${coachId}`} className="text-xs font-black">
+                        {row.trainer_name}
+                      </label>
+                      <p className="mt-1 text-[11px] text-[color:var(--portal-muted)]">
+                        Website: {row.actual_trainee_count ?? row.trainee_count} active trainee(s) · Payout: {row.trainee_count}
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          id={`pt-payout-count-${coachId}`} type="number" min="0" max="500" step="1" inputMode="numeric"
+                          value={payoutLocked ? String(row.payout_trainee_count_override ?? "") : inputValue}
+                          placeholder={String(row.actual_trainee_count ?? row.trainee_count)}
+                          disabled={payoutLocked || payoutBusy}
+                          onChange={(event) => setTraineeCountInputs((previous) => ({
+                            ...previous,
+                            [coachId]: event.target.value === "" ? null : event.target.value,
+                          }))}
+                          className="min-w-0 w-28 rounded-lg border border-[var(--portal-border)] bg-white px-3 py-2.5 text-sm font-bold disabled:opacity-60"
+                          aria-label={`Custom payout trainee count for ${row.trainer_name}`}
+                        />
+                        {!payoutLocked && custom && (
+                          <button type="button" disabled={payoutBusy}
+                            onClick={() => setTraineeCountInputs((previous) => ({ ...previous, [coachId]: null }))}
+                            className="text-xs font-bold text-[color:var(--portal-accent)] underline">Use website count</button>
+                        )}
+                        {payoutLocked && <span className="text-[10px] font-bold text-[color:var(--portal-muted)]">Locked</span>}
+                      </div>
+                      {custom && <p className="mt-1 text-[10px] font-semibold text-amber-800">Manual trainee count applied to this payout</p>}
+                    </div>
+                  );
+                })}
+              </div>
+              {invalidTraineeCounts && <p role="alert" className="mt-3 text-xs font-bold text-red-700">Use whole numbers from 0 to 500, or clear a field for the automatic count.</p>}
+            </div>
+
             <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-4">
               <p className="text-xs font-black text-[color:var(--portal-muted)]">Automatic 50/30/20 pool</p>
               <p className="mt-1 text-2xl font-black text-[color:var(--portal-ink)]">{formatMoney(payoutCalculation.autoPool)}</p>
-              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">₦10,000 × payable membership cycles assigned to eligible coaches.</p>
+              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">₦10,000 × eligible payable membership cycles, or approved coach counts when manually adjusted.</p>
               {payoutCalculation.poolOverridden && (
                 <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-900">
                   Manually adjusted pool: {formatMoney(payoutCalculation.pool)} · Automatic: {formatMoney(payoutCalculation.autoPool)}
@@ -799,7 +872,7 @@ function ManagementPersonalTraining() {
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
               <button
                 type="button"
-                disabled={payoutBusy || invalidPool || payoutLocked}
+                disabled={payoutBusy || invalidPool || invalidTraineeCounts || payoutLocked}
                 onClick={() => void savePayoutRun()}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -808,7 +881,7 @@ function ManagementPersonalTraining() {
               {selectedPayoutRun?.status === "pending" && !payoutLocked && (
                 <button
                   type="button"
-                  disabled={payoutBusy || invalidPool || payoutNeedsSave || today < selectedPayoutRun.pay_date}
+                  disabled={payoutBusy || invalidPool || invalidTraineeCounts || payoutNeedsSave || today < selectedPayoutRun.pay_date}
                   onClick={() => void markPayoutPaid(selectedPayoutRun)}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--portal-ink)] bg-white px-4 py-3 text-xs font-black text-[color:var(--portal-ink)] disabled:opacity-45"
                 >
@@ -844,7 +917,7 @@ function ManagementPersonalTraining() {
                     <div>
                       <h3 className="font-black">{row.trainer_name}</h3>
                       <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                        {row.trainee_count} assigned trainee{row.trainee_count === 1 ? "" : "s"} in this pay period
+                        {row.trainee_count} payout trainee{row.trainee_count === 1 ? "" : "s"} · {row.actual_trainee_count ?? row.trainee_count} recorded on website
                       </p>
                       <span className={
                         "mt-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
@@ -883,9 +956,11 @@ function ManagementPersonalTraining() {
                     <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-3">
                       <p className="text-[9px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">Fixed commission</p>
                       <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                        {Number(row.payable_membership_count || 0) > 0
-                          ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
-                          : "No new payable PT membership cycle in this period"}
+                        {row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined
+                          ? `₦10,000 × ${row.trainee_count} manually approved trainee(s)`
+                          : Number(row.payable_membership_count || 0) > 0
+                            ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
+                            : "No new payable PT membership cycle in this period"}
                       </p>
                     </div>
                   )}
@@ -953,6 +1028,7 @@ function ManagementPersonalTraining() {
                             setPayoutPeriodStart(run.period_start);
                             setAdjustPoolOpen(false);
                             setPayoutPool(null);
+                            setTraineeCountInputs({});
                             setPayoutMessage("");
                             setError("");
                           }}
