@@ -101,7 +101,14 @@ function GlobalUnhandledErrorToasts() {
       lastShownAt = now;
       toast.error(message);
     };
-    const onError = (event: ErrorEvent) => show(event.error || event.message);
+    const onError = (event: ErrorEvent) => {
+      // Cross-origin browser extensions and blocked third-party scripts can emit
+      // only the opaque message "Script error." with no source or exception.
+      // Do not alarm visitors with an unactionable global toast in that case;
+      // preserve all first-party and identifiable errors.
+      if (!event.error && !event.filename && /^Script error\\.?$/i.test(event.message || "")) return;
+      show(event.error || event.message);
+    };
     const onRejection = (event: PromiseRejectionEvent) => show(event.reason);
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
