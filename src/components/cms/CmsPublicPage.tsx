@@ -52,7 +52,7 @@ export function CmsBrandingEffects(){
   root.style.setProperty("--primary",brand.primary||standardBrand.primary);
   root.style.setProperty("--cms-accent",brand.accent||standardBrand.accent);
   const favicon=document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-  if(favicon&&brand.favicon){favicon.href=brand.favicon;favicon.type="image/jpeg";}
+  if(favicon&&brand.favicon){favicon.href=brand.favicon;favicon.type=brand.favicon.toLowerCase().includes(".png")?"image/png":"image/jpeg";}
   return()=>{root.style.removeProperty("--primary");root.style.removeProperty("--cms-accent");};
  },[brand.primary,brand.favicon]);
  return null;
