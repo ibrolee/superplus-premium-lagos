@@ -123,7 +123,8 @@ export function VisitorChat() {
   }, [open]);
 
   useEffect(() => {
-    if (open && log.current) log.current.scrollTop = log.current.scrollHeight;
+    if (open && log.current)
+      log.current.scrollTop = messages.length === 1 ? 0 : log.current.scrollHeight;
   }, [messages, open]);
 
   function closeChat() {
@@ -163,7 +164,11 @@ export function VisitorChat() {
   return (
     <>
       {
-        <aside className="spf-assistant-launch" aria-label="Super Plus digital assistant">
+        <aside
+          className="spf-assistant-launch"
+          aria-label="Super Plus digital assistant"
+          style={{ display: open ? "none" : undefined }}
+        >
           {hint && (
             <div className="spf-assistant-invite">
               <button
