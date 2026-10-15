@@ -72,6 +72,10 @@ export function WebsiteSettingsEditor(){
   if(!window.confirm("Publish the saved draft live? Customers will see this content and checkout will use any new spa prices or booking rules."))return;
   await call("admin_website_publish",{p_key:key,p_revision:current.revision},"Published successfully. Your live website now uses these settings.");
  }
+ async function discard(){
+  if(!current||busy||!window.confirm("Discard saved and unsaved draft changes? This restores the last published settings."))return;
+  await call("admin_website_discard_draft",{p_key:key,p_revision:current.revision},"Draft discarded. Live settings unchanged.");
+ }
  async function restore(h:Version){
   if(!current||busy)return;
   if(!window.confirm("Restore version "+h.version+" into a draft? Live settings stay unchanged until you publish."))return;
@@ -184,7 +188,8 @@ export function WebsiteSettingsEditor(){
       <button disabled={!!busy} onClick={()=>setPreview(x=>!x)} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-xs font-black"><CheckCircle2 size={15}/>{preview?"Hide preview":"Preview changes"}</button>
       <button disabled={!!busy||dirtySaved||unchanged} onClick={()=>void publish()} className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-4 py-3 text-xs font-black text-white disabled:opacity-40"><UploadCloud size={15}/>Publish live</button>
    </div>
-   {dirtySaved&&<p className="mt-2 text-xs font-semibold text-orange-700">Unsaved edits — save your draft first to enable publishing.</p>}
+         <button disabled={!!busy||(!dirtySaved&&unchanged)} onClick={()=>void discard()} className="inline-flex items-center gap-2 rounded-xl border border-red-300 px-4 py-3 text-xs font-black text-red-700 disabled:opacity-40"><Trash2 size={15}/>Discard draft</button>
+     {dirtySaved&&<p className="mt-2 text-xs font-semibold text-orange-700">Unsaved edits — save your draft first to enable publishing.</p>}
    {preview&&<div className="mt-4 rounded-xl border border-dashed bg-[var(--portal-canvas)] p-4">
      <p className="text-xs font-bold uppercase tracking-wider text-[var(--portal-muted)]">Private draft preview — not live</p>
      {key==="homepage"?<><h2 className="mt-4 text-3xl font-black">{homepage.title} <span className="text-orange-600">{homepage.highlight}</span></h2><p className="mt-3 text-sm">{homepage.subtitle}</p>{homepage.image&&<img src={homepage.image} className="mt-3 max-h-48 rounded-xl object-cover" alt="New hero preview"/>}{homepage.announcement_enabled&&<p className="mt-2 rounded-xl bg-orange-100 p-2 text-xs">{homepage.announcement}</p>}</>:
