@@ -32,6 +32,13 @@ import {
   calculatePtPayout,
 } from "@/lib/pt-payroll";
 
+// Postgres JSONB reorders object keys; compare saved drafts by values, not key order.
+const canonicalPayoutBreakdown = (value: unknown) => JSON.stringify(value, (_key, entry) =>
+  entry && typeof entry === "object" && !Array.isArray(entry)
+    ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)))
+    : entry,
+);
+
 function ManagementPersonalTraining() {
   const [memberships, setMemberships] = useState<PtMembership[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -311,7 +318,7 @@ function ManagementPersonalTraining() {
   const payoutNeedsSave = selectedPayoutRun?.status === "pending" && !payoutLocked && (
     Math.abs(Number(selectedPayoutRun.payout_pool) - payoutCalculation.pool) > 0.01 ||
     Math.abs(Number(selectedPayoutRun.auto_payout_pool) - payoutCalculation.autoPool) > 0.01 ||
-    JSON.stringify(selectedPayoutRun.breakdown) !== JSON.stringify(payoutCalculation.rows)
+    canonicalPayoutBreakdown(selectedPayoutRun.breakdown) !== canonicalPayoutBreakdown(payoutCalculation.rows)
   );
 
   async function savePayoutRun() {
