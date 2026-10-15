@@ -23,6 +23,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as DeleteAccountRouteImport } from './routes/delete-account'
 import { Route as FacilitiesRouteImport } from './routes/facilities'
 import { Route as FamilyJoinRouteImport } from './routes/family-join'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as HmoRouteImport } from './routes/hmo'
 import { Route as JoinRouteImport } from './routes/join'
@@ -158,6 +159,11 @@ const FacilitiesRoute = FacilitiesRouteImport.update({
 const FamilyJoinRoute = FamilyJoinRouteImport.update({
   id: '/family-join',
   path: '/family-join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -514,6 +520,7 @@ export interface FileRoutesByFullPath {
   '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
   '/family-join': typeof FamilyJoinRoute
+  '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
@@ -595,6 +602,7 @@ export interface FileRoutesByTo {
   '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
   '/family-join': typeof FamilyJoinRoute
+  '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
@@ -678,6 +686,7 @@ export interface FileRoutesById {
   '/delete-account': typeof DeleteAccountRoute
   '/facilities': typeof FacilitiesRoute
   '/family-join': typeof FamilyJoinRoute
+  '/faq': typeof FaqRoute
   '/gallery': typeof GalleryRoute
   '/hmo': typeof HmoRoute
   '/join': typeof JoinRoute
@@ -762,6 +771,7 @@ export interface FileRouteTypes {
     | '/delete-account'
     | '/facilities'
     | '/family-join'
+    | '/faq'
     | '/gallery'
     | '/hmo'
     | '/join'
@@ -843,6 +853,7 @@ export interface FileRouteTypes {
     | '/delete-account'
     | '/facilities'
     | '/family-join'
+    | '/faq'
     | '/gallery'
     | '/hmo'
     | '/join'
@@ -925,6 +936,7 @@ export interface FileRouteTypes {
     | '/delete-account'
     | '/facilities'
     | '/family-join'
+    | '/faq'
     | '/gallery'
     | '/hmo'
     | '/join'
@@ -1008,6 +1020,7 @@ export interface RootRouteChildren {
   DeleteAccountRoute: typeof DeleteAccountRoute
   FacilitiesRoute: typeof FacilitiesRoute
   FamilyJoinRoute: typeof FamilyJoinRoute
+  FaqRoute: typeof FaqRoute
   GalleryRoute: typeof GalleryRoute
   HmoRoute: typeof HmoRoute
   JoinRoute: typeof JoinRoute
@@ -1168,6 +1181,13 @@ declare module '@tanstack/react-router' {
       path: '/family-join'
       fullPath: '/family-join'
       preLoaderRoute: typeof FamilyJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -1679,6 +1699,7 @@ const rootRouteChildren: RootRouteChildren = {
   DeleteAccountRoute: DeleteAccountRoute,
   FacilitiesRoute: FacilitiesRoute,
   FamilyJoinRoute: FamilyJoinRoute,
+  FaqRoute: FaqRoute,
   GalleryRoute: GalleryRoute,
   HmoRoute: HmoRoute,
   JoinRoute: JoinRoute,

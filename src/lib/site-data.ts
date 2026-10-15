@@ -294,6 +294,7 @@ export const navItems = [
   { label: "Blog", to: "/blog" },
   { label: "About", to: "/about" },
   { label: "HMO", to: "/hmo" },
+  { label: "FAQs", to: "/faq" },
   { label: "Contact", to: "/contact" },
 ] as const;
 

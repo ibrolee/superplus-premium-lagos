@@ -94,6 +94,14 @@ const entry = (
 
 const common: GuideEntry[] = [
   entry(
+    "faq",
+    "Frequently asked questions",
+    "Our FAQs cover joining, memberships and registration, personal training, spa bookings, payments, account access and HMO partners. Search a question or choose a topic to find a clear answer.",
+    "/faq",
+    ["faq", "faqs", "frequently asked questions", "help centre", "help center"],
+    "Explore frequently asked questions",
+  ),
+  entry(
     "registration-only",
     "Registration Only",
     `Registration Only costs ${formatNaira(publicMembershipOptions.find((plan) => plan.id === "registration-only")!.registration)}. It records your one-time registration now so you can buy a membership later. It does not include gym access. Family registration is ₦20,000; reception can help with the balance if you choose Family later.`,
@@ -717,6 +725,7 @@ function answerSingleQuestion(
   );
   const entries = [...visitorKnowledge, ...articleKnowledge(articles)];
   const byId = (id: string) => reply(entries.find((item) => item.id === id)!);
+  if (/\b(faq|faqs|frequently asked questions)\b/.test(clean)) return byId("faq");
   if (!clean)
     return {
       id: "empty",

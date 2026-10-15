@@ -246,6 +246,7 @@ function isVisitorPage(pathname: string): boolean {
       "/gallery",
       "/spa-recovery",
       "/about",
+      "/faq",
       "/hmo",
       "/contact",
       "/blog",

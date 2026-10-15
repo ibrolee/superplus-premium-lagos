@@ -2,7 +2,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "vite";
 import { fileURLToPath } from "node:url";
-let server, answer, pageContext;
+let server, answer, pageContext, faqs;
 before(async () => {
   server = await createServer({
     configFile: false,
@@ -12,6 +12,7 @@ before(async () => {
   answer = (await server.ssrLoadModule("/src/lib/visitor-guide.ts")).answerVisitorQuestion;
   pageContext = (await server.ssrLoadModule("/src/lib/assistant-context.ts"))
     .getAssistantPageContext;
+  faqs = await server.ssrLoadModule("/src/lib/faq.ts");
 });
 after(async () => {
   await server?.close();
@@ -152,4 +153,33 @@ test("every page-specific suggestion gets a grounded answer", () => {
     for (const question of context.suggestions)
       assert.equal(ask(question).confident, true, `${path}: ${question}`);
   }
+});
+
+test("FAQ search supports multiple terms, category filters and a useful empty result", () => {
+  assert.ok(faqs.filterFaqs("registration fee").some((item) => item.id === "registration-fees"));
+  assert.ok(faqs.filterFaqs("family registration").some((item) => item.id === "family"));
+  const massage = faqs.filterFaqs("massage", "spa");
+  assert.ok(massage.some((item) => item.id === "spa-services"));
+  assert.ok(massage.every((item) => item.category === "spa"));
+  assert.equal(faqs.filterFaqs("zzq-no-such-topic").length, 0);
+  assert.equal(faqs.filterFaqs("").length, faqs.faqItems.length);
+});
+
+test("FAQ content keeps correct new-member totals and PT eligibility", () => {
+  const byId = (id) => faqs.faqItems.find((item) => item.id === id);
+  assert.match(byId("monthly").answer, /₦27,000/);
+  assert.match(byId("monthly").answer, /₦34,000/);
+  assert.match(byId("family").answer, /₦95,000/);
+  assert.match(byId("personal-training").answer, /₦64,000/);
+  assert.match(byId("pt-only").answer, /active gym membership/);
+  assert.match(byId("spa-membership").answer, /No gym membership is required/);
+  assert.equal(new Set(faqs.faqItems.map((item) => item.id)).size, faqs.faqItems.length);
+});
+
+test("FAQ navigation and assistant context point to the public FAQ route", () => {
+  assert.equal(pageContext("/faq").key, "faq");
+  assert.equal(ask("Where are the FAQs?").href, "/faq");
+  assert.equal(ask("Where are the FAQs?").confident, true);
+  for (const question of pageContext("/faq").suggestions)
+    assert.equal(ask(question).confident, true, question);
 });

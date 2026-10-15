@@ -149,6 +149,21 @@ const fallback: AssistantPageContext = {
 
 export function getAssistantPageContext(pathname: string): AssistantPageContext {
   const path = pathname.split(/[?#]/)[0]!.replace(/\/+$/, "") || "/";
+  if (path === "/faq")
+    return {
+      key: "faq",
+      invite: "Let’s find your answer.",
+      greeting:
+        "Hi! I’m Super. Ask about membership, registration, personal training or spa bookings. For your own account or payment, reception can help directly.",
+      suggestions: [
+        "Registration fees",
+        "How much is monthly?",
+        "PT Only add-on",
+        "Book a spa service",
+        "Opening hours",
+        "HMO partners",
+      ],
+    };
   if (path === "/membership") return contexts["membership"]!;
   if (path === "/join" || path === "/family-join") return contexts["join"]!;
   if (path === "/spa-recovery" || path === "/spa-booking") return contexts["spa"]!;

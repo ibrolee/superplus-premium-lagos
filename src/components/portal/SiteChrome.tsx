@@ -97,7 +97,7 @@ export function Navbar() {
                 <SheetTitle className="mt-1 font-display text-xl font-extrabold uppercase leading-none text-white">Explore SPF</SheetTitle>
               </div>
 
-              {/* Compact two-column grid: all ten desktop links and the two
+              {/* Compact two-column grid: all public desktop links and the two
                   portal shortcuts remain visible without an inner scrolling list. */}
               <nav aria-label="Mobile navigation" className="spf-mobile-menu-body flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.5rem,2dvh,1rem)] overflow-hidden px-3 py-2.5 sm:px-4">
                 <section aria-label="Explore the website" className="min-h-0">
@@ -144,7 +144,7 @@ export function Navbar() {
 
 export function Footer() {
  const primaryLinks=galleryNavItems.filter(item=>['/','/app','/membership','/personal-training','/gallery','/spa-recovery','/blog'].includes(item.to));
- const businessLinks=galleryNavItems.filter(item=>['/about','/hmo','/contact'].includes(item.to));
+ const businessLinks=galleryNavItems.filter(item=>['/about','/hmo','/faq','/contact'].includes(item.to));
  const accountLinks=[{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal'}] as const;
  return <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
  <div className="pointer-events-none absolute -right-28 top-12 size-72 rounded-full border-[42px] border-primary/15" aria-hidden="true"/><div className="pointer-events-none absolute -left-20 bottom-10 size-56 rounded-full bg-primary/10 blur-3xl" aria-hidden="true"/>
