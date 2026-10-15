@@ -16,8 +16,8 @@ test("private tools and dangerous schemes cannot be injected into editable navig
   "/reception-workspace","/portal/private-page","//example.com","javascript:alert(1)","data:text/html,hi"])
   assert.equal(safeCmsHref(href),"/");
 });
-test("Staff Portal buttons link straight to the working sign-in route",()=>{
+test("Staff Portal navigation opens the Staff Reception Admin portal selection",()=>{
  const source=readFileSync(new URL("../src/components/portal/SiteChrome.tsx",import.meta.url),"utf8");
- assert.ok(source.includes('label:"Staff Portal",href:"/portal/staff"'));
- assert.ok(source.includes("{label:'Staff Portal',to:'/portal/staff'}"));
+ assert.ok(source.includes('label:"Staff Portal",href:"/portal"'));
+ assert.ok(source.includes("{label:'Staff Portal',to:'/portal'}"));
 });
