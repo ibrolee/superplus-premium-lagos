@@ -3,9 +3,10 @@ import {ArrowUpRight,CalendarDays,Inbox,RefreshCw,Save,ShieldCheck,Ticket,Trash2
 import {supabase} from "@/lib/supabase";
 import {WebsiteImageUploader} from "@/components/admin/WebsiteImageUploader";
 export type SiteScope={pages:boolean;design:boolean;campaigns:boolean;enquiries:boolean;admin:boolean};
-type Enquiry={id:string;kind:string;full_name:string;email:string;phone:string;organization:string;message:string;status:string;assigned_staff:string|null;internal_note:string;received_at:string};
+type Enquiry={id:string;kind:string;full_name:string;email:string;phone:string;organization:string;message:string;status:string;assigned_staff:string|null;assigned_profile_id:string|null;internal_note:string;received_at:string};
 type Campaign={id:string;kind:"event"|"promotion";title:string;description:string;image_url:string;button_label:string;button_url:string;starts_at:string;ends_at:string;published:boolean};
 type Staff={auth_user_id:string;role:string;full_name:string|null;active:boolean};
+type Profile={id:string;name:string;department:string|null;position:string|null};
 type Permission={auth_user_id:string;can_pages:boolean;can_design:boolean;can_campaigns:boolean;can_enquiries:boolean};
 const emptyCampaign=():Campaign=>({id:"",kind:"event",title:"",description:"",image_url:"",button_label:"",button_url:"",starts_at:"",ends_at:"",published:false});
 const field="mt-1.5 w-full rounded-xl border bg-white px-3 py-2.5 text-sm";
@@ -19,6 +20,7 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
  const [enquiries,setEnquiries]=useState<Enquiry[]>([]);
  const [campaigns,setCampaigns]=useState<Campaign[]>([]);
  const [staff,setStaff]=useState<Staff[]>([]);
+ const [profiles,setProfiles]=useState<Profile[]>([]);
  const [grants,setGrants]=useState<Permission[]>([]);
  const [selectedEnquiry,setSelectedEnquiry]=useState<string|null>(null);
  const [enquiryForm,setEnquiryForm]=useState<{status:string;assigned_staff:string;internal_note:string}>({status:"new",assigned_staff:"",internal_note:""});
@@ -35,13 +37,14 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
  const load=useCallback(async()=>{
   setLoading(true);setError("");
   const requests:PromiseLike<any>[]=[];
-  if(permissions.enquiries)requests.push(supabase.from("wc_enquiries").select("id,kind,full_name,email,phone,organization,message,status,assigned_staff,internal_note,received_at").order("received_at",{ascending:false}).limit(250));
+  if(permissions.enquiries)requests.push(supabase.from("wc_enquiries").select("id,kind,full_name,email,phone,organization,message,status,assigned_staff,assigned_profile_id,internal_note,received_at").order("received_at",{ascending:false}).limit(250));
   if(permissions.campaigns)requests.push(supabase.from("wc_campaigns").select("id,kind,title,description,image_url,button_label,button_url,starts_at,ends_at,published").order("starts_at",{ascending:false}).limit(150));
   if(permissions.admin)requests.push(supabase.from("wc_editor_permissions").select("auth_user_id,can_pages,can_design,can_campaigns,can_enquiries"));
   requests.push(supabase.rpc("wc_admin_list_staff"));
+  if(permissions.enquiries)requests.push(supabase.rpc("wc_admin_list_staff_profiles"));
   const responses=await Promise.all(requests);
   let i=0;
-  for(const kind of [permissions.enquiries?"enquiries":"",permissions.campaigns?"campaigns":"",permissions.admin?"grants":"", "staff"].filter(Boolean)){
+  for(const kind of [permissions.enquiries?"enquiries":"",permissions.campaigns?"campaigns":"",permissions.admin?"grants":"", "staff",permissions.enquiries?"profiles":""].filter(Boolean)){
    const item=responses[i++];
    if(item.error){setError(item.error.message);continue;}
    if(kind==="enquiries")setEnquiries(item.data||[]);
@@ -51,16 +54,20 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
     setPermissionsForm(Object.fromEntries(list.map(x=>[x.auth_user_id,x])));
    }
    if(kind==="staff")setStaff(item.data||[]);
+   if(kind==="profiles")setProfiles(item.data||[]);
   }setLoading(false);
  },[permissions.enquiries,permissions.campaigns,permissions.admin]);
  useEffect(()=>{void load();},[load,revision]);
  const chosen=enquiries.find(x=>x.id===selectedEnquiry);
  const campaign=campaigns.find(x=>x.id===selectedCampaign);
- function chooseEnquiry(item:Enquiry){setSelectedEnquiry(item.id);setEnquiryForm({status:item.status,assigned_staff:item.assigned_staff||"",internal_note:item.internal_note||""});setError("");}
+ function chooseEnquiry(item:Enquiry){setSelectedEnquiry(item.id);setEnquiryForm({status:item.status,assigned_staff:item.assigned_profile_id?"profile:"+item.assigned_profile_id:(item.assigned_staff||""),internal_note:item.internal_note||""});setError("");}
  function chooseCampaign(item?:Campaign){setSelectedCampaign(item?.id||"new");setCampaignForm(item?{...item}:emptyCampaign());setError("");}
  async function saveEnquiry(){
   if(!chosen||busy)return;setBusy("inbox");setError("");setNotice("");
-  const {error:e}=await supabase.rpc("wc_admin_update_enquiry",{p_id:chosen.id,p_status:enquiryForm.status,p_assigned_staff:enquiryForm.assigned_staff||null,p_note:enquiryForm.internal_note});
+  const {error:e}=await supabase.rpc("wc_admin_update_enquiry_assignment",{p_id:chosen.id,p_status:enquiryForm.status,
+   p_assigned_staff:enquiryForm.assigned_staff&&!enquiryForm.assigned_staff.startsWith("profile:")?enquiryForm.assigned_staff:null,
+   p_assigned_profile:enquiryForm.assigned_staff.startsWith("profile:")?enquiryForm.assigned_staff.slice(8):null,
+   p_note:enquiryForm.internal_note});
   if(e)setError(e.message);else{setNotice("Enquiry updated.");setRevision(x=>x+1);}
   setBusy("");
  }
@@ -122,7 +129,7 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
      <p className="mt-4 whitespace-pre-wrap rounded-lg bg-[var(--portal-canvas)] p-4 text-sm leading-6">{chosen.message}</p>
      <div className="mt-4 grid gap-3 sm:grid-cols-2">
       <label className="text-xs font-bold">Status<select value={enquiryForm.status} onChange={e=>setEnquiryForm(p=>({...p,status:e.target.value}))} className={field}>{statusNames.map(s=><option key={s} value={s}>{s.replace("_"," ")}</option>)}</select></label>
-      <label className="text-xs font-bold">Assign staff<select value={enquiryForm.assigned_staff} onChange={e=>setEnquiryForm(p=>({...p,assigned_staff:e.target.value}))} className={field}><option value="">Unassigned</option>{staff.map(u=><option key={u.auth_user_id} value={u.auth_user_id}>{u.full_name||u.role}</option>)}</select></label>
+      <label className="text-xs font-bold">Assign staff<select value={enquiryForm.assigned_staff} onChange={e=>setEnquiryForm(p=>({...p,assigned_staff:e.target.value}))} className={field}><option value="">Unassigned</option><optgroup label="Gym employees">{profiles.map(u=><option key={u.id} value={"profile:"+u.id}>{u.name}{u.position?" · "+u.position:""}</option>)}</optgroup><optgroup label="Portal accounts">{staff.map(u=><option key={u.auth_user_id} value={u.auth_user_id}>{u.full_name||u.role}</option>)}</optgroup></select></label>
      </div>
      <label className="mt-3 block text-xs font-bold">Private management notes<textarea rows={5} className={field} value={enquiryForm.internal_note} onChange={e=>setEnquiryForm(p=>({...p,internal_note:e.target.value}))}/></label>
      <button disabled={disable} onClick={()=>void saveEnquiry()} className="mt-3 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-black text-white disabled:opacity-50"><Save size={14} className="mr-1 inline"/>Save enquiry</button>
