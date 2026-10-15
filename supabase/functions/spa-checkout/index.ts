@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { recoveryServices, validateSpaTime } from "../_shared/spa-services.ts";
+import { validateSpaTime } from "../_shared/spa-services.ts";
 import { finalizeSpaPayment } from "../_shared/spa-payment.ts";
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -56,8 +56,14 @@ Deno.serve(async (req: Request) => {
       return respond(await finalizeSpaPayment(admin, verified.data));
     }
     if (body.action !== "initialize") return respond({ error: "Invalid checkout action." }, 400);
-    const service = recoveryServices.find((s) => s.id === body.serviceId);
-    if (!service?.price) return respond({ error: "Select a valid service." }, 400);
+    const {data:catalog,error:catalogError}=await admin.rpc("website_published_setting",{p_key:"spa_services"});
+    const {data:bookingOptions,error:bookingError}=await admin.rpc("website_published_setting",{p_key:"booking"});
+    if(catalogError||bookingError)return respond({error:"Current spa services are unavailable. No payment has started."},503);
+    const service=Array.isArray(catalog?.items)?catalog.items.find((s:any)=>s.id===body.serviceId&&s.active===true):null;
+    if(!service||!Number.isFinite(Number(service.price))||Number(service.price)<=0)
+      return respond({error:"Select an available spa service."},400);
+    const durationMinutes=Number(service.duration_minutes)||30;
+    const servicePrice=Number(service.price);
     const name = String(body.fullName || "").trim(),
       email = String(body.email || "")
         .trim()
@@ -81,7 +87,24 @@ Deno.serve(async (req: Request) => {
       );
     let preferredAt;
     try {
-      preferredAt = validateSpaTime(body.preferredAt, service.id === "vip-chair" ? 60 : 30);
+      // First validate the timestamp strictly; then apply the owner's published hours.
+      preferredAt = validateSpaTime(body.preferredAt, durationMinutes, Date.now()-86400000);
+      const bookingDate=new Date(preferredAt);
+      const local=new Date(bookingDate.getTime()+3600000);
+      const day=local.getUTCDay();
+      const minutes=local.getUTCHours()*60+local.getUTCMinutes();
+      const localHHMM=(value:string)=>{if(!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(value))throw Error("Booking hours are not configured.");const [h,m]=value.split(":").map(Number);return h*60+m;};
+      const open=localHHMM(String(day===0?bookingOptions?.sun_open:bookingOptions?.mon_sat_open));
+      const close=localHHMM(String(day===0?bookingOptions?.sun_close:bookingOptions?.mon_sat_close));
+      const slotMinutes=Number(bookingOptions?.slot_minutes)||30;
+      const advanceDays=Number(bookingOptions?.advance_days)||90;
+      const leadHours=Number(bookingOptions?.lead_hours)||0;
+      if(minutes<open||minutes+durationMinutes>close)
+        throw Error("This time is outside the published spa booking hours.");
+      if((minutes-open)%slotMinutes!==0)
+        throw Error("Choose an available appointment interval.");
+      if(bookingDate.getTime()<Date.now()+leadHours*3600000||bookingDate.getTime()>Date.now()+advanceDays*86400000)
+        throw Error("Choose an appointment within the available booking window.");
     } catch (e) {
       return respond({ error: (e as Error).message }, 400);
     }
@@ -97,12 +120,18 @@ Deno.serve(async (req: Request) => {
         { error: "Too many checkout attempts. Please try again later or contact reception." },
         429,
       );
+    const maxConcurrent=Math.min(10,Math.max(1,Number(bookingOptions?.max_concurrent)||1));
+    const {count:existingSlots,error:slotsError}=await admin.from("spa_bookings")
+      .select("id",{count:"exact",head:true}).eq("preferred_at",preferredAt)
+      .in("status",["confirmed","completed"]);
+    if(slotsError)return respond({error:"Unable to check spa appointment availability."},503);
+    if((existingSlots||0)>=maxConcurrent)return respond({error:"The preferred spa slot is full. Choose another time."},409);
     const reference = `SPF-SPA-${Date.now()}-${crypto.randomUUID()}`;
     const { error: insertError } = await admin.from("spa_bookings").insert({
       reference,
       service_id: service.id,
       service_name: service.name,
-      amount: service.price,
+      amount: servicePrice,
       full_name: name,
       email,
       phone,
@@ -116,7 +145,7 @@ Deno.serve(async (req: Request) => {
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
-        amount: service.price * 100,
+        amount: Math.round(servicePrice * 100),
         currency: "NGN",
         reference,
         callback_url:
