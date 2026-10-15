@@ -68,6 +68,8 @@ export type PtPayoutBreakdown = {
   trainer_staff_profile_id: string;
   trainer_name: string;
   trainee_count: number;
+  actual_trainee_count?: number;
+  payout_trainee_count_override?: number | null;
   renewal_eligible: number;
   renewed_same_trainer: number;
   renewal_rate: number | null;
@@ -295,6 +297,7 @@ export type PtPayoutInput = {
   trainers: Trainer[]; memberships: PtMembership[]; evaluations: Evaluation[];
   assignmentMap: Map<string, Assignment>; payoutPeriodStart: string; payoutPool: string | null;
   payoutRuns: PtPayoutRun[]; selectedPayoutRun: PtPayoutRun | null; today: string;
+  traineeCountOverrides?: Record<string, number | null>;
 };
 export function calculatePtPayout(input: PtPayoutInput) {
   const { trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool, payoutRuns, selectedPayoutRun, today } = input;
@@ -317,6 +320,19 @@ export function calculatePtPayout(input: PtPayoutInput) {
         measurementEnd: selectedPayoutRun.period_end,
       };
     }
+    // Saved pending payout overrides survive refreshes and are also used in salary reports.
+    // An explicit null clears a saved override without changing member assignments.
+    const savedCounts = new Map(
+      (selectedPayoutRun?.breakdown || [])
+        .filter((row) => row.payout_trainee_count_override !== undefined && row.payout_trainee_count_override !== null)
+        .map((row) => [row.trainer_staff_profile_id, row.payout_trainee_count_override as number]),
+    );
+    const countOverrideFor = (id: string): number | null => {
+      const entry = Object.prototype.hasOwnProperty.call(input.traineeCountOverrides || {}, id)
+        ? input.traineeCountOverrides?.[id]
+        : savedCounts.get(id);
+      return typeof entry === "number" && Number.isInteger(entry) && entry >= 0 && entry <= 500 ? entry : null;
+    };
     const activeTrainers = trainers.filter(
       (trainer) =>
         trainer.active &&
@@ -364,6 +380,10 @@ export function calculatePtPayout(input: PtPayoutInput) {
           .map((row) => row.member_id),
       );
 
+      const actualTraineeCount = traineeIds.size;
+      const manualTraineeCount = countOverrideFor(trainer.staff_profile_id);
+      const payoutTraineeCount = manualTraineeCount ?? actualTraineeCount;
+
       const payableMembershipIds = memberships
         .filter(
           (row) =>
@@ -401,7 +421,11 @@ export function calculatePtPayout(input: PtPayoutInput) {
 
       return {
         trainer,
-        traineeCount: traineeIds.size,
+        traineeCount: payoutTraineeCount,
+        actualTraineeCount,
+        payoutOverride: manualTraineeCount,
+        // Manual counts are an explicit management payroll adjustment, not new memberships.
+        payablePayoutCount: manualTraineeCount === null ? payableMembershipIds.length : manualTraineeCount,
         renewalEligible: twoCycleRetention.eligibleClients,
         renewedSameTrainer: twoCycleRetention.retainedClients,
         renewalRate,
@@ -418,7 +442,7 @@ export function calculatePtPayout(input: PtPayoutInput) {
 
     const autoPool =
       fullEligibleRows.reduce(
-        (sum, row) => sum + row.payableMembershipIds.length,
+        (sum, row) => sum + row.payablePayoutCount,
         0,
       ) * LOW_VOLUME_TRAINEE_COMMISSION;
 
@@ -450,7 +474,7 @@ export function calculatePtPayout(input: PtPayoutInput) {
       const performanceIndex = row.rawPerformanceIndex ?? neutralPerformance;
       const traineeCommission = fullPoolEligible
         ? 0
-        : row.payableMembershipIds.length * LOW_VOLUME_TRAINEE_COMMISSION;
+        : row.payablePayoutCount * LOW_VOLUME_TRAINEE_COMMISSION;
       const teamShare =
         fullPoolEligible && fullEligibleRows.length
           ? teamPool / fullEligibleRows.length
@@ -475,6 +499,8 @@ export function calculatePtPayout(input: PtPayoutInput) {
         trainer_staff_profile_id: row.trainer.staff_profile_id,
         trainer_name: row.trainer.display_name,
         trainee_count: row.traineeCount,
+        actual_trainee_count: row.actualTraineeCount,
+        payout_trainee_count_override: row.payoutOverride,
         renewal_eligible: row.renewalEligible,
         renewed_same_trainer: row.renewedSameTrainer,
         renewal_rate: row.renewalRate,
@@ -484,7 +510,7 @@ export function calculatePtPayout(input: PtPayoutInput) {
         payout_mode:
           fullPoolEligible
             ? "full_50_30_20"
-            : row.payableMembershipIds.length > 0
+            : row.payablePayoutCount > 0
               ? "trainee_commission"
               : "none",
         full_pool_eligible: fullPoolEligible,
