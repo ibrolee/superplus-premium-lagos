@@ -8,7 +8,7 @@ import {blankCmsDoc,type CmsBlock,type CmsPageDoc} from "@/lib/stage1-cms";
 type PageRow={slug:string;title:string;kind:"built_in"|"custom";draft:CmsPageDoc;published:CmsPageDoc|null;revision:number;published_revision:number;is_published:boolean};
 type Version={id:string;slug:string;version:number;created_at:string};
 const field="mt-1 block w-full rounded-lg border bg-white px-3 py-2.5 text-sm";
-const types=["hero","text","image","split","cta","quote"] as const;
+const types=["hero","text","image","split","cta","quote","video"] as const;
 const makeBlock=(type:CmsBlock["type"]):CmsBlock=>({id:crypto.randomUUID(),type,heading:"New section",body:"Write your content here.",image:"",button_label:"",button_href:"",visible:true});
 const blank=blankCmsDoc;
 const validSlug=(s:string)=>/^[a-z][a-z0-9-]{1,55}$/.test(s);
@@ -23,6 +23,7 @@ export function CmsPageAdmin(){
  const [newName,setNewName]=useState("");
  const [newSlug,setNewSlug]=useState("");
  const [loading,setLoading]=useState(true);
+ const [videos,setVideos]=useState<{title:string;storage_path:string}[]>([]);
  const [busy,setBusy]=useState("");
  const [message,setMessage]=useState("");
  const [error,setError]=useState("");
@@ -40,6 +41,9 @@ export function CmsPageAdmin(){
   setLoading(false);
  },[]);
  useEffect(()=>{void load()},[load,refresh]);
+ useEffect(()=>{void supabase.from("gallery_media").select("title,storage_path")
+   .eq("media_type","video").eq("is_published",true).order("created_at",{ascending:false}).limit(100)
+   .then(({data})=>setVideos((data||[]) as {title:string;storage_path:string}[]));},[]);
  const current=pages.find(p=>p.slug===selected);
  useEffect(()=>{if(current){setDraft(structuredClone(current.draft));setTitle(current.title);setPreview(false);}},[selected,current?.revision]);
  const changed=!!current&&(JSON.stringify(current.draft)!==JSON.stringify(draft)||title!==current.title);
@@ -136,6 +140,16 @@ export function CmsPageAdmin(){
       <label className="text-xs font-bold">Headline<input className={field} value={block.heading} onChange={e=>mutateSection(block.id,{heading:e.target.value})}/></label>
      </div>
      <label className="mt-3 block text-xs font-bold">Text content<textarea className={field+" min-h-28"} value={block.body} onChange={e=>mutateSection(block.id,{body:e.target.value})}/></label>
+     {block.type==="video"&&<div className="mt-3 space-y-2">
+       <label className="block text-xs font-bold">Choose a published gallery video
+        <select className={field} value={block.image||""} onChange={e=>mutateSection(block.id,{image:e.target.value})}>
+         <option value="">Select video</option>{videos.map(v=>{
+          const url=supabase.storage.from("gallery-media").getPublicUrl(v.storage_path).data.publicUrl;
+          return <option key={v.storage_path} value={url}>{v.title||v.storage_path}</option>;
+         })}
+        </select></label>
+       <a href="/staff-gallery" target="_blank" rel="noopener noreferrer" className="inline-block text-xs font-bold text-orange-700 underline">Upload or publish a video in Media Gallery</a>
+      </div>}
      {["hero","image","split"].includes(block.type)&&<div className="mt-3"><WebsiteImageUploader title="Section photo" value={block.image||""} kind="content" onChange={image=>mutateSection(block.id,{image})} disabled={disabled} onUploading={setCurrentUpload}/></div>}
      {block.type!=="quote"&&block.type!=="image"&&<div className="mt-3 grid gap-3 sm:grid-cols-2">
       <label className="text-xs font-bold">Button label (optional)<input className={field} value={block.button_label||""} onChange={e=>mutateSection(block.id,{button_label:e.target.value})}/></label>
