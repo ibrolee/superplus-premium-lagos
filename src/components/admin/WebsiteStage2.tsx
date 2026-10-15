@@ -38,7 +38,7 @@ export function WebsiteStage2({permissions}:{permissions:SiteScope}){
   if(permissions.enquiries)requests.push(supabase.from("wc_enquiries").select("id,kind,full_name,email,phone,organization,message,status,assigned_staff,internal_note,received_at").order("received_at",{ascending:false}).limit(250));
   if(permissions.campaigns)requests.push(supabase.from("wc_campaigns").select("id,kind,title,description,image_url,button_label,button_url,starts_at,ends_at,published").order("starts_at",{ascending:false}).limit(150));
   if(permissions.admin)requests.push(supabase.from("wc_editor_permissions").select("auth_user_id,can_pages,can_design,can_campaigns,can_enquiries"));
-  requests.push(supabase.from("staff_users").select("auth_user_id,role,full_name,active").eq("active",true).order("full_name"));
+  requests.push(supabase.rpc("wc_admin_list_staff"));
   const responses=await Promise.all(requests);
   let i=0;
   for(const kind of [permissions.enquiries?"enquiries":"",permissions.campaigns?"campaigns":"",permissions.admin?"grants":"", "staff"].filter(Boolean)){
