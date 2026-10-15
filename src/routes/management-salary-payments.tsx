@@ -144,7 +144,7 @@ function SalaryPayments() {
   return <AdminWorkspaceShell title="Salary payments" subtitle="Monthly staff salaries, coach PT payouts and 30% spa service commissions." active="/management-salary-payments">
     <div className="flex flex-wrap items-end justify-between gap-3">
       <label className="text-xs font-bold">Salary month
-        <input type="month" value={month} max={today.slice(0, 7)} disabled={disabled} onChange={(event) => { if (event.target.value) { setMonth(event.target.value); setOverrides({}); setAdjusting(""); setMessage(""); } }} className="mt-2 block rounded-xl border bg-white p-3 text-sm" />
+        <input type="month" min="2026-10" value={month} max={today.slice(0, 7)} disabled={disabled} onChange={(event) => { if (event.target.value) { setMonth(event.target.value); setOverrides({}); setAdjusting(""); setMessage(""); } }} className="mt-2 block rounded-xl border bg-white p-3 text-sm" />
       </label>
       <button disabled={disabled} onClick={() => setReload((value) => value + 1)} className="inline-flex items-center gap-2 rounded-xl border bg-white p-3 text-xs font-bold disabled:opacity-40"><RefreshCw size={16} />Refresh</button>
     </div>
