@@ -49,11 +49,13 @@ export function WebsiteImageUploader({
 
       // Browser-optimized JPEGs are quick to load on mobile and strip source metadata.
       // JPEG does not support transparency; a white background is used for transparent art.
-      const optimized = await compressImageForWeb(file, { maxDimension: kind === "homepage" ? 1920 : 1200, quality: 0.81 });
+      const preserveAlpha = kind === "branding" && file.type === "image/png";
+      const outputType = preserveAlpha ? "image/png" : "image/jpeg";
+      const optimized = await compressImageForWeb(file, { maxDimension: kind === "homepage" ? 1920 : 1200, quality: 0.81, outputType });
       if (!optimized.size || optimized.size > MAX_OPTIMIZED) throw Error("The optimized photo is still too large. Choose a smaller image.");
-      const storagePath = `website/${userResult.user.id}/${kind}/${crypto.randomUUID()}.jpg`;
+      const storagePath = `website/${userResult.user.id}/${kind}/${crypto.randomUUID()}.${preserveAlpha?"png":"jpg"}`;
       const { error: storageError } = await supabase.storage.from(BUCKET).upload(storagePath, optimized, {
-        contentType: "image/jpeg",
+        contentType: outputType,
         cacheControl: "31536000",
         upsert: false,
       });
@@ -133,7 +135,7 @@ export function WebsiteImageUploader({
           })}</div>}
       </div>}
       <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">
-        Choose from your phone or computer. JPG, PNG, WebP and supported iPhone photos; maximum original size 15 MB. Photos are optimized for the website.
+        Choose from your phone or computer. JPG, PNG, WebP and supported iPhone photos; maximum original size 15 MB. Photos are optimized for the website. Transparent PNG branding images keep their transparency.
       </p>
       {info && <p role="status" className="mt-2 rounded-lg bg-green-50 p-2 text-xs text-green-800">{info}</p>}
       {error && <p role="alert" className="mt-2 rounded-lg bg-red-50 p-2 text-xs text-red-700">{error}</p>}
