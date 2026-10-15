@@ -1,34 +1,147 @@
 import { Link, useRouterState } from '@tanstack/react-router';
-import { ArrowUpRight, Instagram, LayoutDashboard, Menu, UserRound } from 'lucide-react';
+import { ArrowUpRight, Instagram, LayoutDashboard, Menu, QrCode, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { contact, navItems, openingHours } from '@/lib/site-data';
 import { GmailIcon, TikTokIcon, WhatsAppIcon } from './footer-brand-icons';
 
-const galleryNavItems = navItems.map(item => item.to === '/facilities' ? { label: 'Gallery', to: '/gallery' as const } : item);
-const links = galleryNavItems;
-const mobileSections = [
-  { heading: 'PORTAL', items: [{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal'}] },
-  { heading: 'Explore', items: galleryNavItems.slice(0, 5) },
-  { heading: 'Discover More', items: galleryNavItems.slice(5) },
-] as const;
+// One shared menu model for desktop and mobile. /portal is intentionally the
+// Staff / Reception / Admin chooser rather than the employee sign-in page.
+const primaryNav = navItems.map(item =>
+  item.to === '/facilities' ? { label: 'Gallery', to: '/gallery' as const } : item
+);
+const portalNav = [
+  { label: 'Member Portal', to: '/login' as const, icon: UserRound },
+  { label: 'Staff Portal', to: '/portal' as const, icon: LayoutDashboard },
+  { label: 'My QR', to: '/my-qr' as const, icon: QrCode },
+];
+const galleryNavItems = primaryNav;
 
-export function UtilityBar() { return <div className="hidden bg-secondary py-2 text-secondary-foreground md:block"><div className="section-shell flex justify-end gap-5 text-[10px] font-bold uppercase"><Link to="/login">Member login</Link><Link to="/my-qr">My QR Code</Link><Link to="/portal">Portal</Link></div></div>; }
-export function Navbar() {
- const pathname=useRouterState({select:state=>state.location.pathname});
- const [open,setOpen]=useState(false);
- useEffect(()=>{if(pathname!=='/management-communications')return;const id=window.location.hash.slice(1);if(id!=='birthday-messages'&&id!=='renewal-messages')return;const scrollToSection=()=>{const section=document.getElementById(id);if(!section)return false;window.scrollTo({top:window.scrollY+section.getBoundingClientRect().top-80,behavior:'auto'});return true;};if(scrollToSection())return;const observer=new MutationObserver(()=>{if(scrollToSection())observer.disconnect();});observer.observe(document.body,{childList:true,subtree:true});return()=>observer.disconnect();},[pathname]);
- return <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 backdrop-blur"><div className="section-shell grid h-14 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:h-16 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
- <Link to="/" aria-label="Super Plus Fitness home" className="inline-flex min-w-0 items-center"><img src="/header-logo-colour.svg" alt="Super Plus Fitness" width={1030} height={255} className="block h-11 w-auto max-w-[46vw] object-contain sm:h-12 lg:h-10 lg:max-w-40 xl:h-12 xl:max-w-52"/></Link>
- <nav className="hidden justify-center gap-5 lg:flex" aria-label="Main navigation">{links.map(item=><Link key={item.to} to={item.to} className={`text-[11px] font-bold uppercase transition-colors hover:text-primary ${pathname===item.to?'text-primary':'text-foreground'}`}>{item.label}</Link>)}</nav>
- <div className="flex items-center gap-2"><Button asChild size="lg" className="hidden sm:inline-flex"><Link to="/join">Join now</Link></Button><Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button variant="outline" size="icon" className="size-10 lg:hidden" aria-label="Open menu"><Menu/></Button></SheetTrigger>
- <SheetContent side="right" className="flex h-[100dvh] w-[82vw] max-w-sm flex-col gap-0 overflow-hidden border-l border-white/10 bg-secondary p-0 text-secondary-foreground shadow-2xl motion-reduce:!animate-none motion-reduce:!transition-none [&>button]:right-4 [&>button]:top-4 [&>button]:flex [&>button]:size-10 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-lg [&>button]:border [&>button]:border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:opacity-100 [&>button]:transition-colors [&>button]:hover:bg-white/20 [&>button]:focus-visible:outline-none [&>button]:focus-visible:ring-2 focus-visible:ring-primary [&>button>svg]:size-5">
- <div className="shrink-0 border-b border-white/10 px-5 py-4 pr-16"><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">Super Plus Fitness</p><SheetTitle className="mt-1 font-display text-2xl font-bold uppercase leading-none text-white">Menu</SheetTitle></div>
- <nav aria-label="Mobile navigation" className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 [scrollbar-width:thin]">{mobileSections.map(section=><section key={section.heading} aria-label={section.heading} className="mb-5 last:mb-0"><h3 className="mb-1 px-3 text-[10px] font-extrabold uppercase tracking-[0.16em] text-primary">{section.heading}</h3><div className="flex flex-col">{section.items.map(item=><Link key={item.to} to={item.to} onClick={()=>setOpen(false)} className={`relative flex min-h-11 items-center gap-3 border-b border-white/10 px-3 py-2.5 text-sm font-semibold transition-colors duration-200 hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary motion-reduce:transition-none ${pathname===item.to?'bg-primary/10 text-primary':'text-white/90'}`}>{pathname===item.to&&<span aria-hidden="true" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-primary"/>}{item.to==='/login'&&<UserRound aria-hidden="true" className="size-4 shrink-0"/>}{item.to==='/portal'&&<LayoutDashboard aria-hidden="true" className="size-4 shrink-0"/>}<span>{item.label}</span></Link>)}</div></section>)}</nav>
- <div className="shrink-0 border-t border-white/10 bg-secondary px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4"><Button asChild size="lg" className="h-12 w-full rounded-xl text-sm"><Link to="/join" onClick={()=>setOpen(false)}>Join now <ArrowUpRight aria-hidden="true"/></Link></Button><p className="mt-3 text-center text-[10px] tracking-wide text-white/50">Fitness That Fits Your Life</p></div>
- </SheetContent></Sheet></div></div></header>;
+export function UtilityBar() {
+  return (
+    <div className="hidden border-b border-white/10 bg-secondary text-secondary-foreground lg:block">
+      <div className="section-shell flex min-h-8 items-center justify-end gap-6">
+        {portalNav.map(item => (
+          <Link key={item.to} to={item.to}
+            className="inline-flex items-center gap-1.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-white/75 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <item.icon aria-hidden="true" className="size-3.5"/>
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }
+
+export function Navbar() {
+  const pathname = useRouterState({ select: state => state.location.pathname });
+  const [open, setOpen] = useState(false);
+
+  // Close the sheet when a route changes (including browser back/forward).
+  useEffect(() => setOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (pathname !== '/management-communications') return;
+    const id = window.location.hash.slice(1);
+    if (id !== 'birthday-messages' && id !== 'renewal-messages') return;
+    const scrollToSection = () => {
+      const section = document.getElementById(id);
+      if (!section) return false;
+      window.scrollTo({ top: window.scrollY + section.getBoundingClientRect().top - 80, behavior: 'auto' });
+      return true;
+    };
+    if (scrollToSection()) return;
+    const observer = new MutationObserver(() => {
+      if (scrollToSection()) observer.disconnect();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [pathname]);
+
+  return (
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/95 shadow-sm shadow-black/[0.03] backdrop-blur-xl">
+      <div className="section-shell flex min-h-14 items-center justify-between gap-3 py-2 sm:min-h-16 lg:flex-wrap lg:gap-y-0 lg:py-0 2xl:min-h-[76px] 2xl:flex-nowrap 2xl:gap-6">
+        <Link to="/" aria-label="Super Plus Fitness home" className="inline-flex min-w-0 shrink-0 items-center">
+          <img src="/header-logo-colour.svg" alt="Super Plus Fitness" width={1030} height={255}
+            className="block h-10 w-auto max-w-[47vw] object-contain sm:h-12 lg:h-12 lg:max-w-48 2xl:h-13 2xl:max-w-52"/>
+        </Link>
+
+        {/* Desktop: dedicated spacious nav row on standard laptops; single row on wide desktops. */}
+        <nav className="order-3 hidden w-full items-center justify-between gap-x-2 border-t border-border/50 py-3 lg:flex 2xl:order-none 2xl:w-auto 2xl:min-w-0 2xl:flex-1 2xl:justify-center 2xl:gap-x-5 2xl:border-0 2xl:py-0"
+          aria-label="Main navigation">
+          {primaryNav.map(item => (
+            <Link key={item.to} to={item.to} aria-current={pathname === item.to ? 'page' : undefined}
+              className={`relative whitespace-nowrap rounded-md px-1.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.015em] transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:text-xs 2xl:px-0 ${pathname === item.to ? 'text-primary' : 'text-foreground/85'}`}>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Button asChild size="lg" className="hidden h-10 rounded-xl px-5 text-xs font-extrabold uppercase sm:inline-flex lg:h-11">
+            <Link to="/join">Join now <ArrowUpRight aria-hidden="true" className="size-4"/></Link>
+          </Button>
+
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="size-10 rounded-xl lg:hidden" aria-label="Open navigation menu" aria-expanded={open}>
+                <Menu aria-hidden="true" className="size-5"/>
+              </Button>
+            </SheetTrigger>
+
+            <SheetContent side="right" aria-describedby={undefined}
+              className="flex h-[100dvh] w-[92vw] max-w-[24rem] flex-col gap-0 overflow-hidden border-l border-white/10 bg-secondary p-0 text-secondary-foreground shadow-2xl sm:w-[22rem] sm:max-w-[24rem] motion-reduce:!animate-none motion-reduce:!transition-none [&>button]:right-3 [&>button]:top-3 [&>button]:flex [&>button]:size-9 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-lg [&>button]:border [&>button]:border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-white/20 [&>button]:focus-visible:outline-none [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-primary">
+              <div className="shrink-0 border-b border-white/10 px-4 py-3 pr-14">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-primary">Super Plus Fitness</p>
+                <SheetTitle className="mt-1 font-display text-xl font-extrabold uppercase leading-none text-white">Explore SPF</SheetTitle>
+              </div>
+
+              {/* Compact two-column grid: all ten desktop links and the three
+                  portal shortcuts remain visible without an inner scrolling list. */}
+              <nav aria-label="Mobile navigation" className="flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.5rem,2dvh,1rem)] overflow-hidden px-3 py-2.5 sm:px-4">
+                <section aria-label="Explore the website" className="min-h-0">
+                  <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Explore</h3>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {primaryNav.map(item => (
+                      <Link key={item.to} to={item.to} onClick={() => setOpen(false)}
+                        aria-current={pathname === item.to ? 'page' : undefined}
+                        className={`flex min-h-[clamp(2.35rem,6dvh,3rem)] items-center rounded-lg border px-2.5 py-1.5 text-[clamp(0.68rem,2.8vw,0.81rem)] font-bold leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === item.to ? 'border-primary/60 bg-primary/15 text-white' : 'border-white/10 bg-white/[0.055] text-white/90 hover:border-white/20 hover:bg-white/10'}`}>
+                        {item.label}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+
+                <section aria-label="Member and staff portal links" className="shrink-0">
+                  <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Portals &amp; check-in</h3>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {portalNav.map(item => (
+                      <Link key={item.to} to={item.to} onClick={() => setOpen(false)}
+                        aria-current={pathname === item.to ? 'page' : undefined}
+                        className={`flex min-h-[clamp(2.6rem,6dvh,3.1rem)] flex-col items-center justify-center gap-1 rounded-lg border px-1.5 py-1.5 text-center text-[10px] font-bold leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${pathname === item.to ? 'border-primary/60 bg-primary/15 text-white' : 'border-white/15 bg-white/[0.07] text-white/90 hover:bg-white/10'}`}>
+                        <item.icon aria-hidden="true" className="size-3.5 shrink-0 text-primary"/>
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              </nav>
+
+              <div className="shrink-0 border-t border-white/10 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2.5 sm:px-4">
+                <Button asChild size="lg" className="h-11 w-full rounded-xl text-xs font-extrabold uppercase">
+                  <Link to="/join" onClick={() => setOpen(false)}>Join now <ArrowUpRight aria-hidden="true" className="size-4"/></Link>
+                </Button>
+                <p className="mt-1.5 text-center text-[9px] tracking-wide text-white/50">Fitness That Fits Your Life</p>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export function Footer() {
  const primaryLinks=galleryNavItems.filter(item=>['/','/app','/membership','/personal-training','/gallery','/spa-recovery','/blog'].includes(item.to));
  const businessLinks=galleryNavItems.filter(item=>['/about','/hmo','/contact'].includes(item.to));
