@@ -314,6 +314,15 @@ export function ServiceCard({
 }) {
   return (
     <article className="group border border-border bg-card">
+      {service.image && (
+        <img
+          src={service.image}
+          alt={`${service.name} at Super Plus Fitness`}
+          loading="lazy"
+          decoding="async"
+          className="h-48 w-full object-cover sm:h-56"
+        />
+      )}
       <div className={compact ? "p-4 sm:p-5" : "p-6 sm:p-7"}>
         <div className={`flex items-start justify-between ${compact ? "gap-3" : "gap-5"}`}>
           <div>
