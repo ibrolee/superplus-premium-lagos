@@ -1,3 +1,5 @@
+import { useRouterState } from "@tanstack/react-router";
+import { getAssistantPageContext } from "@/lib/assistant-context";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ArrowUpRight,
@@ -21,17 +23,6 @@ type ChatMessage = {
   href?: string | undefined;
   linkLabel?: string | undefined;
 };
-const greeting =
-  "Hi! 👋 Welcome to Super Plus Fitness & Spa. I’m your digital assistant. Ask me about joining, prices, personal training, spa bookings or visiting the gym.";
-const suggestions = [
-  "Membership prices",
-  "Book a spa service",
-  "Opening hours",
-  "PT Only add-on",
-  "Find the gym",
-  "HMO partners",
-];
-
 /** CSS frames the original cartoon at the waist, preserving the supplied artwork. */
 function AssistantAvatar({ className = "" }: { className?: string }) {
   return (
@@ -49,12 +40,15 @@ function AssistantAvatar({ className = "" }: { className?: string }) {
 }
 
 export function VisitorChat() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const context = getAssistantPageContext(pathname);
   const [open, setOpen] = useState(false);
   const [hint, setHint] = useState(true);
   const [draft, setDraft] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { id: 0, sender: "guide", text: greeting },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const visibleMessages: ChatMessage[] = messages.length
+    ? messages
+    : [{ id: 0, sender: "guide", text: context.greeting }];
   const [articles, setArticles] = useState<PublicArticle[]>([]);
   const [previousId, setPreviousId] = useState<string | null>(null);
   const nextId = useRef(1);
@@ -124,14 +118,14 @@ export function VisitorChat() {
 
   useEffect(() => {
     if (open && log.current)
-      log.current.scrollTop = messages.length === 1 ? 0 : log.current.scrollHeight;
+      log.current.scrollTop = messages.length === 0 ? 0 : log.current.scrollHeight;
   }, [messages, open]);
 
   function closeChat() {
     setOpen(false);
   }
   function resetChat() {
-    setMessages([{ id: nextId.current++, sender: "guide", text: greeting }]);
+    setMessages([]);
     setPreviousId(null);
     setDraft("");
   }
@@ -141,7 +135,9 @@ export function VisitorChat() {
     const reply = answerVisitorQuestion(question, previousId, articles);
     setMessages((current) =>
       [
-        ...current,
+        ...(current.length
+          ? current
+          : [{ id: 0, sender: "guide" as const, text: context.greeting }]),
         { id: nextId.current++, sender: "visitor" as const, text: question },
         {
           id: nextId.current++,
@@ -186,7 +182,7 @@ export function VisitorChat() {
                   setHint(false);
                 }}
               >
-                <strong>Hi, how can I help?</strong>
+                <strong>{context.invite}</strong>
                 <span>
                   Ask Super Plus <ChevronRight size={13} />
                 </span>
@@ -238,7 +234,7 @@ export function VisitorChat() {
         >
           <div className="spf-assistant-layout">
             <header
-              className={`spf-assistant-header ${messages.length > 1 ? "spf-assistant-header-compact" : ""}`}
+              className={`spf-assistant-header ${messages.length > 0 ? "spf-assistant-header-compact" : ""}`}
             >
               <div className="spf-assistant-toolbar">
                 <span>SUPER PLUS FITNESS & SPA</span>
@@ -287,7 +283,7 @@ export function VisitorChat() {
               className="spf-assistant-log"
             >
               <div className="spf-assistant-date">WELCOME TO SUPER PLUS</div>
-              {messages.map((message) => (
+              {visibleMessages.map((message) => (
                 <div
                   key={message.id}
                   className={`spf-assistant-message spf-assistant-message-${message.sender}`}
@@ -306,11 +302,11 @@ export function VisitorChat() {
                   </div>
                 </div>
               ))}
-              {messages.length === 1 && (
+              {messages.length === 0 && (
                 <div className="spf-assistant-suggestions">
                   <p>A good place to start</p>
                   <div>
-                    {suggestions.map((question) => (
+                    {context.suggestions.map((question) => (
                       <button key={question} type="button" onClick={() => ask(question)}>
                         {question}
                         <ChevronRight size={13} />
@@ -319,15 +315,13 @@ export function VisitorChat() {
                   </div>
                 </div>
               )}
-              {messages.length > 1 && (
+              {messages.length > 0 && (
                 <div className="spf-assistant-followups">
-                  {["Membership prices", "Book a spa service", "Contact reception"].map(
-                    (question) => (
-                      <button key={question} type="button" onClick={() => ask(question)}>
-                        {question}
-                      </button>
-                    ),
-                  )}
+                  {[...context.suggestions.slice(0, 2), "Contact reception"].map((question) => (
+                    <button key={question} type="button" onClick={() => ask(question)}>
+                      {question}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

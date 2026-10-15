@@ -6,6 +6,7 @@ import {
   Lightbulb, Loader2, LogOut, Medal, Megaphone, MessageCircle, MessageSquareWarning, PencilLine, QrCode,
   RefreshCw, ShieldCheck, Sparkles, Star, Target, Trophy, UserRound, Users,
 } from "lucide-react";
+import { MemberCompanionWelcome, CompanionEmptyState } from "@/components/assistant/SuperCompanion";
 import { Button } from "@/components/ui/button";
 import { AnnouncementSurface } from "@/components/announcements/AnnouncementSurface";
 import { supabase } from "@/lib/supabase";
@@ -198,6 +199,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
   const [attendanceError, setAttendanceError] = useState("");
   const [posts, setPosts] = useState<BlogPreview[]>([]);
   const [blogLoading, setBlogLoading] = useState(true);
+  const [blogUnavailable, setBlogUnavailable] = useState(false);
   const [weeklyGoal, setWeeklyGoal] = useState(3);
   const [celebration, setCelebration] = useState<string | null>(null);
 
@@ -327,6 +329,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
         .eq("status", "published").not("published_at", "is", null)
         .lte("published_at", new Date().toISOString()).order("published_at", { ascending: false }).limit(4);
       if (!active) return;
+      setBlogUnavailable(Boolean(blogError));
       if (!blogError && data) setPosts(data as BlogPreview[]);
       setBlogLoading(false);
     }
@@ -661,16 +664,16 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
         <img src="/footer-logo-circular.webp" alt="Super Plus Fitness" className="size-11 shrink-0 rounded-full bg-white object-contain" />
         <div><p className="text-xs font-black tracking-wider">SUPER PLUS</p><p className="spf-gradient-text text-xs font-black tracking-[.2em]">FITNESS</p></div>
       </div>
-      <header className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
+      <header className="relative flex items-start justify-between gap-3">
+        {activeTab === "home" ? <MemberCompanionWelcome firstName={firstName}/> : <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[.18em] text-[color:var(--portal-accent)]">Super Plus member</p>
           <h1 className="mt-1 truncate font-display text-3xl font-black uppercase sm:text-5xl">Hi, {firstName} 👋</h1>
-        </div>
-        <Link to="/my-qr" className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--portal-ink)] text-white shadow-md" aria-label="Open gym QR code"><QrCode className="size-6"/></Link>
+        </div>}
+        <Link to="/my-qr" className={(activeTab === "home" ? "absolute right-0 top-0 " : "") + "grid size-12 shrink-0 place-items-center rounded-2xl bg-[var(--portal-ink)] text-white shadow-md"} aria-label="Open gym QR code"><QrCode className="size-6"/></Link>
       </header>
 
       {activeTab === "home" && <div className="mt-5 space-y-4">
-        <section className="spf-membership-card overflow-hidden rounded-[26px] bg-[var(--portal-ink)] p-5 text-white shadow-lg sm:p-7">
+        <section id="member-membership" className="spf-membership-card scroll-mt-24 overflow-hidden rounded-[26px] bg-[var(--portal-ink)] p-5 text-white shadow-lg sm:p-7">
           <div className="flex items-start justify-between gap-3">
             <div><p className="text-[10px] font-black uppercase tracking-[.18em] text-[color:var(--portal-highlight)]">Membership</p><h2 className="mt-1 font-display text-2xl font-black uppercase sm:text-3xl">{planName}</h2></div>
             <span className={(isActive ? "bg-[var(--portal-surface)] text-[color:var(--portal-accent)]" : "bg-[#fff0e9] text-[#a73b27]") + " inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-black"}>{isActive ? <CheckCircle2 className="size-4"/> : <AlertCircle className="size-4"/>}{isActive ? "ACTIVE" : "EXPIRED"}</span>
@@ -939,7 +942,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
 
         <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-5">
           <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-accent)]">For you</p><h2 className="mt-1 font-display text-2xl font-black uppercase">Fitness journal</h2></div><Link to="/blog" className="text-xs font-black text-[color:var(--portal-accent)]">View all →</Link></div>
-          {blogLoading ? <p className="mt-4 text-xs text-[color:var(--portal-muted)]">Loading articles...</p> : <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2">{posts.slice(0, 3).map((post) => <a key={post.id} href={"/blog/article?slug=" + encodeURIComponent(post.slug)} className="min-w-[78%] snap-start overflow-hidden rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] sm:min-w-[42%]">{post.featured_image && <img src={post.featured_image} alt="" className="aspect-[16/7] w-full object-cover"/>}<div className="p-4"><p className="text-[10px] font-black uppercase text-[color:var(--portal-accent)]">{post.category}</p><h3 className="mt-1 font-display text-lg font-black uppercase leading-tight">{post.title}</h3></div></a>)}</div>}
+          {blogLoading ? <p className="mt-4 text-xs text-[color:var(--portal-muted)]">Loading articles...</p> : blogUnavailable ? <p className="mt-4 text-xs text-[color:var(--portal-muted)]">Articles are unavailable right now. Please try the Fitness Journal again later.</p> : posts.length === 0 ? <CompanionEmptyState title="The journal is getting ready" action="Explore personal training" href="/personal-training">New fitness and recovery articles will appear here when they are published. In the meantime, explore coaching options for your goals.</CompanionEmptyState> : <div className="mt-4 flex snap-x gap-3 overflow-x-auto pb-2">{posts.slice(0, 3).map((post) => <a key={post.id} href={"/blog/article?slug=" + encodeURIComponent(post.slug)} className="min-w-[78%] snap-start overflow-hidden rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] sm:min-w-[42%]">{post.featured_image && <img src={post.featured_image} alt="" className="aspect-[16/7] w-full object-cover"/>}<div className="p-4"><p className="text-[10px] font-black uppercase text-[color:var(--portal-accent)]">{post.category}</p><h3 className="mt-1 font-display text-lg font-black uppercase leading-tight">{post.title}</h3></div></a>)}</div>}
         </section>
       </div>}
 
@@ -987,6 +990,7 @@ export function MemberDashboardV2({ previewMemberId, readOnly = false }: MemberD
 
           <section className="rounded-[24px] border border-[var(--portal-border)] bg-white p-5">
             <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-accent)]">History</p><h2 className="mt-1 font-display text-2xl font-black uppercase">Recent visits</h2></div><span className="text-xs font-black">{stats.thisMonthCount} this month</span></div>
+            {visits.length === 0 && <CompanionEmptyState title="No recent check-ins" action="Open my QR" href="/my-qr">Your recent gym visits will appear here after reception scans your membership QR. If you think a visit is missing, ask reception to check.</CompanionEmptyState>}
             <div className="mt-4 divide-y divide-[var(--portal-surface)]">{visits.slice(0, 12).map((visit) => <div key={visit.id} className="flex items-center justify-between gap-3 py-3"><div><p className="text-sm font-black">{formatVisit(visit.checked_in_at)}</p><p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">{visit.checked_out_at ? "Checked out " + formatVisit(visit.checked_out_at) : "No checkout recorded"}</p></div><CheckCircle2 className="size-5 shrink-0 text-[color:var(--portal-accent)]"/></div>)}</div>
           </section>
         </>}

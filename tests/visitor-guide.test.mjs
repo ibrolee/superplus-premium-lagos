@@ -2,7 +2,7 @@ import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "vite";
 import { fileURLToPath } from "node:url";
-let server, answer;
+let server, answer, pageContext;
 before(async () => {
   server = await createServer({
     configFile: false,
@@ -10,6 +10,8 @@ before(async () => {
     resolve: { alias: { "@": fileURLToPath(new URL("../src", import.meta.url)) } },
   });
   answer = (await server.ssrLoadModule("/src/lib/visitor-guide.ts")).answerVisitorQuestion;
+  pageContext = (await server.ssrLoadModule("/src/lib/assistant-context.ts"))
+    .getAssistantPageContext;
 });
 after(async () => {
   await server?.close();
@@ -107,4 +109,47 @@ test("a Sunday question does not report the current weekday as Sunday", () => {
   assert.equal(result.id, "hours");
   assert.match(result.text, /Sunday: 6:30 AM/);
   assert.doesNotMatch(result.text, /open now/);
+});
+
+test("page context adapts to public routes and normalises route endings", () => {
+  for (const [path, key] of [
+    ["/membership", "membership"],
+    ["/membership/", "membership"],
+    ["/join?plan=monthly", "join"],
+    ["/spa-recovery", "spa"],
+    ["/spa-booking?service=pedicure", "spa"],
+    ["/personal-training", "training"],
+    ["/facilities", "facilities"],
+    ["/gallery", "facilities"],
+    ["/blog/test-article", "blog"],
+    ["/hmo", "hmo"],
+    ["/contact", "contact"],
+    ["/app", "app"],
+    ["/", "general"],
+  ])
+    assert.equal(pageContext(path).key, key, path);
+  assert.notDeepEqual(
+    pageContext("/membership").suggestions,
+    pageContext("/spa-recovery").suggestions,
+  );
+});
+
+test("every page-specific suggestion gets a grounded answer", () => {
+  for (const path of [
+    "/",
+    "/membership",
+    "/join",
+    "/spa-recovery",
+    "/personal-training",
+    "/gallery",
+    "/blog",
+    "/hmo",
+    "/contact",
+    "/app",
+  ]) {
+    const context = pageContext(path);
+    assert.equal(new Set(context.suggestions).size, context.suggestions.length);
+    for (const question of context.suggestions)
+      assert.equal(ask(question).confident, true, `${path}: ${question}`);
+  }
 });
