@@ -49,7 +49,7 @@ function WebsiteControls(){
      const { data:auth,error:authError }=await supabase.auth.getUser();
      if(authError||!auth.user)throw Error("Sign in to your admin account.");
      const {data:user,error:userError}=await supabase.from("staff_users").select("role,active").eq("auth_user_id",auth.user.id).maybeSingle();
-     if(userError||!user?.active||!["admin","owner","manager"].includes(user.role))throw Error("An active management account is required.");
+     if(userError||!user?.active||!["admin","owner","reception"].includes(user.role))throw Error("An active management account is required.");
      const {data:permissions,error:permissionError}=await supabase.rpc("wc_staff_site_permissions");
      if(permissionError)throw permissionError;
      const permitted=permissions as SiteScope;
