@@ -7,6 +7,7 @@ import {
   type PtPayoutRun,
   type Trainer,
 } from "./pt-payroll.ts";
+import type { SpaCommission } from "./spa-commissions.ts";
 
 export const FINANCE_START_MONTH = "2026-10";
 export const EXPENSE_CATEGORIES = [
@@ -86,6 +87,7 @@ export type ContractPeriod = {
   run: { total: number; status: string } | null;
 };
 export type PayrollData = {
+  spaCommissions: SpaCommission[];
   staff: PayrollStaff[];
   settings: SalarySetting[];
   records: SalaryRecord[];
@@ -255,23 +257,40 @@ export function monthlyPayrollCosts(data: PayrollData, month: string, today: str
         missing: needsReview,
       };
     });
+  const spaRows: CostRow[] = data.spaCommissions
+    .filter((item) => item.service_date.slice(0, 7) === month)
+    .map((item) => {
+      const amount = roundMoney(Number(item.commission_amount));
+      const person = data.staff.find((member) => member.id === item.staff_profile_id);
+      return {
+        id: "spa-" + item.id,
+        name: `${person?.full_name || "Staff"} · ${item.service_name} spa (30%)`,
+        amount,
+        paid: item.status === "paid" ? amount : 0,
+        estimated: item.status !== "paid",
+        missing: false,
+      };
+    });
+  const spa = roundMoney(spaRows.reduce((sum, row) => sum + row.amount, 0));
   const salary = roundMoney(salaries.reduce((sum, r) => sum + r.amount, 0));
   const pt = roundMoney([...coachRows, ...contractRows].reduce((sum, r) => sum + r.amount, 0));
   const paid = roundMoney(
-    [...salaries, ...coachRows, ...contractRows].reduce((sum, r) => sum + r.paid, 0),
+    [...salaries, ...coachRows, ...contractRows, ...spaRows].reduce((sum, r) => sum + r.paid, 0),
   );
   return {
     salary,
     pt,
-    total: roundMoney(salary + pt),
+    spa,
+    total: roundMoney(salary + pt + spa),
     paid,
-    outstanding: roundMoney(Math.max(0, salary + pt - paid)),
+    outstanding: roundMoney(Math.max(0, salary + pt + spa - paid)),
     salaries,
     coachRows: [...coachRows, ...contractRows],
+    spaRows,
     issues,
     estimated:
       month >= today.slice(0, 7) ||
-      [...salaries, ...coachRows, ...contractRows].some((r) => r.estimated),
+      [...salaries, ...coachRows, ...contractRows, ...spaRows].some((r) => r.estimated),
   };
 }
 
