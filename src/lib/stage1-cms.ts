@@ -33,14 +33,7 @@ export function useCmsPage(slug:string){
   });return()=>{active=false};},[slug]);
  return {page,loading};
 }
-// Only public portal entry points belong in the navigation allowlist.
-// Login, role checks and database RLS still protect the dashboards.
-const publicPortalEntries=new Set(["/portal","/portal/staff","/portal/reception","/portal/admin"]);
-export function safeCmsHref(href:string){
- if(publicPortalEntries.has(href))return href;
- if(href==="/" || (/^\/(?!\/)[a-zA-Z0-9/_#?&=.-]+$/.test(href) && !/^\/(admin|staff|portal|management|reception)(\/|-|$)/i.test(href)) || /^https:\/\/[a-zA-Z0-9.-]+(?:\/[^\s]*)?$/.test(href))return href;
- return "/";
-}
+export {safeCmsHref} from "@/lib/safe-site-href";
 export function visiblePageSlug(pathname:string){
  const slugs:Record<string,string>={"/":"home","/about":"about","/contact":"contact","/hmo":"hmo","/personal-training":"personal-training","/membership":"membership","/spa-recovery":"spa-recovery","/gallery":"gallery","/app":"app"};
  return slugs[pathname]||"";
