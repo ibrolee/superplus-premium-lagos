@@ -101,13 +101,12 @@ function WebsiteControls(){
    if(!/^[A-Z0-9_-]{3,24}$/.test(code)){setError("Coupon must be 3–24 letters, numbers, hyphens or underscores.");return;}
    if(!window.confirm(`Save coupon ${code}? This coupon waives the one-time registration fee on eligible new sign-ups. It does not discount membership prices.`))return;
    setBusy("coupon");setError("");setNotice("");
-   const {error:saveError}=await supabase.rpc("admin_site_save_coupon",{
-     p_code:code,p_description:couponDescription.trim(),p_active:true,p_expires_on:couponExpiry||null,
+   const {error:saveError}=await supabase.rpc("admin_site_upsert_scheduled_coupon",{
+     p_code:code,p_description:couponDescription.trim(),p_active:true,p_expires_on:couponExpiry||null,p_starts_on:couponStart||null,
    });
    if(saveError)setError(saveError.message);else{
-     const {error:dateError}=await supabase.rpc("admin_site_schedule_coupon",{p_code:code,p_starts_on:couponStart||null});
-     if(dateError)setError("Coupon saved, but its start date was not updated: "+dateError.message);
-     else{setNotice(`Registration coupon ${code} saved.`);setCouponCode("");setCouponDescription("");setCouponExpiry("");setCouponStart("");setReload(v=>v+1);}
+     setNotice(`Registration coupon ${code} saved with its activation date.`);
+     setCouponCode("");setCouponDescription("");setCouponExpiry("");setCouponStart("");setReload(v=>v+1);
    }
    setBusy("");
  }
