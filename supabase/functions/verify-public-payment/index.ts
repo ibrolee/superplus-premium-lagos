@@ -14,8 +14,20 @@ Deno.serve(async(req:Request)=>{
   if(!paystack.ok||!result?.status||result?.data?.status!=='success')return respond({error:'Payment could not be verified by Paystack.'},400);
   const txn=result.data,metadata=txn.metadata||{};
   if(txn.reference!==reference||metadata.source!=='public_join'||metadata.reference!==reference||txn.currency!=='NGN')return respond({error:'Paystack transaction details do not match this checkout.'},400);
-  const planId=String(metadata.plan_id||'').trim(),plan=verifiedCheckoutPlan(planId,metadata.pricing_version);if(!plan)return respond({error:'Membership plan not found.'},400);
-  let pricing:ReturnType<typeof couponPricing>;try{pricing=couponPricing(plan,metadata.coupon_code);}catch{return respond({error:'Invalid coupon in payment metadata.'},400);}
+  const planId=String(metadata.plan_id||'').trim(),storedPlan=verifiedCheckoutPlan(planId,metadata.pricing_version);
+  if(!storedPlan)return respond({error:'Membership plan not found.'},400);
+  // For new checkouts, validate the exact server-created Paystack metadata snapshot.
+  // A subsequent price increase or coupon deactivation must not strand an already paid member.
+  const dynamic=metadata.pricing_version==='website-dynamic-v2';
+  const snapshotPrice=Number(metadata.membership_amount_naira);
+  const snapshotDays=Number(metadata.duration_days);
+  if(dynamic&&(!Number.isFinite(snapshotPrice)||snapshotPrice<0||!Number.isInteger(snapshotDays)||snapshotDays<0))
+    return respond({error:'Invalid verified checkout price snapshot.'},400);
+  const plan=dynamic?{...storedPlan,price:snapshotPrice,durationDays:snapshotDays}:storedPlan;
+  const rawCode=String(metadata.coupon_code||'').trim().toUpperCase();
+  const allowed=dynamic?new Set(rawCode?[rawCode]:[]):undefined;
+  let pricing:ReturnType<typeof couponPricing>;
+  try{pricing=couponPricing(plan,metadata.coupon_code,allowed);}catch{return respond({error:'Invalid coupon in payment metadata.'},400);}
   if(Number(txn.amount)!==pricing.totalAmount*100||Number(metadata.membership_amount_naira)!==pricing.membershipAmount||Number(metadata.registration_amount_naira)!==pricing.registrationAmount||Number(metadata.total_amount_naira)!==pricing.totalAmount||Number(metadata.duration_days)!==plan.durationDays)return respond({error:'Verified payment amount does not match the membership and registration fee.'},400);
   const admin=createClient(url,serviceKey,{auth:{autoRefreshToken:false,persistSession:false}});
 
