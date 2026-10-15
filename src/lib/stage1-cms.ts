@@ -2,7 +2,7 @@ import {useEffect,useState} from "react";
 import {supabase} from "@/lib/supabase";
 import {facilities as originalFacilities, testimonials as originalTestimonials, navItems} from "@/lib/site-data";
 export type CmsLink={label:string;href:string};
-export type CmsBlock={id:string;type:"hero"|"text"|"image"|"split"|"cta"|"quote";heading:string;body:string;image:string;button_label:string;button_href:string;visible:boolean};
+export type CmsBlock={id:string;type:"hero"|"text"|"image"|"split"|"cta"|"quote"|"video";heading:string;body:string;image:string;button_label:string;button_href:string;visible:boolean};
 export type CmsPageDoc={mode:"extend"|"replace";heading:string;intro:string;sections:CmsBlock[]};
 export type CmsPage={slug:string;title:string;kind:"custom"|"built_in";doc:CmsPageDoc};
 export type CmsBrand={logo:string;favicon:string;primary:string;accent:string;tagline:string};
