@@ -239,6 +239,8 @@ function isVisitorPage(pathname: string): boolean {
     [
       "/",
       "/membership",
+      "/app",
+      "/spa-booking",
       "/personal-training",
       "/facilities",
       "/gallery",

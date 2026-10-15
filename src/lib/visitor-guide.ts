@@ -810,7 +810,10 @@ function answerSingleQuestion(
     !/\b(monthly|weekly|daily|quarterly|yearly|family|gold|silver|semi annual)\b/.test(clean)
   )
     return byId("registration");
-  if (/\b(open now|open today|closed now|are you open|still open)\b/.test(clean)) {
+  if (
+    /\b(open now|open today|closed now|are you open|still open)\b/.test(clean) &&
+    !/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow)\b/.test(clean)
+  ) {
     const parts = new Intl.DateTimeFormat("en-GB", {
       timeZone: "Africa/Lagos",
       weekday: "short",

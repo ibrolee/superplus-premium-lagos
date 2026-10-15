@@ -101,3 +101,10 @@ test("answers clearly separated membership and location questions together", () 
   assert.match(result.text, /₦34,000/);
   assert.match(result.text, /105 Apata Street/);
 });
+
+test("a Sunday question does not report the current weekday as Sunday", () => {
+  const result = ask("Are you open on Sunday?", null, new Date("2026-10-15T10:00:00Z"));
+  assert.equal(result.id, "hours");
+  assert.match(result.text, /Sunday: 6:30 AM/);
+  assert.doesNotMatch(result.text, /open now/);
+});
