@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { contact, navItems, openingHours } from '@/lib/site-data';
 import { GmailIcon, TikTokIcon, WhatsAppIcon } from './footer-brand-icons';
+import './public-navbar.css';
 
 // One shared menu model for desktop and mobile. /portal is intentionally the
 // Staff / Reception / Admin chooser rather than the employee sign-in page.
@@ -91,18 +92,18 @@ export function Navbar() {
             </SheetTrigger>
 
             <SheetContent side="right" aria-describedby={undefined}
-              className="flex h-[100dvh] w-[92vw] max-w-[24rem] flex-col gap-0 overflow-hidden border-l border-white/10 bg-secondary p-0 text-secondary-foreground shadow-2xl sm:w-[22rem] sm:max-w-[24rem] motion-reduce:!animate-none motion-reduce:!transition-none [&>button]:right-3 [&>button]:top-3 [&>button]:flex [&>button]:size-9 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-lg [&>button]:border [&>button]:border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-white/20 [&>button]:focus-visible:outline-none [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-primary">
-              <div className="shrink-0 border-b border-white/10 px-4 py-3 pr-14">
+              className="spf-public-mobile-menu flex h-[100dvh] w-[92vw] max-w-[24rem] flex-col gap-0 overflow-hidden border-l border-white/10 bg-secondary p-0 text-secondary-foreground shadow-2xl sm:w-[22rem] sm:max-w-[24rem] motion-reduce:!animate-none motion-reduce:!transition-none [&>button]:right-3 [&>button]:top-3 [&>button]:flex [&>button]:size-9 [&>button]:items-center [&>button]:justify-center [&>button]:rounded-lg [&>button]:border [&>button]:border-white/20 [&>button]:bg-white/10 [&>button]:text-white [&>button]:opacity-100 [&>button]:hover:bg-white/20 [&>button]:focus-visible:outline-none [&>button]:focus-visible:ring-2 [&>button]:focus-visible:ring-primary">
+              <div className="spf-mobile-menu-head shrink-0 border-b border-white/10 px-4 py-3 pr-14">
                 <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-primary">Super Plus Fitness</p>
                 <SheetTitle className="mt-1 font-display text-xl font-extrabold uppercase leading-none text-white">Explore SPF</SheetTitle>
               </div>
 
               {/* Compact two-column grid: all ten desktop links and the three
                   portal shortcuts remain visible without an inner scrolling list. */}
-              <nav aria-label="Mobile navigation" className="flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.5rem,2dvh,1rem)] overflow-hidden px-3 py-2.5 sm:px-4">
+              <nav aria-label="Mobile navigation" className="spf-mobile-menu-body flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.5rem,2dvh,1rem)] overflow-hidden px-3 py-2.5 sm:px-4">
                 <section aria-label="Explore the website" className="min-h-0">
                   <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Explore</h3>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="spf-mobile-primary-grid grid grid-cols-2 gap-1.5">
                     {primaryNav.map(item => (
                       <Link key={item.to} to={item.to} onClick={() => setOpen(false)}
                         aria-current={pathname === item.to ? 'page' : undefined}
@@ -115,7 +116,7 @@ export function Navbar() {
 
                 <section aria-label="Member and staff portal links" className="shrink-0">
                   <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Portals &amp; check-in</h3>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="spf-mobile-portal-grid grid grid-cols-3 gap-1.5">
                     {portalNav.map(item => (
                       <Link key={item.to} to={item.to} onClick={() => setOpen(false)}
                         aria-current={pathname === item.to ? 'page' : undefined}
@@ -128,7 +129,7 @@ export function Navbar() {
                 </section>
               </nav>
 
-              <div className="shrink-0 border-t border-white/10 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2.5 sm:px-4">
+              <div className="spf-mobile-menu-footer shrink-0 border-t border-white/10 px-3 pb-[max(.75rem,env(safe-area-inset-bottom))] pt-2.5 sm:px-4">
                 <Button asChild size="lg" className="h-11 w-full rounded-xl text-xs font-extrabold uppercase">
                   <Link to="/join" onClick={() => setOpen(false)}>Join now <ArrowUpRight aria-hidden="true" className="size-4"/></Link>
                 </Button>
