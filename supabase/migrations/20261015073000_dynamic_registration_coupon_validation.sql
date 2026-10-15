@@ -35,7 +35,13 @@ begin
   select * into v_plan from public.membership_plans where name='Family Plan' and active is true limit 1;
   if v_plan.id is null or v_plan.price is null or v_plan.price<=0 or v_plan.duration_days is null then raise exception 'Family Plan is not configured.'; end if;
   v_fee := case when v_code <> '' then 0 else 20000 end;
-  if p_verified_amount_kobo is distinct from ((v_plan.price+v_fee)*100)::bigint then
+  if p_verified_amount_kobo is distinct from ((v_plan.price+v_fee)*100)::bigint
+    and not exists (
+      select 1 from public.website_control_audit a
+      where a.kind='membership_price' and a.record_key=v_plan.name
+        and a.changed_at >= now()-interval '24 hours'
+        and ((a.previous_value->>'price')::numeric + v_fee)*100=p_verified_amount_kobo
+    ) then
     raise exception 'Verified amount does not match Family Plan pricing.';
   end if;
 
@@ -159,7 +165,13 @@ begin
  -- Retain the exact price of previously initiated, independently verified checkouts.
  if v_code='' and p_plan_id in ('semi-annual','vip-gold')
     and p_verified_amount_kobo=((v_plan.price+3000)*100)::bigint then v_fee:=3000; end if;
- if p_verified_amount_kobo is distinct from ((v_plan.price+v_fee)*100)::bigint then
+ if p_verified_amount_kobo is distinct from ((v_plan.price+v_fee)*100)::bigint
+    and not exists (
+      select 1 from public.website_control_audit a
+      where a.kind='membership_price' and a.record_key=v_plan.name
+        and a.changed_at >= now()-interval '24 hours'
+        and ((a.previous_value->>'price')::numeric + v_fee)*100=p_verified_amount_kobo
+    ) then
   raise exception 'Verified amount does not match plan and coupon pricing.';
  end if;
 
