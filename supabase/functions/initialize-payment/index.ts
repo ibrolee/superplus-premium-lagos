@@ -30,9 +30,9 @@ Deno.serve(async (request: Request) => {
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
     if(couponCode){
       const {data:coupon,error:couponError}=await admin.from('website_coupons')
-        .select('active,expires_on').eq('code',couponCode).maybeSingle();
+        .select('active,starts_on,expires_on').eq('code',couponCode).maybeSingle();
       const lagosDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-      if(couponError||!coupon?.active||(coupon.expires_on&&coupon.expires_on<lagosDate))
+      if(couponError||!coupon?.active||(coupon.starts_on&&coupon.starts_on>lagosDate)||(coupon.expires_on&&coupon.expires_on<lagosDate))
         return response({error:'Invalid or inactive coupon code.'},400);
     }
     const {data:member,error:memberError}=await admin.from('members').select('id,email,phone,auth_user_id').eq('auth_user_id',user.id).maybeSingle();
