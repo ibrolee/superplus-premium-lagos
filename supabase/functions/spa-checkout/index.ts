@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { validateSpaTime } from "../_shared/spa-services.ts";
+import { validateSpaTimestamp } from "../_shared/spa-services.ts";
 import { finalizeSpaPayment } from "../_shared/spa-payment.ts";
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -88,7 +88,7 @@ Deno.serve(async (req: Request) => {
     let preferredAt;
     try {
       // First validate the timestamp strictly; then apply the owner's published hours.
-      preferredAt = validateSpaTime(body.preferredAt, durationMinutes, Date.now()-86400000);
+      preferredAt = validateSpaTimestamp(body.preferredAt);
       const bookingDate=new Date(preferredAt);
       const local=new Date(bookingDate.getTime()+3600000);
       const day=local.getUTCDay();
