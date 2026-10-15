@@ -9,7 +9,6 @@ const plans: Record<string, { name:string; price:number; duration:number }> = {
   family:{name:'Family Plan',price:75000,duration:30}, 'personal-training':{name:'Personal Training',price:57000,duration:30},
   'personal-training-only':{name:'Personal Training Only',price:30000,duration:30},
 };
-const registrationFeeCoupons = new Set(['REGOFF','REGSF']);
 Deno.serve(async (request: Request) => {
   if (request.method==='OPTIONS') return response({ok:true});
   if (request.method!=='POST') return response({error:'Method not allowed.'},405);
@@ -27,17 +26,26 @@ Deno.serve(async (request: Request) => {
     const planId=String(body?.planId||'');const plan=plans[planId];
     if (!plan) return response({error:'Invalid membership plan.'},400);
     const couponCode=String(body?.couponCode||'').trim().toUpperCase();
-    if (couponCode && !registrationFeeCoupons.has(couponCode)) return response({error:'Invalid coupon code.'},400);
+    if(couponCode&&!/^[A-Z0-9_-]{3,24}$/.test(couponCode))return response({error:'Invalid coupon code.'},400);
     const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
+    if(couponCode){
+      const {data:coupon,error:couponError}=await admin.from('website_coupons')
+        .select('active,expires_on').eq('code',couponCode).maybeSingle();
+      const lagosDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+      if(couponError||!coupon?.active||(coupon.expires_on&&coupon.expires_on<lagosDate))
+        return response({error:'Invalid or inactive coupon code.'},400);
+    }
     const {data:member,error:memberError}=await admin.from('members').select('id,email,phone,auth_user_id').eq('auth_user_id',user.id).maybeSingle();
     if (memberError || !member || !member.email) return response({error:'Member account or email could not be located.'},404);
     const {data:databasePlan,error:planError}=await admin.from('membership_plans').select('price,duration_days,active').eq('name',plan.name).maybeSingle();
-    if (planError || !databasePlan?.active || Number(databasePlan.price)!==plan.price || databasePlan.duration_days!==plan.duration) {
-      return response({error:'Membership prices are being updated. Please contact reception before paying.'},503);
+    if (planError || !databasePlan?.active || !Number.isFinite(Number(databasePlan.price)) || Number(databasePlan.price)<=0) {
+      return response({error:'Membership plan is temporarily unavailable. No payment has started.'},503);
     }
+    const currentPrice=Number(databasePlan.price),currentDays=Number(databasePlan.duration_days);
+    if(!Number.isInteger(currentDays)||currentDays<1)return response({error:'Membership duration is not configured.'},503);
 
     const metadata:Record<string,unknown>={source:'member_dashboard',member_id:member.id,auth_user_id:user.id,plan_id:planId,
-      plan_name:plan.name,amount_naira:plan.price,duration_days:plan.duration,coupon_code:couponCode||null,client:mobileClient?'mobile':'web'};
+      plan_name:plan.name,amount_naira:currentPrice,duration_days:currentDays,coupon_code:couponCode||null,client:mobileClient?'mobile':'web'};
     if(planId==='personal-training-only'){
       const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
       const part=(type:string)=>parts.find(value=>value.type===type)?.value||'';
@@ -77,7 +85,7 @@ Deno.serve(async (request: Request) => {
     const reference=`SPF-${Date.now()}-${crypto.randomUUID()}`;
     const initialized=await fetch('https://api.paystack.co/transaction/initialize',{
       method:'POST',headers:{Authorization:`Bearer ${secret}`,'Content-Type':'application/json'},
-      body:JSON.stringify({email:member.email,amount:plan.price*100,currency:'NGN',reference,
+      body:JSON.stringify({email:member.email,amount:currentPrice*100,currency:'NGN',reference,
         callback_url:mobileClient?'https://www.superplusfitness.com/payment/mobile-return':'https://www.superplusfitness.com/payment/callback',metadata}),signal:AbortSignal.timeout(12000),
     });
     const result=await initialized.json();
@@ -85,14 +93,14 @@ Deno.serve(async (request: Request) => {
       return response({error:'Unable to start Paystack checkout. Please try again.'},503);
     }
     const {error:pendingError}=await admin.from('payments').insert({
-      member_id:member.id,amount:plan.price,currency:'NGN',status:'pending',source:'paystack',provider:'paystack',
+      member_id:member.id,amount:currentPrice,currency:'NGN',status:'pending',source:'paystack',provider:'paystack',
       paystack_reference:reference,metadata,
     });
     if (pendingError) {
       console.error('Paystack pending checkout not recorded:',{reference,code:pendingError.code,message:pendingError.message});
       return response({error:'Checkout could not be recorded safely. Please retry. You have not been sent to payment.'},503);
     }
-    return response({authorization_url:result.data.authorization_url,access_code:result.data.access_code,reference,amount:plan.price,coupon_code:couponCode||null});
+    return response({authorization_url:result.data.authorization_url,access_code:result.data.access_code,reference,amount:currentPrice,coupon_code:couponCode||null});
   } catch(error) {
     console.error('Initialize payment:',error instanceof Error?error.message:'unknown');
     return response({error:'Unable to start payment. Please retry.'},503);
