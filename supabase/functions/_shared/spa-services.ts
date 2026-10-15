@@ -94,7 +94,7 @@ export const spaStaff = ["Salma", "James", "Chinedu"] as const;
  * Published opening/closing rules are checked by the checkout independently.
  */
 export function validateSpaTimestamp(value:unknown,now=Date.now()){
- if(typeof value!=="string"||!/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:00\\+01:00$/.test(value))
+ if(typeof value!=="string"||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+01:00$/.test(value))
   throw Error("Choose a valid date and time in Lagos.");
  const timestamp=Date.parse(value);
  if(!Number.isFinite(timestamp)||timestamp<=now||timestamp>now+91*86400000)
