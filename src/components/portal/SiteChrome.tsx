@@ -1,5 +1,5 @@
 import { Link, useRouterState } from '@tanstack/react-router';
-import { ArrowUpRight, Instagram, LayoutDashboard, Menu, QrCode, UserRound } from 'lucide-react';
+import { ArrowUpRight, Instagram, LayoutDashboard, Menu, UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -15,7 +15,6 @@ const primaryNav = navItems.map(item =>
 const portalNav = [
   { label: 'Member Portal', to: '/login' as const, icon: UserRound },
   { label: 'Staff Portal', to: '/portal' as const, icon: LayoutDashboard },
-  { label: 'My QR', to: '/my-qr' as const, icon: QrCode },
 ];
 const galleryNavItems = primaryNav;
 
@@ -98,7 +97,7 @@ export function Navbar() {
                 <SheetTitle className="mt-1 font-display text-xl font-extrabold uppercase leading-none text-white">Explore SPF</SheetTitle>
               </div>
 
-              {/* Compact two-column grid: all ten desktop links and the three
+              {/* Compact two-column grid: all ten desktop links and the two
                   portal shortcuts remain visible without an inner scrolling list. */}
               <nav aria-label="Mobile navigation" className="spf-mobile-menu-body flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.5rem,2dvh,1rem)] overflow-hidden px-3 py-2.5 sm:px-4">
                 <section aria-label="Explore the website" className="min-h-0">
@@ -115,8 +114,8 @@ export function Navbar() {
                 </section>
 
                 <section aria-label="Member and staff portal links" className="shrink-0">
-                  <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Portals &amp; check-in</h3>
-                  <div className="spf-mobile-portal-grid grid grid-cols-3 gap-1.5">
+                  <h3 className="mb-1.5 px-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-primary">Portals</h3>
+                  <div className="spf-mobile-portal-grid grid grid-cols-2 gap-1.5">
                     {portalNav.map(item => (
                       <Link key={item.to} to={item.to} onClick={() => setOpen(false)}
                         aria-current={pathname === item.to ? 'page' : undefined}
