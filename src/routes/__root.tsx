@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
+import { CmsPublicSections, CmsBrandingEffects, CmsTestimonials } from "@/components/cms/CmsPublicPage";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { AdminPersistentNavigation } from "@/components/admin/AdminPersistentNavigation";
@@ -248,7 +249,8 @@ function isVisitorPage(pathname: string): boolean {
       "/contact",
       "/blog",
       "/join",
-    ].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname)
+      "/app",
+    ].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname) || /^\/pages\/[a-z0-9-]+\/?$/.test(pathname)
   );
 }
 function RootComponent() {
@@ -271,10 +273,13 @@ function RootContent() {
       {pathname === "/" && <AnnouncementSurface placement="banner" />}
       {pathname === "/member" && <AnnouncementSurface placement="dashboard" />}
       <SiteMotion />
+      <CmsBrandingEffects />
       <WorkspaceNavigation />
       <AdminPersistentNavigation />
       <ReceptionPersistentNavigation />
       <ReceptionRouteGate />
+      {!internal && <CmsPublicSections />}
+      {pathname === "/" && <CmsTestimonials />}
       {!internal && <Footer />}
       {isVisitorPage(pathname) && <VisitorChat />}
       {(isVisitorPage(pathname) || pathname === "/member") && (
