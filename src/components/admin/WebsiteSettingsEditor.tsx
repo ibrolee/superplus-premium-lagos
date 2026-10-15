@@ -1,6 +1,7 @@
 import { useCallback,useEffect,useMemo,useState } from "react";
 import { ArrowLeft, CheckCircle2, History, Plus, RefreshCw, Save, Trash2, UploadCloud } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { WebsiteImageUploader } from "@/components/admin/WebsiteImageUploader";
 import type { BookingConfig, BusinessConfig, HomeConfig, SpaServiceEntry, WebsiteTextConfig } from "@/lib/website-settings";
 
 type Entry={setting_key:string;draft:Record<string,any>;published:Record<string,any>;revision:number;published_revision:number;updated_at:string};
@@ -49,7 +50,8 @@ export function WebsiteSettingsEditor(){
  useEffect(()=>{setDraft(current?.draft?structuredClone(current.draft):{});setPreview(false);},[current?.setting_key,current?.revision]);
  function patch(change:Record<string,any>){setDraft(x=>({...x,...change}));setNotice("");}
  function changeItem(index:number,change:Record<string,unknown>){
-   patch({items:(draft.items||[]).map((item:SpaServiceEntry,i:number)=>i===index?{...item,...change}:item)});
+   setDraft(current=>({...current,items:(current.items||[]).map((item:SpaServiceEntry,i:number)=>i===index?{...item,...change}:item)}));
+   setNotice("");
  }
  async function call(name:string,args:Record<string,unknown>,success:string){
    setBusy(name);setError("");setNotice("");
@@ -87,7 +89,7 @@ export function WebsiteSettingsEditor(){
     <p className="mt-1 text-sm text-[var(--portal-muted)]">Make edits, save a private draft, preview it and publish when ready. Restore previous published versions any time.</p></div>
     <button disabled={!!busy} onClick={()=>setReload(x=>x+1)} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold"><RefreshCw size={14}/>Refresh</button>
   </div>
-  <div className="mt-4 flex flex-wrap gap-2" role="tablist">{sections.map(item=><button key={item.key} role="tab" aria-selected={key===item.key} type="button"
+  <div className="mt-4 flex flex-wrap gap-2" role="tablist">{sections.map(item=><button key={item.key} role="tab" aria-selected={key===item.key} type="button" disabled={!!busy}
    className={`rounded-xl px-3 py-2.5 text-xs font-black ${key===item.key?"bg-[var(--portal-ink)] text-white":"border"}`}
    onClick={()=>{setKey(item.key);setError("");setNotice("");}}>{item.label}</button>)}</div>
   {loading&&<p className="mt-4 text-sm">Loading settings…</p>}
@@ -108,7 +110,14 @@ export function WebsiteSettingsEditor(){
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <ItemInput label="Description" value={item.description||""} textarea onChange={description=>changeItem(index,{description})}/>
-        <ItemInput label="Image HTTPS URL (optional)" value={item.image||""} onChange={image=>changeItem(index,{image})}/>
+        <WebsiteImageUploader
+          title={`Photo for ${item.name||"spa service"}`}
+          value={item.image||""}
+          kind="spa-services"
+          disabled={!!busy}
+          onUploading={uploading=>setBusy(uploading?"image-upload":"")}
+          onChange={image=>changeItem(index,{image})}
+        />
         </div>
       </div>)}</div>
       <button type="button" onClick={()=>{
@@ -127,7 +136,17 @@ export function WebsiteSettingsEditor(){
      <ItemInput label="Hero headline" value={homepage.title||""} onChange={setStr("title")}/>
      <ItemInput label="Highlighted headline" value={homepage.highlight||""} onChange={setStr("highlight")}/>
      <div className="sm:col-span-2"><ItemInput label="Hero subtitle" value={homepage.subtitle||""} onChange={setStr("subtitle")} textarea/></div>
-     <div className="sm:col-span-2"><ItemInput label="New hero image (HTTPS link; leave blank to keep default)" value={homepage.image||""} onChange={setStr("image")}/></div>
+     <div className="sm:col-span-2">
+       <WebsiteImageUploader
+         title="Homepage hero photo"
+         value={homepage.image||""}
+         kind="homepage"
+         disabled={!!busy}
+         onUploading={uploading=>setBusy(uploading?"image-upload":"")}
+         onChange={setStr("image")}
+       />
+       <p className="mt-2 text-xs text-[var(--portal-muted)]">Removing the uploaded hero photo restores the default homepage background after publishing.</p>
+     </div>
      <div className="sm:col-span-2"><ItemInput label="Announcement banner text" value={homepage.announcement||""} onChange={setStr("announcement")} textarea/></div>
      <label className="flex items-center gap-3 text-xs font-bold"><input type="checkbox" checked={!!homepage.announcement_enabled} onChange={e=>patch({announcement_enabled:e.target.checked})}/>Show announcement bar on homepage</label>
    </div>}
@@ -169,7 +188,7 @@ export function WebsiteSettingsEditor(){
    {preview&&<div className="mt-4 rounded-xl border border-dashed bg-[var(--portal-canvas)] p-4">
      <p className="text-xs font-bold uppercase tracking-wider text-[var(--portal-muted)]">Private draft preview — not live</p>
      {key==="homepage"?<><h2 className="mt-4 text-3xl font-black">{homepage.title} <span className="text-orange-600">{homepage.highlight}</span></h2><p className="mt-3 text-sm">{homepage.subtitle}</p>{homepage.image&&<img src={homepage.image} className="mt-3 max-h-48 rounded-xl object-cover" alt="New hero preview"/>}{homepage.announcement_enabled&&<p className="mt-2 rounded-xl bg-orange-100 p-2 text-xs">{homepage.announcement}</p>}</>:
-     key==="spa_services"?<div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceItems.filter(item=>item.active).map(s=><div key={s.id} className="rounded-xl bg-white p-3"><strong>{s.name}</strong><p className="text-xs">{s.description}</p><p className="mt-2 text-sm font-bold">₦{Number(s.price).toLocaleString("en-NG")} · {s.duration_minutes} min</p></div>)}</div>:
+     key==="spa_services"?<div className="mt-3 grid gap-2 sm:grid-cols-2">{serviceItems.filter(item=>item.active).map(s=><div key={s.id} className="rounded-xl bg-white p-3">{s.image&&<img src={s.image} alt={s.name} className="mb-2 h-28 w-full rounded-lg object-cover"/>}<strong>{s.name}</strong><p className="text-xs">{s.description}</p><p className="mt-2 text-sm font-bold">₦{Number(s.price).toLocaleString("en-NG")} · {s.duration_minutes} min</p></div>)}</div>:
      <pre className="mt-2 whitespace-pre-wrap break-words text-xs">{displayValue(JSON.stringify(draft,null,2))}</pre>}
    </div>}
    <div className="mt-6 border-t pt-4">
