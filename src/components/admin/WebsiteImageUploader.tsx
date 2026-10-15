@@ -15,7 +15,7 @@ export function WebsiteImageUploader({
   title: string;
   value: string;
   onChange: (url: string) => void;
-  kind: "homepage" | "spa-services";
+  kind: "homepage" | "spa-services" | "content" | "branding";
   disabled?: boolean;
   onUploading: (uploading: boolean) => void;
 }) {
@@ -24,6 +24,9 @@ export function WebsiteImageUploader({
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [advanced, setAdvanced] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [library, setLibrary] = useState<{path:string;title:string;alt_text:string}[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
 
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -58,8 +61,13 @@ export function WebsiteImageUploader({
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
       if (!data?.publicUrl) throw Error("The image uploaded, but its public URL could not be obtained.");
 
+      const {error:assetError}=await supabase.from("wc_media").insert({
+        path:storagePath,title:file.name.replace(/\.[^.]+$/,"").slice(0,120),
+        alt_text:title.slice(0,180),category:kind,created_by:userResult.user.id
+      });
       onChange(data.publicUrl);
-      setInfo(`Uploaded and optimized (${Math.max(1, Math.round(optimized.size / 1024))} KB). Save your draft, then publish when ready.`);
+      if(assetError)setInfo("Photo uploaded, but was not indexed in your shared media library.");
+      if(!assetError)setInfo(`Uploaded and optimized (${Math.max(1, Math.round(optimized.size / 1024))} KB). Save your draft, then publish when ready.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Image upload failed. Please try again.");
     } finally {
@@ -101,6 +109,29 @@ export function WebsiteImageUploader({
           </button>
         )}
       </div>
+      <button type="button" disabled={disabled || uploading} className="mt-3 block text-xs font-bold text-[var(--portal-accent)] underline disabled:opacity-50"
+        onClick={async()=>{
+          if(libraryOpen){setLibraryOpen(false);return;}
+          setLibraryOpen(true);setLibraryLoading(true);
+          const {data,error}=await supabase.from("wc_media").select("path,title,alt_text").eq("archived",false).order("created_at",{ascending:false}).limit(120);
+          if(error)setError(error.message);else setLibrary(data||[]);
+          setLibraryLoading(false);
+        }}>
+        {libraryOpen?"Hide Media Library":"Choose an existing photo from Media Library"}
+      </button>
+      {libraryOpen&&<div className="mt-3 rounded-xl border bg-white p-3">
+        {libraryLoading?<p className="text-xs">Loading saved photos…</p>:library.length===0?<p className="text-xs text-[var(--portal-muted)]">No saved photos yet.</p>:
+          <div className="grid max-h-80 grid-cols-3 gap-2 overflow-y-auto">{library.map(asset=>{
+            const url=supabase.storage.from(BUCKET).getPublicUrl(asset.path).data.publicUrl;
+            return <button key={asset.path} type="button" disabled={disabled||uploading}
+             onClick={()=>{onChange(url);setLibraryOpen(false);setInfo("Selected photo. Save draft and publish to update the website.");}}
+             className="overflow-hidden rounded-lg border text-left disabled:opacity-50"
+             title={asset.title||asset.alt_text||"Use this photo"}>
+              <img src={url} alt={asset.alt_text||asset.title} loading="lazy" className="aspect-square w-full object-cover"/>
+              <span className="block truncate p-1 text-[10px]">{asset.title||"Photo"}</span>
+             </button>
+          })}</div>}
+      </div>}
       <p className="mt-2 text-xs leading-5 text-[var(--portal-muted)]">
         Choose from your phone or computer. JPG, PNG, WebP and supported iPhone photos; maximum original size 15 MB. Photos are optimized for the website.
       </p>
