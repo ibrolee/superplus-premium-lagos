@@ -77,6 +77,17 @@ export function CmsPageAdmin(){
   if(e)setError(e.message);else{setMessage(on?"Published successfully.":"Unpublished successfully.");setRefresh(x=>x+1);}
   setBusy("");
  }
+ async function discard(){
+  if(!current||disabled)return;
+  const deleteEntirePage=current.kind==="custom"&&current.published_revision===0;
+  if(!window.confirm(deleteEntirePage?"Permanently delete this never-published page draft? This cannot be undone.":"Discard all unpublished page changes and return to the last published version?"))return;
+  setBusy("discard");setError("");setMessage("");
+  const {error:e}=await supabase.rpc("wc_admin_discard_page",{p_slug:current.slug,p_revision:current.revision});
+  if(e)setError(e.message);else{
+   if(deleteEntirePage)setSelected("home");
+   setMessage(deleteEntirePage?"Unpublished page deleted.":"Draft discarded; live page unchanged.");setRefresh(x=>x+1);
+  }setBusy("");
+ }
  async function restore(version:Version){
   if(!current||!window.confirm("Restore version "+version.version+" as an editable draft? Live content stays unchanged until you publish."))return;
   setBusy("restore");setError("");
@@ -161,6 +172,7 @@ export function CmsPageAdmin(){
      <button type="button" disabled={disabled} onClick={()=>setPreview(x=>!x)} className="rounded-xl border px-4 py-3 text-xs font-bold"><Eye size={15} className="mr-1 inline"/>Preview</button>
      <button type="button" disabled={disabled||changed||(!savedUnpublished&&current.is_published)} onClick={()=>void publish(true)} className="rounded-xl bg-orange-600 px-4 py-3 text-xs font-black text-white disabled:opacity-40"><UploadCloud size={15} className="mr-1 inline"/>Publish Live</button>
      {current.kind==="custom"&&current.is_published&&<button type="button" disabled={disabled||changed} onClick={()=>void publish(false)} className="rounded-xl border border-red-300 px-4 py-3 text-xs font-bold text-red-700">Unpublish Page</button>}
+          <button type="button" disabled={disabled||(!changed&&!savedUnpublished&&current.published_revision!==0)} onClick={()=>void discard()} className="rounded-xl border border-red-300 px-4 py-3 text-xs font-bold text-red-700 disabled:opacity-40"><Trash2 size={15} className="mr-1 inline"/>{current.kind==="custom"&&current.published_revision===0?"Delete Draft Page":"Discard Draft"}</button>
      {changed&&<p className="w-full text-xs text-orange-700">You have unsaved changes. Save the draft before publishing.</p>}
    </div>
    {preview&&<section className="overflow-hidden rounded-xl border-2 border-dashed"><p className="bg-orange-100 p-3 text-xs font-bold text-orange-800">PREVIEW · Your unpublished changes</p><CmsPageBody doc={draft} title={title} isStandalone={current.kind==="custom"||draft.mode==="replace"}/></section>}
