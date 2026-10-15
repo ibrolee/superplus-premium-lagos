@@ -16,7 +16,7 @@ export function Navbar() {
  const brand=useCmsConfig<CmsBrand>("branding",standardBrand);
  const links=nav.header;
  const mobileSections=[
-  {heading:"PORTAL",items:[{label:"Member Portal",href:"/login"},{label:"Staff Portal",href:"/portal/staff"}]},
+  {heading:"PORTAL",items:[{label:"Member Portal",href:"/login"},{label:"Staff Portal",href:"/portal"}]},
   {heading:"Explore",items:links.slice(0,5)},
   {heading:"Discover More",items:links.slice(5)}
  ];
@@ -39,7 +39,7 @@ export function Footer() {
  const openingHours=[{days:"Monday–Saturday",hours:business.mon_sat_hours},{days:"Sunday",hours:business.sun_hours}];
  const primaryLinks=nav.footer.slice(0,Math.ceil(nav.footer.length/2));
  const businessLinks=nav.footer.slice(Math.ceil(nav.footer.length/2));
- const accountLinks=[{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal/staff'}] as const;
+ const accountLinks=[{label:'Member Portal',to:'/login'},{label:'Staff Portal',to:'/portal'}] as const;
  return <footer className="relative overflow-hidden bg-secondary text-secondary-foreground">
  <div className="pointer-events-none absolute -right-28 top-12 size-72 rounded-full border-[42px] border-primary/15" aria-hidden="true"/><div className="pointer-events-none absolute -left-20 bottom-10 size-56 rounded-full bg-primary/10 blur-3xl" aria-hidden="true"/>
  <div className="section-shell relative py-12 sm:py-16">
