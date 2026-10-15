@@ -265,7 +265,6 @@ export const adminGroups: Group[] = [
         label: "Website controls",
         href: "/management-website-controls",
         icon: Settings2,
-        ownerOrAdmin: true,
         keywords: "website pricing change plan price coupons promo codes discount registration edit content settings no code",
       },
     ],
