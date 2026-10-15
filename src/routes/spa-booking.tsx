@@ -2,12 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { contact, formatNaira } from "@/lib/site-data";
-import { useLiveSpaServices, useWebsiteSetting, fallbackBooking, type BookingConfig } from "@/lib/website-settings";
+import { contact, formatNaira, recoveryServices } from "@/lib/site-data";
 import { supabase } from "@/lib/supabase";
 import { getFunctionErrorMessage, getUserErrorMessage } from "@/lib/user-error";
 import { pageHead } from "@/lib/seo";
-import { validateSpaTimestamp } from "../../supabase/functions/_shared/spa-services";
+import { validateSpaTime } from "../../supabase/functions/_shared/spa-services";
 
 export const Route = createFileRoute("/spa-booking")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -33,10 +32,8 @@ const field =
   "mt-2 min-h-12 w-full rounded-xl border border-border bg-background px-4 py-3 text-base";
 function SpaBooking() {
   const search = Route.useSearch();
-  const {services:recoveryServices,loading:spaLoading}=useLiveSpaServices();
-  const {value:bookingConfig}=useWebsiteSetting<BookingConfig>("booking",fallbackBooking);
   const [serviceId, setServiceId] = useState(
-    search["service"] || "vip-chair",
+    search["service"] || recoveryServices[0]?.id || "vip-chair",
   );
   const [name, setName] = useState(""),
     [email, setEmail] = useState(""),
@@ -80,20 +77,7 @@ function SpaBooking() {
     }
     const preferredAt = `${date}T${time}:00+01:00`;
     try {
-      // Checkout validates the exact currently published hours and booking capacity.
-      const timeValue=validateSpaTimestamp(preferredAt);
-      const lagos=new Date(Date.parse(timeValue)+3600000);
-      const sun=lagos.getUTCDay()===0;
-      const start=sun?bookingConfig.sun_open:bookingConfig.mon_sat_open;
-      const end=sun?bookingConfig.sun_close:bookingConfig.mon_sat_close;
-      const minute=(text:string)=>{const [h,m]=text.split(":").map(Number);return h*60+m;};
-      const selected=lagos.getUTCHours()*60+lagos.getUTCMinutes();
-      if(selected<minute(start)||selected+Number(service.duration_minutes||30)>minute(end))
-        throw Error("The selected session is outside the published booking hours.");
-      if((selected-minute(start))%bookingConfig.slot_minutes!==0)
-        throw Error("Choose a time aligned to the booking intervals.");
-      if(Date.parse(timeValue)<Date.now()+bookingConfig.lead_hours*3600000)
-        throw Error("Please choose a later appointment.");
+      validateSpaTime(preferredAt, service.id === "vip-chair" ? 60 : 30);
     } catch (e) {
       setError((e as Error).message);
       return;
@@ -215,7 +199,7 @@ function SpaBooking() {
             onSubmit={(event) => void submit(event)}
             className="space-y-5 rounded-3xl border bg-card p-5 sm:p-8"
           >
-            <fieldset disabled={busy||spaLoading} className="space-y-5">
+            <fieldset disabled={busy} className="space-y-5">
               <label className="block text-sm font-bold">
                 Service
                 <select
@@ -285,7 +269,7 @@ function SpaBooking() {
                   <input
                     required
                     type="time"
-                    step={Math.max(15,bookingConfig.slot_minutes)*60}
+                    step={900}
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
                     className={field}
@@ -293,7 +277,7 @@ function SpaBooking() {
                 </label>
               </div>
               <p className="text-xs leading-5 text-muted-foreground">
-                All times are Lagos time. Monday–Saturday: {bookingConfig.mon_sat_open}–{bookingConfig.mon_sat_close}. Sunday: {bookingConfig.sun_open}–{bookingConfig.sun_close}.
+                All times are Lagos time. Monday–Saturday: 6 AM–8:30 PM. Sunday: 6:30 AM–7 PM.
                 Choose a time that allows your session to finish before closing.
               </p>
               <label className="block text-sm font-bold">

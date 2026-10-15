@@ -16,7 +16,6 @@ import {
   Menu,
   MessageSquareWarning,
   Search,
-  Settings2,
   ShieldCheck,
   UserPlus,
   UserRound,
@@ -258,18 +257,6 @@ export const adminGroups: Group[] = [
     ],
   },
   {
-    name: "Website Control Centre",
-    icon: Settings2,
-    tools: [
-      {
-        label: "Website controls",
-        href: "/management-website-controls",
-        icon: Settings2,
-        keywords: "website pricing change plan price coupons promo codes discount registration edit content settings no code",
-      },
-    ],
-  },
-  {
     name: "App & website content",
     icon: Images,
     tools: [
@@ -317,7 +304,6 @@ export const adminGroups: Group[] = [
   },
 ];
 export function canSeeAdminTool(tool: Tool, role: string | null) {
-  if(role==="reception")return tool.href==="/management-website-controls";
   return (
     !!role &&
     (!tool.adminOnly || role === "admin") &&
@@ -407,7 +393,7 @@ export function AdminWorkspaceShell({
           .maybeSingle();
         if (error) throw error;
         const next = String(staff?.role || "").toLowerCase();
-        if (!staff?.active || !(["admin", "owner", "manager"].includes(next) || (active==="/management-website-controls"&&next==="reception")))
+        if (!staff?.active || !["admin", "owner", "manager"].includes(next))
           throw Error("An active management account is required.");
         if (!cancelled) setRole(next);
       } catch (cause) {

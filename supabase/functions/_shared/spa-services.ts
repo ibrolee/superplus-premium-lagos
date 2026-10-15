@@ -89,18 +89,3 @@ export function validateSpaTime(value: unknown, durationMinutes = 30, now = Date
 }
 
 export const spaStaff = ["Salma", "James", "Chinedu"] as const;
-
-/** Parse Lagos booking timestamp without hardcoding opening hours.
- * Published opening/closing rules are checked by the checkout independently.
- */
-export function validateSpaTimestamp(value:unknown,now=Date.now()){
- if(typeof value!=="string"||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\+01:00$/.test(value))
-  throw Error("Choose a valid date and time in Lagos.");
- const timestamp=Date.parse(value);
- if(!Number.isFinite(timestamp)||timestamp<=now||timestamp>now+91*86400000)
-  throw Error("Choose a future appointment within the next 90 days.");
- const lagos=new Date(timestamp+3600000);
- if(lagos.toISOString().slice(0,16)!==value.slice(0,16))
-  throw Error("Choose a valid date and time.");
- return new Date(timestamp).toISOString();
-}

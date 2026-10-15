@@ -10,7 +10,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Footer, Navbar, UtilityBar } from "@/components/portal/SiteChrome";
-import { CmsPublicSections, CmsBrandingEffects, CmsTestimonials } from "@/components/cms/CmsPublicPage";
 import { SiteMotion } from "@/components/site-motion";
 import { WorkspaceNavigation } from "@/components/management/WorkspaceNavigation";
 import { AdminPersistentNavigation } from "@/components/admin/AdminPersistentNavigation";
@@ -101,14 +100,7 @@ function GlobalUnhandledErrorToasts() {
       lastShownAt = now;
       toast.error(message);
     };
-    const onError = (event: ErrorEvent) => {
-      // Cross-origin browser extensions and blocked third-party scripts can emit
-      // only the opaque message "Script error." with no source or exception.
-      // Do not alarm visitors with an unactionable global toast in that case;
-      // preserve all first-party and identifiable errors.
-      if (!event.error && !event.filename && /^Script error\\.?$/i.test(event.message || "")) return;
-      show(event.error || event.message);
-    };
+    const onError = (event: ErrorEvent) => show(event.error || event.message);
     const onRejection = (event: PromiseRejectionEvent) => show(event.reason);
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
@@ -256,9 +248,7 @@ function isVisitorPage(pathname: string): boolean {
       "/contact",
       "/blog",
       "/join",
-      "/app",
-      "/events",
-    ].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname) || /^\/pages\/[a-z0-9-]+\/?$/.test(pathname)
+    ].includes(pathname) || /^\/blog\/[a-z0-9-]+\/?$/.test(pathname)
   );
 }
 function RootComponent() {
@@ -281,13 +271,10 @@ function RootContent() {
       {pathname === "/" && <AnnouncementSurface placement="banner" />}
       {pathname === "/member" && <AnnouncementSurface placement="dashboard" />}
       <SiteMotion />
-      {!internal && <CmsBrandingEffects />}
       <WorkspaceNavigation />
       <AdminPersistentNavigation />
       <ReceptionPersistentNavigation />
       <ReceptionRouteGate />
-      {!internal && <CmsPublicSections />}
-      {pathname === "/" && <CmsTestimonials />}
       {!internal && <Footer />}
       {isVisitorPage(pathname) && <VisitorChat />}
       {(isVisitorPage(pathname) || pathname === "/member") && (
