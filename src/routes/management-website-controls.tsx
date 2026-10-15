@@ -10,7 +10,7 @@ import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/management-website-controls")({ component: WebsiteControls });
 type Plan = { id: string; name: string; price: number; duration_days: number; active: boolean };
-type Coupon = { code: string; description: string; active: boolean; discount_type: string; expires_on: string | null; updated_at: string };
+type Coupon = { code: string; description: string; active: boolean; discount_type: string; starts_on: string | null; expires_on: string | null; updated_at: string };
 type Audit = { id: string; changed_at: string; changed_by: string | null; kind: string; record_key: string; previous_value: Record<string,unknown>|null; next_value: Record<string,unknown>|null };
 const money = (amount:number) => new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(amount);
 const input = "mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-sm text-[var(--portal-ink)] outline-none focus:border-[var(--portal-accent)] disabled:opacity-50";
@@ -37,6 +37,7 @@ function WebsiteControls(){
  const [couponCode,setCouponCode]=useState("");
  const [couponDescription,setCouponDescription]=useState("");
  const [couponExpiry,setCouponExpiry]=useState("");
+ const [couponStart,setCouponStart]=useState("");
  const [busy,setBusy]=useState("");
  const [error,setError]=useState("");
  const [notice,setNotice]=useState("");
@@ -56,7 +57,7 @@ function WebsiteControls(){
      if(!permitted.admin){setPlans([]);setCoupons([]);setAudit([]);setVerified(true);setTab(permitted.pages?"pages":permitted.design?"design":"stage2");return;}
      const [p,c,h]=await Promise.all([
        supabase.from("membership_plans").select("id,name,price,duration_days,active").order("price"),
-       supabase.from("website_coupons").select("code,description,active,discount_type,expires_on,updated_at").order("code"),
+       supabase.from("website_coupons").select("code,description,active,discount_type,starts_on,expires_on,updated_at").order("code"),
        supabase.from("website_control_audit").select("id,changed_at,changed_by,kind,record_key,previous_value,next_value").order("changed_at",{ascending:false}).limit(40),
      ]);
      if(p.error)throw p.error;if(c.error)throw c.error;if(h.error)throw h.error;
@@ -103,7 +104,9 @@ function WebsiteControls(){
      p_code:code,p_description:couponDescription.trim(),p_active:true,p_expires_on:couponExpiry||null,
    });
    if(saveError)setError(saveError.message);else{
-     setNotice(`Registration coupon ${code} saved and active.`);setCouponCode("");setCouponDescription("");setCouponExpiry("");setReload(v=>v+1);
+     const {error:dateError}=await supabase.rpc("admin_site_schedule_coupon",{p_code:code,p_starts_on:couponStart||null});
+     if(dateError)setError("Coupon saved, but its start date was not updated: "+dateError.message);
+     else{setNotice(`Registration coupon ${code} saved.`);setCouponCode("");setCouponDescription("");setCouponExpiry("");setCouponStart("");setReload(v=>v+1);}
    }
    setBusy("");
  }
@@ -171,6 +174,7 @@ function WebsiteControls(){
          <label className="text-xs font-bold">Code<input required maxLength={24} value={couponCode} disabled={disabled} onChange={e=>setCouponCode(e.target.value.toUpperCase())} placeholder="WELCOME26" className={input}/></label>
          <label className="text-xs font-bold">Description<input maxLength={250} value={couponDescription} disabled={disabled} onChange={e=>setCouponDescription(e.target.value)} placeholder="Welcome promotion" className={input}/></label>
          <label className="text-xs font-bold">Expires on (optional)<input type="date" value={couponExpiry} disabled={disabled} onChange={e=>setCouponExpiry(e.target.value)} className={input}/></label>
+         <label className="text-xs font-bold">Starts on (optional)<input type="date" value={couponStart} disabled={disabled} onChange={e=>setCouponStart(e.target.value)} className={input}/></label>
        </div>
        <p className="mt-3 text-xs text-[var(--portal-muted)]">Coupon benefit: waive 100% of the new-member one-time registration fee only.</p>
        <button type="submit" disabled={disabled} className="mt-3 rounded-xl bg-[var(--portal-ink)] px-5 py-3 text-xs font-black text-white disabled:opacity-50">Save registration coupon</button>
@@ -180,9 +184,9 @@ function WebsiteControls(){
        const expired=!!coupon.expires_on&&coupon.expires_on<new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Lagos",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
        return <article key={coupon.code} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--portal-border)] p-4">
          <div><p className="font-black tracking-wider">{coupon.code} <span className="ml-2 rounded-lg bg-[var(--portal-canvas)] px-2 py-1 text-[10px] font-bold tracking-normal">{!coupon.active?"Disabled":expired?"Expired":"Active"}</span></p>
-           <p className="mt-1 text-xs text-[var(--portal-muted)]">{coupon.description||"Registration fee waiver"} · {coupon.expires_on?`Expires ${coupon.expires_on}`:"No expiry"}</p></div>
+           <p className="mt-1 text-xs text-[var(--portal-muted)]">{coupon.description||"Registration fee waiver"} · {coupon.starts_on?`Starts ${coupon.starts_on} · `:""}{coupon.expires_on?`Expires ${coupon.expires_on}`:"No expiry"}</p></div>
          <div className="flex gap-2">
-           <button type="button" disabled={disabled} onClick={()=>{setCouponCode(coupon.code);setCouponDescription(coupon.description);setCouponExpiry(coupon.expires_on||"");window.scrollTo({top:0,behavior:"smooth"});}} className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Edit</button>
+           <button type="button" disabled={disabled} onClick={()=>{setCouponCode(coupon.code);setCouponDescription(coupon.description);setCouponExpiry(coupon.expires_on||"");setCouponStart(coupon.starts_on||"");window.scrollTo({top:0,behavior:"smooth"});}} className="rounded-xl border px-3 py-2 text-xs font-bold disabled:opacity-50">Edit</button>
            <button type="button" disabled={disabled} onClick={()=>void changeCoupon(coupon,!coupon.active)} className={`inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-xs font-black disabled:opacity-50 ${coupon.active?"border-red-200 text-red-700":"border-green-200 text-green-700"}`}>
              {coupon.active?<><Trash2 size={13}/>Disable</>:<><CheckCircle2 size={13}/>Enable</>}</button>
          </div>
