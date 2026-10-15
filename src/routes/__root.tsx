@@ -273,7 +273,7 @@ function RootContent() {
       {pathname === "/" && <AnnouncementSurface placement="banner" />}
       {pathname === "/member" && <AnnouncementSurface placement="dashboard" />}
       <SiteMotion />
-      <CmsBrandingEffects />
+      {!internal && <CmsBrandingEffects />}
       <WorkspaceNavigation />
       <AdminPersistentNavigation />
       <ReceptionPersistentNavigation />
