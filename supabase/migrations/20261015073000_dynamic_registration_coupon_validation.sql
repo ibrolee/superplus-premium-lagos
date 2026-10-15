@@ -99,7 +99,7 @@ begin
     'family_group_id',v_group,'family_member_ids',to_jsonb(v_ids),'plan_name','Family Plan','start_date',v_start,'end_date',v_end,
     'reference',v_ref,'coupon_code',nullif(v_code,''));
 end
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.finalize_public_join_payment(p_reference text, p_plan_id text, p_full_name text, p_email text, p_phone text, p_birth_day integer, p_birth_month integer, p_paid_at timestamp with time zone, p_channel text, p_customer_code text, p_coupon_code text, p_verified_amount_kobo bigint)
@@ -278,7 +278,7 @@ begin
    'end_date',v_end,'email',v_email,'reference',v_ref,'coupon_code',nullif(v_code,'')
  );
 end
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.reception_complete_registration(p_actor_id uuid, p_full_name text, p_email text, p_phone text, p_plan_id uuid, p_start_date date, p_duration_days integer, p_plan_amount numeric, p_method text, p_staff_note text, p_staff_reference text, p_funds_confirmed boolean, p_idempotency_key uuid, p_member_id uuid, p_coupon_code text, p_discount_percentage integer)
@@ -502,7 +502,7 @@ begin
   'transaction_type',case when p_member_id is null then 'new' else 'renewal' end
  );
 end
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.reception_complete_registration(p_actor_id uuid, p_full_name text, p_email text, p_phone text, p_plan_id uuid, p_start_date date, p_duration_days integer, p_plan_amount numeric, p_method text, p_staff_note text, p_staff_reference text, p_funds_confirmed boolean, p_idempotency_key uuid, p_member_id uuid, p_coupon_code text)
@@ -594,7 +594,7 @@ BEGIN
  RETURN jsonb_build_object('success',true,'transaction_id',v_transaction,'member_id',v_member,'membership_id',v_membership,'payment_id',v_payment,
   'access_active',true,'payment_status','paid','revenue_recorded',true,'amount',p_plan_amount+v_fee,'registration_fee',v_fee,
   'transaction_type',CASE WHEN p_member_id IS NULL THEN 'new' ELSE 'renewal' END);
-END $function$
+END $function$;
 
 
 CREATE OR REPLACE FUNCTION public.reception_complete_registration_custom_total(p_actor_id uuid, p_full_name text, p_email text, p_phone text, p_plan_id uuid, p_start_date date, p_duration_days integer, p_plan_amount numeric, p_method text, p_staff_note text, p_staff_reference text, p_funds_confirmed boolean, p_idempotency_key uuid, p_member_id uuid, p_coupon_code text, p_discount_percentage integer, p_custom_total_paid numeric)
@@ -826,5 +826,5 @@ begin
   'transaction_type',case when p_member_id is null then 'new' else 'renewal' end
  );
 end
-$function$
+$function$;
 
