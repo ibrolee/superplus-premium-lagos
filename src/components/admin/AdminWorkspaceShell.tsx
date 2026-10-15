@@ -16,6 +16,7 @@ import {
   Menu,
   MessageSquareWarning,
   Search,
+  Settings2,
   ShieldCheck,
   UserPlus,
   UserRound,
@@ -253,6 +254,19 @@ export const adminGroups: Group[] = [
         href: "/management-staff-review",
         icon: ShieldCheck,
         keywords: "employee QR exceptions anomaly",
+      },
+    ],
+  },
+  {
+    name: "Website Control Centre",
+    icon: Settings2,
+    tools: [
+      {
+        label: "Website controls",
+        href: "/management-website-controls",
+        icon: Settings2,
+        ownerOrAdmin: true,
+        keywords: "website pricing change plan price coupons promo codes discount registration edit content settings no code",
       },
     ],
   },
