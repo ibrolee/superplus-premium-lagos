@@ -11,7 +11,8 @@ import {
   ServiceCard,
 } from "@/components/site";
 import { supabase } from "@/lib/supabase";
-import { facilities, images } from "@/lib/site-data";
+import { images } from "@/lib/site-data";
+import {useCmsConfig,standardFacilities,type CmsFacility} from "@/lib/stage1-cms";
 import { useLiveSpaServices, useWebsiteSetting, fallbackHome, fallbackWebsiteContent, type HomeConfig, type WebsiteTextConfig } from "@/lib/website-settings";
 import { useLivePlans } from "@/lib/use-live-plans";
 
@@ -101,6 +102,7 @@ function HomeJournal() {
 /** Preserve the original homepage's identity, imagery, sections and four displayed plans. */
 export function HomePageV2() {
   const { plans: livePlans } = useLivePlans(false);
+  const {items:facilities}=useCmsConfig<{items:CmsFacility[]}>("facilities",standardFacilities);
   const { services: recoveryServices } = useLiveSpaServices();
   const { value: home } = useWebsiteSetting<HomeConfig>("homepage",fallbackHome);
   const {value:siteText}=useWebsiteSetting<WebsiteTextConfig>("website_content",fallbackWebsiteContent);
@@ -157,7 +159,7 @@ export function HomePageV2() {
             <Button asChild variant="inverse" size="lg"><Link to="/facilities">View facilities <ArrowRight /></Link></Button>
           </div>
           <div className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {facilities.map((facility) => (
+            {facilities.filter(facility=>facility.visible!==false).map((facility) => (
               <Link to="/facilities" key={facility.name} className="group relative flex min-h-64 items-end overflow-hidden rounded-lg bg-black text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                 <img src={facility.image} alt={`Illustrative ${facility.name.toLowerCase()} visual`} loading="lazy" width={1536} height={1024} className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
