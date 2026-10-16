@@ -130,6 +130,21 @@ body.spf-admin-nav-active .spf-main-content > header {
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--portal-border);
 }
+.spf-admin-topmark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  background: white;
+}
+.spf-admin-topmark img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
 .spf-admin-topbrand {
   font-size: 13px;
   font-weight: 900;

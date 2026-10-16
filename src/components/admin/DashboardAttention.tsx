@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
+  CheckCircle2,
+  ChevronDown,
   ClipboardList,
   Gift,
   ShieldCheck,
@@ -128,6 +130,8 @@ export function DashboardAttention({ role, revision }: { role: string; revision:
       icon: Users,
     },
   ];
+  const activeItems = items.filter((item) => item.count !== 0);
+  const clearedItems = items.filter((item) => item.count === 0);
   return (
     <section className="mt-6" aria-labelledby="attention-heading">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -136,27 +140,73 @@ export function DashboardAttention({ role, revision }: { role: string; revision:
         </h2>
         <span className="text-xs text-[var(--portal-muted)]">{today} · Lagos time</span>
       </div>
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-        {items.map(({ label, count, note, href, icon: Icon }) => (
-          <a
-            key={label}
-            href={href}
-            className="group min-w-0 rounded-2xl border border-[var(--portal-border)] bg-white p-4 transition hover:border-[var(--portal-accent)]"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <Icon size={18} className="text-[var(--portal-accent)]" />
-              <ArrowRight size={14} className="text-[var(--portal-muted)]" />
+
+      {loading ? (
+        <div role="status" className="rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-4 text-sm text-[var(--portal-muted)]">
+          Checking requests and follow-ups…
+        </div>
+      ) : (
+        <>
+          {activeItems.length ? (
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+              {activeItems.map(({ label, count, note, href, icon: Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  className="flex min-h-[78px] min-w-0 items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-3 transition hover:border-[var(--portal-accent)]"
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--portal-surface)] text-[var(--portal-accent)]">
+                    <Icon size={19} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-sm font-black">{label}</strong>
+                    <small className="mt-1 block text-xs leading-5 text-[var(--portal-muted)]">
+                      {count === null ? "Open page to check" : note}
+                    </small>
+                  </span>
+                  <strong className="shrink-0 rounded-xl bg-[var(--portal-surface)] px-3 py-1 text-xl font-black tabular-nums text-[var(--portal-accent)]">
+                    {count === null ? "—" : count}
+                  </strong>
+                  <ArrowRight size={15} className="shrink-0 text-[var(--portal-muted)]" />
+                </a>
+              ))}
             </div>
-            <p className="mt-4 text-3xl font-black tabular-nums">
-              {loading ? "…" : count === null ? "—" : count}
-            </p>
-            <h3 className="mt-1 text-xs font-bold">{label}</h3>
-            <p className="mt-1 text-[11px] leading-5 text-[var(--portal-muted)]">
-              {!loading && count === null ? "Open page to check" : note}
-            </p>
-          </a>
-        ))}
-      </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-4">
+              <CheckCircle2 size={23} className="shrink-0 text-[var(--portal-accent)]" />
+              <span>
+                <strong className="block text-sm font-black">All caught up</strong>
+                <small className="block text-xs leading-5 text-[var(--portal-muted)]">
+                  No pending requests or birthdays today.
+                </small>
+              </span>
+            </div>
+          )}
+          {clearedItems.length > 0 && (
+            <details className="mt-3 rounded-xl border border-[var(--portal-border)] bg-white">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-xs font-bold text-[var(--portal-muted)]">
+                <CheckCircle2 size={17} className="text-[var(--portal-accent)]" />
+                <span className="flex-1">{clearedItems.length} checks clear · Tap to review</span>
+                <ChevronDown size={16} />
+              </summary>
+              <div className="grid gap-1 border-t border-[var(--portal-border)] p-2 sm:grid-cols-2">
+                {clearedItems.map(({ label, href, icon: Icon }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-xs font-semibold hover:bg-[var(--portal-canvas)]"
+                  >
+                    <Icon size={16} className="text-[var(--portal-muted)]" />
+                    <span className="min-w-0 flex-1">{label}</span>
+                    <span className="tabular-nums">0</span>
+                    <ArrowRight size={14} />
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
+        </>
+      )}
       {["admin", "owner"].includes(role) && (
         <a
           href="/management-salary-payments"

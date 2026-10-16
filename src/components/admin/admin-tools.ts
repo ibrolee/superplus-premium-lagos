@@ -325,6 +325,9 @@ export const adminGroups: Group[] = [
     tools: [
       tool("Members list", "Member directory"),
       tool("Register or renew"),
+      tool("Reception dashboard", "Reception workspace"),
+      tool("QR scanner"),
+      tool("Operations hub"),
       {
         label: "Family Plan setup",
         href: "/management-family",
@@ -369,7 +372,7 @@ export const adminGroups: Group[] = [
   {
     name: "App & Content",
     icon: Megaphone,
-    tools: [tool("App management"), tool("Announcements"), tool("Gallery"), tool("Blog")],
+    tools: [tool("App management"), tool("Announcements"), tool("Gallery"), tool("Blog"), tool("Website homepage", "Public website")],
   },
   {
     name: "Advanced",
@@ -378,9 +381,6 @@ export const adminGroups: Group[] = [
       tool("Historical members"),
       tool("Full legacy console", "Legacy console"),
       tool("Original financial report"),
-      tool("Operations hub"),
-      tool("Reception dashboard"),
-      tool("Website homepage"),
     ],
   },
 ];

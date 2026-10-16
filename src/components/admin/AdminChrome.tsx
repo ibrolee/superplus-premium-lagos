@@ -214,15 +214,13 @@ export function AdminChrome({ role, active }: { role: string; active: string }) 
         </div>
       </aside>
       <header className="spf-admin-topbar">
-        <button
-          type="button"
-          aria-label="Open admin menu"
-          aria-expanded={mobileOpen}
-          onClick={openMenu}
-          className="spf-admin-icon-button lg:hidden"
+        <a
+          href="/admin-workspace"
+          aria-label="Super Plus admin dashboard"
+          className="spf-admin-topmark lg:hidden"
         >
-          <Menu size={21} />
-        </button>
+          <img src="/footer-logo-circular.webp" alt="" />
+        </a>
         <a href="/admin-workspace" className="spf-admin-topbrand">
           SPF <span>Management</span>
         </a>
