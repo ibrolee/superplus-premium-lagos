@@ -131,7 +131,7 @@ body.spf-admin-nav-active .spf-main-content > header {
   border-bottom: 1px solid var(--portal-border);
 }
 .spf-admin-topmark {
-  display: grid;
+  display: none;
   place-items: center;
   width: 44px;
   min-width: 44px;
@@ -269,6 +269,9 @@ body.spf-admin-nav-active .spf-admin .spf-metric strong {
   }
 }
 @media (max-width: 1023px) {
+  .spf-admin-topmark {
+    display: grid;
+  }
   .spf-admin-workspace {
     padding-left: 0;
     padding-bottom: calc(76px + env(safe-area-inset-bottom));
