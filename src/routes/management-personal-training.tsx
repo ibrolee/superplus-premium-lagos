@@ -15,6 +15,7 @@ import {
   UserRound,
   Users,
 } from "lucide-react";
+import { WorkspaceTabs } from "@/components/admin/WorkspaceTabs";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { supabase } from "@/lib/supabase";
 
@@ -23,30 +24,52 @@ export const Route = createFileRoute("/management-personal-training")({
 });
 
 import {
-  type Trainer, type Member, type PtMembership, type Assignment, type Evaluation,
-  type CoachReport, type PtPayoutBreakdown, type PtPayoutRun, type View,
-  FULL_PAYOUT_MIN_TRAINEES, LOW_VOLUME_TRAINEE_COMMISSION, RENEWAL_GRACE_DAYS,
-  RATING_MIN_EVALUATIONS, DAY, lagosToday, addDays, calendarDate,
-  payPeriodFromStart, currentPayPeriodStart, previousPayPeriodStart, buildPayPeriodStarts,
-  formatDate, formatDateTime, coachReportCategoryLabel, formatMoney, twoCycleRetentionForCoach,
+  type Trainer,
+  type Member,
+  type PtMembership,
+  type Assignment,
+  type Evaluation,
+  type CoachReport,
+  type PtPayoutBreakdown,
+  type PtPayoutRun,
+  type View,
+  FULL_PAYOUT_MIN_TRAINEES,
+  LOW_VOLUME_TRAINEE_COMMISSION,
+  RENEWAL_GRACE_DAYS,
+  RATING_MIN_EVALUATIONS,
+  DAY,
+  lagosToday,
+  addDays,
+  calendarDate,
+  payPeriodFromStart,
+  currentPayPeriodStart,
+  previousPayPeriodStart,
+  buildPayPeriodStarts,
+  formatDate,
+  formatDateTime,
+  coachReportCategoryLabel,
+  formatMoney,
+  twoCycleRetentionForCoach,
   calculatePtPayout,
 } from "@/lib/pt-payroll";
 
 // JSONB can reorder keys, and membership queries can return a different row order.
 // Normalise both coach rows and membership ID arrays before deciding a draft changed.
-const canonicalPayoutBreakdown = (value: unknown) => JSON.stringify(
-  Array.isArray(value)
-    ? (value as PtPayoutBreakdown[])
-      .map((row) => ({
-        ...row,
-        payable_membership_ids: [...(row.payable_membership_ids || [])].sort(),
-      }))
-      .sort((a, b) => a.trainer_staff_profile_id.localeCompare(b.trainer_staff_profile_id))
-    : value,
-  (_key, entry) => entry && typeof entry === "object" && !Array.isArray(entry)
-    ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)))
-    : entry,
-);
+const canonicalPayoutBreakdown = (value: unknown) =>
+  JSON.stringify(
+    Array.isArray(value)
+      ? (value as PtPayoutBreakdown[])
+          .map((row) => ({
+            ...row,
+            payable_membership_ids: [...(row.payable_membership_ids || [])].sort(),
+          }))
+          .sort((a, b) => a.trainer_staff_profile_id.localeCompare(b.trainer_staff_profile_id))
+      : value,
+    (_key, entry) =>
+      entry && typeof entry === "object" && !Array.isArray(entry)
+        ? Object.fromEntries(Object.entries(entry).sort(([a], [b]) => a.localeCompare(b)))
+        : entry,
+  );
 
 function ManagementPersonalTraining() {
   const [memberships, setMemberships] = useState<PtMembership[]>([]);
@@ -57,7 +80,9 @@ function ManagementPersonalTraining() {
   const [coachReports, setCoachReports] = useState<CoachReport[]>([]);
   const [canViewPayroll, setCanViewPayroll] = useState(false);
   const [payoutRuns, setPayoutRuns] = useState<PtPayoutRun[]>([]);
-  const [payoutPeriodStart, setPayoutPeriodStart] = useState(currentPayPeriodStart());
+  const [payoutPeriodStart, setPayoutPeriodStart] = useState(() =>
+    previousPayPeriodStart(currentPayPeriodStart()),
+  );
   const [payoutPool, setPayoutPool] = useState<string | null>(null);
   const [traineeCountInputs, setTraineeCountInputs] = useState<Record<string, string | null>>({});
   const [adjustPoolOpen, setAdjustPoolOpen] = useState(false);
@@ -71,10 +96,16 @@ function ManagementPersonalTraining() {
   const [savingMembershipId, setSavingMembershipId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [coachPerformanceOpen, setCoachPerformanceOpen] = useState(false);
-  const [payoutOpen, setPayoutOpen] = useState(false);
-  const [membersOpen, setMembersOpen] = useState(false);
-  const [reportsOpen, setReportsOpen] = useState(false);
+  const [workspaceView, setWorkspaceView] = useState("members");
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view && ["members", "performance", "reports", "payout"].includes(view))
+      setWorkspaceView(view);
+  }, []);
+  const coachPerformanceOpen = workspaceView === "performance";
+  const payoutOpen = workspaceView === "payout" && canViewPayroll;
+  const membersOpen = workspaceView === "members";
+  const reportsOpen = workspaceView === "reports";
   const [savingReportId, setSavingReportId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -84,11 +115,23 @@ function ManagementPersonalTraining() {
     setCanViewPayroll(false);
     const { data: auth } = await supabase.auth.getUser();
     const { data: account } = auth.user
-      ? await supabase.from("staff_users").select("role,active").eq("auth_user_id", auth.user.id).maybeSingle()
+      ? await supabase
+          .from("staff_users")
+          .select("role,active")
+          .eq("auth_user_id", auth.user.id)
+          .maybeSingle()
       : { data: null };
     setCanViewPayroll(!!account?.active && ["admin", "owner"].includes(account.role));
 
-    const [membershipResult, trainerResult, staffTitleResult, assignmentResult, evaluationResult, payoutResult, reportResult] = await Promise.all([
+    const [
+      membershipResult,
+      trainerResult,
+      staffTitleResult,
+      assignmentResult,
+      evaluationResult,
+      payoutResult,
+      reportResult,
+    ] = await Promise.all([
       supabase
         .from("memberships")
         .select("id,member_id,plan_name,start_date,end_date,status,payment_status,created_at")
@@ -99,31 +142,41 @@ function ManagementPersonalTraining() {
         .from("pt_trainers")
         .select("staff_profile_id,display_name,active,sort_order")
         .order("sort_order", { ascending: true }),
-      supabase
-        .from("staff_profiles")
-        .select("id,position"),
+      supabase.from("staff_profiles").select("id,position"),
       supabase
         .from("pt_assignments")
         .select("membership_id,member_id,trainer_staff_profile_id,updated_at")
         .order("updated_at", { ascending: false }),
       supabase
         .from("pt_evaluations")
-        .select("membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,management_note,submitted_at")
+        .select(
+          "membership_id,member_id,trainer_staff_profile_id,overall_rating,professionalism_rating,punctuality_rating,communication_rating,coaching_quality_rating,motivation_rating,program_consistency,comments,continuation_choice,requested_trainer_staff_profile_id,change_reason,management_status,management_note,submitted_at",
+        )
         .order("submitted_at", { ascending: false }),
       supabase
         .from("pt_semimonthly_payout_runs")
-        .select("id,period_start,period_end,pay_date,auto_payout_pool,payout_pool,breakdown,financial_locked,status,paid_at,created_by,updated_at")
+        .select(
+          "id,period_start,period_end,pay_date,auto_payout_pool,payout_pool,breakdown,financial_locked,status,paid_at,created_by,updated_at",
+        )
         .order("period_start", { ascending: false })
         .limit(26),
       supabase
         .from("pt_coach_reports")
-        .select("id,membership_id,member_id,coach_staff_profile_id,category,details,incident_date,status,submitted_at,updated_at")
+        .select(
+          "id,membership_id,member_id,coach_staff_profile_id,category,details,incident_date,status,submitted_at,updated_at",
+        )
         .order("submitted_at", { ascending: false })
         .limit(300),
     ]);
 
     const firstError =
-      membershipResult.error || trainerResult.error || staffTitleResult.error || assignmentResult.error || evaluationResult.error || payoutResult.error || reportResult.error;
+      membershipResult.error ||
+      trainerResult.error ||
+      staffTitleResult.error ||
+      assignmentResult.error ||
+      evaluationResult.error ||
+      payoutResult.error ||
+      reportResult.error;
 
     if (firstError) {
       setError(firstError.message);
@@ -133,10 +186,12 @@ function ManagementPersonalTraining() {
 
     const nextMemberships = (membershipResult.data || []) as PtMembership[];
     const nextReports = (reportResult.data || []) as CoachReport[];
-    const memberIds = Array.from(new Set([
-      ...nextMemberships.map((row) => row.member_id),
-      ...nextReports.map((row) => row.member_id),
-    ]));
+    const memberIds = Array.from(
+      new Set([
+        ...nextMemberships.map((row) => row.member_id),
+        ...nextReports.map((row) => row.member_id),
+      ]),
+    );
     let nextMembers: Member[] = [];
 
     if (memberIds.length) {
@@ -252,9 +307,7 @@ function ManagementPersonalTraining() {
     const traineeCount = currentTraineeIds.size;
     const count = coachEvaluations.length;
     const averageOf = (pick: (evaluation: Evaluation) => number) =>
-      count
-        ? coachEvaluations.reduce((sum, row) => sum + Number(pick(row) || 0), 0) / count
-        : 0;
+      count ? coachEvaluations.reduce((sum, row) => sum + Number(pick(row) || 0), 0) / count : 0;
     const average = averageOf((row) => row.overall_rating);
     const professionalism = averageOf((row) => row.professionalism_rating);
     const punctuality = averageOf((row) => row.punctuality_rating);
@@ -264,7 +317,9 @@ function ManagementPersonalTraining() {
     const programConsistency = count
       ? (coachEvaluations.filter((row) => row.program_consistency).length / count) * 100
       : 0;
-    const continued = coachEvaluations.filter((row) => row.continuation_choice === "continue").length;
+    const continued = coachEvaluations.filter(
+      (row) => row.continuation_choice === "continue",
+    ).length;
     const changed = coachEvaluations.filter((row) => row.continuation_choice === "change").length;
     const finished = coachEvaluations.filter((row) => row.continuation_choice === "finish").length;
     const percent = (value: number) => (count ? Math.round((value / count) * 100) : 0);
@@ -292,16 +347,22 @@ function ManagementPersonalTraining() {
 
   const selectedPeriod = payPeriodFromStart(payoutPeriodStart);
   const payoutPeriodOptions = useMemo(
-    () => [...new Set([...buildPayPeriodStarts(26), ...payoutRuns.map((run) => run.period_start)])].sort((a, b) => b.localeCompare(a)),
+    () =>
+      [
+        ...new Set([...buildPayPeriodStarts(26), ...payoutRuns.map((run) => run.period_start)]),
+      ].sort((a, b) => b.localeCompare(a)),
     [payoutRuns],
   );
-  const selectedPayoutRun = payoutRuns.find(
-    (row) => row.period_start === payoutPeriodStart,
-  ) || null;
+  const selectedPayoutRun =
+    payoutRuns.find((row) => row.period_start === payoutPeriodStart) || null;
 
   const savedTraineeCounts = new Map(
     (selectedPayoutRun?.breakdown || [])
-      .filter((row) => row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined)
+      .filter(
+        (row) =>
+          row.payout_trainee_count_override !== null &&
+          row.payout_trainee_count_override !== undefined,
+      )
       .map((row) => [row.trainer_staff_profile_id, row.payout_trainee_count_override as number]),
   );
   const invalidTraineeCounts = Object.values(traineeCountInputs).some(
@@ -315,25 +376,55 @@ function ManagementPersonalTraining() {
     });
     return result;
   }, [traineeCountInputs]);
-  const payoutCalculation = useMemo(() => calculatePtPayout({
-    trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool,
-    payoutRuns, selectedPayoutRun, today, traineeCountOverrides,
-  }), [trainers, memberships, evaluations, assignmentMap, payoutPeriodStart, payoutPool, payoutRuns, selectedPayoutRun, today, traineeCountOverrides]);
-  const payoutLocked = selectedPayoutRun?.status === "paid" || selectedPayoutRun?.financial_locked === true;
-
-  const invalidPool = payoutPool !== null &&
-    (!payoutPool.trim() || !Number.isFinite(Number(payoutPool)) || Number(payoutPool) < 0);
-  const payoutBusy = loading || payoutSaving || payoutMarkingId !== null || payoutDiscardingId !== null;
-  const payoutNeedsSave = selectedPayoutRun?.status === "pending" && !payoutLocked && (
-    Math.abs(Number(selectedPayoutRun.payout_pool) - payoutCalculation.pool) > 0.01 ||
-    Math.abs(Number(selectedPayoutRun.auto_payout_pool) - payoutCalculation.autoPool) > 0.01 ||
-    canonicalPayoutBreakdown(selectedPayoutRun.breakdown) !== canonicalPayoutBreakdown(payoutCalculation.rows)
+  const payoutCalculation = useMemo(
+    () =>
+      calculatePtPayout({
+        trainers,
+        memberships,
+        evaluations,
+        assignmentMap,
+        payoutPeriodStart,
+        payoutPool,
+        payoutRuns,
+        selectedPayoutRun,
+        today,
+        traineeCountOverrides,
+      }),
+    [
+      trainers,
+      memberships,
+      evaluations,
+      assignmentMap,
+      payoutPeriodStart,
+      payoutPool,
+      payoutRuns,
+      selectedPayoutRun,
+      today,
+      traineeCountOverrides,
+    ],
   );
+  const payoutLocked =
+    selectedPayoutRun?.status === "paid" || selectedPayoutRun?.financial_locked === true;
+
+  const invalidPool =
+    payoutPool !== null &&
+    (!payoutPool.trim() || !Number.isFinite(Number(payoutPool)) || Number(payoutPool) < 0);
+  const payoutBusy =
+    loading || payoutSaving || payoutMarkingId !== null || payoutDiscardingId !== null;
+  const payoutNeedsSave =
+    selectedPayoutRun?.status === "pending" &&
+    !payoutLocked &&
+    (Math.abs(Number(selectedPayoutRun.payout_pool) - payoutCalculation.pool) > 0.01 ||
+      Math.abs(Number(selectedPayoutRun.auto_payout_pool) - payoutCalculation.autoPool) > 0.01 ||
+      canonicalPayoutBreakdown(selectedPayoutRun.breakdown) !==
+        canonicalPayoutBreakdown(payoutCalculation.rows));
 
   async function savePayoutRun() {
     if (payoutBusy) return;
     if (invalidTraineeCounts) {
-      setError("Enter whole trainee numbers between 0 and 500, or clear a field to use the website count.");
+      setError(
+        "Enter whole trainee numbers between 0 and 500, or clear a field to use the website count.",
+      );
       return;
     }
     if (invalidPool) return;
@@ -342,7 +433,9 @@ function ManagementPersonalTraining() {
       return;
     }
     if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.pool > 0) {
-      setError("No in-house coach has 3 or more trainees in this pay period, so the 50/30/20 pool must be ₦0.");
+      setError(
+        "No in-house coach has 3 or more trainees in this pay period, so the 50/30/20 pool must be ₦0.",
+      );
       return;
     }
     if (payoutCalculation.fullEligibleCount === 0 && payoutCalculation.commissionTotal <= 0) {
@@ -353,15 +446,12 @@ function ManagementPersonalTraining() {
     setPayoutSaving(true);
     setError("");
     setPayoutMessage("");
-    const { error: saveError } = await supabase.rpc(
-      "management_save_pt_semimonthly_payout_run",
-      {
-        p_period_start: payoutCalculation.periodStart,
-        p_auto_payout_pool: payoutCalculation.autoPool,
-        p_payout_pool: payoutCalculation.pool,
-        p_breakdown: payoutCalculation.rows,
-      },
-    );
+    const { error: saveError } = await supabase.rpc("management_save_pt_semimonthly_payout_run", {
+      p_period_start: payoutCalculation.periodStart,
+      p_auto_payout_pool: payoutCalculation.autoPool,
+      p_payout_pool: payoutCalculation.pool,
+      p_breakdown: payoutCalculation.rows,
+    });
 
     if (saveError) {
       setError(saveError.message);
@@ -379,11 +469,15 @@ function ManagementPersonalTraining() {
   async function discardPayoutRun(run: PtPayoutRun) {
     if (!canViewPayroll || payoutBusy || run.status !== "pending" || run.financial_locked) return;
     const total = (run.breakdown || []).reduce(
-      (sum, row) => sum + Number(row.recommended_payout || 0), 0,
+      (sum, row) => sum + Number(row.recommended_payout || 0),
+      0,
     );
-    if (!window.confirm(
-      `Discard the saved PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}?\n\nPay date: ${formatDate(run.pay_date)}\nTotal: ${formatMoney(total)}\n\nThis removes the unpaid saved record. You can calculate and save this period again.`,
-    )) return;
+    if (
+      !window.confirm(
+        `Discard the saved PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}?\n\nPay date: ${formatDate(run.pay_date)}\nTotal: ${formatMoney(total)}\n\nThis removes the unpaid saved record. You can calculate and save this period again.`,
+      )
+    )
+      return;
 
     setPayoutDiscardingId(run.id);
     setError("");
@@ -398,7 +492,9 @@ function ManagementPersonalTraining() {
         .select("id");
       if (discardError) throw discardError;
       if (!data?.length) {
-        setError("This payday could not be discarded. It may have been paid, locked or already removed. Refresh and try again.");
+        setError(
+          "This payday could not be discarded. It may have been paid, locked or already removed. Refresh and try again.",
+        );
         return;
       }
       setPayoutRuns((runs) => runs.filter((item) => item.id !== run.id));
@@ -408,9 +504,15 @@ function ManagementPersonalTraining() {
         setAdjustPoolOpen(false);
       }
       await load();
-      setPayoutMessage(`PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)} discarded. You can save this period again when ready.`);
+      setPayoutMessage(
+        `PT payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)} discarded. You can save this period again when ready.`,
+      );
     } catch (discardError) {
-      setError(discardError instanceof Error ? discardError.message : "Could not discard this payday. Refresh and try again.");
+      setError(
+        discardError instanceof Error
+          ? discardError.message
+          : "Could not discard this payday. Refresh and try again.",
+      );
     } finally {
       setPayoutDiscardingId(null);
     }
@@ -438,10 +540,9 @@ function ManagementPersonalTraining() {
     setPayoutMarkingId(run.id);
     setError("");
     setPayoutMessage("");
-    const { error: markError } = await supabase.rpc(
-      "management_mark_pt_semimonthly_payout_paid",
-      { p_payout_run_id: run.id },
-    );
+    const { error: markError } = await supabase.rpc("management_mark_pt_semimonthly_payout_paid", {
+      p_payout_run_id: run.id,
+    });
     if (markError) {
       setError(markError.message);
     } else {
@@ -503,7 +604,9 @@ function ManagementPersonalTraining() {
     if (updateError) {
       setError(updateError.message);
     } else {
-      setMessage(status === "resolved" ? "Coach report marked resolved." : "Coach report marked reviewed.");
+      setMessage(
+        status === "resolved" ? "Coach report marked resolved." : "Coach report marked reviewed.",
+      );
       await load();
     }
     setSavingReportId(null);
@@ -518,10 +621,30 @@ function ManagementPersonalTraining() {
       <section className="mt-7 grid grid-cols-2 gap-3 xl:grid-cols-5">
         {[
           { label: "Current PT", value: currentCount, icon: Users, targetView: "current" as View },
-          { label: "Expiring in 7 days", value: expiringCount, icon: CalendarDays, targetView: "expiring" as View },
-          { label: "Unassigned", value: unassignedCount, icon: AlertCircle, targetView: "unassigned" as View },
-          { label: "Feedback to review", value: pendingFeedbackCount, icon: Star, targetView: "feedback" as View },
-          { label: "Confidential reports", value: pendingCoachReportsCount, icon: ShieldAlert, targetView: null },
+          {
+            label: "Expiring in 7 days",
+            value: expiringCount,
+            icon: CalendarDays,
+            targetView: "expiring" as View,
+          },
+          {
+            label: "Unassigned",
+            value: unassignedCount,
+            icon: AlertCircle,
+            targetView: "unassigned" as View,
+          },
+          {
+            label: "Feedback to review",
+            value: pendingFeedbackCount,
+            icon: Star,
+            targetView: "feedback" as View,
+          },
+          {
+            label: "Confidential reports",
+            value: pendingCoachReportsCount,
+            icon: ShieldAlert,
+            targetView: null,
+          },
         ].map(({ label, value, icon: Icon, targetView }) => (
           <button
             type="button"
@@ -529,41 +652,61 @@ function ManagementPersonalTraining() {
             onClick={() => {
               if (targetView) {
                 setView(targetView);
-                setMembersOpen(true);
+                setWorkspaceView("members");
               } else {
-                setReportsOpen(true);
+                setWorkspaceView("reports");
               }
             }}
             className="rounded-2xl border border-[var(--portal-border)] bg-white p-4 text-left"
           >
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">{label}</p>
-              <Icon size={17} className={label === "Confidential reports" && value > 0 ? "text-[#9a3939]" : "text-[color:var(--portal-accent)]"} />
+              <p className="text-[10px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                {label}
+              </p>
+              <Icon
+                size={17}
+                className={
+                  label === "Confidential reports" && value > 0
+                    ? "text-[#9a3939]"
+                    : "text-[color:var(--portal-accent)]"
+                }
+              />
             </div>
             <p className="mt-3 text-3xl font-black">{value}</p>
           </button>
         ))}
       </section>
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
-        <button
-          type="button"
-          aria-expanded={coachPerformanceOpen}
-          onClick={() => setCoachPerformanceOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-4 text-left"
-        >
+      <WorkspaceTabs
+        value={workspaceView}
+        onChange={setWorkspaceView}
+        label="Personal Training sections"
+        items={[
+          { value: "members", label: "PT members", count: currentCount },
+          { value: "performance", label: "Coach performance" },
+          { value: "reports", label: "Private reports", count: pendingCoachReportsCount },
+          ...(canViewPayroll ? [{ value: "payout", label: "PT payouts" }] : []),
+        ]}
+      />
+      <section
+        hidden={!coachPerformanceOpen}
+        className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6"
+      >
+        <div className="flex w-full items-center justify-between gap-4 text-left">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
               Coach performance
             </p>
             <h2 className="mt-1 text-xl font-black">Evaluation overview</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">Ratings, trainee retention and performance breakdown.</p>
+            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+              Ratings, trainee retention and performance breakdown.
+            </p>
           </div>
           <ChevronDown
             size={22}
             className={`shrink-0 text-[color:var(--portal-muted)] transition-transform ${coachPerformanceOpen ? "rotate-180" : ""}`}
           />
-        </button>
+        </div>
         {coachPerformanceOpen && (
           <>
             <div className="mt-4 flex justify-end">
@@ -576,532 +719,714 @@ function ManagementPersonalTraining() {
               </button>
             </div>
             <div className="mt-5 grid gap-4 xl:grid-cols-3">
-          {trainerStats.map((stats) => {
-            const {
-              trainer,
-              count,
-              traineeCount,
-              average,
-              professionalism,
-              punctuality,
-              communication,
-              coachingQuality,
-              motivation,
-              programConsistency,
-              continueRate,
-              changeRate,
-              finishRate,
-              ratingReady,
-            } = stats;
-            const categories = [
-              ["Coaching quality", coachingQuality],
-              ["Professionalism", professionalism],
-              ["Communication", communication],
-              ["Punctuality", punctuality],
-              ["Motivation", motivation],
-            ] as const;
+              {trainerStats.map((stats) => {
+                const {
+                  trainer,
+                  count,
+                  traineeCount,
+                  average,
+                  professionalism,
+                  punctuality,
+                  communication,
+                  coachingQuality,
+                  motivation,
+                  programConsistency,
+                  continueRate,
+                  changeRate,
+                  finishRate,
+                  ratingReady,
+                } = stats;
+                const categories = [
+                  ["Coaching quality", coachingQuality],
+                  ["Professionalism", professionalism],
+                  ["Communication", communication],
+                  ["Punctuality", punctuality],
+                  ["Motivation", motivation],
+                ] as const;
 
-            return (
-              <article key={trainer.staff_profile_id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5">
-                <div className="flex items-start gap-3">
-                  <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--portal-ink)] text-white">
-                    <Dumbbell size={19} />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-black">{trainer.display_name}</h3>
-                      <span className="rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-                        {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
+                return (
+                  <article
+                    key={trainer.staff_profile_id}
+                    className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[var(--portal-ink)] text-white">
+                        <Dumbbell size={19} />
                       </span>
-                      <span
-                        className={
-                          "rounded-full px-2.5 py-1 text-[10px] font-black " +
-                          (trainer.staff_title?.trim().toLowerCase() === "part-time coach"
-                            ? "bg-violet-100 text-violet-800"
-                            : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
-                        }
-                      >
-                        {trainer.staff_title || "Coach"}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-[color:var(--portal-muted)]">
-                      {count} evaluation{count === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-white p-4">
-                  <div className="flex items-end justify-between gap-3">
-                    <div>
-                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
-                        Overall coach rating
-                      </p>
-                      <p className="mt-1 text-3xl font-black">
-                        {count ? average.toFixed(1) : "—"} <span className="text-base text-[#9a7b20]">★</span>
-                      </p>
-                    </div>
-                    <span
-                      className={
-                        "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
-                        (ratingReady
-                          ? "bg-green-100 text-green-800"
-                          : "bg-amber-100 text-amber-800")
-                      }
-                    >
-                      {ratingReady ? "Established rating" : "Not enough feedback yet"}
-                    </span>
-                  </div>
-                  {!ratingReady && count > 0 && (
-                    <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
-                      Rating is provisional until this coach has at least 2 evaluations.
-                    </p>
-                  )}
-                  {!count && (
-                    <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
-                      The overall rating will appear after trainees submit feedback.
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-4">
-                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
-                    Category averages
-                  </p>
-                  <div className="mt-2 grid grid-cols-2 gap-2">
-                    {categories.map(([label, value]) => (
-                      <div key={label} className="rounded-xl bg-white p-3">
-                        <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">{label}</p>
-                        <p className="mt-1 text-base font-black">{count ? value.toFixed(1) : "—"} <span className="text-[10px] text-[#9a7b20]">★</span></p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-base font-black">{trainer.display_name}</h3>
+                          <span className="rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                            {traineeCount} trainee{traineeCount === 1 ? "" : "s"}
+                          </span>
+                          <span
+                            className={
+                              "rounded-full px-2.5 py-1 text-[10px] font-black " +
+                              (trainer.staff_title?.trim().toLowerCase() === "part-time coach"
+                                ? "bg-violet-100 text-violet-800"
+                                : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
+                            }
+                          >
+                            {trainer.staff_title || "Coach"}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-[color:var(--portal-muted)]">
+                          {count} evaluation{count === 1 ? "" : "s"}
+                        </p>
                       </div>
-                    ))}
-                    <div className="rounded-xl bg-white p-3">
-                      <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">Programme consistency</p>
-                      <p className="mt-1 text-base font-black">{count ? `${Math.round(programConsistency)}%` : "—"}</p>
                     </div>
-                  </div>
-                </div>
 
-                <div className="mt-4">
-                  <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
-                    What trainees chose next
-                  </p>
-                  <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                    <div className="rounded-xl bg-[var(--portal-surface)] p-3">
-                      <p className="text-lg font-black text-[color:var(--portal-accent)]">{count ? `${continueRate}%` : "—"}</p>
-                      <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Continue</p>
+                    <div className="mt-4 rounded-2xl bg-white p-4">
+                      <div className="flex items-end justify-between gap-3">
+                        <div>
+                          <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                            Overall coach rating
+                          </p>
+                          <p className="mt-1 text-3xl font-black">
+                            {count ? average.toFixed(1) : "—"}{" "}
+                            <span className="text-base text-[#9a7b20]">★</span>
+                          </p>
+                        </div>
+                        <span
+                          className={
+                            "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                            (ratingReady
+                              ? "bg-green-100 text-green-800"
+                              : "bg-amber-100 text-amber-800")
+                          }
+                        >
+                          {ratingReady ? "Established rating" : "Not enough feedback yet"}
+                        </span>
+                      </div>
+                      {!ratingReady && count > 0 && (
+                        <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
+                          Rating is provisional until this coach has at least 2 evaluations.
+                        </p>
+                      )}
+                      {!count && (
+                        <p className="mt-2 text-[11px] leading-5 text-[color:var(--portal-muted)]">
+                          The overall rating will appear after trainees submit feedback.
+                        </p>
+                      )}
                     </div>
-                    <div className="rounded-xl bg-amber-50 p-3">
-                      <p className="text-lg font-black text-amber-800">{count ? `${changeRate}%` : "—"}</p>
-                      <p className="mt-1 text-[9px] font-black uppercase text-amber-700">Change</p>
+
+                    <div className="mt-4">
+                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                        Category averages
+                      </p>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {categories.map(([label, value]) => (
+                          <div key={label} className="rounded-xl bg-white p-3">
+                            <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">
+                              {label}
+                            </p>
+                            <p className="mt-1 text-base font-black">
+                              {count ? value.toFixed(1) : "—"}{" "}
+                              <span className="text-[10px] text-[#9a7b20]">★</span>
+                            </p>
+                          </div>
+                        ))}
+                        <div className="rounded-xl bg-white p-3">
+                          <p className="text-[9px] font-black uppercase leading-4 text-[color:var(--portal-muted)]">
+                            Programme consistency
+                          </p>
+                          <p className="mt-1 text-base font-black">
+                            {count ? `${Math.round(programConsistency)}%` : "—"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="rounded-xl bg-[var(--portal-surface)] p-3">
-                      <p className="text-lg font-black text-[color:var(--portal-muted)]">{count ? `${finishRate}%` : "—"}</p>
-                      <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Finish PT</p>
+
+                    <div className="mt-4">
+                      <p className="text-[9px] font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+                        What trainees chose next
+                      </p>
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-xl bg-[var(--portal-surface)] p-3">
+                          <p className="text-lg font-black text-[color:var(--portal-accent)]">
+                            {count ? `${continueRate}%` : "—"}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                            Continue
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-amber-50 p-3">
+                          <p className="text-lg font-black text-amber-800">
+                            {count ? `${changeRate}%` : "—"}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-amber-700">
+                            Change
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-[var(--portal-surface)] p-3">
+                          <p className="text-lg font-black text-[color:var(--portal-muted)]">
+                            {count ? `${finishRate}%` : "—"}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                            Finish PT
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </article>
-            );
-          })}
+                  </article>
+                );
+              })}
             </div>
           </>
         )}
       </section>
 
-      {canViewPayroll && <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
-        <button
-          type="button"
-          aria-expanded={payoutOpen}
-          onClick={() => setPayoutOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-4 text-left"
+      {canViewPayroll && (
+        <section
+          hidden={!payoutOpen}
+          className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6"
         >
-          <div className="max-w-2xl">
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
-              PT payday calculator
-            </p>
-            <h2 className="mt-1 text-xl font-black">Coach PT Payout</h2>
-            <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-              Fixed paydays: 16th of every month, then 1st of the next month together with salary.
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <CircleDollarSign className="size-7 text-[color:var(--portal-accent)]" />
-            <ChevronDown
-              size={22}
-              className={`text-[color:var(--portal-muted)] transition-transform ${payoutOpen ? "rotate-180" : ""}`}
-            />
-          </div>
-        </button>
-
-        {payoutOpen && (
-          <>
-            <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-xs leading-5 text-[color:var(--portal-muted)]">
-              <strong className="text-[color:var(--portal-ink)]">Simple schedule:</strong>{" "}
-              PT work from the <strong>1st–15th</strong> is paid on the <strong>16th</strong>.
-              PT work from the <strong>16th–last day of the month</strong> is paid on the
-              <strong> 1st of the next month</strong> together with salary.
-            </div>
-
-            <div className="mt-5 grid gap-3 md:max-w-xl">
-              <label className="text-xs font-black">
-                PT Pay Period
-                <select
-                  value={payoutPeriodStart}
-                  disabled={payoutBusy}
-                  onChange={(event) => {
-                    setPayoutPeriodStart(event.target.value);
-                    setAdjustPoolOpen(false);
-                    setPayoutPool(null);
-                    setTraineeCountInputs({});
-                    setPayoutMessage("");
-                    setError("");
-                  }}
-                  className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-semibold outline-none"
-                >
-                  {payoutPeriodOptions.map((start) => {
-                    const period = payPeriodFromStart(start);
-                    return (
-                      <option key={start} value={start}>
-                        {formatDate(period.start)} – {formatDate(period.end)} · pay date {formatDate(period.payDate)}
-                      </option>
-                    );
-                  })}
-                </select>
-                <span className="mt-1.5 block font-normal text-[color:var(--portal-muted)]">
-                  {selectedPeriod.salaryDay
-                    ? `Pay date ${formatDate(selectedPeriod.payDate)} · together with salary`
-                    : `Pay date ${formatDate(selectedPeriod.payDate)}`}
-                </span>
-              </label>
-
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
-              <h3 className="text-sm font-black text-[color:var(--portal-ink)]">Coach trainee count for payout</h3>
-              <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
-                Leave blank to use the website count. Enter a custom whole number for each coach when management needs to adjust this payday. This changes payroll only, not member assignments.
+          <div className="flex w-full items-center justify-between gap-4 text-left">
+            <div className="max-w-2xl">
+              <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+                PT payday calculator
               </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {payoutCalculation.rows.map((row) => {
-                  const coachId = row.trainer_staff_profile_id;
-                  const inputValue = Object.prototype.hasOwnProperty.call(traineeCountInputs, coachId)
-                    ? traineeCountInputs[coachId] ?? ""
-                    : savedTraineeCounts.has(coachId) ? String(savedTraineeCounts.get(coachId)) : "";
-                  const custom = row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined;
-                  return (
-                    <div key={coachId} className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-3">
-                      <label htmlFor={`pt-payout-count-${coachId}`} className="text-xs font-black">
-                        {row.trainer_name}
-                      </label>
-                      <p className="mt-1 text-[11px] text-[color:var(--portal-muted)]">
-                        Website: {row.actual_trainee_count ?? row.trainee_count} active trainee(s) · Payout: {row.trainee_count}
-                      </p>
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          id={`pt-payout-count-${coachId}`} type="number" min="0" max="500" step="1" inputMode="numeric"
-                          value={payoutLocked ? String(row.payout_trainee_count_override ?? "") : inputValue}
-                          placeholder={String(row.actual_trainee_count ?? row.trainee_count)}
-                          disabled={payoutLocked || payoutBusy}
-                          onChange={(event) => setTraineeCountInputs((previous) => ({
-                            ...previous,
-                            [coachId]: event.target.value === "" ? null : event.target.value,
-                          }))}
-                          className="min-w-0 w-28 rounded-lg border border-[var(--portal-border)] bg-white px-3 py-2.5 text-sm font-bold disabled:opacity-60"
-                          aria-label={`Custom payout trainee count for ${row.trainer_name}`}
-                        />
-                        {!payoutLocked && custom && (
-                          <button type="button" disabled={payoutBusy}
-                            onClick={() => setTraineeCountInputs((previous) => ({ ...previous, [coachId]: null }))}
-                            className="text-xs font-bold text-[color:var(--portal-accent)] underline">Use website count</button>
-                        )}
-                        {payoutLocked && <span className="text-[10px] font-bold text-[color:var(--portal-muted)]">Locked</span>}
-                      </div>
-                      {custom && <p className="mt-1 text-[10px] font-semibold text-amber-800">Manual trainee count applied to this payout</p>}
-                    </div>
-                  );
-                })}
-              </div>
-              {invalidTraineeCounts && <p role="alert" className="mt-3 text-xs font-bold text-red-700">Use whole numbers from 0 to 500, or clear a field for the automatic count.</p>}
-            </div>
-
-            <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-4">
-              <p className="text-xs font-black text-[color:var(--portal-muted)]">Automatic 50/30/20 pool</p>
-              <p className="mt-1 text-2xl font-black text-[color:var(--portal-ink)]">{formatMoney(payoutCalculation.autoPool)}</p>
-              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">₦10,000 × eligible payable membership cycles, or approved coach counts when manually adjusted.</p>
-              {payoutCalculation.poolOverridden && (
-                <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-900">
-                  Manually adjusted pool: {formatMoney(payoutCalculation.pool)} · Automatic: {formatMoney(payoutCalculation.autoPool)}
-                </p>
-              )}
-              {!payoutLocked && (
-                <div className="mt-3 space-y-3">
-                  <button type="button" disabled={payoutBusy || payoutCalculation.fullEligibleCount === 0}
-                    onClick={() => setAdjustPoolOpen((open) => !open)}
-                    aria-expanded={adjustPoolOpen}
-                    className="rounded-xl border border-[var(--portal-border)] px-4 py-2 text-xs font-black disabled:opacity-40">
-                    {adjustPoolOpen ? "Hide adjustment" : "Adjust pool"}
-                  </button>
-                  {adjustPoolOpen && (
-                    <label className="block text-xs font-black">
-                      Override amount (₦)
-                      <input type="number" min="0" step="0.01" inputMode="decimal"
-                        value={payoutPool ?? String(payoutCalculation.pool)}
-                        onChange={(event) => setPayoutPool(event.target.value)} disabled={payoutBusy}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] px-3 py-3 text-sm" />
-                    </label>
-                  )}
-                  {(payoutCalculation.poolOverridden || payoutPool !== null) && (
-                    <button type="button" disabled={payoutBusy}
-                      onClick={() => { setPayoutPool(String(payoutCalculation.autoPool)); setAdjustPoolOpen(false); }}
-                      className="text-xs font-bold underline">Use automatic amount</button>
-                  )}
-                  {invalidPool && <p role="alert" className="text-xs text-red-800">Enter a valid amount of ₦0 or more, or use the automatic amount.</p>}
-                </div>
-              )}
-              <p className="mt-3 text-xs leading-5 text-[color:var(--portal-muted)]">3+ trainees: 50/30/20 pool. 1–2 trainees: ₦10,000 once per payable membership cycle. 0 trainees: ₦0. Part-time coaches are handled separately.</p>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-[var(--portal-surface)] p-3 text-center">
-                <p className="text-xl font-black text-[color:var(--portal-accent)]">50%</p>
-                <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Team share</p>
-              </div>
-              <div className="rounded-xl bg-[var(--portal-canvas)] p-3 text-center">
-                <p className="text-xl font-black text-[color:var(--portal-muted)]">30%</p>
-                <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Workload</p>
-              </div>
-              <div className="rounded-xl bg-[#fff6df] p-3 text-center">
-                <p className="text-xl font-black text-[#8b6d24]">20%</p>
-                <p className="text-[9px] font-black uppercase text-[#756b50]">Performance</p>
-              </div>
-            </div>
-
-            {payoutCalculation.unassignedCount > 0 && (
-              <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
-                <AlertCircle size={17} className="mt-0.5 shrink-0" />
-                <p>
-                  <strong>{payoutCalculation.unassignedCount} paid PT trainee{payoutCalculation.unassignedCount === 1 ? "" : "s"}</strong>{" "}
-                  active during this payout period {payoutCalculation.unassignedCount === 1 ? "has" : "have"} no coach assigned.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                disabled={payoutBusy || invalidPool || invalidTraineeCounts || payoutLocked}
-                onClick={() => void savePayoutRun()}
-                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Save size={15} /> {payoutSaving ? "Saving…" : payoutLocked ? "Payments recorded · figures locked" : "Save PT payout"}
-              </button>
-              {selectedPayoutRun?.status === "pending" && !payoutLocked && (
-                <button
-                  type="button"
-                  disabled={payoutBusy || invalidPool || invalidTraineeCounts || payoutNeedsSave || today < selectedPayoutRun.pay_date}
-                  onClick={() => void markPayoutPaid(selectedPayoutRun)}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--portal-ink)] bg-white px-4 py-3 text-xs font-black text-[color:var(--portal-ink)] disabled:opacity-45"
-                >
-                  <CheckCircle2 size={15} />
-                  {today < selectedPayoutRun.pay_date
-                    ? `Pay on ${formatDate(selectedPayoutRun.pay_date)}`
-                    : payoutMarkingId === selectedPayoutRun.id
-                      ? "Saving…"
-                      : "Mark payout paid"}
-                </button>
-              )}
-            </div>
-
-            {payoutNeedsSave && (
-              <p role="status" className="mt-3 text-xs text-amber-900">Calculation updated. Save PT payout before marking it paid.</p>
-            )}
-            {payoutLocked && selectedPayoutRun?.status === "pending" && (
-              <a href="/management-salary-payments" className="mt-3 inline-block text-xs font-bold underline">Record remaining coach payments in Salary payments</a>
-            )}
-            {payoutLocked && (
-              <p className="mt-3 text-xs font-bold text-green-800">Payments recorded · these saved financial figures are locked.</p>
-            )}
-            {!!payoutMessage && (
-              <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
-                {payoutMessage}
+              <h2 className="mt-1 text-xl font-black">Coach PT Payout</h2>
+              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                Fixed paydays: 16th of every month, then 1st of the next month together with salary.
               </p>
-            )}
-
-            <div className="mt-5 grid gap-3 xl:grid-cols-3">
-              {payoutCalculation.rows.map((row) => (
-                <article key={row.trainer_staff_profile_id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-black">{row.trainer_name}</h3>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                        {row.trainee_count} payout trainee{row.trainee_count === 1 ? "" : "s"} · {row.actual_trainee_count ?? row.trainee_count} recorded on website
-                      </p>
-                      <span className={
-                        "mt-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
-                        (row.full_pool_eligible
-                          ? "bg-green-100 text-green-800"
-                          : row.trainee_count > 0
-                            ? "bg-amber-100 text-amber-800"
-                            : "bg-slate-100 text-slate-700")
-                      }>
-                        {row.full_pool_eligible
-                          ? "50/30/20 eligible"
-                          : row.trainee_count > 0
-                            ? "₦10k membership commission"
-                            : "No PT payout"}
-                      </span>
-                    </div>
-                    <p className="text-xl font-black text-[color:var(--portal-ink)]">{formatMoney(row.recommended_payout)}</p>
-                  </div>
-
-                  {row.full_pool_eligible ? (
-                    <div className="mt-4 grid grid-cols-3 gap-1 text-center">
-                      <div className="rounded-xl bg-white p-3">
-                        <p className="break-words text-xs font-black">{formatMoney(row.team_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Team</p>
-                      </div>
-                      <div className="rounded-xl bg-white p-3">
-                        <p className="break-words text-xs font-black">{formatMoney(row.workload_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Workload</p>
-                      </div>
-                      <div className="rounded-xl bg-white p-3">
-                        <p className="break-words text-xs font-black">{formatMoney(row.performance_share)}</p>
-                        <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">Performance</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-3">
-                      <p className="text-[9px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">Fixed commission</p>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                        {row.payout_trainee_count_override !== null && row.payout_trainee_count_override !== undefined
-                          ? `₦10,000 × ${row.trainee_count} manually approved trainee(s)`
-                          : Number(row.payable_membership_count || 0) > 0
-                            ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
-                            : "No new payable PT membership cycle in this period"}
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="mt-4 space-y-2 text-xs text-[color:var(--portal-muted)]">
-                    <div className="flex items-center justify-between gap-3">
-                      <span>Two-cycle retention</span>
-                      <strong className="text-[color:var(--portal-ink)]">
-                        {row.renewal_rate === null
-                          ? "Not enough data"
-                          : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
-                      </strong>
-                    </div>
-                    <div className="flex items-center justify-between gap-3">
-                      <span>Trainee rating</span>
-                      <strong className="text-[color:var(--portal-ink)]">
-                        {row.rating_average === null
-                          ? "No ratings"
-                          : `${row.rating_average.toFixed(1)}/5 · ${row.rating_count} review${row.rating_count === 1 ? "" : "s"}`}
-                      </strong>
-                    </div>
-                  </div>
-                </article>
-              ))}
             </div>
+            <div className="flex shrink-0 items-center gap-3">
+              <CircleDollarSign className="size-7 text-[color:var(--portal-accent)]" />
+              <ChevronDown
+                size={22}
+                className={`text-[color:var(--portal-muted)] transition-transform ${payoutOpen ? "rotate-180" : ""}`}
+              />
+            </div>
+          </div>
 
-            <div className="mt-4 grid gap-2 rounded-xl bg-[var(--portal-ink)] p-4 text-white sm:grid-cols-3">
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Pool used</p>
-                <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
-                <p className="mt-1 text-[9px] text-white/60">
-                  Auto {formatMoney(payoutCalculation.autoPool)}{payoutCalculation.poolOverridden ? " · overridden" : ""}
+          {payoutOpen && (
+            <>
+              <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-xs leading-5 text-[color:var(--portal-muted)]">
+                <strong className="text-[color:var(--portal-ink)]">Simple schedule:</strong> PT work
+                from the <strong>1st–15th</strong> is paid on the <strong>16th</strong>. PT work
+                from the <strong>16th–last day of the month</strong> is paid on the
+                <strong> 1st of the next month</strong> together with salary.
+              </div>
+
+              <div className="mt-5 grid gap-3 md:max-w-xl">
+                <label className="text-xs font-black">
+                  PT Pay Period
+                  <select
+                    value={payoutPeriodStart}
+                    disabled={payoutBusy}
+                    onChange={(event) => {
+                      setPayoutPeriodStart(event.target.value);
+                      setAdjustPoolOpen(false);
+                      setPayoutPool(null);
+                      setTraineeCountInputs({});
+                      setPayoutMessage("");
+                      setError("");
+                    }}
+                    className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-semibold outline-none"
+                  >
+                    {payoutPeriodOptions.map((start) => {
+                      const period = payPeriodFromStart(start);
+                      return (
+                        <option key={start} value={start}>
+                          {formatDate(period.start)} – {formatDate(period.end)} · pay date{" "}
+                          {formatDate(period.payDate)}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <span className="mt-1.5 block font-normal text-[color:var(--portal-muted)]">
+                    {selectedPeriod.salaryDay
+                      ? `Pay date ${formatDate(selectedPeriod.payDate)} · together with salary`
+                      : `Pay date ${formatDate(selectedPeriod.payDate)}`}
+                  </span>
+                </label>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+                <h3 className="text-sm font-black text-[color:var(--portal-ink)]">
+                  Coach trainee count for payout
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-[color:var(--portal-muted)]">
+                  Leave blank to use the website count. Enter a custom whole number for each coach
+                  when management needs to adjust this payday. This changes payroll only, not member
+                  assignments.
                 </p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">1–2 trainee commissions</p>
-                <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.commissionTotal)}</p>
-                <p className="mt-1 text-[9px] text-white/60">₦10,000 per payable PT membership cycle</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">Total PT payroll due</p>
-                <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.totalRecommended)}</p>
-                <p className="mt-1 text-[9px] text-white/60">Pay date {formatDate(payoutCalculation.payDate)}</p>
-              </div>
-            </div>
-
-            {payoutRuns.length > 0 && (
-              <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
-                <p className="text-[10px] font-black uppercase tracking-[.14em] text-[color:var(--portal-muted)]">Recent PT paydays</p>
-                <div className="mt-3 grid gap-2">
-                  {payoutRuns.slice(0, 6).map((run) => {
-                    const total = (run.breakdown || []).reduce(
-                      (sum, row) => sum + Number(row.recommended_payout || 0),
-                      0,
-                    );
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {payoutCalculation.rows.map((row) => {
+                    const coachId = row.trainer_staff_profile_id;
+                    const inputValue = Object.prototype.hasOwnProperty.call(
+                      traineeCountInputs,
+                      coachId,
+                    )
+                      ? (traineeCountInputs[coachId] ?? "")
+                      : savedTraineeCounts.has(coachId)
+                        ? String(savedTraineeCounts.get(coachId))
+                        : "";
+                    const custom =
+                      row.payout_trainee_count_override !== null &&
+                      row.payout_trainee_count_override !== undefined;
                     return (
                       <div
-                        key={run.id}
-                        className="rounded-xl border border-[var(--portal-border)] bg-white p-3"
+                        key={coachId}
+                        className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-3"
                       >
-                        <button
-                          type="button"
-                          disabled={payoutBusy}
-                          onClick={() => {
-                            setPayoutPeriodStart(run.period_start);
-                            setAdjustPoolOpen(false);
-                            setPayoutPool(null);
-                            setTraineeCountInputs({});
-                            setPayoutMessage("");
-                            setError("");
-                          }}
-                          className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
+                        <label
+                          htmlFor={`pt-payout-count-${coachId}`}
+                          className="text-xs font-black"
                         >
-                          <div>
-                            <p className="text-xs font-black">
-                              {formatDate(run.period_start)} – {formatDate(run.period_end)}
-                            </p>
-                            <p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">
-                              Pay date {formatDate(run.pay_date)}
-                              {run.status === "paid" && run.paid_at ? ` · paid ${formatDateTime(run.paid_at)}` : " · pending"}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-[color:var(--portal-ink)]">{formatMoney(total)}</span>
-                            <span className={
-                              "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
-                              (run.status === "paid"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-amber-100 text-amber-800")
-                            }>
-                              {run.status}
+                          {row.trainer_name}
+                        </label>
+                        <p className="mt-1 text-[11px] text-[color:var(--portal-muted)]">
+                          Website: {row.actual_trainee_count ?? row.trainee_count} active trainee(s)
+                          · Payout: {row.trainee_count}
+                        </p>
+                        <div className="mt-2 flex items-center gap-2">
+                          <input
+                            id={`pt-payout-count-${coachId}`}
+                            type="number"
+                            min="0"
+                            max="500"
+                            step="1"
+                            inputMode="numeric"
+                            value={
+                              payoutLocked
+                                ? String(row.payout_trainee_count_override ?? "")
+                                : inputValue
+                            }
+                            placeholder={String(row.actual_trainee_count ?? row.trainee_count)}
+                            disabled={payoutLocked || payoutBusy}
+                            onChange={(event) =>
+                              setTraineeCountInputs((previous) => ({
+                                ...previous,
+                                [coachId]: event.target.value === "" ? null : event.target.value,
+                              }))
+                            }
+                            className="min-w-0 w-28 rounded-lg border border-[var(--portal-border)] bg-white px-3 py-2.5 text-sm font-bold disabled:opacity-60"
+                            aria-label={`Custom payout trainee count for ${row.trainer_name}`}
+                          />
+                          {!payoutLocked && custom && (
+                            <button
+                              type="button"
+                              disabled={payoutBusy}
+                              onClick={() =>
+                                setTraineeCountInputs((previous) => ({
+                                  ...previous,
+                                  [coachId]: null,
+                                }))
+                              }
+                              className="text-xs font-bold text-[color:var(--portal-accent)] underline"
+                            >
+                              Use website count
+                            </button>
+                          )}
+                          {payoutLocked && (
+                            <span className="text-[10px] font-bold text-[color:var(--portal-muted)]">
+                              Locked
                             </span>
-                          </div>
-                        </button>
-                        {run.status === "pending" && !run.financial_locked && (
+                          )}
+                        </div>
+                        {custom && (
+                          <p className="mt-1 text-[10px] font-semibold text-amber-800">
+                            Manual trainee count applied to this payout
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {invalidTraineeCounts && (
+                  <p role="alert" className="mt-3 text-xs font-bold text-red-700">
+                    Use whole numbers from 0 to 500, or clear a field for the automatic count.
+                  </p>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-4">
+                <p className="text-xs font-black text-[color:var(--portal-muted)]">
+                  Automatic 50/30/20 pool
+                </p>
+                <p className="mt-1 text-2xl font-black text-[color:var(--portal-ink)]">
+                  {formatMoney(payoutCalculation.autoPool)}
+                </p>
+                <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                  ₦10,000 × eligible payable membership cycles, or approved coach counts when
+                  manually adjusted.
+                </p>
+                {payoutCalculation.poolOverridden && (
+                  <p className="mt-3 rounded-lg bg-amber-50 p-3 text-xs font-bold text-amber-900">
+                    Manually adjusted pool: {formatMoney(payoutCalculation.pool)} · Automatic:{" "}
+                    {formatMoney(payoutCalculation.autoPool)}
+                  </p>
+                )}
+                {!payoutLocked && (
+                  <div className="mt-3 space-y-3">
+                    <button
+                      type="button"
+                      disabled={payoutBusy || payoutCalculation.fullEligibleCount === 0}
+                      onClick={() => setAdjustPoolOpen((open) => !open)}
+                      aria-expanded={adjustPoolOpen}
+                      className="rounded-xl border border-[var(--portal-border)] px-4 py-2 text-xs font-black disabled:opacity-40"
+                    >
+                      {adjustPoolOpen ? "Hide adjustment" : "Adjust pool"}
+                    </button>
+                    {adjustPoolOpen && (
+                      <label className="block text-xs font-black">
+                        Override amount (₦)
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={payoutPool ?? String(payoutCalculation.pool)}
+                          onChange={(event) => setPayoutPool(event.target.value)}
+                          disabled={payoutBusy}
+                          className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] px-3 py-3 text-sm"
+                        />
+                      </label>
+                    )}
+                    {(payoutCalculation.poolOverridden || payoutPool !== null) && (
+                      <button
+                        type="button"
+                        disabled={payoutBusy}
+                        onClick={() => {
+                          setPayoutPool(String(payoutCalculation.autoPool));
+                          setAdjustPoolOpen(false);
+                        }}
+                        className="text-xs font-bold underline"
+                      >
+                        Use automatic amount
+                      </button>
+                    )}
+                    {invalidPool && (
+                      <p role="alert" className="text-xs text-red-800">
+                        Enter a valid amount of ₦0 or more, or use the automatic amount.
+                      </p>
+                    )}
+                  </div>
+                )}
+                <p className="mt-3 text-xs leading-5 text-[color:var(--portal-muted)]">
+                  3+ trainees: 50/30/20 pool. 1–2 trainees: ₦10,000 once per payable membership
+                  cycle. 0 trainees: ₦0. Part-time coaches are handled separately.
+                </p>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-[var(--portal-surface)] p-3 text-center">
+                  <p className="text-xl font-black text-[color:var(--portal-accent)]">50%</p>
+                  <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                    Team share
+                  </p>
+                </div>
+                <div className="rounded-xl bg-[var(--portal-canvas)] p-3 text-center">
+                  <p className="text-xl font-black text-[color:var(--portal-muted)]">30%</p>
+                  <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                    Workload
+                  </p>
+                </div>
+                <div className="rounded-xl bg-[#fff6df] p-3 text-center">
+                  <p className="text-xl font-black text-[#8b6d24]">20%</p>
+                  <p className="text-[9px] font-black uppercase text-[#756b50]">Performance</p>
+                </div>
+              </div>
+
+              {payoutCalculation.unassignedCount > 0 && (
+                <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900">
+                  <AlertCircle size={17} className="mt-0.5 shrink-0" />
+                  <p>
+                    <strong>
+                      {payoutCalculation.unassignedCount} paid PT trainee
+                      {payoutCalculation.unassignedCount === 1 ? "" : "s"}
+                    </strong>{" "}
+                    active during this payout period{" "}
+                    {payoutCalculation.unassignedCount === 1 ? "has" : "have"} no coach assigned.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  disabled={payoutBusy || invalidPool || invalidTraineeCounts || payoutLocked}
+                  onClick={() => void savePayoutRun()}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-black text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Save size={15} />{" "}
+                  {payoutSaving
+                    ? "Saving…"
+                    : payoutLocked
+                      ? "Payments recorded · figures locked"
+                      : "Save PT payout"}
+                </button>
+                {selectedPayoutRun?.status === "pending" && !payoutLocked && (
+                  <button
+                    type="button"
+                    disabled={
+                      payoutBusy ||
+                      invalidPool ||
+                      invalidTraineeCounts ||
+                      payoutNeedsSave ||
+                      today < selectedPayoutRun.pay_date
+                    }
+                    onClick={() => void markPayoutPaid(selectedPayoutRun)}
+                    className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-[var(--portal-ink)] bg-white px-4 py-3 text-xs font-black text-[color:var(--portal-ink)] disabled:opacity-45"
+                  >
+                    <CheckCircle2 size={15} />
+                    {today < selectedPayoutRun.pay_date
+                      ? `Pay on ${formatDate(selectedPayoutRun.pay_date)}`
+                      : payoutMarkingId === selectedPayoutRun.id
+                        ? "Saving…"
+                        : "Mark payout paid"}
+                  </button>
+                )}
+              </div>
+
+              {payoutNeedsSave && (
+                <p role="status" className="mt-3 text-xs text-amber-900">
+                  Calculation updated. Save PT payout before marking it paid.
+                </p>
+              )}
+              {payoutLocked && selectedPayoutRun?.status === "pending" && (
+                <a
+                  href="/management-salary-payments"
+                  className="mt-3 inline-block text-xs font-bold underline"
+                >
+                  Record remaining coach payments in Salary payments
+                </a>
+              )}
+              {payoutLocked && (
+                <p className="mt-3 text-xs font-bold text-green-800">
+                  Payments recorded · these saved financial figures are locked.
+                </p>
+              )}
+              {!!payoutMessage && (
+                <p className="mt-4 rounded-xl border border-green-200 bg-green-50 p-3 text-xs font-semibold text-green-800">
+                  {payoutMessage}
+                </p>
+              )}
+
+              <div className="mt-5 grid gap-3 xl:grid-cols-3">
+                {payoutCalculation.rows.map((row) => (
+                  <article
+                    key={row.trainer_staff_profile_id}
+                    className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="font-black">{row.trainer_name}</h3>
+                        <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                          {row.trainee_count} payout trainee{row.trainee_count === 1 ? "" : "s"} ·{" "}
+                          {row.actual_trainee_count ?? row.trainee_count} recorded on website
+                        </p>
+                        <span
+                          className={
+                            "mt-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                            (row.full_pool_eligible
+                              ? "bg-green-100 text-green-800"
+                              : row.trainee_count > 0
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-slate-100 text-slate-700")
+                          }
+                        >
+                          {row.full_pool_eligible
+                            ? "50/30/20 eligible"
+                            : row.trainee_count > 0
+                              ? "₦10k membership commission"
+                              : "No PT payout"}
+                        </span>
+                      </div>
+                      <p className="text-xl font-black text-[color:var(--portal-ink)]">
+                        {formatMoney(row.recommended_payout)}
+                      </p>
+                    </div>
+
+                    {row.full_pool_eligible ? (
+                      <div className="mt-4 grid grid-cols-3 gap-1 text-center">
+                        <div className="rounded-xl bg-white p-3">
+                          <p className="break-words text-xs font-black">
+                            {formatMoney(row.team_share)}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                            Team
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3">
+                          <p className="break-words text-xs font-black">
+                            {formatMoney(row.workload_share)}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                            Workload
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3">
+                          <p className="break-words text-xs font-black">
+                            {formatMoney(row.performance_share)}
+                          </p>
+                          <p className="mt-1 text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                            Performance
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-4 rounded-xl border border-[var(--portal-border)] bg-white p-3">
+                        <p className="text-[9px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
+                          Fixed commission
+                        </p>
+                        <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                          {row.payout_trainee_count_override !== null &&
+                          row.payout_trainee_count_override !== undefined
+                            ? `₦10,000 × ${row.trainee_count} manually approved trainee(s)`
+                            : Number(row.payable_membership_count || 0) > 0
+                              ? `₦10,000 × ${row.payable_membership_count} PT membership cycle${row.payable_membership_count === 1 ? "" : "s"}`
+                              : "No new payable PT membership cycle in this period"}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-4 space-y-2 text-xs text-[color:var(--portal-muted)]">
+                      <div className="flex items-center justify-between gap-3">
+                        <span>Two-cycle retention</span>
+                        <strong className="text-[color:var(--portal-ink)]">
+                          {row.renewal_rate === null
+                            ? "Not enough data"
+                            : `${Math.round(row.renewal_rate * 100)}% (${row.renewed_same_trainer}/${row.renewal_eligible})`}
+                        </strong>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <span>Trainee rating</span>
+                        <strong className="text-[color:var(--portal-ink)]">
+                          {row.rating_average === null
+                            ? "No ratings"
+                            : `${row.rating_average.toFixed(1)}/5 · ${row.rating_count} review${row.rating_count === 1 ? "" : "s"}`}
+                        </strong>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-4 grid gap-2 rounded-xl bg-[var(--portal-ink)] p-4 text-white sm:grid-cols-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">
+                    Pool used
+                  </p>
+                  <p className="mt-0.5 text-lg font-black">{formatMoney(payoutCalculation.pool)}</p>
+                  <p className="mt-1 text-[9px] text-white/60">
+                    Auto {formatMoney(payoutCalculation.autoPool)}
+                    {payoutCalculation.poolOverridden ? " · overridden" : ""}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">
+                    1–2 trainee commissions
+                  </p>
+                  <p className="mt-0.5 text-lg font-black">
+                    {formatMoney(payoutCalculation.commissionTotal)}
+                  </p>
+                  <p className="mt-1 text-[9px] text-white/60">
+                    ₦10,000 per payable PT membership cycle
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[.14em] text-white/65">
+                    Total PT payroll due
+                  </p>
+                  <p className="mt-0.5 text-lg font-black">
+                    {formatMoney(payoutCalculation.totalRecommended)}
+                  </p>
+                  <p className="mt-1 text-[9px] text-white/60">
+                    Pay date {formatDate(payoutCalculation.payDate)}
+                  </p>
+                </div>
+              </div>
+
+              {payoutRuns.length > 0 && (
+                <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4">
+                  <p className="text-[10px] font-black uppercase tracking-[.14em] text-[color:var(--portal-muted)]">
+                    Recent PT paydays
+                  </p>
+                  <div className="mt-3 grid gap-2">
+                    {payoutRuns.slice(0, 6).map((run) => {
+                      const total = (run.breakdown || []).reduce(
+                        (sum, row) => sum + Number(row.recommended_payout || 0),
+                        0,
+                      );
+                      return (
+                        <div
+                          key={run.id}
+                          className="rounded-xl border border-[var(--portal-border)] bg-white p-3"
+                        >
                           <button
                             type="button"
                             disabled={payoutBusy}
-                            onClick={() => void discardPayoutRun(run)}
-                            aria-label={`Discard payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}`}
-                            className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-50"
+                            onClick={() => {
+                              setPayoutPeriodStart(run.period_start);
+                              setAdjustPoolOpen(false);
+                              setPayoutPool(null);
+                              setTraineeCountInputs({});
+                              setPayoutMessage("");
+                              setError("");
+                            }}
+                            className="flex w-full flex-col gap-2 text-left sm:flex-row sm:items-center sm:justify-between"
                           >
-                            <Trash2 size={14} />
-                            {payoutDiscardingId === run.id ? "Discarding…" : "Discard payday"}
+                            <div>
+                              <p className="text-xs font-black">
+                                {formatDate(run.period_start)} – {formatDate(run.period_end)}
+                              </p>
+                              <p className="mt-1 text-[10px] text-[color:var(--portal-muted)]">
+                                Pay date {formatDate(run.pay_date)}
+                                {run.status === "paid" && run.paid_at
+                                  ? ` · paid ${formatDateTime(run.paid_at)}`
+                                  : " · pending"}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-black text-[color:var(--portal-ink)]">
+                                {formatMoney(total)}
+                              </span>
+                              <span
+                                className={
+                                  "rounded-full px-2.5 py-1 text-[9px] font-black uppercase " +
+                                  (run.status === "paid"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-amber-100 text-amber-800")
+                                }
+                              >
+                                {run.status}
+                              </span>
+                            </div>
                           </button>
-                        )}
-                      </div>
-                    );
-                  })}
+                          {run.status === "pending" && !run.financial_locked && (
+                            <button
+                              type="button"
+                              disabled={payoutBusy}
+                              onClick={() => void discardPayoutRun(run)}
+                              aria-label={`Discard payday for ${formatDate(run.period_start)} – ${formatDate(run.period_end)}`}
+                              className="mt-3 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-50"
+                            >
+                              <Trash2 size={14} />
+                              {payoutDiscardingId === run.id ? "Discarding…" : "Discard payday"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
-      </section>}
+              )}
+            </>
+          )}
+        </section>
+      )}
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
-        <button
-          type="button"
-          aria-expanded={reportsOpen}
-          onClick={() => setReportsOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-4 text-left"
-        >
+      <section
+        hidden={!reportsOpen}
+        className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6"
+      >
+        <div className="flex w-full items-center justify-between gap-4 text-left">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#8c4a43]">Confidential</p>
+            <p className="text-[10px] font-black uppercase tracking-[.16em] text-[#8c4a43]">
+              Confidential
+            </p>
             <h2 className="mt-1 text-xl font-black">Coach Reports</h2>
             <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
               Private concerns submitted by active PT members. Coaches cannot access these reports.
@@ -1118,7 +1443,7 @@ function ManagementPersonalTraining() {
               className={`text-[#6a4945] transition-transform ${reportsOpen ? "rotate-180" : ""}`}
             />
           </div>
-        </button>
+        </div>
 
         {reportsOpen && (
           <div className="mt-5 space-y-3">
@@ -1131,11 +1456,16 @@ function ManagementPersonalTraining() {
                 const member = memberMap.get(report.member_id);
                 const coach = trainerMap.get(report.coach_staff_profile_id);
                 return (
-                  <article key={report.id} className="rounded-2xl border border-[#eadbd7] bg-[#fffaf8] p-4 sm:p-5">
+                  <article
+                    key={report.id}
+                    className="rounded-2xl border border-[#eadbd7] bg-[#fffaf8] p-4 sm:p-5"
+                  >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-black">{coachReportCategoryLabel(report.category)}</h3>
+                          <h3 className="font-black">
+                            {coachReportCategoryLabel(report.category)}
+                          </h3>
                           <span
                             className={
                               "rounded-full px-2.5 py-1 text-[10px] font-black uppercase " +
@@ -1151,7 +1481,9 @@ function ManagementPersonalTraining() {
                         </div>
                         <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
                           Submitted {formatDateTime(report.submitted_at)}
-                          {report.incident_date ? ` · Incident ${formatDate(report.incident_date)}` : ""}
+                          {report.incident_date
+                            ? ` · Incident ${formatDate(report.incident_date)}`
+                            : ""}
                         </p>
                       </div>
                       <ShieldAlert size={21} className="shrink-0 text-[#974a43]" />
@@ -1160,18 +1492,28 @@ function ManagementPersonalTraining() {
                     <div className="mt-4 grid gap-3 rounded-xl bg-white p-4 text-xs sm:grid-cols-2">
                       <div>
                         <p className="font-black uppercase tracking-wider text-[#7a827d]">Member</p>
-                        <p className="mt-1 text-sm font-bold">{member?.full_name || "Unknown member"}</p>
-                        <p className="mt-0.5 text-[color:var(--portal-muted)]">{member?.phone || member?.email || "No contact"}</p>
+                        <p className="mt-1 text-sm font-bold">
+                          {member?.full_name || "Unknown member"}
+                        </p>
+                        <p className="mt-0.5 text-[color:var(--portal-muted)]">
+                          {member?.phone || member?.email || "No contact"}
+                        </p>
                       </div>
                       <div>
-                        <p className="font-black uppercase tracking-wider text-[#7a827d]">Reported coach</p>
+                        <p className="font-black uppercase tracking-wider text-[#7a827d]">
+                          Reported coach
+                        </p>
                         <p className="mt-1 text-sm font-bold">{coach?.display_name || "Coach"}</p>
                       </div>
                     </div>
 
                     <div className="mt-3 rounded-xl bg-white p-4">
-                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">Member's report</p>
-                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--portal-muted)]">{report.details}</p>
+                      <p className="text-[10px] font-black uppercase tracking-wider text-[#7a827d]">
+                        Member's report
+                      </p>
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[color:var(--portal-muted)]">
+                        {report.details}
+                      </p>
                     </div>
 
                     <div className="mt-4 flex flex-wrap gap-2">
@@ -1205,23 +1547,27 @@ function ManagementPersonalTraining() {
       </section>
 
       {!!error && (
-        <p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+        >
           {error}
         </p>
       )}
       {!!message && (
-        <p role="status" className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800">
+        <p
+          role="status"
+          className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
+        >
           {message}
         </p>
       )}
 
-      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6">
-        <button
-          type="button"
-          aria-expanded={membersOpen}
-          onClick={() => setMembersOpen((open) => !open)}
-          className="flex w-full items-center justify-between gap-4 text-left"
-        >
+      <section
+        hidden={!membersOpen}
+        className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-6"
+      >
+        <div className="flex w-full items-center justify-between gap-4 text-left">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
               PT members
@@ -1235,195 +1581,231 @@ function ManagementPersonalTraining() {
             size={22}
             className={`shrink-0 text-[color:var(--portal-muted)] transition-transform ${membersOpen ? "rotate-180" : ""}`}
           />
-        </button>
+        </div>
 
         {membersOpen && (
           <>
             <div className="mt-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-wrap gap-2">
-            {(["current", "expiring", "unassigned", "feedback", "all"] as View[]).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setView(item)}
-                className={
-                  "rounded-full px-4 py-2 text-xs font-black capitalize " +
-                  (view === item
-                    ? "bg-[var(--portal-ink)] text-white"
-                    : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
-                }
-              >
-                {item === "feedback" ? "Feedback" : item}
-              </button>
-            ))}
-          </div>
-          <label className="flex min-w-0 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-3 lg:w-80">
-            <UserRound size={17} />
-            <span className="sr-only">Search PT members</span>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search member or coach"
-              className="w-full min-w-0 bg-transparent py-3 text-sm outline-none"
-            />
-          </label>
-        </div>
+                {(["current", "expiring", "unassigned", "feedback", "all"] as View[]).map(
+                  (item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setView(item)}
+                      className={
+                        "rounded-full px-4 py-2 text-xs font-black capitalize " +
+                        (view === item
+                          ? "bg-[var(--portal-ink)] text-white"
+                          : "border border-[var(--portal-border)] bg-[var(--portal-canvas)] text-[color:var(--portal-muted)]")
+                      }
+                    >
+                      {item === "feedback" ? "Feedback" : item}
+                    </button>
+                  ),
+                )}
+              </div>
+              <label className="flex min-w-0 items-center gap-2 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-3 lg:w-80">
+                <UserRound size={17} />
+                <span className="sr-only">Search PT members</span>
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search member or coach"
+                  className="w-full min-w-0 bg-transparent py-3 text-sm outline-none"
+                />
+              </label>
+            </div>
 
-        {loading && (
-          <p role="status" className="mt-6 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
-            Loading Personal Training records…
-          </p>
-        )}
+            {loading && (
+              <p role="status" className="mt-6 rounded-xl bg-[var(--portal-canvas)] p-5 text-sm">
+                Loading Personal Training records…
+              </p>
+            )}
 
-        {!loading && !rows.length && (
-          <p className="mt-6 rounded-xl border border-dashed border-[var(--portal-border)] p-8 text-center text-sm text-[color:var(--portal-muted)]">
-            No PT records match this view.
-          </p>
-        )}
+            {!loading && !rows.length && (
+              <p className="mt-6 rounded-xl border border-dashed border-[var(--portal-border)] p-8 text-center text-sm text-[color:var(--portal-muted)]">
+                No PT records match this view.
+              </p>
+            )}
 
-        {!loading && !!rows.length && (
-          <div className="mt-6 space-y-4">
-            {rows.map((membership) => {
-              const member = memberMap.get(membership.member_id);
-              const assignment = assignmentMap.get(membership.id);
-              const evaluation = evaluationMap.get(membership.id);
-              const assignedTrainer = assignment
-                ? trainerMap.get(assignment.trainer_staff_profile_id)
-                : null;
-              const active = isCurrent(membership);
-              const expiring = active && membership.end_date <= addDays(today, 7);
+            {!loading && !!rows.length && (
+              <div className="mt-6 space-y-4">
+                {rows.map((membership) => {
+                  const member = memberMap.get(membership.member_id);
+                  const assignment = assignmentMap.get(membership.id);
+                  const evaluation = evaluationMap.get(membership.id);
+                  const assignedTrainer = assignment
+                    ? trainerMap.get(assignment.trainer_staff_profile_id)
+                    : null;
+                  const active = isCurrent(membership);
+                  const expiring = active && membership.end_date <= addDays(today, 7);
 
-              return (
-                <article key={membership.id} className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5">
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="break-words text-lg font-black">{member?.full_name || "Unknown member"}</h2>
-                        <span
-                          className={
-                            "rounded-full px-2.5 py-1 text-[10px] font-black uppercase " +
-                            (active ? "bg-green-100 text-green-800" : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
-                          }
-                        >
-                          {active ? "Current" : membership.end_date < today ? "Expired" : "Upcoming"}
-                        </span>
-                        {expiring && (
-                          <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase text-amber-800">
-                            Expiring soon
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                        {member?.phone || member?.email || "No contact"}
-                      </p>
-                      <p className="mt-3 text-sm font-semibold">
-                        {membership.plan_name} · {formatDate(membership.start_date)} → {formatDate(membership.end_date)}
-                      </p>
-                    </div>
-
-                    <label className="min-w-0 text-xs font-black xl:w-64">
-                      Assigned coach
-                      <select
-                        value={assignment?.trainer_staff_profile_id || ""}
-                        disabled={savingMembershipId === membership.id}
-                        onChange={(event) => void assignCoach(membership.id, event.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-bold outline-none"
-                      >
-                        <option value="">Unassigned</option>
-                        {trainers.filter((trainer) => trainer.active).map((trainer) => (
-                          <option key={trainer.staff_profile_id} value={trainer.staff_profile_id}>
-                            {trainer.display_name}{trainer.staff_title ? ` — ${trainer.staff_title}` : ""}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="mt-1 block font-normal text-[color:var(--portal-muted)]">
-                        {assignedTrainer ? "Saved for this PT cycle." : "Choose the member’s actual coach."}
-                      </span>
-                    </label>
-                  </div>
-
-                  {evaluation && (
-                    <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
-                            Coach evaluation
-                          </p>
-                          <p className="mt-1 text-xl font-black">
-                            {evaluation.overall_rating}/5 <span className="text-[#b28a2d]">★</span>
-                          </p>
+                  return (
+                    <article
+                      key={membership.id}
+                      className="rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 sm:p-5"
+                    >
+                      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h2 className="break-words text-lg font-black">
+                              {member?.full_name || "Unknown member"}
+                            </h2>
+                            <span
+                              className={
+                                "rounded-full px-2.5 py-1 text-[10px] font-black uppercase " +
+                                (active
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-[var(--portal-surface)] text-[color:var(--portal-muted)]")
+                              }
+                            >
+                              {active
+                                ? "Current"
+                                : membership.end_date < today
+                                  ? "Expired"
+                                  : "Upcoming"}
+                            </span>
+                            {expiring && (
+                              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-black uppercase text-amber-800">
+                                Expiring soon
+                              </span>
+                            )}
+                          </div>
                           <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
-                            Submitted {formatDateTime(evaluation.submitted_at)}
+                            {member?.phone || member?.email || "No contact"}
+                          </p>
+                          <p className="mt-3 text-sm font-semibold">
+                            {membership.plan_name} · {formatDate(membership.start_date)} →{" "}
+                            {formatDate(membership.end_date)}
                           </p>
                         </div>
-                        <span className="rounded-full bg-[var(--portal-surface)] px-3 py-1.5 text-[10px] font-black uppercase text-[color:var(--portal-muted)]">
-                          {evaluation.management_status}
-                        </span>
+
+                        <label className="min-w-0 text-xs font-black xl:w-64">
+                          Assigned coach
+                          <select
+                            value={assignment?.trainer_staff_profile_id || ""}
+                            disabled={savingMembershipId === membership.id}
+                            onChange={(event) =>
+                              void assignCoach(membership.id, event.target.value)
+                            }
+                            className="mt-1.5 w-full rounded-xl border border-[var(--portal-border)] bg-white px-3 py-3 text-sm font-bold outline-none"
+                          >
+                            <option value="">Unassigned</option>
+                            {trainers
+                              .filter((trainer) => trainer.active)
+                              .map((trainer) => (
+                                <option
+                                  key={trainer.staff_profile_id}
+                                  value={trainer.staff_profile_id}
+                                >
+                                  {trainer.display_name}
+                                  {trainer.staff_title ? ` — ${trainer.staff_title}` : ""}
+                                </option>
+                              ))}
+                          </select>
+                          <span className="mt-1 block font-normal text-[color:var(--portal-muted)]">
+                            {assignedTrainer
+                              ? "Saved for this PT cycle."
+                              : "Choose the member’s actual coach."}
+                          </span>
+                        </label>
                       </div>
 
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-6">
-                        {[
-                          ["Professionalism", evaluation.professionalism_rating],
-                          ["Punctuality", evaluation.punctuality_rating],
-                          ["Communication", evaluation.communication_rating],
-                          ["Coaching", evaluation.coaching_quality_rating],
-                          ["Motivation", evaluation.motivation_rating],
-                          ["Programme", evaluation.program_consistency ? "Yes" : "No"],
-                        ].map(([label, value]) => (
-                          <div key={String(label)} className="rounded-xl bg-[var(--portal-canvas)] p-3">
-                            <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">{label}</p>
-                            <p className="mt-1 font-black">{value}</p>
+                      {evaluation && (
+                        <div className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-[.16em] text-[color:var(--portal-muted)]">
+                                Coach evaluation
+                              </p>
+                              <p className="mt-1 text-xl font-black">
+                                {evaluation.overall_rating}/5{" "}
+                                <span className="text-[#b28a2d]">★</span>
+                              </p>
+                              <p className="mt-1 text-xs text-[color:var(--portal-muted)]">
+                                Submitted {formatDateTime(evaluation.submitted_at)}
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-[var(--portal-surface)] px-3 py-1.5 text-[10px] font-black uppercase text-[color:var(--portal-muted)]">
+                              {evaluation.management_status}
+                            </span>
                           </div>
-                        ))}
-                      </div>
 
-                      <div className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">
-                        <p>
-                          <strong>Next step:</strong>{" "}
-                          {evaluation.continuation_choice === "continue"
-                            ? `Continue with ${trainerMap.get(evaluation.trainer_staff_profile_id)?.display_name || "same coach"}`
-                            : evaluation.continuation_choice === "change"
-                              ? `Change to ${trainerMap.get(evaluation.requested_trainer_staff_profile_id || "")?.display_name || "another coach"}`
-                              : "Finish personal training"}
-                        </p>
-                        {evaluation.change_reason && (
-                          <p className="mt-2"><strong>Change reason:</strong> {evaluation.change_reason}</p>
-                        )}
-                        {evaluation.comments && (
-                          <p className="mt-2"><strong>Comment:</strong> {evaluation.comments}</p>
-                        )}
-                        {evaluation.management_note && (
-                          <p className="mt-2"><strong>Management note:</strong> {evaluation.management_note}</p>
-                        )}
-                      </div>
+                          <div className="mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-3 lg:grid-cols-6">
+                            {[
+                              ["Professionalism", evaluation.professionalism_rating],
+                              ["Punctuality", evaluation.punctuality_rating],
+                              ["Communication", evaluation.communication_rating],
+                              ["Coaching", evaluation.coaching_quality_rating],
+                              ["Motivation", evaluation.motivation_rating],
+                              ["Programme", evaluation.program_consistency ? "Yes" : "No"],
+                            ].map(([label, value]) => (
+                              <div
+                                key={String(label)}
+                                className="rounded-xl bg-[var(--portal-canvas)] p-3"
+                              >
+                                <p className="text-[9px] font-black uppercase text-[color:var(--portal-muted)]">
+                                  {label}
+                                </p>
+                                <p className="mt-1 font-black">{value}</p>
+                              </div>
+                            ))}
+                          </div>
 
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {evaluation.management_status === "pending" && (
-                          <button
-                            type="button"
-                            onClick={() => void updateEvaluation(evaluation, "reviewed")}
-                            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
-                          >
-                            <CheckCircle2 size={15} /> Mark reviewed
-                          </button>
-                        )}
-                        {evaluation.management_status !== "resolved" && (
-                          <button
-                            type="button"
-                            onClick={() => void updateEvaluation(evaluation, "resolved")}
-                            className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
-                          >
-                            <CheckCircle2 size={15} /> Resolve
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
+                          <div className="mt-4 text-sm leading-6 text-[color:var(--portal-muted)]">
+                            <p>
+                              <strong>Next step:</strong>{" "}
+                              {evaluation.continuation_choice === "continue"
+                                ? `Continue with ${trainerMap.get(evaluation.trainer_staff_profile_id)?.display_name || "same coach"}`
+                                : evaluation.continuation_choice === "change"
+                                  ? `Change to ${trainerMap.get(evaluation.requested_trainer_staff_profile_id || "")?.display_name || "another coach"}`
+                                  : "Finish personal training"}
+                            </p>
+                            {evaluation.change_reason && (
+                              <p className="mt-2">
+                                <strong>Change reason:</strong> {evaluation.change_reason}
+                              </p>
+                            )}
+                            {evaluation.comments && (
+                              <p className="mt-2">
+                                <strong>Comment:</strong> {evaluation.comments}
+                              </p>
+                            )}
+                            {evaluation.management_note && (
+                              <p className="mt-2">
+                                <strong>Management note:</strong> {evaluation.management_note}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {evaluation.management_status === "pending" && (
+                              <button
+                                type="button"
+                                onClick={() => void updateEvaluation(evaluation, "reviewed")}
+                                className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-bold"
+                              >
+                                <CheckCircle2 size={15} /> Mark reviewed
+                              </button>
+                            )}
+                            {evaluation.management_status !== "resolved" && (
+                              <button
+                                type="button"
+                                onClick={() => void updateEvaluation(evaluation, "resolved")}
+                                className="inline-flex items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
+                              >
+                                <CheckCircle2 size={15} /> Resolve
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
       </section>

@@ -387,22 +387,25 @@ function ManagementRevenue() {
         )}
         {!loading && authorized && (
           <>
-            <div className="mt-8 flex items-start gap-3 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 text-sm leading-6 text-[color:var(--portal-muted)]">
-              <ShieldCheck className="mt-0.5 shrink-0" size={20} />
-              <p>
-                <strong>Historical revenue protected.</strong> Uses the database-owned reporting
-                baseline, excludes historical imports and explicitly excluded payments, and counts
-                successful transactions only. This view cannot edit payments or reset your totals.
-                Compare with your original admin report before relying on it for accounting.
+            <details className="mt-5 rounded-2xl border border-[var(--portal-border)] bg-white px-4 py-3 text-sm leading-6 text-[color:var(--portal-muted)]">
+              <summary className="cursor-pointer font-bold">Historical revenue protected.</summary>
+              <p className="mt-2">
+                {" "}
+                Uses the database-owned reporting baseline, excludes historical imports and
+                explicitly excluded payments, and counts successful transactions only. This view
+                cannot edit payments or reset your totals. Compare with your original admin report
+                before relying on it for accounting.
               </p>
-            </div>
+            </details>
             <section
               aria-label="Revenue filters"
               className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-5 sm:p-7"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-xl font-black">Reporting period</h2>
-                <span className="text-xs text-[color:var(--portal-muted)]">Baseline: {formatDate(baseline)}</span>
+                <span className="text-xs text-[color:var(--portal-muted)]">
+                  Baseline: {formatDate(baseline)}
+                </span>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {(
@@ -514,7 +517,9 @@ function ManagementRevenue() {
                   className="min-w-0 rounded-[22px] border border-[var(--portal-border)] bg-white p-5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[color:var(--portal-muted)]">{title}</span>
+                    <span className="text-xs font-bold text-[color:var(--portal-muted)]">
+                      {title}
+                    </span>
                     <Icon size={19} className="shrink-0 text-[color:var(--portal-accent)]" />
                   </div>
                   <p className="mt-5 break-words text-2xl font-black tabular-nums sm:text-3xl">
@@ -569,7 +574,9 @@ function ManagementRevenue() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-[color:var(--portal-muted)]">No revenue in this selection.</p>
+                        <p className="text-sm text-[color:var(--portal-muted)]">
+                          No revenue in this selection.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -603,7 +610,9 @@ function ManagementRevenue() {
                           </div>
                         ))
                       ) : (
-                        <p className="text-sm text-[color:var(--portal-muted)]">No plan revenue in this selection.</p>
+                        <p className="text-sm text-[color:var(--portal-muted)]">
+                          No plan revenue in this selection.
+                        </p>
                       )}
                     </div>
                   </div>
@@ -647,7 +656,9 @@ function ManagementRevenue() {
                   </p>
                 </div>
                 <label className="min-w-0">
-                  <span className="sr-only">Search customer, reference, plan, method or provider</span>
+                  <span className="sr-only">
+                    Search customer, reference, plan, method or provider
+                  </span>
                   <input
                     value={search}
                     onChange={(event) => {

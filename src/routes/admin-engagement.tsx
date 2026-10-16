@@ -1,3 +1,4 @@
+import { WorkspaceTabs } from "@/components/admin/WorkspaceTabs";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
@@ -141,12 +142,14 @@ function makeCode(value: string) {
 }
 
 function CollapsiblePanel({
+  defaultOpen = false,
   title,
   subtitle,
   icon,
   badge,
   children,
 }: {
+  defaultOpen?: boolean;
   title: string;
   subtitle?: string;
   icon?: ReactNode;
@@ -154,7 +157,10 @@ function CollapsiblePanel({
   children: ReactNode;
 }) {
   return (
-    <details className="group min-w-0 max-w-full overflow-hidden rounded-[20px] border border-[var(--portal-border)] bg-white">
+    <details
+      open={defaultOpen || undefined}
+      className="group min-w-0 max-w-full overflow-hidden rounded-[20px] border border-[var(--portal-border)] bg-white"
+    >
       <summary className="flex min-w-0 cursor-pointer list-none items-center gap-3 px-4 py-4 sm:px-5 [&::-webkit-details-marker]:hidden">
         {icon && (
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] text-[color:var(--portal-accent)]">
@@ -185,6 +191,15 @@ function CollapsiblePanel({
 }
 
 function AdminEngagement() {
+  const [workspaceView, setWorkspaceView] = useState("rewards");
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (
+      view &&
+      ["rewards", "challenges", "badges", "points", "requests", "notifications"].includes(view)
+    )
+      setWorkspaceView(view);
+  }, []);
   const [authorized, setAuthorized] = useState(false);
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -246,10 +261,7 @@ function AdminEngagement() {
         .maybeSingle();
 
       const role = String(staff?.role ?? "").toLowerCase();
-      const ok =
-        !staffError &&
-        !!staff?.active &&
-        ["admin", "owner", "manager"].includes(role);
+      const ok = !staffError && !!staff?.active && ["admin", "owner", "manager"].includes(role);
 
       if (live) {
         setAuthorized(ok);
@@ -360,18 +372,12 @@ function AdminEngagement() {
     () => bookings.filter((item) => item.status === "pending").length,
     [bookings],
   );
-  const activeBadges = useMemo(
-    () => badges.filter((item) => item.active).length,
-    [badges],
-  );
+  const activeBadges = useMemo(() => badges.filter((item) => item.active).length, [badges]);
   const activeChallenges = useMemo(
     () => challenges.filter((item) => item.active).length,
     [challenges],
   );
-  const activeRewards = useMemo(
-    () => rewards.filter((item) => item.active).length,
-    [rewards],
-  );
+  const activeRewards = useMemo(() => rewards.filter((item) => item.active).length, [rewards]);
 
   async function saveVisitPoints() {
     setBusy("visit-points");
@@ -379,16 +385,14 @@ function AdminEngagement() {
     setSuccess("");
 
     const safePoints = Math.max(1, Math.min(500, Math.round(visitPoints)));
-    const { error: updateError } = await supabase
-      .from("app_engagement_settings")
-      .upsert(
-        {
-          id: "default",
-          visit_points: safePoints,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "id" },
-      );
+    const { error: updateError } = await supabase.from("app_engagement_settings").upsert(
+      {
+        id: "default",
+        visit_points: safePoints,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" },
+    );
 
     if (updateError) setError(updateError.message);
     else {
@@ -416,17 +420,16 @@ function AdminEngagement() {
 
     setBusy("badge-create");
 
-    const { error: insertError } = await supabase
-      .from("achievement_definitions")
-      .insert({
-        code,
-        title,
-        description: badgeDescription.trim() || `Completed ${Math.max(1, badgeThreshold)} recorded gym visits.`,
-        visit_threshold: Math.max(1, Math.round(badgeThreshold)),
-        points_reward: Math.max(0, Math.round(badgePoints)),
-        active: true,
-        updated_at: new Date().toISOString(),
-      });
+    const { error: insertError } = await supabase.from("achievement_definitions").insert({
+      code,
+      title,
+      description:
+        badgeDescription.trim() || `Completed ${Math.max(1, badgeThreshold)} recorded gym visits.`,
+      visit_threshold: Math.max(1, Math.round(badgeThreshold)),
+      points_reward: Math.max(0, Math.round(badgePoints)),
+      active: true,
+      updated_at: new Date().toISOString(),
+    });
 
     if (insertError) {
       setError(
@@ -453,16 +456,10 @@ function AdminEngagement() {
     const description = window.prompt("Badge description:", item.description);
     if (description === null) return;
 
-    const thresholdText = window.prompt(
-      "Visits needed to unlock:",
-      String(item.visit_threshold),
-    );
+    const thresholdText = window.prompt("Visits needed to unlock:", String(item.visit_threshold));
     if (thresholdText === null) return;
 
-    const pointsText = window.prompt(
-      "SP Points awarded:",
-      String(item.points_reward),
-    );
+    const pointsText = window.prompt("SP Points awarded:", String(item.points_reward));
     if (pointsText === null) return;
 
     const threshold = Number.parseInt(thresholdText, 10);
@@ -525,17 +522,15 @@ function AdminEngagement() {
 
     setBusy("challenge-create");
 
-    const { error: insertError } = await supabase
-      .from("fitness_challenges")
-      .insert({
-        title: challengeTitle.trim(),
-        description: challengeDescription.trim(),
-        starts_on: challengeStart,
-        ends_on: challengeEnd,
-        target_visits: Math.max(1, Math.round(challengeTarget)),
-        points_reward: Math.max(0, Math.round(challengePoints)),
-        active: true,
-      });
+    const { error: insertError } = await supabase.from("fitness_challenges").insert({
+      title: challengeTitle.trim(),
+      description: challengeDescription.trim(),
+      starts_on: challengeStart,
+      ends_on: challengeEnd,
+      target_visits: Math.max(1, Math.round(challengeTarget)),
+      points_reward: Math.max(0, Math.round(challengePoints)),
+      active: true,
+    });
 
     if (insertError) {
       setError(insertError.message);
@@ -543,20 +538,17 @@ function AdminEngagement() {
       return;
     }
 
-    const { error: pushError } = await supabase.functions.invoke(
-      "send-member-push",
-      {
-        body: {
-          title: `New challenge: ${challengeTitle.trim()}`,
-          body:
-            challengeDescription.trim() ||
-            `Complete ${Math.max(1, challengeTarget)} gym visits to finish this challenge.`,
-          kind: "challenge",
-          deep_link: "/rewards",
-          send_push: true,
-        },
+    const { error: pushError } = await supabase.functions.invoke("send-member-push", {
+      body: {
+        title: `New challenge: ${challengeTitle.trim()}`,
+        body:
+          challengeDescription.trim() ||
+          `Complete ${Math.max(1, challengeTarget)} gym visits to finish this challenge.`,
+        kind: "challenge",
+        deep_link: "/rewards",
+        send_push: true,
       },
-    );
+    });
 
     setChallengeTitle("");
     setChallengeDescription("");
@@ -625,9 +617,7 @@ function AdminEngagement() {
     }
 
     const inventory =
-      rewardInventory.trim() === ""
-        ? null
-        : Math.max(0, Number.parseInt(rewardInventory, 10) || 0);
+      rewardInventory.trim() === "" ? null : Math.max(0, Number.parseInt(rewardInventory, 10) || 0);
 
     setBusy("reward-create");
 
@@ -664,10 +654,7 @@ function AdminEngagement() {
     if (inventoryText === null) return;
 
     const cost = Number.parseInt(costText, 10);
-    const inventory =
-      inventoryText.trim() === ""
-        ? null
-        : Number.parseInt(inventoryText, 10);
+    const inventory = inventoryText.trim() === "" ? null : Number.parseInt(inventoryText, 10);
 
     if (!Number.isFinite(cost) || cost < 1) {
       setError("Reward cost must be at least 1 point.");
@@ -765,10 +752,7 @@ function AdminEngagement() {
     setBusy("");
   }
 
-  async function updateSocialClaim(
-    item: SocialFollowClaim,
-    status: "approved" | "rejected",
-  ) {
+  async function updateSocialClaim(item: SocialFollowClaim, status: "approved" | "rejected") {
     const note = window.prompt(
       status === "rejected" ? "Why was this claim rejected?" : "Optional management note:",
       item.staff_note ?? "",
@@ -795,11 +779,21 @@ function AdminEngagement() {
       const platformName = item.platform === "instagram" ? "Instagram" : "TikTok";
       const { error: pushError } = await supabase.functions.invoke("send-member-push", {
         body: {
-          title: status === "approved" ? platformName + " bonus approved" : platformName + " bonus update",
+          title:
+            status === "approved"
+              ? platformName + " bonus approved"
+              : platformName + " bonus update",
           body:
             status === "approved"
-              ? "Your verified " + platformName + " follow earned " + item.points_reward + " SP Points."
-              : "Your " + platformName + " follow claim needs attention." + (note.trim() ? " " + note.trim() : ""),
+              ? "Your verified " +
+                platformName +
+                " follow earned " +
+                item.points_reward +
+                " SP Points."
+              : "Your " +
+                platformName +
+                " follow claim needs attention." +
+                (note.trim() ? " " + note.trim() : ""),
           kind: "reward",
           deep_link: "/bonus-points",
           member_id: item.member_id,
@@ -865,7 +859,9 @@ function AdminEngagement() {
         },
       });
       if (pushError) {
-        setSuccess(`Session request marked ${status}, but notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`);
+        setSuccess(
+          `Session request marked ${status}, but notification failed: ${await getFunctionErrorMessage(pushError, "Notification could not be sent.")}`,
+        );
       } else {
         setSuccess(`Session request marked ${status}.`);
       }
@@ -892,25 +888,20 @@ function AdminEngagement() {
 
     setBusy("push");
 
-    const { data, error: invokeError } = await supabase.functions.invoke(
-      "send-member-push",
-      {
-        body: {
-          title: pushTitle.trim(),
-          body: pushBody.trim(),
-          kind: pushKind,
-          deep_link: pushLink.trim() || null,
-          send_push: true,
-        },
+    const { data, error: invokeError } = await supabase.functions.invoke("send-member-push", {
+      body: {
+        title: pushTitle.trim(),
+        body: pushBody.trim(),
+        kind: pushKind,
+        deep_link: pushLink.trim() || null,
+        send_push: true,
       },
-    );
+    });
 
     if (invokeError) {
       setError(await getFunctionErrorMessage(invokeError, "Notification could not be sent."));
     } else {
-      const sent = Number(
-        (data as { push_sent?: number } | null)?.push_sent ?? 0,
-      );
+      const sent = Number((data as { push_sent?: number } | null)?.push_sent ?? 0);
       setPushTitle("");
       setPushBody("");
       setPushKind("general");
@@ -927,9 +918,7 @@ function AdminEngagement() {
   if (checking) {
     return (
       <AdminWorkspaceShell title="App management" active="/admin-engagement">
-        <p className="mt-5 rounded-2xl bg-white p-5 text-sm">
-          Checking management access…
-        </p>
+        <p className="mt-5 rounded-2xl bg-white p-5 text-sm">Checking management access…</p>
       </AdminWorkspaceShell>
     );
   }
@@ -986,7 +975,7 @@ function AdminEngagement() {
           </p>
         )}
 
-        <section className="grid min-w-0 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid min-w-0 grid-cols-2 gap-2 xl:grid-cols-4">
           {[
             {
               label: "Points / visit",
@@ -1037,7 +1026,9 @@ function AdminEngagement() {
             <BookOpen size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Blog</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Manage app articles</span>
+              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">
+                Manage app articles
+              </span>
             </span>
           </a>
           <a
@@ -1047,7 +1038,9 @@ function AdminEngagement() {
             <Megaphone size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Announcements</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Member notices</span>
+              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">
+                Member notices
+              </span>
             </span>
           </a>
           <a
@@ -1057,537 +1050,792 @@ function AdminEngagement() {
             <Users size={18} className="shrink-0 text-[color:var(--portal-accent)]" />
             <span className="min-w-0">
               <strong className="block truncate text-sm">Full session queue</strong>
-              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">Booking workspace</span>
+              <span className="block truncate text-[11px] text-[color:var(--portal-muted)]">
+                Booking workspace
+              </span>
             </span>
           </a>
         </section>
 
-        <CollapsiblePanel
-          title="SP Points"
-          subtitle="Set points earned once per unique gym day from the programme launch onward."
-          icon={<Settings2 size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {visitPoints} / day
-            </span>
-          }
-        >
-          <label className="block min-w-0 text-sm font-bold">
-            Points earned per unique gym day
-            <input
-              type="number"
-              min={1}
-              max={500}
-              step={1}
-              inputMode="numeric"
-              value={visitPoints}
-              onChange={(event) =>
-                setVisitPoints(Math.round(Number(event.target.value) || 10))
-              }
-              className={inputClass}
-            />
-            <span className="mt-2 block text-xs font-normal leading-5 text-[color:var(--portal-muted)]">
-              Multiple check-ins/check-outs on the same Lagos calendar day still earn only one daily points award.
-              {settings?.program_started_at
-                ? ` SP Points launched ${dateTime(settings.program_started_at)}; earlier attendance does not count.`
-                : ""}
-            </span>
-          </label>
-          <button
-            type="button"
-            disabled={busy === "visit-points"}
-            onClick={() => void saveVisitPoints()}
-            className={`${buttonClass} mt-4 w-full sm:w-auto`}
+        <WorkspaceTabs
+          value={workspaceView}
+          onChange={setWorkspaceView}
+          label="App management sections"
+          items={[
+            { value: "rewards", label: "Rewards", count: activeRewards },
+            { value: "challenges", label: "Challenges" },
+            { value: "badges", label: "Badges", count: activeBadges },
+            { value: "points", label: "SP Points" },
+            { value: "requests", label: "Requests" },
+            { value: "notifications", label: "Notifications" },
+          ]}
+        />
+        <div hidden={workspaceView !== "points"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="SP Points"
+            subtitle="Set points earned once per unique gym day from the programme launch onward."
+            icon={<Settings2 size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {visitPoints} / day
+              </span>
+            }
           >
-            {busy === "visit-points" ? "Saving…" : "Save point rule"}
-          </button>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Add badge"
-          subtitle="Create a new achievement for members."
-          icon={<Trophy size={19} />}
-        >
-          <div className="grid min-w-0 gap-4">
-            <label className="min-w-0 text-sm font-bold">
-              Badge title
+            <label className="block min-w-0 text-sm font-bold">
+              Points earned per unique gym day
               <input
-                value={badgeTitle}
-                onChange={(event) => setBadgeTitle(event.target.value)}
+                type="number"
+                min={1}
+                max={500}
+                step={1}
+                inputMode="numeric"
+                value={visitPoints}
+                onChange={(event) => setVisitPoints(Math.round(Number(event.target.value) || 10))}
                 className={inputClass}
-                placeholder="Morning Regular"
               />
+              <span className="mt-2 block text-xs font-normal leading-5 text-[color:var(--portal-muted)]">
+                Multiple check-ins/check-outs on the same Lagos calendar day still earn only one
+                daily points award.
+                {settings?.program_started_at
+                  ? ` SP Points launched ${dateTime(settings.program_started_at)}; earlier attendance does not count.`
+                  : ""}
+              </span>
             </label>
-            <label className="min-w-0 text-sm font-bold">
-              Description
-              <textarea
-                value={badgeDescription}
-                onChange={(event) => setBadgeDescription(event.target.value)}
-                className={inputClass}
-                rows={3}
-                placeholder="A short explanation members will see."
-              />
-            </label>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={busy === "visit-points"}
+              onClick={() => void saveVisitPoints()}
+              className={`${buttonClass} mt-4 w-full sm:w-auto`}
+            >
+              {busy === "visit-points" ? "Saving…" : "Save point rule"}
+            </button>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "badges"}>
+          <CollapsiblePanel
+            title="Add badge"
+            subtitle="Create a new achievement for members."
+            icon={<Trophy size={19} />}
+          >
+            <div className="grid min-w-0 gap-4">
               <label className="min-w-0 text-sm font-bold">
-                Visits required
+                Badge title
                 <input
-                  type="number"
-                  min={1}
-                  value={badgeThreshold}
-                  onChange={(event) => setBadgeThreshold(Number(event.target.value) || 1)}
+                  value={badgeTitle}
+                  onChange={(event) => setBadgeTitle(event.target.value)}
                   className={inputClass}
+                  placeholder="Morning Regular"
                 />
               </label>
               <label className="min-w-0 text-sm font-bold">
-                Bonus SP Points
-                <input
-                  type="number"
-                  min={0}
-                  value={badgePoints}
-                  onChange={(event) => setBadgePoints(Number(event.target.value) || 0)}
+                Description
+                <textarea
+                  value={badgeDescription}
+                  onChange={(event) => setBadgeDescription(event.target.value)}
                   className={inputClass}
+                  rows={3}
+                  placeholder="A short explanation members will see."
                 />
               </label>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="min-w-0 text-sm font-bold">
+                  Visits required
+                  <input
+                    type="number"
+                    min={1}
+                    value={badgeThreshold}
+                    onChange={(event) => setBadgeThreshold(Number(event.target.value) || 1)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Bonus SP Points
+                  <input
+                    type="number"
+                    min={0}
+                    value={badgePoints}
+                    onChange={(event) => setBadgePoints(Number(event.target.value) || 0)}
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                disabled={busy === "badge-create"}
+                onClick={() => void createBadge()}
+                className={`${buttonClass} w-full sm:w-auto`}
+              >
+                {busy === "badge-create" ? "Adding…" : "Add badge"}
+              </button>
             </div>
-            <button
-              type="button"
-              disabled={busy === "badge-create"}
-              onClick={() => void createBadge()}
-              className={`${buttonClass} w-full sm:w-auto`}
-            >
-              {busy === "badge-create" ? "Adding…" : "Add badge"}
-            </button>
-          </div>
-        </CollapsiblePanel>
+          </CollapsiblePanel>
+        </div>
 
-        <CollapsiblePanel
-          title="Badges & achievements"
-          subtitle="Edit targets, bonus points and visibility."
-          icon={<Trophy size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {activeBadges} active
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {badges.map((item) => (
-              <article key={item.code} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-2">
-                  <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
-                    <Trophy size={17} />
-                  </span>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
-                    {item.active ? "ACTIVE" : "HIDDEN"}
-                  </span>
-                </div>
-                <p className="mt-3 break-words font-black">{item.title}</p>
-                <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                <p className="mt-3 text-xs font-bold text-[color:var(--portal-muted)]">
-                  {item.visit_threshold} visits · +{item.points_reward} pts
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.code} onClick={() => void editBadge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    Edit
-                  </button>
-                  <button type="button" disabled={busy === item.code} onClick={() => void toggleBadge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    {item.active ? "Hide" : "Publish"}
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Create challenge"
-          subtitle="Set a visit target, dates and bonus points."
-          icon={<Dumbbell size={19} />}
-        >
-          <div className="grid min-w-0 gap-4">
-            <label className="min-w-0 text-sm font-bold">
-              Title
-              <input
-                value={challengeTitle}
-                onChange={(event) => setChallengeTitle(event.target.value)}
-                className={inputClass}
-                placeholder="November Consistency"
-              />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Description
-              <textarea
-                value={challengeDescription}
-                onChange={(event) => setChallengeDescription(event.target.value)}
-                className={inputClass}
-                rows={3}
-                placeholder="Complete 12 gym visits this month."
-              />
-            </label>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <label className="min-w-0 text-sm font-bold">
-                Starts
-                <input type="date" value={challengeStart} onChange={(event) => setChallengeStart(event.target.value)} className={inputClass} />
-              </label>
-              <label className="min-w-0 text-sm font-bold">
-                Ends
-                <input type="date" value={challengeEnd} onChange={(event) => setChallengeEnd(event.target.value)} className={inputClass} />
-              </label>
-            </div>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <label className="min-w-0 text-sm font-bold">
-                Visit target
-                <input type="number" min={1} value={challengeTarget} onChange={(event) => setChallengeTarget(Number(event.target.value) || 1)} className={inputClass} />
-              </label>
-              <label className="min-w-0 text-sm font-bold">
-                Bonus SP Points
-                <input type="number" min={0} value={challengePoints} onChange={(event) => setChallengePoints(Number(event.target.value) || 0)} className={inputClass} />
-              </label>
-            </div>
-            <button
-              type="button"
-              disabled={busy === "challenge-create"}
-              onClick={() => void createChallenge()}
-              className={`${buttonClass} w-full sm:w-auto`}
-            >
-              {busy === "challenge-create" ? "Creating…" : "Create challenge & notify members"}
-            </button>
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Challenges"
-          subtitle="Edit, activate or pause existing challenges."
-          icon={<Dumbbell size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {activeChallenges} active
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-            {challenges.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{item.title}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                    <p className="mt-2 break-words text-xs font-bold text-[color:var(--portal-muted)]">
-                      {item.target_visits} visits · +{item.points_reward} pts · {item.starts_on} → {item.ends_on}
-                    </p>
+        <div hidden={workspaceView !== "badges"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Badges & achievements"
+            subtitle="Edit targets, bonus points and visibility."
+            icon={<Trophy size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {activeBadges} active
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {badges.map((item) => (
+                <article
+                  key={item.code}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-2">
+                    <span className="rounded-xl bg-[var(--portal-surface)] p-2 text-[color:var(--portal-accent)]">
+                      <Trophy size={17} />
+                    </span>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
+                      {item.active ? "ACTIVE" : "HIDDEN"}
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
-                    {item.active ? "ACTIVE" : "OFF"}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.id} onClick={() => void editChallenge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    Edit
-                  </button>
-                  <button type="button" disabled={busy === item.id} onClick={() => void toggleChallenge(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    {item.active ? "Deactivate" : "Activate"}
-                  </button>
-                </div>
-              </article>
-            ))}
-            {!challenges.length && <p className="text-sm text-[color:var(--portal-muted)]">No challenges yet.</p>}
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Add reward"
-          subtitle="Create a reward members can redeem with SP Points."
-          icon={<Gift size={19} />}
-        >
-          <div className="grid min-w-0 gap-4">
-            <label className="min-w-0 text-sm font-bold">
-              Reward name
-              <input value={rewardName} onChange={(event) => setRewardName(event.target.value)} className={inputClass} placeholder="Free guest pass" />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Description
-              <textarea value={rewardDescription} onChange={(event) => setRewardDescription(event.target.value)} className={inputClass} rows={3} placeholder="One guest visit for a friend or family member." />
-            </label>
-            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <label className="min-w-0 text-sm font-bold">
-                SP Points cost
-                <input type="number" min={1} value={rewardCost} onChange={(event) => setRewardCost(Number(event.target.value) || 1)} className={inputClass} />
-              </label>
-              <label className="min-w-0 text-sm font-bold">
-                Inventory
-                <input value={rewardInventory} onChange={(event) => setRewardInventory(event.target.value)} className={inputClass} placeholder="Blank = unlimited" />
-              </label>
-            </div>
-            <button type="button" disabled={busy === "reward-create"} onClick={() => void createReward()} className={`${buttonClass} w-full sm:w-auto`}>
-              {busy === "reward-create" ? "Adding…" : "Add reward"}
-            </button>
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Rewards catalogue"
-          subtitle="Edit costs, inventory and member visibility."
-          icon={<Gift size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {activeRewards} active
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-            {rewards.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{item.name}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.description}</p>
-                    <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">
-                      {item.points_cost} pts · {item.inventory === null ? "Unlimited" : `${item.inventory} left`}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
-                    {item.active ? "ACTIVE" : "OFF"}
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" disabled={busy === item.id} onClick={() => void editReward(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    Edit
-                  </button>
-                  <button type="button" disabled={busy === item.id} onClick={() => void toggleReward(item)} className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50">
-                    {item.active ? "Hide reward" : "Publish reward"}
-                  </button>
-                </div>
-              </article>
-            ))}
-            {!rewards.length && <p className="text-sm text-[color:var(--portal-muted)]">No rewards published yet.</p>}
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Session requests"
-          subtitle="PT, classes, massage, pedicure and spa requests."
-          icon={<CalendarDays size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {pendingBookings} pending
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-            {bookings.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{item.service_name}</p>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
-                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
-                    </p>
-                    <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">{dateTime(item.preferred_at)}</p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
-                    {item.status}
-                  </span>
-                </div>
-                {item.notes && <p className="mt-3 break-words text-xs leading-5 text-[color:var(--portal-muted)]">Member note: {item.notes}</p>}
-                {item.staff_note && <p className="mt-2 break-words text-xs leading-5 text-[color:var(--portal-muted)]">Staff note: {item.staff_note}</p>}
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {item.status === "pending" && (
-                    <>
-                      <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "confirmed")} className={buttonClass}>
-                        Confirm
-                      </button>
-                      <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "declined")} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700">
-                        Decline
-                      </button>
-                    </>
-                  )}
-                  {item.status === "confirmed" && (
-                    <button type="button" disabled={busy === item.id} onClick={() => void updateBooking(item, "completed")} className={buttonClass}>
-                      Mark completed
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-            {!bookings.length && <p className="text-sm text-[color:var(--portal-muted)]">No member session requests yet.</p>}
-          </div>
-        </CollapsiblePanel>
-
-
-        <CollapsiblePanel
-          title="Social follow bonus claims"
-          subtitle="Verify Instagram and TikTok follows before the one-time 10 SP bonus is awarded."
-          icon={<Users size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {socialClaims.filter((item) => item.status === "pending").length} pending
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-            {socialClaims.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-black capitalize">{item.platform}</p>
-                    <a
-                      href={
-                        item.platform === "instagram"
-                          ? "https://www.instagram.com/" + encodeURIComponent(item.handle) + "/"
-                          : "https://www.tiktok.com/@" + encodeURIComponent(item.handle)
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-1 inline-flex break-words text-sm font-bold text-[color:var(--portal-accent)] underline underline-offset-2"
-                    >
-                      @{item.handle} · open profile
-                    </a>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
-                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
-                    </p>
-                    <p className="mt-2 text-xs font-bold">+{item.points_reward} SP on approval</p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
-                    {item.status}
-                  </span>
-                </div>
-                {item.staff_note && (
-                  <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">Note: {item.staff_note}</p>
-                )}
-                {item.status === "pending" && (
+                  <p className="mt-3 break-words font-black">{item.title}</p>
+                  <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                    {item.description}
+                  </p>
+                  <p className="mt-3 text-xs font-bold text-[color:var(--portal-muted)]">
+                    {item.visit_threshold} visits · +{item.points_reward} pts
+                  </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      disabled={busy === item.id}
-                      onClick={() => void updateSocialClaim(item, "approved")}
-                      className={buttonClass}
+                      disabled={busy === item.code}
+                      onClick={() => void editBadge(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
                     >
-                      Verify & award
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy === item.code}
+                      onClick={() => void toggleBadge(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
+                    >
+                      {item.active ? "Hide" : "Publish"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "challenges"}>
+          <CollapsiblePanel
+            title="Create challenge"
+            subtitle="Set a visit target, dates and bonus points."
+            icon={<Dumbbell size={19} />}
+          >
+            <div className="grid min-w-0 gap-4">
+              <label className="min-w-0 text-sm font-bold">
+                Title
+                <input
+                  value={challengeTitle}
+                  onChange={(event) => setChallengeTitle(event.target.value)}
+                  className={inputClass}
+                  placeholder="November Consistency"
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Description
+                <textarea
+                  value={challengeDescription}
+                  onChange={(event) => setChallengeDescription(event.target.value)}
+                  className={inputClass}
+                  rows={3}
+                  placeholder="Complete 12 gym visits this month."
+                />
+              </label>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="min-w-0 text-sm font-bold">
+                  Starts
+                  <input
+                    type="date"
+                    value={challengeStart}
+                    onChange={(event) => setChallengeStart(event.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Ends
+                  <input
+                    type="date"
+                    value={challengeEnd}
+                    onChange={(event) => setChallengeEnd(event.target.value)}
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="min-w-0 text-sm font-bold">
+                  Visit target
+                  <input
+                    type="number"
+                    min={1}
+                    value={challengeTarget}
+                    onChange={(event) => setChallengeTarget(Number(event.target.value) || 1)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Bonus SP Points
+                  <input
+                    type="number"
+                    min={0}
+                    value={challengePoints}
+                    onChange={(event) => setChallengePoints(Number(event.target.value) || 0)}
+                    className={inputClass}
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                disabled={busy === "challenge-create"}
+                onClick={() => void createChallenge()}
+                className={`${buttonClass} w-full sm:w-auto`}
+              >
+                {busy === "challenge-create" ? "Creating…" : "Create challenge & notify members"}
+              </button>
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "challenges"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Challenges"
+            subtitle="Edit, activate or pause existing challenges."
+            icon={<Dumbbell size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {activeChallenges} active
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+              {challenges.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-black">{item.title}</p>
+                      <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                        {item.description}
+                      </p>
+                      <p className="mt-2 break-words text-xs font-bold text-[color:var(--portal-muted)]">
+                        {item.target_visits} visits · +{item.points_reward} pts · {item.starts_on} →{" "}
+                        {item.ends_on}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
+                      {item.active ? "ACTIVE" : "OFF"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy === item.id}
+                      onClick={() => void editChallenge(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
+                    >
+                      Edit
                     </button>
                     <button
                       type="button"
                       disabled={busy === item.id}
-                      onClick={() => void updateSocialClaim(item, "rejected")}
-                      className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
+                      onClick={() => void toggleChallenge(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
                     >
-                      Reject
+                      {item.active ? "Deactivate" : "Activate"}
                     </button>
                   </div>
-                )}
-              </article>
-            ))}
-            {!socialClaims.length && (
-              <p className="text-sm text-[color:var(--portal-muted)]">No social follow claims yet.</p>
-            )}
-          </div>
-        </CollapsiblePanel>
+                </article>
+              ))}
+              {!challenges.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">No challenges yet.</p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
 
-        <CollapsiblePanel
-          title="Reward redemptions"
-          subtitle="Approve, reject and fulfil member redemptions."
-          icon={<CheckCircle2 size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {redemptions.filter((item) => item.status === "pending").length} pending
-            </span>
-          }
-        >
-          <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-            {redemptions.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{item.reward?.name || "Reward"}</p>
-                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
-                      {item.member?.full_name || "Member"} · {item.member?.phone || item.member?.email || "No contact"}
+        <div hidden={workspaceView !== "rewards"}>
+          <CollapsiblePanel
+            title="Add reward"
+            subtitle="Create a reward members can redeem with SP Points."
+            icon={<Gift size={19} />}
+          >
+            <div className="grid min-w-0 gap-4">
+              <label className="min-w-0 text-sm font-bold">
+                Reward name
+                <input
+                  value={rewardName}
+                  onChange={(event) => setRewardName(event.target.value)}
+                  className={inputClass}
+                  placeholder="Free guest pass"
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Description
+                <textarea
+                  value={rewardDescription}
+                  onChange={(event) => setRewardDescription(event.target.value)}
+                  className={inputClass}
+                  rows={3}
+                  placeholder="One guest visit for a friend or family member."
+                />
+              </label>
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="min-w-0 text-sm font-bold">
+                  SP Points cost
+                  <input
+                    type="number"
+                    min={1}
+                    value={rewardCost}
+                    onChange={(event) => setRewardCost(Number(event.target.value) || 1)}
+                    className={inputClass}
+                  />
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Inventory
+                  <input
+                    value={rewardInventory}
+                    onChange={(event) => setRewardInventory(event.target.value)}
+                    className={inputClass}
+                    placeholder="Blank = unlimited"
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                disabled={busy === "reward-create"}
+                onClick={() => void createReward()}
+                className={`${buttonClass} w-full sm:w-auto`}
+              >
+                {busy === "reward-create" ? "Adding…" : "Add reward"}
+              </button>
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "rewards"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Rewards catalogue"
+            subtitle="Edit costs, inventory and member visibility."
+            icon={<Gift size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {activeRewards} active
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+              {rewards.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-black">{item.name}</p>
+                      <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                        {item.description}
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">
+                        {item.points_cost} pts ·{" "}
+                        {item.inventory === null ? "Unlimited" : `${item.inventory} left`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black">
+                      {item.active ? "ACTIVE" : "OFF"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy === item.id}
+                      onClick={() => void editReward(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy === item.id}
+                      onClick={() => void toggleReward(item)}
+                      className="rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-50"
+                    >
+                      {item.active ? "Hide reward" : "Publish reward"}
+                    </button>
+                  </div>
+                </article>
+              ))}
+              {!rewards.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">
+                  No rewards published yet.
+                </p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "requests"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Session requests"
+            subtitle="PT, classes, massage, pedicure and spa requests."
+            icon={<CalendarDays size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {pendingBookings} pending
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+              {bookings.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-black">{item.service_name}</p>
+                      <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                        {item.member?.full_name || "Member"} ·{" "}
+                        {item.member?.phone || item.member?.email || "No contact"}
+                      </p>
+                      <p className="mt-2 text-xs font-bold text-[color:var(--portal-muted)]">
+                        {dateTime(item.preferred_at)}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
+                      {item.status}
+                    </span>
+                  </div>
+                  {item.notes && (
+                    <p className="mt-3 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                      Member note: {item.notes}
                     </p>
-                    <p className="mt-2 text-xs font-bold">{item.points_cost} points</p>
+                  )}
+                  {item.staff_note && (
+                    <p className="mt-2 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                      Staff note: {item.staff_note}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {item.status === "pending" && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy === item.id}
+                          onClick={() => void updateBooking(item, "confirmed")}
+                          className={buttonClass}
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy === item.id}
+                          onClick={() => void updateBooking(item, "declined")}
+                          className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
+                        >
+                          Decline
+                        </button>
+                      </>
+                    )}
+                    {item.status === "confirmed" && (
+                      <button
+                        type="button"
+                        disabled={busy === item.id}
+                        onClick={() => void updateBooking(item, "completed")}
+                        className={buttonClass}
+                      >
+                        Mark completed
+                      </button>
+                    )}
                   </div>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">{item.status}</span>
-                </div>
-                {item.staff_note && <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">Staff: {item.staff_note}</p>}
-                <div className="mt-4 flex flex-wrap gap-2">
+                </article>
+              ))}
+              {!bookings.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">
+                  No member session requests yet.
+                </p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "requests"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Social follow bonus claims"
+            subtitle="Verify Instagram and TikTok follows before the one-time 10 SP bonus is awarded."
+            icon={<Users size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {socialClaims.filter((item) => item.status === "pending").length} pending
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+              {socialClaims.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-black capitalize">{item.platform}</p>
+                      <a
+                        href={
+                          item.platform === "instagram"
+                            ? "https://www.instagram.com/" + encodeURIComponent(item.handle) + "/"
+                            : "https://www.tiktok.com/@" + encodeURIComponent(item.handle)
+                        }
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-flex break-words text-sm font-bold text-[color:var(--portal-accent)] underline underline-offset-2"
+                      >
+                        @{item.handle} · open profile
+                      </a>
+                      <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                        {item.member?.full_name || "Member"} ·{" "}
+                        {item.member?.phone || item.member?.email || "No contact"}
+                      </p>
+                      <p className="mt-2 text-xs font-bold">+{item.points_reward} SP on approval</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
+                      {item.status}
+                    </span>
+                  </div>
+                  {item.staff_note && (
+                    <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">
+                      Note: {item.staff_note}
+                    </p>
+                  )}
                   {item.status === "pending" && (
-                    <>
-                      <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "approved")} className={buttonClass}>Approve</button>
-                      <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "rejected")} className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700">Reject</button>
-                    </>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busy === item.id}
+                        onClick={() => void updateSocialClaim(item, "approved")}
+                        className={buttonClass}
+                      >
+                        Verify & award
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy === item.id}
+                        onClick={() => void updateSocialClaim(item, "rejected")}
+                        className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
+                      >
+                        Reject
+                      </button>
+                    </div>
                   )}
-                  {item.status === "approved" && (
-                    <button type="button" disabled={busy === item.id} onClick={() => void updateRedemption(item, "fulfilled")} className={`inline-flex items-center gap-2 ${buttonClass}`}>
-                      <CheckCircle2 size={14} /> Mark fulfilled
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-            {!redemptions.length && <p className="text-sm text-[color:var(--portal-muted)]">No reward redemptions yet.</p>}
-          </div>
-        </CollapsiblePanel>
+                </article>
+              ))}
+              {!socialClaims.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">
+                  No social follow claims yet.
+                </p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
 
-        <CollapsiblePanel
-          title="Send member notification"
-          subtitle="Publish an in-app update and push notification."
-          icon={<Bell size={19} />}
-        >
-          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
-            <label className="min-w-0 text-sm font-bold">
-              Title
-              <input value={pushTitle} onChange={(event) => setPushTitle(event.target.value)} className={inputClass} placeholder="Saturday group class update" />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              App destination
-              <input value={pushLink} onChange={(event) => setPushLink(event.target.value)} className={inputClass} placeholder="/rewards, /blog, /bookings…" />
-            </label>
-            <label className="min-w-0 text-sm font-bold">
-              Type
-              <select value={pushKind} onChange={(event) => setPushKind(event.target.value)} className={inputClass}>
-                <option value="general">General</option>
-                <option value="blog">Blog</option>
-                <option value="challenge">Challenge</option>
-                <option value="booking">Booking</option>
-                <option value="reward">Reward</option>
-                <option value="announcement">Announcement</option>
-              </select>
-            </label>
-            <label className="min-w-0 text-sm font-bold lg:row-span-2">
-              Message
-              <textarea value={pushBody} onChange={(event) => setPushBody(event.target.value)} className={inputClass} rows={4} placeholder="Short, useful message for members." />
-            </label>
-            <button type="button" disabled={busy === "push"} onClick={() => void sendBroadcast()} className={`inline-flex w-full items-center justify-center gap-2 ${buttonClass} sm:w-auto`}>
-              <Send size={17} /> {busy === "push" ? "Sending…" : "Publish & send push"}
-            </button>
-          </div>
-        </CollapsiblePanel>
-
-        <CollapsiblePanel
-          title="Recent app notifications"
-          subtitle="Previously published member updates."
-          icon={<Bell size={19} />}
-          badge={
-            <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
-              {notifications.length}
-            </span>
-          }
-        >
-          <div className="min-w-0 space-y-2">
-            {notifications.map((item) => (
-              <article key={item.id} className="min-w-0 rounded-xl border border-[var(--portal-surface)] p-4">
-                <div className="flex min-w-0 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="break-words font-black">{item.title}</p>
-                    <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">{item.body}</p>
+        <div hidden={workspaceView !== "requests"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Reward redemptions"
+            subtitle="Approve, reject and fulfil member redemptions."
+            icon={<CheckCircle2 size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {redemptions.filter((item) => item.status === "pending").length} pending
+              </span>
+            }
+          >
+            <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+              {redemptions.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-2xl border border-[var(--portal-surface)] bg-[var(--portal-canvas)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-black">{item.reward?.name || "Reward"}</p>
+                      <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                        {item.member?.full_name || "Member"} ·{" "}
+                        {item.member?.phone || item.member?.email || "No contact"}
+                      </p>
+                      <p className="mt-2 text-xs font-bold">{item.points_cost} points</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase">
+                      {item.status}
+                    </span>
                   </div>
-                  <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2 py-1 text-[9px] font-black uppercase text-[color:var(--portal-accent)]">
-                    {item.kind}
-                  </span>
-                </div>
-              </article>
-            ))}
-            {!notifications.length && <p className="text-sm text-[color:var(--portal-muted)]">No app notifications yet.</p>}
-          </div>
-        </CollapsiblePanel>
+                  {item.staff_note && (
+                    <p className="mt-3 break-words text-xs text-[color:var(--portal-muted)]">
+                      Staff: {item.staff_note}
+                    </p>
+                  )}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {item.status === "pending" && (
+                      <>
+                        <button
+                          type="button"
+                          disabled={busy === item.id}
+                          onClick={() => void updateRedemption(item, "approved")}
+                          className={buttonClass}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy === item.id}
+                          onClick={() => void updateRedemption(item, "rejected")}
+                          className="rounded-xl border border-red-200 px-3 py-2 text-xs font-bold text-red-700"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {item.status === "approved" && (
+                      <button
+                        type="button"
+                        disabled={busy === item.id}
+                        onClick={() => void updateRedemption(item, "fulfilled")}
+                        className={`inline-flex items-center gap-2 ${buttonClass}`}
+                      >
+                        <CheckCircle2 size={14} /> Mark fulfilled
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))}
+              {!redemptions.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">
+                  No reward redemptions yet.
+                </p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "notifications"}>
+          <CollapsiblePanel
+            title="Send member notification"
+            subtitle="Publish an in-app update and push notification."
+            icon={<Bell size={19} />}
+          >
+            <div className="grid min-w-0 gap-4 lg:grid-cols-2">
+              <label className="min-w-0 text-sm font-bold">
+                Title
+                <input
+                  value={pushTitle}
+                  onChange={(event) => setPushTitle(event.target.value)}
+                  className={inputClass}
+                  placeholder="Saturday group class update"
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                App destination
+                <input
+                  value={pushLink}
+                  onChange={(event) => setPushLink(event.target.value)}
+                  className={inputClass}
+                  placeholder="/rewards, /blog, /bookings…"
+                />
+              </label>
+              <label className="min-w-0 text-sm font-bold">
+                Type
+                <select
+                  value={pushKind}
+                  onChange={(event) => setPushKind(event.target.value)}
+                  className={inputClass}
+                >
+                  <option value="general">General</option>
+                  <option value="blog">Blog</option>
+                  <option value="challenge">Challenge</option>
+                  <option value="booking">Booking</option>
+                  <option value="reward">Reward</option>
+                  <option value="announcement">Announcement</option>
+                </select>
+              </label>
+              <label className="min-w-0 text-sm font-bold lg:row-span-2">
+                Message
+                <textarea
+                  value={pushBody}
+                  onChange={(event) => setPushBody(event.target.value)}
+                  className={inputClass}
+                  rows={4}
+                  placeholder="Short, useful message for members."
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy === "push"}
+                onClick={() => void sendBroadcast()}
+                className={`inline-flex w-full items-center justify-center gap-2 ${buttonClass} sm:w-auto`}
+              >
+                <Send size={17} /> {busy === "push" ? "Sending…" : "Publish & send push"}
+              </button>
+            </div>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "notifications"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Recent app notifications"
+            subtitle="Previously published member updates."
+            icon={<Bell size={19} />}
+            badge={
+              <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">
+                {notifications.length}
+              </span>
+            }
+          >
+            <div className="min-w-0 space-y-2">
+              {notifications.map((item) => (
+                <article
+                  key={item.id}
+                  className="min-w-0 rounded-xl border border-[var(--portal-surface)] p-4"
+                >
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words font-black">{item.title}</p>
+                      <p className="mt-1 break-words text-xs leading-5 text-[color:var(--portal-muted)]">
+                        {item.body}
+                      </p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2 py-1 text-[9px] font-black uppercase text-[color:var(--portal-accent)]">
+                      {item.kind}
+                    </span>
+                  </div>
+                </article>
+              ))}
+              {!notifications.length && (
+                <p className="text-sm text-[color:var(--portal-muted)]">
+                  No app notifications yet.
+                </p>
+              )}
+            </div>
+          </CollapsiblePanel>
+        </div>
       </div>
     </AdminWorkspaceShell>
   );

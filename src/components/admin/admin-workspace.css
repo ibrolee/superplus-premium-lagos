@@ -1,0 +1,344 @@
+.spf-admin-workspace {
+  padding-left: 248px;
+  min-width: 0;
+}
+.spf-admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 45;
+  width: 248px;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-right: 1px solid var(--portal-border);
+  padding: 25px 16px 16px;
+  color: var(--portal-ink);
+}
+.spf-admin-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 9px 24px;
+}
+.spf-admin-brand img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+.spf-admin-brand strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 0.035em;
+}
+.spf-admin-brand small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: var(--portal-muted);
+}
+.spf-admin-groups {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.spf-admin-group {
+  width: 100%;
+  min-height: 47px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 750;
+  text-align: left;
+  margin-bottom: 3px;
+}
+.spf-admin-group > span {
+  flex: 1;
+}
+.spf-admin-group > svg:first-child {
+  color: var(--portal-accent);
+  flex-shrink: 0;
+}
+.spf-admin-group:hover,
+.spf-admin-group[aria-current],
+.spf-admin-group[aria-expanded="true"] {
+  background: var(--portal-surface);
+}
+.spf-admin-submenu {
+  margin: 1px 0 9px 14px;
+  border-left: 1px solid var(--portal-border);
+  padding-left: 7px;
+}
+.spf-admin-tool {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 11px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.spf-admin-tool > span {
+  flex: 1;
+  min-width: 0;
+}
+.spf-admin-tool > svg {
+  flex-shrink: 0;
+  color: var(--portal-muted);
+}
+.spf-admin-tool:hover,
+.spf-admin-tool[aria-current] {
+  background: var(--portal-surface);
+  color: var(--portal-accent);
+}
+.spf-admin-sidebar-footer {
+  display: grid;
+  gap: 4px;
+  border-top: 1px solid var(--portal-border);
+  padding-top: 10px;
+  margin-top: 12px;
+}
+.spf-admin-sidebar-footer :is(a, button) {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--portal-muted);
+}
+
+body.spf-admin-nav-active .spf-main-content > header {
+  display: none !important;
+}
+.spf-admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  height: 72px;
+  padding: 12px 32px;
+  background: #ffffffed;
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--portal-border);
+}
+.spf-admin-topbrand {
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.spf-admin-topbrand span {
+  margin-left: 7px;
+  color: var(--portal-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+.spf-admin-search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  width: min(440px, 52%);
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  background: var(--portal-canvas);
+  padding: 10px 13px;
+  font-size: 12px;
+  text-align: left;
+  color: var(--portal-muted);
+}
+.spf-admin-search-trigger span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.spf-admin-search-trigger svg {
+  flex-shrink: 0;
+}
+.spf-admin-search-trigger kbd {
+  font-size: 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: 5px;
+  padding: 2px 5px;
+  background: white;
+}
+.spf-admin-role {
+  padding: 8px 10px;
+  border-radius: 100px;
+  background: var(--portal-surface);
+  color: var(--portal-accent);
+  text-transform: capitalize;
+  font-size: 11px;
+  font-weight: 800;
+}
+.spf-admin-bottom-nav {
+  display: none;
+}
+.spf-admin-dialog {
+  color: var(--portal-ink);
+  background: white;
+  width: calc(100% - 24px);
+  max-width: 620px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  border-radius: 22px;
+  padding: 24px;
+  gap: 16px;
+}
+.spf-admin-search-dialog {
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+}
+.spf-admin-mobile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.spf-admin-mobile-grid button {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--portal-border);
+  border-radius: 15px;
+  text-align: left;
+  background: var(--portal-canvas);
+}
+.spf-admin-mobile-grid svg {
+  color: var(--portal-accent);
+  margin-bottom: 4px;
+}
+.spf-admin-mobile-grid strong {
+  font-size: 13px;
+}
+.spf-admin-mobile-grid small {
+  font-size: 10px;
+  color: var(--portal-muted);
+}
+.spf-admin-page [hidden],
+.spf-admin-workspace [hidden] {
+  display: none !important;
+}
+.spf-admin-page :is(input, select, textarea) {
+  max-width: 100%;
+}
+.spf-admin-page :is(h1, h2, h3, p, strong) {
+  overflow-wrap: anywhere;
+}
+body.spf-admin-nav-active .spf-side-nav,
+body.spf-admin-nav-active .spf-admin > header {
+  display: none !important;
+}
+body.spf-admin-nav-active .spf-dashboard .spf-main-content,
+body.spf-admin-nav-active .spf-admin > div {
+  margin-left: 0;
+}
+body.spf-admin-nav-active .spf-admin .spf-metric strong {
+  font-size: clamp(1.2rem, 2vw, 1.9rem);
+  overflow-wrap: normal;
+}
+@media (min-width: 1024px) {
+  body.spf-admin-nav-active {
+    padding-left: 248px;
+  }
+}
+@media (max-width: 1023px) {
+  .spf-admin-workspace {
+    padding-left: 0;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .spf-admin-sidebar {
+    display: none;
+  }
+  .spf-admin-topbar {
+    height: 64px;
+    padding: 9px 16px;
+    gap: 9px;
+  }
+  .spf-admin-topbrand,
+  .spf-admin-role {
+    display: none;
+  }
+  .spf-admin-icon-button {
+    min-width: 44px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    background: white;
+    border: 1px solid var(--portal-border);
+    border-radius: 12px;
+  }
+  .spf-admin-search-trigger {
+    flex: 1;
+    width: auto;
+    margin-left: 0;
+  }
+  .spf-admin-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 40;
+    background: #fffffff5;
+    backdrop-filter: blur(14px);
+    border-top: 1px solid var(--portal-border);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  .spf-admin-bottom-nav :is(a, button) {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 4px;
+    min-height: 49px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--portal-muted);
+  }
+  .spf-admin-bottom-nav [aria-current] {
+    color: var(--portal-accent);
+    background: var(--portal-surface);
+  }
+  body.spf-admin-nav-active {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+  .spf-admin-dialog input,
+  .spf-admin-page :is(input, select, textarea) {
+    font-size: 16px;
+  }
+  .spf-admin-dialog .spf-admin-tool {
+    font-size: 14px;
+    min-height: 48px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spf-admin-workspace *,
+  body.spf-admin-nav-active * {
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+body.spf-admin-nav-active .spf-admin-page {
+  padding-bottom: 80px;
+}
+body.spf-admin-nav-active main {
+  min-width: 0;
+}
+@media (max-width: 1023px) {
+  body.spf-admin-nav-active :is(input, select, textarea) {
+    font-size: 16px;
+    max-width: 100%;
+  }
+}

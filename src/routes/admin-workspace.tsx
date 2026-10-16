@@ -1,3 +1,4 @@
+import { DashboardAttention } from "@/components/admin/DashboardAttention";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -215,6 +216,7 @@ const groupedActions = [
   },
 ];
 function AdminWorkspace() {
+  const [role, setRole] = useState("");
   const [revenue, setRevenue] = useState<Revenue | null>(null),
     [canManageExpenses, setCanManageExpenses] = useState(false),
     [loading, setLoading] = useState(true),
@@ -242,6 +244,7 @@ function AdminWorkspace() {
           throw Error("Only management can view revenue.");
         if (!cancelled)
           setCanManageExpenses(["admin", "owner"].includes(String(staff.role).toLowerCase()));
+        if (!cancelled) setRole(String(staff.role).toLowerCase());
         const result = await readRevenue();
         if (!cancelled) setRevenue(result);
       } catch (cause) {
@@ -285,9 +288,10 @@ function AdminWorkspace() {
   return (
     <AdminWorkspaceShell
       title="Dashboard"
-      subtitle="Revenue, members and staff oversight."
+      subtitle="Your gym at a glance. Review what needs attention, then get on with the day."
       active="/admin-workspace"
     >
+      {role && <DashboardAttention role={role} revision={reload} />}
       <section
         aria-labelledby="financial-heading"
         className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-7"
@@ -295,7 +299,7 @@ function AdminWorkspace() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
-              01 / Finance
+              Finance
             </p>
             <h2 id="financial-heading" className="mt-1 text-2xl font-black">
               Financial overview
@@ -335,7 +339,9 @@ function AdminWorkspace() {
                   key={card.label}
                   className="min-w-0 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-5"
                 >
-                  <p className="text-sm font-semibold text-[color:var(--portal-muted)]">{card.label}</p>
+                  <p className="text-sm font-semibold text-[color:var(--portal-muted)]">
+                    {card.label}
+                  </p>
                   <p className="mt-3 break-words text-2xl font-black tabular-nums sm:text-3xl">
                     {card.value}
                   </p>
@@ -343,11 +349,14 @@ function AdminWorkspace() {
                 </article>
               ))}
             </div>
-            <p className="mt-4 text-xs leading-5 text-[color:var(--portal-muted)]">
-              Successful front-desk and Paystack payments appear in revenue after the reporting
-              baseline. Admin historical imports and excluded records remain outside revenue.
-              Recorded cash/POS/transfers reflect staff confirmation of funds received.
-            </p>
+            <details className="mt-4 text-xs leading-5 text-[color:var(--portal-muted)]">
+              <summary className="cursor-pointer font-bold">How revenue is counted</summary>
+              <p className="mt-2">
+                Successful front-desk and Paystack payments appear in revenue after the reporting
+                baseline. Admin historical imports and excluded records remain outside revenue.
+                Recorded cash/POS/transfers reflect staff confirmation of funds received.
+              </p>
+            </details>
           </>
         )}
         <div className="mt-5 flex flex-wrap gap-3">
@@ -365,9 +374,34 @@ function AdminWorkspace() {
           </a>
         </div>
       </section>
-      <section className="mt-8">
-        <p className="text-xs font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">02 / Tools</p>
-        <h2 className="mt-1 text-2xl font-black">Grouped admin actions</h2>
+      <section className="mt-6" aria-label="Quick actions">
+        <h2 className="mb-3 text-xl font-black">Quick actions</h2>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { label: "Find a member", href: "/admin-members", icon: Users },
+            { label: "Register or renew", href: "/reception-register", icon: UserPlus },
+            { label: "Personal Training", href: "/management-personal-training", icon: Activity },
+            { label: "Family Plan setup", href: "/management-family", icon: Users },
+          ].map(({ label, href, icon: Icon }) => (
+            <a
+              key={label}
+              href={href}
+              className="flex min-h-16 items-center gap-3 rounded-2xl border bg-white p-4 text-xs font-bold hover:border-[var(--portal-accent)]"
+            >
+              <Icon size={20} className="shrink-0 text-[var(--portal-accent)]" />
+              <span>{label}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+      <details className="mt-6">
+        <summary className="cursor-pointer rounded-2xl border bg-white p-4 text-sm font-bold">
+          Browse all workspace shortcuts
+        </summary>
+        <p className="text-xs font-black uppercase tracking-[.15em] text-[color:var(--portal-muted)]">
+          Everyday tools
+        </p>
+        <h2 className="mt-1 text-2xl font-black">Quick access</h2>
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
           {groupedActions.map((group) => (
             <section
@@ -378,7 +412,14 @@ function AdminWorkspace() {
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {group.items
                   .filter(
-                    (item) => !("ownerOrAdmin" in item && item.ownerOrAdmin) || canManageExpenses,
+                    (item) =>
+                      (![
+                        "/management-salary-payments",
+                        "/management-payroll",
+                        "/management-expenses",
+                      ].includes(item.href) ||
+                        canManageExpenses) &&
+                      (item.href !== "/management-member-cards" || role === "admin"),
                   )
                   .map(({ label, description, href, icon: Icon }) => (
                     <a
@@ -395,15 +436,18 @@ function AdminWorkspace() {
                           {description}
                         </span>
                       </span>
-                      <ArrowRight size={15} className="mt-1 shrink-0 text-[color:var(--portal-muted)]" />
+                      <ArrowRight
+                        size={15}
+                        className="mt-1 shrink-0 text-[color:var(--portal-muted)]"
+                      />
                     </a>
                   ))}
               </div>
             </section>
           ))}
         </div>
-      </section>
-      <section className="mt-8 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 text-xs leading-6 text-[color:var(--portal-muted)]">
+      </details>
+      <section className="mt-6 rounded-2xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-5 text-xs leading-6 text-[color:var(--portal-muted)]">
         <div className="flex items-start gap-3">
           <CheckCircle2 size={19} className="mt-0.5 shrink-0" />
           <p>

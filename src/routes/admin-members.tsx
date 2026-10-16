@@ -1,6 +1,27 @@
+import { memberPlanSummary, type DirectoryPlan } from "@/lib/admin-member-status";
+import { lagosToday } from "@/lib/pt-payroll";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Eye, Pencil, ChevronLeft, ChevronRight, RefreshCw, Search, Trash2, UserRound, X } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  Pencil,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  Search,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
 import { AdminMemberEditDialog } from "@/components/admin/AdminMemberEditDialog";
@@ -8,40 +29,80 @@ import { AdminMemberEditDialog } from "@/components/admin/AdminMemberEditDialog"
 export const Route = createFileRoute("/admin-members")({ component: AdminMembers });
 
 type Member = { id: string; full_name: string | null; phone: string | null; email: string | null };
-type DeletePreview = { success: boolean; deleted: boolean; member_id: string; member_name: string; counts: Record<string, number> };
+type DeletePreview = {
+  success: boolean;
+  deleted: boolean;
+  member_id: string;
+  member_name: string;
+  counts: Record<string, number>;
+};
 const PAGE_SIZE = 25;
 const deletionCountLabels: Array<[string, string]> = [
-  ["memberships", "Memberships"], ["payments", "Payments"],
-  ["attendance", "Attendance records"], ["reception_transactions", "Reception transactions"],
-  ["new_member_requests", "New-member requests"], ["payment_requests", "Payment requests"],
-  ["returning_member_claims", "Returning-member claims"], ["card_reissues", "Card reissues"],
-  ["qr_records", "QR records"], ["blog_comments", "Blog comments"], ["blog_likes", "Blog likes"],
+  ["memberships", "Memberships"],
+  ["payments", "Payments"],
+  ["attendance", "Attendance records"],
+  ["reception_transactions", "Reception transactions"],
+  ["new_member_requests", "New-member requests"],
+  ["payment_requests", "Payment requests"],
+  ["returning_member_claims", "Returning-member claims"],
+  ["card_reissues", "Card reissues"],
+  ["qr_records", "QR records"],
+  ["blog_comments", "Blog comments"],
+  ["blog_likes", "Blog likes"],
 ];
 
-async function loadMembers(): Promise<{ members: Member[]; isAdmin: boolean }> {
+async function loadMembers(): Promise<{
+  members: Member[];
+  plans: DirectoryPlan[];
+  isAdmin: boolean;
+}> {
   const { data: auth, error: authError } = await supabase.auth.getUser();
   if (authError || !auth.user) throw new Error("Sign in through the admin portal first.");
-  const { data: staff, error: staffError } = await supabase.from("staff_users")
-    .select("role,active").eq("auth_user_id", auth.user.id).maybeSingle();
+  const { data: staff, error: staffError } = await supabase
+    .from("staff_users")
+    .select("role,active")
+    .eq("auth_user_id", auth.user.id)
+    .maybeSingle();
   if (staffError) throw staffError;
   const role = String(staff?.role || "").toLowerCase();
   if (!staff?.active || !["admin", "owner", "manager"].includes(role))
     throw new Error("Only active management accounts can use this list.");
+  const plans: DirectoryPlan[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase
+      .from("memberships")
+      .select("id,member_id,plan_name,start_date,end_date,status,payment_status")
+      .order("id")
+      .range(offset, offset + 499);
+    if (error) throw error;
+    const batch = (data || []) as DirectoryPlan[];
+    plans.push(...batch);
+    if (batch.length < 500) break;
+  }
   const all: Member[] = [];
   for (let offset = 0; ; offset += 500) {
-    const { data, error } = await supabase.from("members")
-      .select("id,full_name,phone,email").order("id", { ascending: true }).range(offset, offset + 499);
+    const { data, error } = await supabase
+      .from("members")
+      .select("id,full_name,phone,email")
+      .order("id", { ascending: true })
+      .range(offset, offset + 499);
     if (error) throw error;
     const page = (data || []) as Member[];
     all.push(...page);
-    if (page.length < 500) return {
-      members: all.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")),
-      isAdmin: role === "admin",
-    };
+    if (page.length < 500)
+      return {
+        members: all.sort((a, b) =>
+          (a.full_name || "\uffff").localeCompare(b.full_name || "\uffff"),
+        ),
+        plans,
+        isAdmin: role === "admin",
+      };
   }
 }
 
 function AdminMembers() {
+  const [plans, setPlans] = useState<DirectoryPlan[]>([]);
+  const [statusFilter, setStatusFilter] = useState("all");
   const [members, setMembers] = useState<Member[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -60,25 +121,53 @@ function AdminMembers() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true); setError("");
+      setLoading(true);
+      setError("");
       try {
         const result = await loadMembers();
-        if (!cancelled) { setMembers(result.members); setIsAdmin(result.isAdmin); }
+        if (!cancelled) {
+          setMembers(result.members);
+          setPlans(result.plans);
+          setIsAdmin(result.isAdmin);
+        }
       } catch (cause) {
         if (!cancelled) {
-          setMembers([]); setIsAdmin(false);
+          setMembers([]);
+          setIsAdmin(false);
           setError(cause instanceof Error ? cause.message : "Unable to load members.");
         }
-      } finally { if (!cancelled) setLoading(false); }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [reload]);
 
+  const today = lagosToday();
+  const summaries = useMemo(() => {
+    const grouped = new Map<string, DirectoryPlan[]>();
+    for (const plan of plans)
+      grouped.set(plan.member_id, [...(grouped.get(plan.member_id) || []), plan]);
+    return new Map(
+      members.map((member) => [member.id, memberPlanSummary(grouped.get(member.id) || [], today)]),
+    );
+  }, [members, plans, today]);
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return members.filter((member) => !needle ||
-      [member.full_name, member.phone, member.email].some((value) => value?.toLowerCase().includes(needle)));
-  }, [members, query]);
+    return members.filter(
+      (member) =>
+        (statusFilter === "all" ||
+          (statusFilter === "active"
+            ? ["active", "expiring"].includes(summaries.get(member.id)?.status || "")
+            : summaries.get(member.id)?.status === statusFilter)) &&
+        (!needle ||
+          [member.full_name, member.phone, member.email].some((value) =>
+            value?.toLowerCase().includes(needle),
+          )),
+    );
+  }, [members, query, statusFilter, summaries]);
   const pageCount = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visible = matches.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
@@ -86,157 +175,395 @@ function AdminMembers() {
   async function openDeletionPreview(member: Member) {
     if (!isAdmin || openingMemberId || deleting) return;
     setOpeningMemberId(member.id);
-    setMessage(""); setDeleteError(""); setConfirmation(""); setPreview(null);
+    setMessage("");
+    setDeleteError("");
+    setConfirmation("");
+    setPreview(null);
     try {
-      const { data, error: previewError } = await supabase.rpc("admin_delete_member_profile", { p_member_id: member.id });
+      const { data, error: previewError } = await supabase.rpc("admin_delete_member_profile", {
+        p_member_id: member.id,
+      });
       if (previewError) throw previewError;
       const result = data as DeletePreview | null;
-      if (!result?.success || result.deleted !== false || result.member_id !== member.id ||
-        result.member_name !== member.full_name || !result.counts) {
+      if (
+        !result?.success ||
+        result.deleted !== false ||
+        result.member_id !== member.id ||
+        result.member_name !== member.full_name ||
+        !result.counts
+      ) {
         throw new Error("Could not verify this member's deletion preview.");
       }
       setPreview(result);
     } catch (cause) {
-      setMessage(cause instanceof Error ? `Delete preview failed: ${cause.message}` : "Could not load the deletion preview.");
-    } finally { setOpeningMemberId(null); }
+      setMessage(
+        cause instanceof Error
+          ? `Delete preview failed: ${cause.message}`
+          : "Could not load the deletion preview.",
+      );
+    } finally {
+      setOpeningMemberId(null);
+    }
   }
 
   async function deleteProfile() {
     if (!isAdmin || !preview || confirmation !== "DELETE" || deleting) return;
-    setDeleting(true); setDeleteError("");
+    setDeleting(true);
+    setDeleteError("");
     try {
       const { data, error: deleteFailure } = await supabase.rpc("admin_delete_member_profile", {
-        p_member_id: preview.member_id, p_confirmation: "DELETE", p_expected_name: preview.member_name,
+        p_member_id: preview.member_id,
+        p_confirmation: "DELETE",
+        p_expected_name: preview.member_name,
       });
       if (deleteFailure) throw deleteFailure;
-      if (!data?.success || data.deleted !== true || data.member_id !== preview.member_id || data.login_deleted !== false)
+      if (
+        !data?.success ||
+        data.deleted !== true ||
+        data.member_id !== preview.member_id ||
+        data.login_deleted !== false
+      )
         throw new Error("Deletion was not confirmed by the server.");
       setMembers((previous) => previous.filter((member) => member.id !== preview.member_id));
-      setMessage(`Deleted ${preview.member_name}'s website profile and linked records. The login account was kept.`);
-      setPreview(null); setConfirmation(""); setReload((value) => value + 1);
+      setMessage(
+        `Deleted ${preview.member_name}'s website profile and linked records. The login account was kept.`,
+      );
+      setPreview(null);
+      setConfirmation("");
+      setReload((value) => value + 1);
     } catch (cause) {
       setDeleteError(cause instanceof Error ? cause.message : "Unable to delete profile.");
-    } finally { setDeleting(false); }
+    } finally {
+      setDeleting(false);
+    }
   }
 
   return (
-    <AdminWorkspaceShell title="Members list" subtitle="Find a member and open their profile." active="/admin-members">
-      <section className="mt-7 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-7">
+    <AdminWorkspaceShell
+      title="Members"
+      subtitle="Find a member, check their plan and manage their account."
+      active="/admin-members"
+    >
+      <div className="mt-5 flex flex-wrap gap-2">
+        <a
+          href="/reception-register"
+          className="min-h-11 rounded-xl bg-[var(--portal-ink)] px-4 py-3 text-xs font-bold text-white"
+        >
+          Register or renew
+        </a>
+        <a
+          href="/management-family"
+          className="min-h-11 rounded-xl border bg-white px-4 py-3 text-xs font-bold"
+        >
+          Family Plan setup
+        </a>
+      </div>
+      <section className="mt-5 rounded-[24px] border border-[var(--portal-border)] bg-white p-4 sm:p-7">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex min-w-0 flex-1 items-center gap-3 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] px-4 sm:max-w-xl">
             <Search size={18} className="shrink-0 text-[color:var(--portal-muted)]" />
             <span className="sr-only">Search member name, phone or email</span>
-            <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setPage(1); }}
-              placeholder="Search name, phone or email" className="min-w-0 w-full bg-transparent py-3.5 text-sm outline-none" />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Search name, phone or email"
+              className="min-w-0 w-full bg-transparent py-3.5 text-sm outline-none"
+            />
           </label>
-          <button type="button" disabled={loading || deleting} onClick={() => setReload((value) => value + 1)}
-            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-3 text-sm font-bold disabled:opacity-50">
+          <button
+            type="button"
+            disabled={loading || deleting}
+            onClick={() => setReload((value) => value + 1)}
+            className="inline-flex items-center gap-2 rounded-xl border border-[var(--portal-border)] px-4 py-3 text-sm font-bold disabled:opacity-50"
+          >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
           </button>
         </div>
-        {message && <p role="status" className="mt-5 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-sm text-[color:var(--portal-ink)]">{message}</p>}
-        {loading && <p role="status" className="mt-7 text-sm text-[color:var(--portal-muted)]">Loading member records…</p>}
-        {!loading && error && <p role="alert" className="mt-7 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
-        {!loading && !error && <>
-          <p className="mt-5 text-xs text-[color:var(--portal-muted)]">{matches.length.toLocaleString("en-NG")} member{matches.length === 1 ? "" : "s"} found</p>
-          <div className="mt-4 divide-y divide-[var(--portal-surface)]">
-            {visible.map((member) => (
-              <article key={member.id} className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]">
-                <span aria-hidden="true" className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] font-black text-[color:var(--portal-accent)]">
-                  {member.full_name?.trim().charAt(0).toUpperCase() || <UserRound size={19} />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="break-words text-sm font-bold">{member.full_name || "Unnamed member"}</p>
-                  <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">{member.phone || "No phone"}{member.email ? ` · ${member.email}` : ""}</p>
-                </div>
-                <div className="col-span-2 flex w-full flex-wrap items-center gap-2 lg:col-span-1 lg:ml-auto lg:w-auto">
-                  <a href={`/management-member-preview/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white hover:bg-[var(--portal-accent)]">
-                    <Eye size={15} /> View Dashboard
-                  </a>
-                  <a href={`/reception-member/${member.id}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--portal-subtle)] bg-white px-4 py-2.5 text-xs font-bold text-[color:var(--portal-accent)] hover:bg-[var(--portal-canvas)]">
-                    View Profile <ArrowRight size={15} />
-                  </a>
-                  {isAdmin && <button type="button" disabled={openingMemberId !== null || deleting}
-                    onClick={() => { setMessage(""); setEditingMember(member); }}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-[var(--portal-subtle)] bg-white px-4 py-2.5 text-xs font-bold text-[color:var(--portal-accent)] hover:bg-[var(--portal-canvas)] disabled:opacity-50">
-                    <Pencil size={15} /> Edit Profile
-                  </button>}
-                  {isAdmin && <button type="button" disabled={openingMemberId !== null || deleting}
-                    onClick={() => openDeletionPreview(member)}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-bold text-red-700 hover:bg-red-50 disabled:opacity-50">
-                    <Trash2 size={15} />{openingMemberId === member.id ? "Checking…" : "Delete Profile"}
-                  </button>}
-                </div>
-              </article>
-            ))}
-            {!visible.length && <p className="py-12 text-center text-sm text-[color:var(--portal-muted)]">No members match your search.</p>}
-          </div>
-          <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--portal-surface)] pt-5">
-            <button type="button" disabled={currentPage === 1} onClick={() => setPage(currentPage - 1)}
-              className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40">
-              <ChevronLeft size={16} /> Previous
-            </button>
-            <span className="text-xs text-[color:var(--portal-muted)]">Page {currentPage} of {pageCount}</span>
-            <button type="button" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}
-              className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40">
-              Next <ChevronRight size={16} />
-            </button>
-          </div>
-        </>}
+        <label className="mt-4 block text-xs font-bold">
+          Membership status
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className="ml-3 min-h-11 max-w-full rounded-xl border bg-white px-3 text-sm"
+          >
+            <option value="all">All members</option>
+            <option value="active">Active and paid</option>
+            <option value="expiring">Expiring soon</option>
+            <option value="expired">Expired</option>
+            <option value="upcoming">Starts soon</option>
+            <option value="paused">Paused</option>
+            <option value="none">No plan</option>
+            <option value="other">Review plan</option>
+          </select>
+        </label>
+        {message && (
+          <p
+            role="status"
+            className="mt-5 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-4 text-sm text-[color:var(--portal-ink)]"
+          >
+            {message}
+          </p>
+        )}
+        {loading && (
+          <p role="status" className="mt-7 text-sm text-[color:var(--portal-muted)]">
+            Loading member records…
+          </p>
+        )}
+        {!loading && error && (
+          <p
+            role="alert"
+            className="mt-7 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          >
+            {error}
+          </p>
+        )}
+        {!loading && !error && (
+          <>
+            <p className="mt-5 text-xs text-[color:var(--portal-muted)]">
+              {matches.length.toLocaleString("en-NG")} member{matches.length === 1 ? "" : "s"} found
+            </p>
+            <div className="mt-4 divide-y divide-[var(--portal-surface)]">
+              {visible.map((member) => (
+                <article
+                  key={member.id}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 py-4 lg:grid-cols-[auto_minmax(0,1fr)_auto]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--portal-surface)] font-black text-[color:var(--portal-accent)]"
+                  >
+                    {member.full_name?.trim().charAt(0).toUpperCase() || <UserRound size={19} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words text-sm font-bold">
+                      {member.full_name || "Unnamed member"}
+                    </p>
+                    <p className="mt-1 break-words text-xs text-[color:var(--portal-muted)]">
+                      {member.phone || "No phone"}
+                      {member.email ? ` · ${member.email}` : ""}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span
+                        className={`rounded-full px-2 py-1 font-bold ${["active", "expiring"].includes(summaries.get(member.id)?.status || "") ? "bg-green-50 text-green-800" : "bg-[var(--portal-canvas)] text-[var(--portal-muted)]"}`}
+                      >
+                        {summaries.get(member.id)?.label}
+                      </span>
+                      <span>{summaries.get(member.id)?.plan}</span>
+                      {summaries.get(member.id)?.expiry && (
+                        <span className="text-[var(--portal-muted)]">
+                          Ends {summaries.get(member.id)?.expiry}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex w-full flex-wrap items-center gap-2 lg:col-span-1 lg:ml-auto lg:w-auto">
+                    <a
+                      href={`/reception-member/${member.id}`}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--portal-ink)] px-4 py-2.5 text-xs font-bold text-white"
+                    >
+                      Open member <ArrowRight size={15} />
+                    </a>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label={`More actions for ${member.full_name || "unnamed member"}`}
+                          className="grid size-11 place-items-center rounded-xl border bg-white"
+                        >
+                          <MoreHorizontal size={19} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-52 rounded-xl p-1.5">
+                        <DropdownMenuItem asChild className="min-h-11">
+                          <a href={`/management-member-preview/${member.id}`}>
+                            <Eye size={15} />
+                            View member dashboard
+                          </a>
+                        </DropdownMenuItem>
+                        {isAdmin && (
+                          <>
+                            <DropdownMenuItem
+                              className="min-h-11"
+                              disabled={openingMemberId !== null || deleting}
+                              onSelect={() => {
+                                setMessage("");
+                                setEditingMember(member);
+                              }}
+                            >
+                              <Pencil size={15} />
+                              Edit profile
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="min-h-11 text-red-700"
+                              disabled={openingMemberId !== null || deleting}
+                              onSelect={() => void openDeletionPreview(member)}
+                            >
+                              <Trash2 size={15} />
+                              Delete profile…
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </article>
+              ))}
+              {!visible.length && (
+                <p className="py-12 text-center text-sm text-[color:var(--portal-muted)]">
+                  No members match your search.
+                </p>
+              )}
+            </div>
+            <div className="mt-5 flex items-center justify-between gap-3 border-t border-[var(--portal-surface)] pt-5">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setPage(currentPage - 1)}
+                className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40"
+              >
+                <ChevronLeft size={16} /> Previous
+              </button>
+              <span className="text-xs text-[color:var(--portal-muted)]">
+                Page {currentPage} of {pageCount}
+              </span>
+              <button
+                type="button"
+                disabled={currentPage >= pageCount}
+                onClick={() => setPage(currentPage + 1)}
+                className="inline-flex items-center gap-1 rounded-xl border border-[var(--portal-border)] px-3 py-2 text-xs font-bold disabled:opacity-40"
+              >
+                Next <ChevronRight size={16} />
+              </button>
+            </div>
+          </>
+        )}
       </section>
 
-      {isAdmin && editingMember && <AdminMemberEditDialog member={editingMember}
-        onClose={() => setEditingMember(null)}
-        onSaved={(updated) => {
-          setMembers((previous) => previous.map((item) => item.id === updated.id ? updated : item)
-            .sort((a, b) => (a.full_name || "").localeCompare(b.full_name || "")));
-          setMessage(`Updated ${updated.full_name || "member"}'s personal details. Memberships and login were not changed.`);
-        }} />}
-      {isAdmin && preview && <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-4">
-        <section role="dialog" aria-modal="true" aria-labelledby="delete-member-title"
-          className="my-auto w-full max-w-xl rounded-2xl border border-red-200 bg-white p-5 shadow-2xl sm:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 id="delete-member-title" className="text-xl font-black text-red-800">Permanently delete member?</h2>
-              <p className="mt-2 break-words text-sm font-bold text-[color:var(--portal-ink)]">{preview.member_name}</p>
-              <p className="mt-1 break-all text-xs text-[color:var(--portal-muted)]">Member ID: {preview.member_id}</p>
+      {isAdmin && editingMember && (
+        <AdminMemberEditDialog
+          member={editingMember}
+          onClose={() => setEditingMember(null)}
+          onSaved={(updated) => {
+            setMembers((previous) =>
+              previous
+                .map((item) => (item.id === updated.id ? updated : item))
+                .sort((a, b) => (a.full_name || "\uffff").localeCompare(b.full_name || "\uffff")),
+            );
+            setMessage(
+              `Updated ${updated.full_name || "member"}'s personal details. Memberships and login were not changed.`,
+            );
+          }}
+        />
+      )}
+      {isAdmin && preview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/65 p-4">
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-member-title"
+            className="my-auto w-full max-w-xl rounded-2xl border border-red-200 bg-white p-5 shadow-2xl sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="delete-member-title" className="text-xl font-black text-red-800">
+                  Permanently delete member?
+                </h2>
+                <p className="mt-2 break-words text-sm font-bold text-[color:var(--portal-ink)]">
+                  {preview.member_name}
+                </p>
+                <p className="mt-1 break-all text-xs text-[color:var(--portal-muted)]">
+                  Member ID: {preview.member_id}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close deletion confirmation"
+                disabled={deleting}
+                onClick={() => {
+                  setPreview(null);
+                  setConfirmation("");
+                }}
+                className="rounded-lg p-2 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
             </div>
-            <button type="button" aria-label="Close deletion confirmation" disabled={deleting}
-              onClick={() => { setPreview(null); setConfirmation(""); }}
-              className="rounded-lg p-2 hover:bg-gray-100 disabled:opacity-50"><X size={20} /></button>
-          </div>
-          <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-            This permanently deletes the website profile and its linked records, including payment history. Financial reports may change. This does not issue a refund, erase bank or Paystack records, or delete the member's login account.
-          </p>
-          <div className="mt-5 rounded-xl border border-[var(--portal-border)] p-4">
-            <h3 className="mb-3 text-sm font-black text-[color:var(--portal-ink)]">Records selected for deletion</h3>
-            <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-              {deletionCountLabels.map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between gap-3">
-                  <dt className="text-[color:var(--portal-muted)]">{label}</dt>
-                  <dd className="font-bold tabular-nums">{Number(preview.counts[key] || 0).toLocaleString("en-NG")}</dd>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-3 text-xs text-[color:var(--portal-muted)]">Related reminders and reconciliation records will also be removed.</p>
-          </div>
-          <label className="mt-5 block text-sm font-bold text-[color:var(--portal-ink)]">
-            Type DELETE to confirm
-            <input type="text" autoComplete="off" spellCheck={false} value={confirmation}
-              disabled={deleting} onChange={(event) => setConfirmation(event.target.value)} placeholder="DELETE"
-              className="mt-2 block w-full rounded-xl border border-[var(--portal-border)] px-4 py-3 font-mono text-base outline-none focus:border-red-500 disabled:opacity-50" />
-          </label>
-          {deleteError && <p role="alert" className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{deleteError}</p>}
-          <div className="mt-5 flex flex-wrap justify-end gap-3">
-            <button type="button" disabled={deleting} onClick={() => { setPreview(null); setConfirmation(""); }}
-              className="rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold disabled:opacity-50">Keep Profile</button>
-            <button type="button" disabled={deleting || confirmation !== "DELETE"} onClick={deleteProfile}
-              className="rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40">
-              {deleting ? "Deleting…" : "Permanently Delete Profile"}
-            </button>
-          </div>
-        </section>
-      </div>}
+            <p className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+              This permanently deletes the website profile and its linked records, including payment
+              history. Financial reports may change. This does not issue a refund, erase bank or
+              Paystack records, or delete the member's login account.
+            </p>
+            <div className="mt-5 rounded-xl border border-[var(--portal-border)] p-4">
+              <h3 className="mb-3 text-sm font-black text-[color:var(--portal-ink)]">
+                Records selected for deletion
+              </h3>
+              <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                {deletionCountLabels.map(([key, label]) => (
+                  <div key={key} className="flex items-center justify-between gap-3">
+                    <dt className="text-[color:var(--portal-muted)]">{label}</dt>
+                    <dd className="font-bold tabular-nums">
+                      {Number(preview.counts[key] || 0).toLocaleString("en-NG")}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="mt-3 text-xs text-[color:var(--portal-muted)]">
+                Related reminders and reconciliation records will also be removed.
+              </p>
+            </div>
+            <label className="mt-5 block text-sm font-bold text-[color:var(--portal-ink)]">
+              Type DELETE to confirm
+              <input
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                value={confirmation}
+                disabled={deleting}
+                onChange={(event) => setConfirmation(event.target.value)}
+                placeholder="DELETE"
+                className="mt-2 block w-full rounded-xl border border-[var(--portal-border)] px-4 py-3 font-mono text-base outline-none focus:border-red-500 disabled:opacity-50"
+              />
+            </label>
+            {deleteError && (
+              <p
+                role="alert"
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+              >
+                {deleteError}
+              </p>
+            )}
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => {
+                  setPreview(null);
+                  setConfirmation("");
+                }}
+                className="rounded-xl border border-[var(--portal-border)] px-5 py-3 text-sm font-bold disabled:opacity-50"
+              >
+                Keep Profile
+              </button>
+              <button
+                type="button"
+                disabled={deleting || confirmation !== "DELETE"}
+                onClick={deleteProfile}
+                className="rounded-xl bg-red-700 px-5 py-3 text-sm font-black text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {deleting ? "Deleting…" : "Permanently Delete Profile"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </AdminWorkspaceShell>
   );
 }

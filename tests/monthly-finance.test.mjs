@@ -18,6 +18,7 @@ const fixture = () => ({
   settings: [{ staff_profile_id: "james", current_monthly_salary: 100000, currency: "NGN" }],
   records: [],
   advances: [],
+  spaCommissions: [],
   trainers: [],
   memberships: [],
   assignments: [],
@@ -141,7 +142,28 @@ test("missing settings, conflicting salaries and non-naira records require revie
 });
 
 test("legacy salary records reconstruct gross consistently for payroll and finance", () => {
-  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: null, salary_advance_deduction: 40000 }), 100000);
-  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: 100000, salary_advance_deduction: 40000 }), 100000);
-  assert.equal(grossSalaryFromRecord({ amount: 60000, gross_salary_amount: null, salary_advance_deduction: 0 }), 60000);
+  assert.equal(
+    grossSalaryFromRecord({
+      amount: 60000,
+      gross_salary_amount: null,
+      salary_advance_deduction: 40000,
+    }),
+    100000,
+  );
+  assert.equal(
+    grossSalaryFromRecord({
+      amount: 60000,
+      gross_salary_amount: 100000,
+      salary_advance_deduction: 40000,
+    }),
+    100000,
+  );
+  assert.equal(
+    grossSalaryFromRecord({
+      amount: 60000,
+      gross_salary_amount: null,
+      salary_advance_deduction: 0,
+    }),
+    60000,
+  );
 });

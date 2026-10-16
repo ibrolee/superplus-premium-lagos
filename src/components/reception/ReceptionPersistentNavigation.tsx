@@ -138,11 +138,8 @@ const managementFrontDesk = new Set([
   "/reception-workspace",
   "/reception-register",
   "/reception-checkin",
-  "/management-preview",
-  "/management-operations",
   "/management-standard-plan",
   "/management-custom-plan",
-  "/management-communications",
 ]);
 const managementRoles = new Set(["admin", "owner", "manager"]);
 const cleanSearch = (value: string) =>
@@ -301,10 +298,16 @@ export function ReceptionPersistentNavigation() {
           onClick={close}
           className="flex items-center gap-3 rounded-xl px-2 py-2"
         >
-          <img src="/footer-logo-circular.webp" alt="Super Plus Fitness" className="size-11 shrink-0 rounded-full bg-white object-contain" />
+          <img
+            src="/footer-logo-circular.webp"
+            alt="Super Plus Fitness"
+            className="size-11 shrink-0 rounded-full bg-white object-contain"
+          />
           <span>
             <strong className="block text-sm tracking-wide">SUPER PLUS</strong>
-            <span className="text-[11px] text-[color:var(--portal-subtle)]">Reception workspace</span>
+            <span className="text-[11px] text-[color:var(--portal-subtle)]">
+              Reception workspace
+            </span>
           </span>
         </a>
         <nav
@@ -433,7 +436,9 @@ export function ReceptionPersistentNavigation() {
                     </a>
                   ))}
                   {!toolResults.length && (
-                    <p className="px-3 py-2 text-xs text-[color:var(--portal-muted)]">No matching tool.</p>
+                    <p className="px-3 py-2 text-xs text-[color:var(--portal-muted)]">
+                      No matching tool.
+                    </p>
                   )}
                   <p className="mt-2 px-2 py-2 text-[11px] font-black uppercase tracking-wider text-[color:var(--portal-muted)]">
                     Members
@@ -471,7 +476,9 @@ export function ReceptionPersistentNavigation() {
                     cleanSearch(query).length >= 2 &&
                     !members.length &&
                     !searchError && (
-                      <p className="px-3 text-xs text-[color:var(--portal-muted)]">No matching members.</p>
+                      <p className="px-3 text-xs text-[color:var(--portal-muted)]">
+                        No matching members.
+                      </p>
                     )}
                   <a
                     href="/management-members"
