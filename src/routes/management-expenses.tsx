@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { AdminWorkspaceShell } from "@/components/admin/AdminWorkspaceShell";
+import { OwnerProfitWithdrawals } from "@/components/management/OwnerProfitWithdrawals";
 import { supabase } from "@/lib/supabase";
 import { loadFinanceMonth } from "@/lib/finance-data";
 import {
@@ -664,6 +665,7 @@ function ExpensesAndProfit() {
               </a>
             </div>
           )}
+          <OwnerProfitWithdrawals month={month} today={today} />
           <section className="mt-6 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
             <div className="rounded-2xl border border-[var(--portal-border)] bg-white p-5 sm:p-6">
               <h2 className="text-lg font-black">Expenses by category</h2>
