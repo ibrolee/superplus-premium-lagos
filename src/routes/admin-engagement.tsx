@@ -209,6 +209,12 @@ function AdminEngagement() {
 
   const [settings, setSettings] = useState<EngagementSettings | null>(null);
   const [visitPoints, setVisitPoints] = useState(10);
+  const [memberSearch, setMemberSearch] = useState("");
+  const [memberMatches, setMemberMatches] = useState<Array<{ id: string; full_name: string | null; phone: string | null; email: string | null }>>([]);
+  const [selectedMember, setSelectedMember] = useState<{ id: string; full_name: string | null; phone: string | null; email: string | null } | null>(null);
+  const [manualPoints, setManualPoints] = useState(50);
+  const [manualAction, setManualAction] = useState<"gift" | "deduct">("gift");
+  const [manualReason, setManualReason] = useState("");
   const [badges, setBadges] = useState<AchievementDefinition[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -378,6 +384,72 @@ function AdminEngagement() {
     [challenges],
   );
   const activeRewards = useMemo(() => rewards.filter((item) => item.active).length, [rewards]);
+
+  async function searchMembers() {
+    setError("");
+    setSuccess("");
+    setSelectedMember(null);
+    const term = memberSearch.trim();
+    if (term.length < 2) {
+      setError("Enter at least 2 characters to search for a member.");
+      return;
+    }
+    setBusy("member-search");
+    const { data, error: searchError } = await supabase
+      .from("members")
+      .select("id,full_name,phone,email")
+      .or(`full_name.ilike.%${term.replace(/[%_,]/g, " ")}%,email.ilike.%${term.replace(/[%_,]/g, " ")}%,phone.ilike.%${term.replace(/[%_,]/g, " ")}%`)
+      .order("full_name", { ascending: true })
+      .limit(20);
+    if (searchError) {
+      setError(searchError.message);
+      setMemberMatches([]);
+    } else {
+      setMemberMatches(data ?? []);
+      if (!data?.length) setError("No members found. Try another name, email or phone number.");
+    }
+    setBusy("");
+  }
+
+  async function adjustMemberPoints() {
+    if (!selectedMember) {
+      setError("Search for and select a member first.");
+      return;
+    }
+    const amount = Math.round(Number(manualPoints));
+    const reason = manualReason.trim();
+    if (!Number.isFinite(amount) || amount < 1 || amount > 100000) {
+      setError("Enter a whole-number amount between 1 and 100,000.");
+      return;
+    }
+    if (!reason) {
+      setError("Enter a reason for this SP Points adjustment.");
+      return;
+    }
+    const verb = manualAction === "gift" ? "award" : "deduct";
+    if (!window.confirm(`${manualAction === "gift" ? "Gift" : "Deduct"} ${amount.toLocaleString()} SP Points ${manualAction === "gift" ? "to" : "from"} ${selectedMember.full_name || "this member"}? This will change their live balance.`)) return;
+
+    setBusy("manual-points");
+    setError("");
+    setSuccess("");
+    const { data, error: adjustmentError } = await supabase.rpc("admin_adjust_sp_points", {
+      p_member_id: selectedMember.id,
+      p_points: manualAction === "gift" ? amount : -amount,
+      p_reason: reason,
+    });
+    if (adjustmentError) {
+      setError(adjustmentError.message);
+    } else {
+      const balance = Number((data as { balance?: number } | null)?.balance ?? 0);
+      setSuccess(`${amount.toLocaleString()} SP Points ${verb === "award" ? "awarded to" : "deducted from"} ${selectedMember.full_name || "member"}. New balance: ${balance.toLocaleString()} SP Points.`);
+      setManualReason("");
+      setMemberSearch("");
+      setMemberMatches([]);
+      setSelectedMember(null);
+      await load();
+    }
+    setBusy("");
+  }
 
   async function saveVisitPoints() {
     setBusy("visit-points");
@@ -1110,6 +1182,87 @@ function AdminEngagement() {
             >
               {busy === "visit-points" ? "Saving…" : "Save point rule"}
             </button>
+          </CollapsiblePanel>
+        </div>
+
+        <div hidden={workspaceView !== "points"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Gift or adjust member SP Points"
+            subtitle="Award bonus points or make a correction directly to a member’s live balance."
+            icon={<Gift size={19} />}
+          >
+            <div className="grid min-w-0 gap-4">
+              <label className="min-w-0 text-sm font-bold">
+                Find member
+                <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+                  <input
+                    value={memberSearch}
+                    onChange={(event) => { setMemberSearch(event.target.value); setSelectedMember(null); setMemberMatches([]); }}
+                    onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void searchMembers(); } }}
+                    className={inputClass}
+                    placeholder="Name, email or phone number"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy === "member-search"}
+                    onClick={() => void searchMembers()}
+                    className={buttonClass}
+                  >
+                    {busy === "member-search" ? "Searching…" : "Search"}
+                  </button>
+                </div>
+              </label>
+              {memberMatches.length > 0 && !selectedMember && (
+                <div className="grid min-w-0 gap-2">
+                  <p className="text-xs font-bold text-[color:var(--portal-muted)]">Select the correct member</p>
+                  {memberMatches.map((member) => (
+                    <button
+                      key={member.id}
+                      type="button"
+                      onClick={() => { setSelectedMember(member); setMemberMatches([]); }}
+                      className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[var(--portal-border)] p-3 text-left hover:bg-[var(--portal-canvas)]"
+                    >
+                      <span className="min-w-0">
+                        <strong className="block break-words text-sm">{member.full_name || "Unnamed member"}</strong>
+                        <span className="block break-words text-xs text-[color:var(--portal-muted)]">{member.phone || "No phone"} · {member.email || "No email"}</span>
+                      </span>
+                      <span className="shrink-0 text-xs font-black text-[color:var(--portal-accent)]">Select</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {selectedMember && (
+                <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[var(--portal-border)] bg-[var(--portal-canvas)] p-3">
+                  <span className="min-w-0">
+                    <strong className="block break-words text-sm">{selectedMember.full_name || "Unnamed member"}</strong>
+                    <span className="block break-words text-xs text-[color:var(--portal-muted)]">{selectedMember.phone || "No phone"} · {selectedMember.email || "No email"}</span>
+                  </span>
+                  <button type="button" onClick={() => setSelectedMember(null)} className="shrink-0 rounded-lg border border-[var(--portal-border)] px-3 py-2 text-xs font-bold">Change</button>
+                </div>
+              )}
+              <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                <label className="min-w-0 text-sm font-bold">
+                  Action
+                  <select value={manualAction} onChange={(event) => setManualAction(event.target.value as "gift" | "deduct")} className={inputClass}>
+                    <option value="gift">Gift / award points</option>
+                    <option value="deduct">Deduct points / correct balance</option>
+                  </select>
+                </label>
+                <label className="min-w-0 text-sm font-bold">
+                  Whole-number SP Points
+                  <input type="number" min={1} max={100000} step={1} inputMode="numeric" value={manualPoints} onChange={(event) => setManualPoints(Math.max(1, Math.round(Number(event.target.value) || 1)))} className={inputClass} />
+                </label>
+              </div>
+              <label className="min-w-0 text-sm font-bold">
+                Reason (required)
+                <input value={manualReason} onChange={(event) => setManualReason(event.target.value)} maxLength={240} className={inputClass} placeholder="e.g. Anniversary gift, birthday reward, correction" />
+              </label>
+              <button type="button" disabled={busy === "manual-points" || !selectedMember} onClick={() => void adjustMemberPoints()} className={`${buttonClass} w-full sm:w-auto`}>
+                {busy === "manual-points" ? "Updating balance…" : manualAction === "gift" ? "Gift SP Points" : "Deduct SP Points"}
+              </button>
+              <p className="text-xs leading-5 text-[color:var(--portal-muted)]">Every adjustment is saved to the points ledger with the admin-provided reason. The action requires management access and a confirmation before the member’s balance changes.</p>
+            </div>
           </CollapsiblePanel>
         </div>
 
