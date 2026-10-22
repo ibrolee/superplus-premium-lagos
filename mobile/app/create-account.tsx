@@ -362,7 +362,7 @@ export default function CreateAccountScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safe: { flex: 1, backgroundColor: "#FFF7F2" },
+  safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
   backButton: {
     alignItems: "center",
@@ -388,8 +388,8 @@ const styles = StyleSheet.create({
   },
   copy: { color: colors.muted, fontSize: 14, lineHeight: 22, marginTop: 12, maxWidth: 390 },
   form: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#F2D9CD",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
     borderRadius: 26,
     borderWidth: 1,
     gap: 8,
