@@ -93,7 +93,21 @@ export function DailyRewardsCard({ compact = false, onAward }: { compact?: boole
       if (!alive.current) return;
       setStatus(next);
       if (data.already_claimed) {
-        setResult("Already claimed — your points are safe.");
+        if (kind === "spin") {
+          const won = pointLabel(Number(next.spin_award ?? data.points ?? 0));
+          setResult(`🎉 You already won ${won} SP this week! Come back next week for another free spin.`);
+          Alert.alert("🎉 Weekly spin already claimed", `You won ${won} SP Points this week. Come back next week for another free spin! 💪✨`);
+        } else {
+          setResult("Already claimed — your points are safe.");
+        }
+      } else if (kind === "spin") {
+        const won = pointLabel(Number(data.points));
+        setResult(`🎉 Congratulations! You just won ${won} SP! Come back next week for another free spin. ✨`);
+        Alert.alert(
+          "🎉 Congratulations!",
+          `You just won ${won} SP Points! 🏆✨\\n\\nYour reward has been added to your balance. Come back next week for another free spin! 💪`,
+          [{ text: "Awesome! 🎉", style: "default" }],
+        );
       } else {
         const bonus = Number(data.bonus_points ?? 0);
         setResult(
