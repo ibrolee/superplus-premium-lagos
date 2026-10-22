@@ -86,6 +86,57 @@ const installSteps = [
 function AppDownloadPage() {
   return (
     <main className="overflow-hidden bg-[#090909] text-white">
+      <section className="relative isolate flex min-h-[calc(100svh-5rem)] items-center overflow-hidden border-b border-white/10 px-4 py-8 sm:px-6 sm:py-14">
+        <div aria-hidden="true" className="pointer-events-none absolute -left-28 -top-28 size-[26rem] rounded-full bg-primary/20 blur-[110px]" />
+        <div aria-hidden="true" className="pointer-events-none absolute -bottom-32 right-[-5rem] size-[26rem] rounded-full bg-orange-500/15 blur-[110px]" />
+        <div className="section-shell relative w-full">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.18em] text-primary">
+              <Zap className="size-3.5" /> Official Super Plus Fitness app
+            </div>
+            <h1 className="mt-4 font-display text-4xl font-extrabold uppercase leading-[0.9] tracking-[-0.045em] sm:mt-5 sm:text-7xl">
+              Your gym. <span className="bg-gradient-to-r from-primary via-orange-400 to-[#ff7a18] bg-clip-text text-transparent">In your pocket.</span>
+            </h1>
+            <p className="mx-auto mt-3 max-w-xl text-xs leading-5 text-white/60 sm:mt-4 sm:text-base sm:leading-6">
+              Membership, SP Points, rewards, bookings and gym updates — all in one place. Choose your phone to get started.
+            </p>
+          </div>
+          <div className="mx-auto mt-5 grid max-w-4xl grid-cols-2 gap-3 sm:mt-9 sm:gap-5">
+            <a href="https://apps.apple.com/ng/app/sp-fitness/id6820107696" className="group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-[#252525] to-[#121212] p-3.5 text-left shadow-2xl transition duration-300 hover:-translate-y-1 hover:border-white/35 sm:min-h-[230px] sm:rounded-[1.8rem] sm:p-7">
+              <div aria-hidden="true" className="absolute -right-10 -top-10 size-36 rounded-full bg-white/[0.06] transition group-hover:bg-white/[0.1]" />
+              <div className="relative flex items-center justify-between">
+                <div className="grid size-10 place-items-center rounded-xl border border-white/10 bg-white/[0.07] sm:size-12 sm:rounded-2xl">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" className="size-6 fill-current"><path d="M16.37 12.57c.02 2.14 1.88 2.85 1.9 2.86-.02.05-.3 1.02-.98 2.02-.59.87-1.2 1.74-2.16 1.76-.94.02-1.24-.57-2.32-.57s-1.42.55-2.31.59c-.93.04-1.64-.94-2.24-1.8-1.22-1.76-2.15-4.97-.9-7.13.62-1.07 1.72-1.75 2.92-1.77.91-.02 1.77.62 2.32.62.54 0 1.56-.77 2.63-.66.45.02 1.72.18 2.53 1.36-.07.04-1.51.88-1.49 2.72ZM14.65 6.96c.48-.58.8-1.38.71-2.18-.69.03-1.52.46-2.02 1.04-.45.51-.84 1.32-.73 2.1.77.06 1.56-.39 2.04-.96Z"/></svg>
+                </div>
+                <ArrowRight className="size-4 text-white/45 transition group-hover:translate-x-1 group-hover:text-white sm:size-5" />
+              </div>
+              <div className="relative mt-4">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-white/45 sm:text-[10px] sm:tracking-[0.18em]">For iPhone</p>
+                <h2 className="mt-1 font-display text-base font-extrabold uppercase leading-tight sm:text-3xl">Download for iOS</h2>
+                <p className="mt-2 text-[10px] leading-4 text-white/55 sm:text-xs sm:leading-5">Get SP Fitness from the Apple App Store.</p>
+              </div>
+            </a>
+            <a href={APK_URL} className="group relative flex min-h-[170px] flex-col justify-between overflow-hidden rounded-[1.5rem] border border-primary/45 bg-gradient-to-br from-[#3a1714] via-[#21110f] to-[#121212] p-3.5 text-left shadow-2xl shadow-primary/10 transition duration-300 hover:-translate-y-1 hover:border-primary sm:min-h-[230px] sm:rounded-[1.8rem] sm:p-7">
+              <div aria-hidden="true" className="absolute -right-10 -top-10 size-36 rounded-full bg-primary/15 transition group-hover:bg-primary/25" />
+              <div className="relative flex items-center justify-between">
+                <div className="grid size-10 place-items-center rounded-xl border border-primary/25 bg-primary/15 text-primary sm:size-12 sm:rounded-2xl">
+                  <Smartphone className="size-5 sm:size-6" />
+                </div>
+                <ArrowDownToLine className="size-4 text-primary transition group-hover:translate-y-1 sm:size-5" />
+              </div>
+              <div className="relative mt-4">
+                <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-primary sm:text-[10px] sm:tracking-[0.18em]">For Android</p>
+                <h2 className="mt-1 font-display text-base font-extrabold uppercase leading-tight sm:text-3xl">Download for Android</h2>
+                <p className="mt-2 text-[10px] leading-4 text-white/65 sm:text-xs sm:leading-5">Download the official APK directly to your phone.</p>
+              </div>
+            </a>
+          </div>
+          <p className="mx-auto mt-3 flex max-w-2xl items-start justify-center gap-2 text-center text-[9px] leading-4 text-white/40 sm:mt-4 sm:text-xs">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+            Android installs directly from an APK and may show a security prompt. Only install the file from this official page.
+          </p>
+        </div>
+      </section>
       <section className="relative isolate overflow-hidden border-b border-white/10">
         <div
           aria-hidden="true"
@@ -421,8 +472,8 @@ function AppDownloadPage() {
 export const Route = createFileRoute("/app")({
   head: () =>
     pageHead(
-      "Download the Super Plus Fitness Android App",
-      "Download the official Super Plus Fitness Android app for memberships, workouts, bookings, SP Points, rewards, challenges and member updates.",
+      "Download the Super Plus Fitness App for iOS and Android",
+      "Get the official Super Plus Fitness app for iPhone from the App Store or download the Android APK for memberships, SP Points, rewards and gym updates.",
       "/app",
     ),
   component: AppDownloadPage,
