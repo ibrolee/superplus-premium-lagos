@@ -25,7 +25,7 @@ begin
   where auth_user_id = v_uid and active = true
   limit 1;
 
-  if v_role not in ('admin', 'owner', 'manager') then
+  if coalesce(v_role, '') not in ('admin', 'owner', 'manager') then
     raise exception 'Management access required.' using errcode = '42501';
   end if;
 
