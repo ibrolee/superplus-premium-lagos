@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - ".github/workflows/android-small-test-apk.yml"
+      - "mobile/**"
+      - "src/routes/app.tsx"
 
 permissions:
   contents: write
@@ -94,8 +96,8 @@ jobs:
           "$SDK_TOOLS/aapt" dump badging /tmp/previous-spf.apk > /tmp/previous-manifest.txt
           head -n 1 /tmp/new-manifest.txt /tmp/previous-manifest.txt
           grep -q "name='com.superplusfitness.app'" /tmp/new-manifest.txt
-          NEW_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/new-manifest.txt | head -n 1)
-          OLD_VERSION=$(sed -n "s/.*versionCode='\([0-9]*\)'.*/\1/p" /tmp/previous-manifest.txt | head -n 1)
+          NEW_VERSION=$(sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" /tmp/new-manifest.txt | head -n 1)
+          OLD_VERSION=$(sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" /tmp/previous-manifest.txt | head -n 1)
           echo "Android versionCode: previous=$OLD_VERSION new=$NEW_VERSION"
           test "$NEW_VERSION" -gt "$OLD_VERSION"
           unzip -l "$APK" > /tmp/apk-contents.txt
