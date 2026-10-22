@@ -27,5 +27,5 @@ export default function WeeklySpinScreen() {
 const styles = StyleSheet.create({
   topRow: { alignItems: "flex-start", flexDirection: "row", gap: 12 },
   grow: { flex: 1 },
-  backButton: { alignItems: "center", backgroundColor: "#F2E9FF", borderRadius: 14, height: 44, justifyContent: "center", width: 44 },
+  backButton: { alignItems: "center", backgroundColor: colors.surfaceMuted, borderRadius: 14, height: 44, justifyContent: "center", width: 44 },
 });
