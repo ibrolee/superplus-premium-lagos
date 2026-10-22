@@ -104,7 +104,7 @@ jobs:
 
       - name: Inspect resolved Expo Autolinking modules
         run: |
-          npx expo-modules-autolinking resolve --platform android > /tmp/expo-autolinking.json
+          npx expo-modules-autolinking resolve --platform android --json > /tmp/expo-autolinking.json
           node - <<'NODE'
           const fs = require("fs");
           const data = JSON.parse(fs.readFileSync("/tmp/expo-autolinking.json", "utf8"));
