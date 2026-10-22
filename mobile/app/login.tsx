@@ -510,7 +510,7 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safe: { flex: 1, backgroundColor: "#FFF7F2" },
+  safe: { flex: 1, backgroundColor: colors.background },
   content: { flexGrow: 1, justifyContent: "center", padding: 24, paddingBottom: 40 },
   brandLogo: { marginBottom: 24 },
   eyebrow: { color: colors.green2, fontSize: 11, fontWeight: "900", letterSpacing: 1.7 },
@@ -525,8 +525,8 @@ const styles = StyleSheet.create({
   },
   copy: { color: colors.muted, fontSize: 15, lineHeight: 23, marginTop: 13, maxWidth: 380 },
   form: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#F2D9CD",
+    backgroundColor: colors.surface,
+    borderColor: colors.line,
     borderRadius: 26,
     borderWidth: 1,
     gap: 8,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   modeTabs: {
-    backgroundColor: "#F3ECFF",
+    backgroundColor: colors.surfaceMuted,
     borderRadius: 13,
     flexDirection: "row",
     marginBottom: 8,
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   modeTabActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   modeTabText: {
     color: colors.muted,
