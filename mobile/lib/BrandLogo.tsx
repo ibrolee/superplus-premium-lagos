@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View, useColorScheme, type StyleProp, type ViewStyle } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from "react-native-svg";
 
-function BrandMark({ size }: { size: number }) {
+function BrandMark({ size, dark = false }: { size: number; dark?: boolean }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 120 120" accessibilityLabel="Super Plus Fitness">
       <Defs>
@@ -15,7 +15,7 @@ function BrandMark({ size }: { size: number }) {
       <Rect x="36" y="34" width="11" height="54" rx="5.5" fill="url(#brandHeat)" />
       <Path d="M49 50h26l-7 11H49z" fill="url(#brandHeat)" />
       <Path d="M49 65h18l-6 9H49z" fill="url(#brandHeat)" />
-      <Circle cx="84" cy="25" r="10" fill="#111111" />
+      <Circle cx="84" cy="25" r="10" fill={dark ? "#F5F2EF" : "#111111"} />
       <Path
         d="M52 28c12 11 24 8 34 13 10 5 13 13 9 24-3 8-10 16-18 23l-11-10c8-8 12-14 13-20 1-7-4-10-10-12-8-3-17-5-25-10z"
         fill="#111111"
@@ -42,18 +42,20 @@ export function BrandLogo({
   variant?: "full" | "mark";
   style?: StyleProp<ViewStyle>;
 }) {
+  const isDark = useColorScheme() === "dark";
+
   if (variant === "mark") {
     return (
       <View style={[styles.markWrap, { width: size, height: size, borderRadius: size * 0.2 }, style]}>
-        <BrandMark size={size * 0.86} />
+        <BrandMark size={size * 0.86} dark={isDark} />
       </View>
     );
   }
 
   return (
     <View style={[styles.fullWrap, { width: size }, style]}>
-      <BrandMark size={size * 0.72} />
-      <Text style={[styles.superPlus, { fontSize: Math.max(15, size * 0.13) }]}>SUPER PLUS</Text>
+      <BrandMark size={size * 0.72} dark={isDark} />
+      <Text style={[styles.superPlus, { color: isDark ? "#F5F2EF" : "#111111", fontSize: Math.max(15, size * 0.13) }]}>SUPER PLUS</Text>
       <Text style={[styles.fitness, { fontSize: Math.max(17, size * 0.15) }]}>FITNESS</Text>
     </View>
   );
