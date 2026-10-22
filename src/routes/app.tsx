@@ -103,8 +103,8 @@ function AppDownloadPage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-7 grid max-w-4xl gap-4 sm:mt-9 sm:grid-cols-2 sm:gap-5">
-            <a href="https://apps.apple.com/ng/app/sp-fitness/id6820107696" className="group relative flex min-h-[190px] flex-col justify-between overflow-hidden rounded-[1.8rem] border border-white/15 bg-gradient-to-br from-[#252525] to-[#121212] p-5 text-left shadow-2xl transition duration-300 hover:-translate-y-1 hover:border-white/35 sm:min-h-[230px] sm:p-7">
+          <div className="mx-auto mt-6 grid max-w-4xl grid-cols-2 gap-3 sm:mt-9 sm:gap-5">
+            <a href="https://apps.apple.com/ng/app/sp-fitness/id6820107696" className="group relative flex min-h-[178px] flex-col justify-between overflow-hidden rounded-[1.5rem] border border-white/15 bg-gradient-to-br from-[#252525] to-[#121212] p-3.5 text-left shadow-2xl transition duration-300 hover:-translate-y-1 hover:border-white/35 sm:min-h-[230px] sm:rounded-[1.8rem] sm:p-7">
               <div aria-hidden="true" className="absolute -right-10 -top-10 size-36 rounded-full bg-white/[0.06] transition group-hover:bg-white/[0.1]" />
               <div className="relative flex items-center justify-between">
                 <div className="grid size-12 place-items-center rounded-2xl border border-white/10 bg-white/[0.07]">
@@ -114,12 +114,12 @@ function AppDownloadPage() {
               </div>
               <div className="relative mt-5">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-white/45">For iPhone</p>
-                <h2 className="mt-1 font-display text-2xl font-extrabold uppercase sm:text-3xl">Download for iOS</h2>
+                <h2 className="mt-1 font-display text-lg font-extrabold uppercase leading-tight sm:text-3xl">Download for iOS</h2>
                 <p className="mt-2 text-xs leading-5 text-white/55">Get SP Fitness from the Apple App Store.</p>
               </div>
             </a>
 
-            <a href={APK_URL} className="group relative flex min-h-[190px] flex-col justify-between overflow-hidden rounded-[1.8rem] border border-primary/45 bg-gradient-to-br from-[#3a1714] via-[#21110f] to-[#121212] p-5 text-left shadow-2xl shadow-primary/10 transition duration-300 hover:-translate-y-1 hover:border-primary sm:min-h-[230px] sm:p-7">
+            <a href={APK_URL} className="group relative flex min-h-[178px] flex-col justify-between overflow-hidden rounded-[1.5rem] border border-primary/45 bg-gradient-to-br from-[#3a1714] via-[#21110f] to-[#121212] p-3.5 text-left shadow-2xl shadow-primary/10 transition duration-300 hover:-translate-y-1 hover:border-primary sm:min-h-[230px] sm:rounded-[1.8rem] sm:p-7">
               <div aria-hidden="true" className="absolute -right-10 -top-10 size-36 rounded-full bg-primary/15 transition group-hover:bg-primary/25" />
               <div className="relative flex items-center justify-between">
                 <div className="grid size-12 place-items-center rounded-2xl border border-primary/25 bg-primary/15 text-primary">
@@ -475,8 +475,8 @@ function AppDownloadPage() {
 export const Route = createFileRoute("/app")({
   head: () =>
     pageHead(
-      "Download the Super Plus Fitness Android App",
-      "Download the official Super Plus Fitness Android app for memberships, workouts, bookings, SP Points, rewards, challenges and member updates.",
+      "Download the Super Plus Fitness App for iOS and Android",
+      "Get the official Super Plus Fitness app for iPhone from the App Store or download the Android APK for memberships, SP Points, rewards and gym updates.",
       "/app",
     ),
   component: AppDownloadPage,
