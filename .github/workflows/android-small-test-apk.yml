@@ -1,4 +1,4 @@
-name: Standalone Android APK — October 8 update
+name: Standalone Android APK — October 22 update
 
 on:
   push:
@@ -49,7 +49,7 @@ jobs:
           node - <<'NODE'
           const fs = require("fs");
           const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
-          config.expo.android.versionCode = 6;
+          config.expo.android.versionCode = 7;
           fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
           NODE
 
@@ -63,13 +63,13 @@ jobs:
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a
 
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/release/app-release.apk SP-Fitness-1.0.0-2026-10-08.apk
+        run: mv android/app/build/outputs/apk/release/app-release.apk SP-Fitness-1.0.0-2026-10-22.apk
 
       - name: Preserve compiled standalone APK
         uses: actions/upload-artifact@v4
         with:
-          name: sp-fitness-standalone-2026-10-08
-          path: mobile/SP-Fitness-1.0.0-2026-10-08.apk
+          name: sp-fitness-standalone-2026-10-22
+          path: mobile/SP-Fitness-1.0.0-2026-10-22.apk
           if-no-files-found: error
           retention-days: 14
 
@@ -78,8 +78,8 @@ jobs:
         run: |
           set -euo pipefail
           SDK_TOOLS=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)
-          APK="SP-Fitness-1.0.0-2026-10-08.apk"
-          curl -fL --retry 3 "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-full-app-1.0.0-2026-10-07/Super-Plus-Fitness-1.0.0.apk" -o /tmp/previous-spf.apk
+          APK="SP-Fitness-1.0.0-2026-10-22.apk"
+          curl -fL --retry 3 "https://github.com/ibrolee/superplus-premium-lagos/releases/download/spf-android-build7-2026-10-08/SP-Fitness-1.0.0-2026-10-08.apk" -o /tmp/previous-spf.apk
           "$SDK_TOOLS/apksigner" verify --print-certs "$APK" > /tmp/new-certificate.txt
           "$SDK_TOOLS/apksigner" verify --print-certs /tmp/previous-spf.apk > /tmp/previous-certificate.txt
           cat /tmp/new-certificate.txt /tmp/previous-certificate.txt
@@ -109,6 +109,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create spf-android-build7-2026-10-08 SP-Fitness-1.0.0-2026-10-08.apk \
-            --title "SP Fitness — October 8 update" \
-            --notes "Standalone Android APK matching the latest iOS build 7 member experience. Includes the redesigned Challenges hub, SP Points, rewards store, badges, streaks, weekly spin, refreshed home and login screens. Android versionCode 6; package and signing certificate verified against the previous website APK."
+          gh release create spf-android-build8-2026-10-22 SP-Fitness-1.0.0-2026-10-22.apk \
+            --title "SP Fitness — October 22 update" \
+            --notes "Standalone Android APK rebuilt from the current shared mobile app source, including the latest login branding and dark-mode fixes. Android versionCode 7; package and signing certificate verified against the current website APK."
