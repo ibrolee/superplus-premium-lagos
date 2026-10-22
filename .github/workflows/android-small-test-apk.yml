@@ -93,15 +93,34 @@ jobs:
           }
           walk(root);
           if (issues.length) {
-            console.error("Expo module publication metadata missing required version:", JSON.stringify(issues, null, 2));
-            process.exitCode = 1;
+            console.log("Potential missing publication.version metadata:", JSON.stringify(issues, null, 2));
           } else {
-            console.log("No missing publication.version fields found in expo-module.config.json files.");
+            console.log("No direct expo-module.config.json issues detected; inspect Expo Autolinking's resolved module list next.");
           }
           NODE
 
       - name: Generate Android project
         run: npx expo prebuild --no-install --platform android
+
+      - name: Inspect resolved Expo Autolinking modules
+        run: |
+          npx expo-modules-autolinking resolve --platform android > /tmp/expo-autolinking.json
+          node - <<'NODE'
+          const fs = require("fs");
+          const data = JSON.parse(fs.readFileSync("/tmp/expo-autolinking.json", "utf8"));
+          const modules = data.modules || [];
+          console.log("Resolved Expo module count:", modules.length);
+          console.log("Module at failing index 8:", JSON.stringify(modules[8], null, 2));
+          for (const [index, module] of modules.entries()) {
+            const projects = module.projects || [];
+            for (const [projectIndex, project] of projects.entries()) {
+              if (project.publication && !project.publication.version) {
+                console.error("Missing publication.version:", JSON.stringify({ index, name: module.packageName || module.name || module.path, projectIndex, project }, null, 2));
+                process.exitCode = 1;
+              }
+            }
+          }
+          NODE
 
       - name: Build smaller release APK
         run: |
