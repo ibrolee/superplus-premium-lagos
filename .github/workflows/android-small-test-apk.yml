@@ -55,6 +55,51 @@ jobs:
           fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
           NODE
 
+      - name: Diagnose Expo module publication metadata
+        run: |
+          node - <<'NODE'
+          const fs = require("fs");
+          const path = require("path");
+          const root = path.join(process.cwd(), "node_modules");
+          const issues = [];
+          function walk(dir) {
+            let entries;
+            try { entries = fs.readdirSync(dir, { withFileTypes: true }); } catch { return; }
+            for (const entry of entries) {
+              if (entry.name === ".bin") continue;
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (entry.name.startsWith("@")) walk(full);
+                else {
+                  const configPath = path.join(full, "expo-module.config.json");
+                  if (fs.existsSync(configPath)) {
+                    try {
+                      const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+                      for (const [index, project] of (config.projects || []).entries()) {
+                        if (project.publication && !project.publication.version) {
+                          let pkg = {};
+                          try { pkg = JSON.parse(fs.readFileSync(path.join(full, "package.json"), "utf8")); } catch {}
+                          issues.push({ package: pkg.name || full, packageVersion: pkg.version, projectIndex: index, publication: project.publication });
+                        }
+                      }
+                    } catch (error) {
+                      console.log("Could not parse", configPath, error.message);
+                    }
+                  }
+                  if (!entry.name.startsWith(".")) walk(full);
+                }
+              }
+            }
+          }
+          walk(root);
+          if (issues.length) {
+            console.error("Expo module publication metadata missing required version:", JSON.stringify(issues, null, 2));
+            process.exitCode = 1;
+          } else {
+            console.log("No missing publication.version fields found in expo-module.config.json files.");
+          }
+          NODE
+
       - name: Generate Android project
         run: npx expo prebuild --no-install --platform android
 
