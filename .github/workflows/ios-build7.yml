@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - "mobile/**"
       - ".github/workflows/ios-build7.yml"
 
 permissions:
