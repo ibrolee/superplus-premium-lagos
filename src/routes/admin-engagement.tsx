@@ -215,6 +215,10 @@ function AdminEngagement() {
   const [manualPoints, setManualPoints] = useState(50);
   const [manualAction, setManualAction] = useState<"gift" | "deduct">("gift");
   const [manualReason, setManualReason] = useState("");
+  const [pointsSearch, setPointsSearch] = useState("");
+  const [pointsListLoading, setPointsListLoading] = useState(false);
+  const [pointBalances, setPointBalances] = useState<Array<{ member_id: string; full_name: string | null; phone: string | null; email: string | null; balance: number }>>([]);
+  const [pointsListLoaded, setPointsListLoaded] = useState(false);
   const [badges, setBadges] = useState<AchievementDefinition[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -409,6 +413,18 @@ function AdminEngagement() {
       if (!data?.length) setError("No members found. Try another name, email or phone number.");
     }
     setBusy("");
+  }
+
+  async function loadPointBalances(search = pointsSearch.trim() || null) {
+    setPointsListLoading(true);
+    setError("");
+    const { data, error: balancesError } = await supabase.rpc("admin_list_sp_point_balances", { p_search: search });
+    if (balancesError) setError(balancesError.message);
+    else {
+      setPointBalances((data ?? []) as Array<{ member_id: string; full_name: string | null; phone: string | null; email: string | null; balance: number }>);
+      setPointsListLoaded(true);
+    }
+    setPointsListLoading(false);
   }
 
   async function adjustMemberPoints() {
@@ -1143,6 +1159,34 @@ function AdminEngagement() {
           ]}
         />
         <div hidden={workspaceView !== "points"}>
+          <CollapsiblePanel
+            defaultOpen
+            title="Member SP Points balances"
+            subtitle="View members and their current SP Points balance. Search by name, email or phone."
+            icon={<Users size={19} />}
+            badge={<span className="shrink-0 rounded-full bg-[var(--portal-surface)] px-2.5 py-1 text-[10px] font-black text-[color:var(--portal-accent)]">{pointsListLoaded ? pointBalances.length.toLocaleString() + " shown" : "Live list"}</span>}
+          >
+            <form className="flex min-w-0 flex-col gap-2 sm:flex-row" onSubmit={(event) => { event.preventDefault(); void loadPointBalances(); }}>
+              <input value={pointsSearch} onChange={(event) => setPointsSearch(event.target.value)} className={inputClass} placeholder="Search name, email or phone" aria-label="Search SP Points members" />
+              <button type="submit" disabled={pointsListLoading} className={buttonClass}>{pointsListLoading ? "Loading…" : "Search members"}</button>
+              <button type="button" disabled={pointsListLoading} onClick={() => { setPointsSearch(""); void loadPointBalances(null); }} className="rounded-xl border border-[var(--portal-border)] px-4 py-2.5 text-xs font-black disabled:opacity-50">Show all</button>
+            </form>
+            {!pointsListLoaded && <p className="mt-4 text-sm text-[color:var(--portal-muted)]">Search or choose “Show all” to load live balances.</p>}
+            {pointsListLoaded && <div className="mt-4 overflow-x-auto rounded-xl border border-[var(--portal-border)]">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="bg-[var(--portal-canvas)] text-xs text-[color:var(--portal-muted)]"><tr><th className="px-4 py-3 font-bold">Member</th><th className="px-4 py-3 font-bold">Contact</th><th className="px-4 py-3 text-right font-bold">SP Points balance</th></tr></thead>
+                <tbody>
+                  {pointBalances.map((member) => <tr key={member.member_id} className="border-t border-[var(--portal-border)]">
+                    <td className="px-4 py-3 font-bold">{member.full_name || "Unnamed member"}</td>
+                    <td className="px-4 py-3 text-xs text-[color:var(--portal-muted)]">{member.email || member.phone || "No contact details"}</td>
+                    <td className="px-4 py-3 text-right font-black tabular-nums">{Number(member.balance || 0).toLocaleString()}</td>
+                  </tr>)}
+                  {pointBalances.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-[color:var(--portal-muted)]">No members matched this search.</td></tr>}
+                </tbody>
+              </table>
+            </div>}
+            {pointsListLoaded && <p className="mt-3 text-xs text-[color:var(--portal-muted)]">Balances are calculated from the SP Points ledger, including earned, redeemed and admin-adjusted points. Up to 1,000 members are returned per query.</p>}
+          </CollapsiblePanel>
           <CollapsiblePanel
             defaultOpen
             title="SP Points"
