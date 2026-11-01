@@ -118,6 +118,24 @@ function SalaryPayments() {
   const [overrides, setOverrides] = useState<Record<string, string | undefined>>({});
   const [adjusting, setAdjusting] = useState("");
   const today = lagosToday();
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const cursor = new Date(Date.UTC(2026, 9, 1));
+    const latest = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
+    while (cursor <= latest) {
+      const value = cursor.toISOString().slice(0, 7);
+      options.push({
+        value,
+        label: new Intl.DateTimeFormat("en", {
+          month: "long",
+          year: "numeric",
+          timeZone: "UTC",
+        }).format(cursor),
+      });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return options.reverse();
+  }, [today]);
   const start = `${month}-01`;
   const parsed = new Date(start + "T12:00:00Z");
   const due = calendarDate(parsed.getUTCFullYear(), parsed.getUTCMonth() + 1, 1);
@@ -410,11 +428,8 @@ function SalaryPayments() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <label className="text-xs font-bold">
           Salary month
-          <input
-            type="month"
-            min="2026-10"
+          <select
             value={month}
-            max={today.slice(0, 7)}
             disabled={disabled}
             onChange={(event) => {
               if (event.target.value) {
@@ -424,8 +439,15 @@ function SalaryPayments() {
                 setMessage("");
               }
             }}
-            className="mt-2 block rounded-xl border bg-white p-3 text-sm"
-          />
+            aria-label="Choose salary month"
+            className="mt-2 block min-h-12 min-w-64 max-w-full touch-manipulation rounded-xl border border-[var(--portal-border)] bg-white px-4 py-3 text-base font-semibold"
+          >
+            {monthOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <button
           disabled={disabled}
