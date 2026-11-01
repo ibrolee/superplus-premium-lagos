@@ -101,6 +101,17 @@ function exportReport(month: string, rows: string[][]) {
 
 function ExpensesAndProfit() {
   const today = lagosToday();
+  const monthOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    const cursor = new Date(`${FINANCE_START_MONTH}-01T00:00:00Z`);
+    const latest = new Date(`${today.slice(0, 7)}-01T00:00:00Z`);
+    while (cursor <= latest) {
+      const value = cursor.toISOString().slice(0, 7);
+      options.push({ value, label: monthLabel(value) });
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    return options.reverse();
+  }, [today]);
   const [month, setMonth] = useState(() => today.slice(0, 7));
   const [access, setAccess] = useState<"checking" | "allowed" | "denied">("checking");
   const [data, setData] = useState<Awaited<ReturnType<typeof loadFinanceMonth>> | null>(null);
@@ -373,12 +384,10 @@ function ExpensesAndProfit() {
       <div className="mt-6 flex flex-wrap items-end justify-between gap-4">
         <label className="text-xs font-bold text-[color:var(--portal-muted)]">
           Report month
-          <input
-            type="month"
-            min={FINANCE_START_MONTH}
-            max={today.slice(0, 7)}
+          <select
             value={month}
             disabled={!!busy}
+            aria-label="Choose report month"
             onChange={(e) => {
               if (e.target.value >= FINANCE_START_MONTH && e.target.value <= today.slice(0, 7)) {
                 setMonth(e.target.value);
@@ -388,8 +397,14 @@ function ExpensesAndProfit() {
                 setNotice("");
               }
             }}
-            className={field}
-          />
+            className={field + " min-h-12 min-w-64 max-w-full touch-manipulation"}
+          >
+            {monthOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         {access === "allowed" && (
           <div className="flex flex-wrap gap-2">
